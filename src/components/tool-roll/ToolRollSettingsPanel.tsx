@@ -237,6 +237,9 @@ export function ToolRollSettingsPanel({ settings, units, onUpdate, onUnitsChange
           <Row label="Side hem allowance" tip="Fabric folded under at each side of the back panel. Typical: 3/8″ (9.5 mm).">
             <NumInput id="sideHemAllowance" value={settings.sideHemAllowance} units={units} onChange={v => onUpdate({ sideHemAllowance: v })} />
           </Row>
+          <Row label="Pocket top hem allowance" tip="Fabric folded under at the pocket panel's TOP edge (the free edge where tools enter). Typical: 1/2″ (12.7 mm).">
+            <NumInput id="pocketTopHemAllowance" value={settings.pocketTopHemAllowance} units={units} onChange={v => onUpdate({ pocketTopHemAllowance: v })} />
+          </Row>
           <Row label="Binding allowance" tip="Extra reference for binding (bias tape / grosgrain edge) along panel edges. v1 just draws a reference line — no construction logic. Leave 0 unless planning bound edges.">
             <NumInput id="bindingAllowance" value={settings.bindingAllowance} units={units} onChange={v => onUpdate({ bindingAllowance: v })} />
           </Row>

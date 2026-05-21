@@ -248,19 +248,44 @@ export function calculateToolRollLayout(
   void buildBackPanelPath;
 
   // ── Pocket panel (sits inside back panel area) ───────────────────────────
+  // The pocket panel's TOP edge is the free edge where tools enter the pockets.
+  // It needs its own hem (pocketTopHemAllowance). The CUT TOP profile is offset
+  // UP by this hem amount from the actual pocket-top body line. The hem fold
+  // line (where the fabric folds under) runs along the original (un-offset)
+  // pocket-top profile.
+  const pocketHemAllow = settings.pocketTopHemAllowance;
   const pocketPanelHeight =
     maxEffectiveDepth +
     settings.pocketBottomAllowance +
-    settings.seamAllowance;
+    settings.seamAllowance +
+    pocketHemAllow;
+  // Body pocket-top profile (where finished edge sits — this is each pocket's topY).
+  const pocketTopsForBody = pockets.map(p => ({
+    x: p.x, pocketWidth: p.pocketWidth, topY: p.topY,
+  }));
+  // Cut profile: offset each body topY UP by the pocket-top hem allowance.
+  const pocketTopsForCut = pockets.map(p => ({
+    x: p.x, pocketWidth: p.pocketWidth, topY: p.topY - pocketHemAllow,
+  }));
   const pocketPanelProfilePath = buildPocketPanelProfilePath(
-    pockets.map(p => ({ x: p.x, pocketWidth: p.pocketWidth, topY: p.topY })),
+    pocketTopsForCut,
     settings.sideHemAllowance,
     patternWidth - settings.sideHemAllowance,
     pocketBottomY + settings.pocketBottomAllowance,
     settings.pocketTopStyle,
   );
+  // Hem fold line: open profile along the body top.
+  const pocketHemFoldPath = pockets.length > 0
+    ? buildOpenProfilePath(
+        pocketTopsForBody.map(p => ({ x: p.x, pocketWidth: p.pocketWidth, y: p.topY })),
+        settings.sideHemAllowance,
+        patternWidth - settings.sideHemAllowance,
+        settings.pocketTopStyle,
+      )
+    : undefined;
   const pocketPanel: PocketPanelShape = {
     cutPath: pocketPanelProfilePath,
+    hemFoldPath: pocketHemFoldPath,
     boundingBox: { x: 0, y: backPanelTopY, width: patternWidth, height: pocketPanelHeight },
   };
   void buildPocketPanelPath; // kept for flat-piece exports

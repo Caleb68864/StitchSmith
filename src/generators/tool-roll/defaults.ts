@@ -23,6 +23,7 @@ export const defaultToolRollSettings: ToolRollSettings = {
   topHemAllowance: 25.4,   // 1"
   bottomHemAllowance: 9.5, // 3/8"
   sideHemAllowance: 9.5,   // 3/8"
+  pocketTopHemAllowance: 12.7, // 1/2" — folded under the top edge of the pocket panel
   bindingAllowance: 0,
 
   // Layout margins

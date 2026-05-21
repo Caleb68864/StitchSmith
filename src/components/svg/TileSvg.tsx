@@ -93,6 +93,9 @@ export const TileSvg: FC<TileSvgProps> = ({ tile, layout, settings, printMargin,
             {layout.flap?.hemFoldPath && (
               <path d={layout.flap.hemFoldPath} />
             )}
+            {layout.pocketPanel?.hemFoldPath && (
+              <path d={layout.pocketPanel.hemFoldPath} />
+            )}
           </g>
         )}
 

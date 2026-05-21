@@ -43,6 +43,10 @@ export function generateConstructionNotes(
   );
 
   notes.push(
+    `Fold and press a ${fmt(settings.pocketTopHemAllowance, units)} hem along the pocket panel's TOP edge (the free edge where tools enter). ` +
+    `Stitch the hem.`,
+  );
+  notes.push(
     `Align pocket panel to back panel (wrong sides together), bottom edges even. Pin and baste.`,
   );
 

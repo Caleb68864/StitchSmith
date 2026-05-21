@@ -93,6 +93,8 @@ export type ToolRollSettings = {
   topHemAllowance: number;
   bottomHemAllowance: number;
   sideHemAllowance: number;
+  /** Hem allowance on the pocket panel's free top edge (where tools enter the pockets). */
+  pocketTopHemAllowance: number;
   bindingAllowance: number;
 
   // Layout margins
@@ -240,6 +242,8 @@ export type PanelShape = {
 export type PocketPanelShape = {
   cutPath: SvgPathData;
   stitchPath?: SvgPathData;
+  /** Open path showing where the top-edge hem folds under (drawn as a fold line). */
+  hemFoldPath?: SvgPathData;
   boundingBox: BoundingBox;
 };
 

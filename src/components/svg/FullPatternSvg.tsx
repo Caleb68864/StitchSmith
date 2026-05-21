@@ -102,6 +102,9 @@ export const FullPatternSvg: FC<FullPatternSvgProps> = ({ layout, settings }) =>
           {layout.flap?.hemFoldPath && (
             <path className="flap-hem-fold" d={layout.flap.hemFoldPath} />
           )}
+          {layout.pocketPanel?.hemFoldPath && (
+            <path className="pocket-hem-fold" d={layout.pocketPanel.hemFoldPath} />
+          )}
         </g>
       )}
 
