@@ -23,7 +23,15 @@ export type PocketHeightMode = 'individual' | 'steppedToIncrement' | 'sameAsTall
  */
 export type PocketDepthMode = 'visibleAmount' | 'heightPercentage';
 
-export type FlapHeightMode = 'fixed' | 'basedOnTallestTool' | 'basedOnPocketDepth';
+export type FlapHeightMode =
+  | 'fixed'                  // Use `flapHeight` directly
+  | 'basedOnTallestTool'     // Cover the tallest tool's visible portion + overlap
+  | 'basedOnPocketDepth'     // Tied to pocket depth (legacy mode)
+  | 'shortestTool'           // Cover the shortest tool's visible portion + overlap (rectangle)
+  | 'matchPockets';          // Profile matches pocket top (mirrored) so every tool gets identical overlap
+
+/** When the flap follows a per-tool profile, this controls how the bottom edge connects between tools. */
+export type FlapTopStyle = 'stepped' | 'sloped' | 'smooth' | 'arc';
 
 export type TiePlacementMode = 'centered' | 'basedOnRollDiameter' | 'manual';
 
@@ -94,7 +102,12 @@ export type ToolRollSettings = {
   // Flap
   flapEnabled: boolean;
   flapHeightMode: FlapHeightMode;
+  /** Fixed flap height in mm (used when flapHeightMode === 'fixed'). */
   flapHeight: number;
+  /** How far past each pocket top the flap reaches when folded. mm. */
+  flapOverlap: number;
+  /** Shape of the flap's bottom edge when flapHeightMode === 'matchPockets'. */
+  flapTopStyle: FlapTopStyle;
   flapHemAllowance: number;
   flapSeamAllowance: number;
 

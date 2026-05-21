@@ -338,3 +338,121 @@ export function buildPocketPanelProfilePath(
   parts.push(`Z`);
   return parts.join(' ');
 }
+
+/**
+ * Builds the flap cut path when the flap follows the pocket profile so that every
+ * tool gets the same overlap when the flap is folded over.
+ *
+ * The flap sits in the laid-out pattern BELOW the back panel (y > backPanelBottomY).
+ * Its top edge is the fold line (straight, at `foldY`). Its bottom edge varies per
+ * pocket so that when folded, the bottom edge sits at (topY_i − overlap) above each
+ * pocket — giving each tool the same coverage regardless of tool height.
+ *
+ * Pocket inputs carry the precomputed `flapBottomY` (in laid-out coords). Style
+ * controls the connection between pockets, mirroring the pocket-top styles.
+ */
+export function buildFlapProfilePath(
+  pockets: { x: number; pocketWidth: number; flapBottomY: number }[],
+  leftX: number,
+  rightX: number,
+  foldY: number,
+  style: 'stepped' | 'sloped' | 'smooth' | 'arc',
+  /**
+   * Which side of `foldY` the flap extends from.
+   * 'below' — fold at top, flap drapes downward (`flapBottomY` > `foldY`).
+   * 'above' — fold at bottom, flap extends upward (`flapBottomY` < `foldY`).
+   * Affects the arc post-correction direction.
+   */
+  direction: 'below' | 'above' = 'below',
+): SvgPathData {
+  if (pockets.length === 0) {
+    return `M ${leftX} ${foldY} H ${rightX} V ${foldY + 30} H ${leftX} Z`;
+  }
+  const parts: string[] = [];
+  // Start at top-left (the fold line) and walk clockwise.
+  parts.push(`M ${leftX} ${foldY}`);
+  parts.push(`H ${rightX}`); // top edge (the fold line)
+  const last = pockets[pockets.length - 1];
+  parts.push(`V ${last.flapBottomY}`); // right wall down to the rightmost pocket's flap depth
+
+  if (style === 'stepped') {
+    for (let i = pockets.length - 1; i > 0; i--) {
+      const cur = pockets[i];
+      const prev = pockets[i - 1];
+      parts.push(`H ${cur.x}`);
+      parts.push(`V ${prev.flapBottomY}`);
+    }
+    parts.push(`H ${leftX}`);
+  } else if (style === 'sloped') {
+    for (let i = pockets.length - 1; i > 0; i--) {
+      const cur = pockets[i];
+      const prev = pockets[i - 1];
+      parts.push(`L ${cur.x} ${prev.flapBottomY}`);
+    }
+    parts.push(`H ${leftX}`);
+  } else if (style === 'smooth') {
+    for (let i = pockets.length - 1; i > 0; i--) {
+      const cur = pockets[i];
+      const prev = pockets[i - 1];
+      const startX = cur.x + cur.pocketWidth;
+      const endX = cur.x;
+      const cp1x = startX - cur.pocketWidth / 2;
+      const cp2x = endX + cur.pocketWidth / 2;
+      parts.push(`C ${cp1x} ${cur.flapBottomY}, ${cp2x} ${prev.flapBottomY}, ${endX} ${prev.flapBottomY}`);
+    }
+    parts.push(`H ${leftX}`);
+  } else {
+    // Arc: single cubic Bézier from rightmost flap depth to leftmost. Post-correct
+    // by pushing the nearer control point DOWN (larger y) until no pocket is
+    // under-covered (curve must not be ABOVE any pocket's flapBottomY target).
+    const firstBot = pockets[0].flapBottomY;
+    const lastBot = pockets[pockets.length - 1].flapBottomY;
+    const spanX = rightX - leftX;
+    let cp1x = leftX + spanX / 3;
+    let cp1y = firstBot;
+    let cp2x = rightX - spanX / 3;
+    let cp2y = lastBot;
+
+    const sampleY = (t: number, p0y: number, c1y: number, c2y: number, p3y: number) => {
+      const mt = 1 - t;
+      return mt * mt * mt * p0y + 3 * mt * mt * t * c1y + 3 * mt * t * t * c2y + t * t * t * p3y;
+    };
+    const findT = (targetX: number, p0x: number, c1x: number, c2x: number, p3x: number) => {
+      let lo = 0, hi = 1;
+      for (let i = 0; i < 24; i++) {
+        const mid = (lo + hi) / 2;
+        const mt = 1 - mid;
+        const x = mt * mt * mt * p0x + 3 * mt * mt * mid * c1x + 3 * mt * mid * mid * c2x + mid * mid * mid * p3x;
+        if (x < targetX) lo = mid;
+        else hi = mid;
+      }
+      return (lo + hi) / 2;
+    };
+
+    for (let pass = 0; pass < 6; pass++) {
+      let maxViolation = 0;
+      let violSide: 'left' | 'right' = 'left';
+      for (const p of pockets) {
+        const cx = p.x + p.pocketWidth / 2;
+        const t = findT(cx, leftX, cp1x, cp2x, rightX);
+        const yAtT = sampleY(t, firstBot, cp1y, cp2y, lastBot);
+        // For 'below' direction: under-coverage means curve.y < target.y → fix by pushing cp DOWN (+y).
+        // For 'above' direction: under-coverage means curve.y > target.y → fix by pushing cp UP (−y).
+        const violation = direction === 'below' ? p.flapBottomY - yAtT : yAtT - p.flapBottomY;
+        if (violation > maxViolation) {
+          maxViolation = violation;
+          violSide = t < 0.5 ? 'left' : 'right';
+        }
+      }
+      if (maxViolation <= 0.01) break;
+      const sign = direction === 'below' ? 1 : -1;
+      if (violSide === 'left') cp1y += sign * (maxViolation + 0.5);
+      else cp2y += sign * (maxViolation + 0.5);
+    }
+
+    parts.push(`C ${cp2x} ${cp2y}, ${cp1x} ${cp1y}, ${leftX} ${firstBot}`);
+  }
+
+  parts.push(`Z`);
+  return parts.join(' ');
+}

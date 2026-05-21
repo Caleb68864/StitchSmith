@@ -19,6 +19,7 @@ import {
   buildBackPanelPath,
   buildPocketPanelPath,
   buildPocketPanelProfilePath,
+  buildFlapProfilePath,
 } from './geometry.js';
 import { generateConstructionNotes } from './constructionNotes.js';
 import { generateId } from '../../utils/ids.js';
@@ -84,17 +85,46 @@ export function calculateToolRollLayout(
     settings.bottomMargin +
     settings.bottomHemAllowance;
 
-  // Flap (separate panel, laid out below back panel in pattern space)
-  const flapHeight = settings.flapEnabled
-    ? settings.flapHemAllowance + settings.flapHeight + settings.flapSeamAllowance
-    : 0;
+  // ── Flap sizing (computed before back panel offset) ──────────────────────
+  // Each tool's visible amount = how much sticks above the pocket.
+  // Flap needs (visibleAmount + overlap) of reach to cover each tool with the
+  // requested overlap when folded. We can size the flap from this without
+  // knowing absolute Y positions yet.
+  const visibleAmounts = sorted.map((t, i) => Math.max(0, t.height - effectiveDepths[i]));
+  const tallestVisible = visibleAmounts.length > 0 ? Math.max(...visibleAmounts) : 0;
+  const shortestVisible = visibleAmounts.length > 0 ? Math.min(...visibleAmounts) : 0;
+  const flapAllowances = settings.flapHemAllowance + settings.flapSeamAllowance;
 
-  const patternHeight = backPanelHeight + (settings.flapEnabled ? flapHeight : 0);
+  let flapMaxHeight = 0;
+  let flapDepthPerPocket: number[] = [];
+  if (settings.flapEnabled) {
+    const overlap = settings.flapOverlap;
+    switch (settings.flapHeightMode) {
+      case 'matchPockets':
+        flapDepthPerPocket = visibleAmounts.map(v => v + overlap);
+        flapMaxHeight = Math.max(20, ...flapDepthPerPocket) + flapAllowances;
+        break;
+      case 'basedOnTallestTool':
+        flapMaxHeight = Math.max(20, tallestVisible + overlap) + flapAllowances;
+        break;
+      case 'shortestTool':
+        flapMaxHeight = Math.max(20, shortestVisible + overlap) + flapAllowances;
+        break;
+      case 'basedOnPocketDepth':
+        flapMaxHeight = Math.max(20, maxEffectiveDepth * 0.4 + overlap) + flapAllowances;
+        break;
+      case 'fixed':
+      default:
+        flapMaxHeight = settings.flapHeight + flapAllowances;
+        break;
+    }
+  }
+
+  // The back panel sits below the flap. All back-panel Y coords are shifted by panelOffsetY.
+  const panelOffsetY = settings.flapEnabled ? flapMaxHeight : 0;
 
   // ── Pocket layouts ────────────────────────────────────────────────────────
-  // Pockets are positioned inside the back panel content area.
-  // Y origin: pocket bottom = topHemAllowance + topMargin + maxEffectiveDepth
-  const pocketBottomY = settings.topHemAllowance + settings.topMargin + maxEffectiveDepth;
+  const pocketBottomY = panelOffsetY + settings.topHemAllowance + settings.topMargin + maxEffectiveDepth;
 
   let cursorX = settings.sideHemAllowance;
   const pockets: PocketLayout[] = sorted.map((tool, i) => {
@@ -138,21 +168,21 @@ export function calculateToolRollLayout(
       })
     : [];
 
-  // ── Back panel ────────────────────────────────────────────────────────────
+  // ── Back panel (positioned BELOW the flap region in laid-out coords) ─────
+  const backPanelTopY = panelOffsetY;
+  const backPanelBottomY = panelOffsetY + backPanelHeight;
   const backPanel: PanelShape = {
-    cutPath: buildBackPanelPath(patternWidth, backPanelHeight),
-    boundingBox: { x: 0, y: 0, width: patternWidth, height: backPanelHeight },
+    cutPath: `M 0 ${backPanelTopY} H ${patternWidth} V ${backPanelBottomY} H 0 Z`,
+    boundingBox: { x: 0, y: backPanelTopY, width: patternWidth, height: backPanelHeight },
   };
+  // Keep the legacy rectangular path helper around for export-time use.
+  void buildBackPanelPath;
 
-  // ── Pocket panel ──────────────────────────────────────────────────────────
-  // Height = max pocket depth + pocket bottom allowance + seam allowance (top/bottom attachment)
+  // ── Pocket panel (sits inside back panel area) ───────────────────────────
   const pocketPanelHeight =
     maxEffectiveDepth +
     settings.pocketBottomAllowance +
     settings.seamAllowance;
-
-  // Two paths: a flat rectangle (the actual fabric piece dimensions) and a profile
-  // path (the visible silhouette where the panel sits on the back panel — used for preview).
   const pocketPanelProfilePath = buildPocketPanelProfilePath(
     pockets.map(p => ({ x: p.x, pocketWidth: p.pocketWidth, topY: p.topY })),
     settings.sideHemAllowance,
@@ -160,22 +190,56 @@ export function calculateToolRollLayout(
     pocketBottomY + settings.pocketBottomAllowance,
     settings.pocketTopStyle,
   );
-
   const pocketPanel: PocketPanelShape = {
     cutPath: pocketPanelProfilePath,
-    boundingBox: { x: 0, y: 0, width: patternWidth, height: pocketPanelHeight },
+    boundingBox: { x: 0, y: backPanelTopY, width: patternWidth, height: pocketPanelHeight },
   };
-  // Keep the rectangular cut path available for export — sewing pieces are cut flat.
-  void buildPocketPanelPath; // referenced for future flat-piece export use
+  void buildPocketPanelPath; // kept for flat-piece exports
 
-  // ── Flap panel ────────────────────────────────────────────────────────────
+  // ── Flap panel (ABOVE the back panel in laid-out coords) ─────────────────
+  // The flap region occupies y ∈ [0, flapMaxHeight]. The fold line is at the
+  // BOTTOM of the flap (y = flapMaxHeight = backPanelTopY). The free edge is
+  // at smaller y values. When folded over, the flap rotates 180° around the
+  // fold and drapes DOWN over the back panel — covering each tool by `overlap`
+  // past the pocket top.
+  //
+  // For matchPockets mode, each pocket's flapDepth = visibleAmount + overlap,
+  // so the free edge sits at y = flapMaxHeight − flapDepth_i per pocket.
+  // For ascending sort with the tallest tools on the right, that puts the
+  // free edge HIGHEST on the right — visually matching the pocket profile
+  // direction (both pieces grow taller toward the tall-tool side).
   let flap: PanelShape | undefined;
   if (settings.flapEnabled) {
-    flap = {
-      cutPath: buildBackPanelPath(patternWidth, flapHeight),
-      boundingBox: { x: 0, y: backPanelHeight, width: patternWidth, height: flapHeight },
-    };
+    const foldY = flapMaxHeight - settings.flapHemAllowance; // bottom-fold of flap region
+    if (settings.flapHeightMode === 'matchPockets' && pockets.length > 0 && flapDepthPerPocket.length > 0) {
+      // Free-edge Y for each pocket (relative to top of pattern). Smaller y = further from fold.
+      const pocketsForFlap = pockets.map((p, i) => ({
+        x: p.x,
+        pocketWidth: p.pocketWidth,
+        // In the flap profile builder, "flapBottomY" means the far-end (free edge) coord
+        // — here that's the TOP of the flap region (small y) since the fold is below.
+        flapBottomY: foldY - flapDepthPerPocket[i],
+      }));
+      flap = {
+        cutPath: buildFlapProfilePath(
+          pocketsForFlap,
+          settings.sideHemAllowance,
+          patternWidth - settings.sideHemAllowance,
+          foldY,
+          settings.flapTopStyle,
+          'above',
+        ),
+        boundingBox: { x: 0, y: 0, width: patternWidth, height: flapMaxHeight },
+      };
+    } else {
+      // Rectangular flap — spans the full flap region from y=0 (free edge) to fold at y=flapMaxHeight.
+      flap = {
+        cutPath: `M 0 0 H ${patternWidth} V ${flapMaxHeight} H 0 Z`,
+        boundingBox: { x: 0, y: 0, width: patternWidth, height: flapMaxHeight },
+      };
+    }
   }
+  const patternHeight = panelOffsetY + backPanelHeight;
 
   // ── Stitch lines ──────────────────────────────────────────────────────────
   // Vertical dividers between pockets. Each divider runs from the bottom row up to
@@ -196,42 +260,53 @@ export function calculateToolRollLayout(
     });
   }
 
-  // ── Fold lines ────────────────────────────────────────────────────────────
+  // ── Fold lines (all relative to back panel top, offset down by panelOffsetY) ──
   const foldLines: FoldLine[] = [
     {
       id: generateId('fold'),
       x1: 0,
-      y1: settings.topHemAllowance,
+      y1: backPanelTopY + settings.topHemAllowance,
       x2: patternWidth,
-      y2: settings.topHemAllowance,
+      y2: backPanelTopY + settings.topHemAllowance,
       label: 'Top hem fold',
     },
     {
       id: generateId('fold'),
       x1: 0,
-      y1: backPanelHeight - settings.bottomHemAllowance,
+      y1: backPanelBottomY - settings.bottomHemAllowance,
       x2: patternWidth,
-      y2: backPanelHeight - settings.bottomHemAllowance,
+      y2: backPanelBottomY - settings.bottomHemAllowance,
       label: 'Bottom hem fold',
     },
   ];
+  // Flap fold line: where the flap meets the back panel.
+  if (settings.flapEnabled) {
+    foldLines.push({
+      id: generateId('fold'),
+      x1: 0,
+      y1: backPanelTopY,
+      x2: patternWidth,
+      y2: backPanelTopY,
+      label: 'Flap fold',
+    });
+  }
 
   // ── Hem lines ─────────────────────────────────────────────────────────────
   const hemLines: HemLine[] = [
     {
       id: generateId('hem'),
       x1: settings.sideHemAllowance,
-      y1: 0,
+      y1: backPanelTopY,
       x2: settings.sideHemAllowance,
-      y2: backPanelHeight,
+      y2: backPanelBottomY,
       label: 'Left side hem',
     },
     {
       id: generateId('hem'),
       x1: patternWidth - settings.sideHemAllowance,
-      y1: 0,
+      y1: backPanelTopY,
       x2: patternWidth - settings.sideHemAllowance,
-      y2: backPanelHeight,
+      y2: backPanelBottomY,
       label: 'Right side hem',
     },
   ];
@@ -241,9 +316,9 @@ export function calculateToolRollLayout(
     {
       id: generateId('seam'),
       x1: 0,
-      y1: settings.seamAllowance,
+      y1: backPanelTopY + settings.seamAllowance,
       x2: patternWidth,
-      y2: settings.seamAllowance,
+      y2: backPanelTopY + settings.seamAllowance,
       label: 'Top seam allowance',
     },
   ];

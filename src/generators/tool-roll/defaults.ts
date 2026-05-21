@@ -31,8 +31,10 @@ export const defaultToolRollSettings: ToolRollSettings = {
 
   // Flap
   flapEnabled: true,
-  flapHeightMode: 'fixed',
-  flapHeight: 50.8,         // 2"
+  flapHeightMode: 'matchPockets',
+  flapHeight: 50.8,         // 2" — only used when flapHeightMode === 'fixed'
+  flapOverlap: 25.4,        // 1" — how much past each pocket top the flap reaches when folded
+  flapTopStyle: 'arc',
   flapHemAllowance: 9.5,    // 3/8"
   flapSeamAllowance: 9.5,   // 3/8"
 

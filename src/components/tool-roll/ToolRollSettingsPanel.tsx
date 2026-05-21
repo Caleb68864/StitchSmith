@@ -43,10 +43,18 @@ function NumInput({
   );
 }
 
-function Row({ label, children }: { label: string; children: React.ReactNode }) {
+function Row({ label, tip, children }: { label: string; tip?: string; children: React.ReactNode }) {
   return (
     <div className="flex items-center justify-between gap-2 py-1">
-      <Label className="text-xs text-muted-foreground flex-1">{label}</Label>
+      <Label
+        className={
+          'text-xs text-muted-foreground flex-1 ' +
+          (tip ? 'cursor-help underline decoration-dotted decoration-muted-foreground/40 underline-offset-2' : '')
+        }
+        title={tip}
+      >
+        {label}
+      </Label>
       {children}
     </div>
   );
@@ -96,7 +104,7 @@ export function ToolRollSettingsPanel({ settings, units, onUpdate, onUnitsChange
       <AccordionItem value="pocket">
         <AccordionTrigger className="text-xs font-semibold py-2">Pocket Geometry</AccordionTrigger>
         <AccordionContent>
-          <Row label="Pocket top style">
+          <Row label="Pocket top style" tip="Shape of the pocket panel's top edge. Stepped = stair-steps at each pocket boundary. Sloped = straight diagonals. Smooth = S-curve per pocket. Arc = one continuous curve from leftmost to rightmost pocket.">
             <Select
               value={settings.pocketTopStyle}
               onValueChange={v => onUpdate({ pocketTopStyle: v as ToolRollSettings['pocketTopStyle'] })}
@@ -112,7 +120,7 @@ export function ToolRollSettingsPanel({ settings, units, onUpdate, onUnitsChange
               </SelectContent>
             </Select>
           </Row>
-          <Row label="Pocket height mode">
+          <Row label="Pocket height mode" tip="How depths are normalized across pockets. Individual = each pocket gets its own depth. Stepped = depths rounded up to the next increment for cleaner stair-steps. Same as tallest = every pocket uses the deepest value.">
             <Select
               value={settings.pocketHeightMode}
               onValueChange={v => onUpdate({ pocketHeightMode: v as ToolRollSettings['pocketHeightMode'] })}
@@ -127,10 +135,10 @@ export function ToolRollSettingsPanel({ settings, units, onUpdate, onUnitsChange
               </SelectContent>
             </Select>
           </Row>
-          <Row label="Pocket height increment">
+          <Row label="Pocket height increment" tip="When pocket height mode is 'Stepped to Increment', round each pocket's depth up to the nearest multiple of this value.">
             <NumInput id="pocketHeightIncrement" value={settings.pocketHeightIncrement} units={units} onChange={v => onUpdate({ pocketHeightIncrement: v })} />
           </Row>
-          <Row label="Pocket depth mode">
+          <Row label="Pocket depth mode" tip="Where each pocket's depth comes from. 'Visible amount' uses the per-tool field you set in the table (height − visible). '% of tool height' uses a global percentage of each tool's height.">
             <Select
               value={settings.pocketDepthMode}
               onValueChange={v => onUpdate({ pocketDepthMode: v as ToolRollSettings['pocketDepthMode'] })}
@@ -145,7 +153,7 @@ export function ToolRollSettingsPanel({ settings, units, onUpdate, onUnitsChange
             </Select>
           </Row>
           {settings.pocketDepthMode === 'heightPercentage' && (
-            <Row label="Pocket depth (% of height)">
+            <Row label="Pocket depth (% of height)" tip="Fraction of each tool's height that becomes pocket depth. 75 means the pocket holds 75% of the tool's height; the remaining 25% sticks up visibly.">
               <Input
                 id="pocketHeightPercentage"
                 className="h-7 text-xs w-24"
@@ -159,7 +167,7 @@ export function ToolRollSettingsPanel({ settings, units, onUpdate, onUnitsChange
               />
             </Row>
           )}
-          <Row label="Group similar tools">
+          <Row label="Group similar tools" tip="Merge multiple tools whose heights are within the tolerance into a single shared pocket. Pocket width = max width of group, thickness = sum, depth = shortest tool's height.">
             <Switch
               id="groupingEnabled"
               checked={settings.groupingEnabled}
@@ -168,7 +176,7 @@ export function ToolRollSettingsPanel({ settings, units, onUpdate, onUnitsChange
           </Row>
           {settings.groupingEnabled && (
             <>
-              <Row label="Group height tolerance">
+              <Row label="Group height tolerance" tip="Tools whose heights span no more than this value can share a pocket. Higher values group more aggressively.">
                 <NumInput
                   id="groupHeightTolerance"
                   value={settings.groupHeightTolerance}
@@ -176,7 +184,7 @@ export function ToolRollSettingsPanel({ settings, units, onUpdate, onUnitsChange
                   onChange={v => onUpdate({ groupHeightTolerance: v })}
                 />
               </Row>
-              <Row label="Max tools per pocket">
+              <Row label="Max tools per pocket" tip="Cap on how many tools can be merged into one pocket. 2 pairs SAE+metric; 3 packs trios. 1 disables grouping effectively.">
                 <Input
                   id="groupMaxSize"
                   className="h-7 text-xs w-24"
@@ -252,10 +260,10 @@ export function ToolRollSettingsPanel({ settings, units, onUpdate, onUnitsChange
       <AccordionItem value="flap">
         <AccordionTrigger className="text-xs font-semibold py-2">Flap</AccordionTrigger>
         <AccordionContent>
-          <Row label="Enable flap">
+          <Row label="Enable flap" tip="Adds a flap piece that folds down over the tools to keep them from falling out when the roll is bundled.">
             <Switch checked={settings.flapEnabled} onCheckedChange={v => onUpdate({ flapEnabled: v })} />
           </Row>
-          <Row label="Flap height mode">
+          <Row label="Flap height mode" tip="How the flap's height/shape is determined. 'Match pocket profile' makes the flap follow the pocket tops so every tool gets the same overlap. 'Cover tallest tool' sizes a flat rectangle to the tallest tool's visible portion + overlap. 'Cover shortest tool' shorter; useful when you don't want extra fabric. 'Based on Pocket Depth' is the legacy heuristic. 'Fixed' uses a hand-set height.">
             <Select
               value={settings.flapHeightMode}
               onValueChange={v => onUpdate({ flapHeightMode: v as ToolRollSettings['flapHeightMode'] })}
@@ -264,19 +272,44 @@ export function ToolRollSettingsPanel({ settings, units, onUpdate, onUnitsChange
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="fixed">Fixed</SelectItem>
-                <SelectItem value="basedOnTallestTool">Based on Tallest Tool</SelectItem>
+                <SelectItem value="matchPockets">Match pocket profile</SelectItem>
+                <SelectItem value="basedOnTallestTool">Cover tallest tool</SelectItem>
+                <SelectItem value="shortestTool">Cover shortest tool</SelectItem>
                 <SelectItem value="basedOnPocketDepth">Based on Pocket Depth</SelectItem>
+                <SelectItem value="fixed">Fixed</SelectItem>
               </SelectContent>
             </Select>
           </Row>
-          <Row label="Flap height">
-            <NumInput id="flapHeight" value={settings.flapHeight} units={units} onChange={v => onUpdate({ flapHeight: v })} />
+          <Row label="Flap overlap (past pocket top)" tip="How far past each pocket's top the flap reaches when folded over. Higher = more coverage, more fabric needed. Typical: 0.5″–1″ (12.7–25.4 mm).">
+            <NumInput id="flapOverlap" value={settings.flapOverlap} units={units} onChange={v => onUpdate({ flapOverlap: v })} />
           </Row>
-          <Row label="Flap hem allowance">
+          {settings.flapHeightMode === 'matchPockets' && (
+            <Row label="Flap edge style" tip="Shape of the flap's free edge when matching the pocket profile. Same four options as the pocket top style: Stepped / Sloped / Smooth / Arc.">
+              <Select
+                value={settings.flapTopStyle}
+                onValueChange={v => onUpdate({ flapTopStyle: v as ToolRollSettings['flapTopStyle'] })}
+              >
+                <SelectTrigger className="h-7 text-xs w-40">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="stepped">Stepped</SelectItem>
+                  <SelectItem value="sloped">Sloped (diagonals)</SelectItem>
+                  <SelectItem value="smooth">Smooth (per-pocket curves)</SelectItem>
+                  <SelectItem value="arc">Arc (single curve)</SelectItem>
+                </SelectContent>
+              </Select>
+            </Row>
+          )}
+          {settings.flapHeightMode === 'fixed' && (
+            <Row label="Flap height" tip="Body height of the flap. The cut piece adds the flap hem + flap seam allowance on top of this.">
+              <NumInput id="flapHeight" value={settings.flapHeight} units={units} onChange={v => onUpdate({ flapHeight: v })} />
+            </Row>
+          )}
+          <Row label="Flap hem allowance" tip="Extra fabric folded under the flap's free edge for a finished hem. Typical: 3/8″ (9.5 mm).">
             <NumInput id="flapHemAllowance" value={settings.flapHemAllowance} units={units} onChange={v => onUpdate({ flapHemAllowance: v })} />
           </Row>
-          <Row label="Flap seam allowance">
+          <Row label="Flap seam allowance" tip="Extra fabric at the flap's attachment edge where it's sewn to the back panel. Typical: 3/8″ (9.5 mm).">
             <NumInput id="flapSeamAllowance" value={settings.flapSeamAllowance} units={units} onChange={v => onUpdate({ flapSeamAllowance: v })} />
           </Row>
         </AccordionContent>
