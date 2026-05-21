@@ -263,7 +263,7 @@ export function ToolRollSettingsPanel({ settings, units, onUpdate, onUnitsChange
           <Row label="Enable flap" tip="Adds a flap piece that folds down over the tools to keep them from falling out when the roll is bundled.">
             <Switch checked={settings.flapEnabled} onCheckedChange={v => onUpdate({ flapEnabled: v })} />
           </Row>
-          <Row label="Flap height mode" tip="How the flap's height/shape is determined. 'Match pocket profile' makes the flap follow the pocket tops so every tool gets the same overlap. 'Cover tallest tool' sizes a flat rectangle to the tallest tool's visible portion + overlap. 'Cover shortest tool' shorter; useful when you don't want extra fabric. 'Based on Pocket Depth' is the legacy heuristic. 'Fixed' uses a hand-set height.">
+          <Row label="Flap height mode" tip="How the flap is sized. 'Match pocket profile' = per-tool reach so every tool gets the same overlap past its pocket top (varied edge shape). 'Cover shortest tool' = rectangular, long enough to cover the shortest tool (covers ALL tools — most fabric). 'Cover tallest tool' = rectangular, sized only for the tallest tool's reach (the LEAST fabric — but shorter tools may not be fully covered). 'Based on Pocket Depth' = legacy heuristic. 'Fixed' = hand-set height.">
             <Select
               value={settings.flapHeightMode}
               onValueChange={v => onUpdate({ flapHeightMode: v as ToolRollSettings['flapHeightMode'] })}
@@ -273,8 +273,8 @@ export function ToolRollSettingsPanel({ settings, units, onUpdate, onUnitsChange
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="matchPockets">Match pocket profile</SelectItem>
-                <SelectItem value="basedOnTallestTool">Cover tallest tool</SelectItem>
-                <SelectItem value="shortestTool">Cover shortest tool</SelectItem>
+                <SelectItem value="shortestTool">Cover shortest tool (full coverage)</SelectItem>
+                <SelectItem value="basedOnTallestTool">Cover tallest tool (minimum)</SelectItem>
                 <SelectItem value="basedOnPocketDepth">Based on Pocket Depth</SelectItem>
                 <SelectItem value="fixed">Fixed</SelectItem>
               </SelectContent>

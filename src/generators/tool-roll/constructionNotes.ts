@@ -61,8 +61,13 @@ export function generateConstructionNotes(
 
   if (layout.flap) {
     notes.push(
-      `Fold and press ${fmt(settings.flapHemAllowance, units)} hem around three edges of flap. ` +
-      `Stitch hem. Attach flap at top of back panel with a ${fmt(settings.flapSeamAllowance, units)} seam allowance.`,
+      `Fold and press a ${fmt(settings.flapHemAllowance, units)} hem along the flap's two sides and free (top) edge. ` +
+      `Stitch each hem.`,
+    );
+    notes.push(
+      `Tuck the flap's attached edge under the back panel's top hem (the ${fmt(settings.topHemAllowance, units)} fold from earlier). ` +
+      `Pin to keep the flap aligned with the back panel's top edge, then stitch through both layers along the back panel's top hem stitch line. ` +
+      `This secures the flap and finishes the top of the back panel in one pass.`,
     );
   }
 

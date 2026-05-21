@@ -25,6 +25,36 @@ import { generateConstructionNotes } from './constructionNotes.js';
 import { generateId } from '../../utils/ids.js';
 import { groupTools, toolFromGroup } from './grouping.js';
 
+// ── Upper-envelope smoothing for flap depths ───────────────────────────────
+/**
+ * Returns the upper envelope of a sequence: for each index i, the value is the
+ * minimum of (running max from the left through i) and (running max from the
+ * right through i). The result never under-covers any input value AND is
+ * unimodal — at most one peak — so stepped/smooth flap profiles built from it
+ * don't zig-zag.
+ */
+function upperEnvelope(values: number[]): number[] {
+  if (values.length === 0) return [];
+  const n = values.length;
+  const leftMax: number[] = new Array(n);
+  const rightMax: number[] = new Array(n);
+  let m = -Infinity;
+  for (let i = 0; i < n; i++) {
+    m = Math.max(m, values[i]);
+    leftMax[i] = m;
+  }
+  m = -Infinity;
+  for (let i = n - 1; i >= 0; i--) {
+    m = Math.max(m, values[i]);
+    rightMax[i] = m;
+  }
+  const out: number[] = new Array(n);
+  for (let i = 0; i < n; i++) {
+    out[i] = Math.min(leftMax[i], rightMax[i]);
+  }
+  return out;
+}
+
 // ── Effective pocket depth per height mode ─────────────────────────────────
 
 function effectivePocketDepth(
@@ -86,36 +116,61 @@ export function calculateToolRollLayout(
     settings.bottomHemAllowance;
 
   // ── Flap sizing (computed before back panel offset) ──────────────────────
-  // Each tool's visible amount = how much sticks above the pocket.
-  // Flap needs (visibleAmount + overlap) of reach to cover each tool with the
-  // requested overlap when folded. We can size the flap from this without
-  // knowing absolute Y positions yet.
-  const visibleAmounts = sorted.map((t, i) => Math.max(0, t.height - effectiveDepths[i]));
-  const tallestVisible = visibleAmounts.length > 0 ? Math.max(...visibleAmounts) : 0;
-  const shortestVisible = visibleAmounts.length > 0 ? Math.min(...visibleAmounts) : 0;
-  const flapAllowances = settings.flapHemAllowance + settings.flapSeamAllowance;
+  // The flap is a lid attached at the top of the back panel. When folded it
+  // drapes down over the tools, reaching past each pocket's top by `overlap`.
+  //
+  // Required flap reach (distance from seam down to pocket top + overlap) for
+  // pocket i, in back-panel-local coordinates:
+  //   reach_i = pocketTop_i_local + overlap
+  //           = (topHem + topMargin + maxEffectiveDepth − pocketDepth_i) + overlap
+  //
+  // Deep-pocket tools (tall) have their pocket tops CLOSE to the seam — so
+  // they need SHORT reach. Shallow-pocket tools (short) have pocket tops FAR
+  // from the seam — so they need LONG reach. The match-pockets mode mirrors
+  // this per-pocket; rectangular modes pick a single value to size the whole flap.
+  const pocketTopLocals = effectiveDepths.map(d =>
+    settings.topHemAllowance + settings.topMargin + (maxEffectiveDepth - d),
+  );
+  const reachPerPocket = pocketTopLocals.map(top => top);
+  const minReach = reachPerPocket.length > 0 ? Math.min(...reachPerPocket) : 0; // tallest tool
+  const maxReach = reachPerPocket.length > 0 ? Math.max(...reachPerPocket) : 0; // shortest tool
+  // Flap's attached edge tucks under the back panel's top hem — no seam allowance there.
+  // Only the three exposed sides (left, right, and free edge) need a hem.
+  const flapHemAllow = settings.flapHemAllowance;
 
   let flapMaxHeight = 0;
   let flapDepthPerPocket: number[] = [];
   if (settings.flapEnabled) {
     const overlap = settings.flapOverlap;
     switch (settings.flapHeightMode) {
-      case 'matchPockets':
-        flapDepthPerPocket = visibleAmounts.map(v => v + overlap);
-        flapMaxHeight = Math.max(20, ...flapDepthPerPocket) + flapAllowances;
+      case 'matchPockets': {
+        // Per-pocket reach + overlap. Each tool gets its own flap drop.
+        const raw = reachPerPocket.map(r => r + overlap);
+        // For stepped/smooth styles, smooth out non-monotonic depths so the
+        // flap profile doesn't zig-zag. We compute the upper envelope: for
+        // every pocket, take the max of itself and the running max from each
+        // side. Result is the shallowest sequence that never under-covers
+        // any pocket. Arc style does its own smoothing inside the path builder.
+        if (settings.flapTopStyle === 'stepped' || settings.flapTopStyle === 'smooth') {
+          flapDepthPerPocket = upperEnvelope(raw);
+        } else {
+          flapDepthPerPocket = raw;
+        }
+        flapMaxHeight = Math.max(20, ...flapDepthPerPocket) + flapHemAllow;
         break;
+      }
       case 'basedOnTallestTool':
-        flapMaxHeight = Math.max(20, tallestVisible + overlap) + flapAllowances;
+        flapMaxHeight = Math.max(20, minReach + overlap) + flapHemAllow;
         break;
       case 'shortestTool':
-        flapMaxHeight = Math.max(20, shortestVisible + overlap) + flapAllowances;
+        flapMaxHeight = Math.max(20, maxReach + overlap) + flapHemAllow;
         break;
       case 'basedOnPocketDepth':
-        flapMaxHeight = Math.max(20, maxEffectiveDepth * 0.4 + overlap) + flapAllowances;
+        flapMaxHeight = Math.max(20, maxEffectiveDepth * 0.4 + overlap) + flapHemAllow;
         break;
       case 'fixed':
       default:
-        flapMaxHeight = settings.flapHeight + flapAllowances;
+        flapMaxHeight = settings.flapHeight + flapHemAllow;
         break;
     }
   }
@@ -219,23 +274,26 @@ export function calculateToolRollLayout(
   // For ascending sort with the tallest tools on the right, that puts the
   // free edge HIGHEST on the right — visually matching the pocket profile
   // direction (both pieces grow taller toward the tall-tool side).
+  // The flap's attached edge is at the BOTTOM of the flap region (y = flapMaxHeight).
+  // It tucks under the back panel's top hem, so it doesn't carry its own seam allowance.
+  // The OTHER three edges (free edge at top, plus left and right) are hemmed by
+  // including flapHemAllowance worth of fabric on each.
   let flap: PanelShape | undefined;
   if (settings.flapEnabled) {
-    const foldY = flapMaxHeight - settings.flapHemAllowance; // bottom-fold of flap region
+    const foldY = flapMaxHeight; // attached edge at the very bottom of the flap region
     if (settings.flapHeightMode === 'matchPockets' && pockets.length > 0 && flapDepthPerPocket.length > 0) {
-      // Free-edge Y for each pocket (relative to top of pattern). Smaller y = further from fold.
+      // For each pocket, cutTopY = foldY − bodyDepth − flapHemAllowance.
+      // flapDepthPerPocket already represents body depths (reach + overlap).
       const pocketsForFlap = pockets.map((p, i) => ({
         x: p.x,
         pocketWidth: p.pocketWidth,
-        // In the flap profile builder, "flapBottomY" means the far-end (free edge) coord
-        // — here that's the TOP of the flap region (small y) since the fold is below.
-        flapBottomY: foldY - flapDepthPerPocket[i],
+        flapBottomY: foldY - flapDepthPerPocket[i] - flapHemAllow,
       }));
       flap = {
         cutPath: buildFlapProfilePath(
           pocketsForFlap,
-          settings.sideHemAllowance,
-          patternWidth - settings.sideHemAllowance,
+          0,             // include the back panel's full width — the side hem
+          patternWidth,  // allowance on the cut is shared between back panel and flap
           foldY,
           settings.flapTopStyle,
           'above',
@@ -243,7 +301,9 @@ export function calculateToolRollLayout(
         boundingBox: { x: 0, y: 0, width: patternWidth, height: flapMaxHeight },
       };
     } else {
-      // Rectangular flap — spans the full flap region from y=0 (free edge) to fold at y=flapMaxHeight.
+      // Rectangular flap — spans the full flap region from y=0 (free edge with hem)
+      // to y=flapMaxHeight (attached edge, no hem). Side hems live within the
+      // patternWidth (shared with back panel's side hem allowance).
       flap = {
         cutPath: `M 0 0 H ${patternWidth} V ${flapMaxHeight} H 0 Z`,
         boundingBox: { x: 0, y: 0, width: patternWidth, height: flapMaxHeight },
