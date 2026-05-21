@@ -20,6 +20,7 @@ import {
   buildPocketPanelPath,
   buildPocketPanelProfilePath,
   buildFlapProfilePath,
+  buildOpenProfilePath,
 } from './geometry.js';
 import { generateConstructionNotes } from './constructionNotes.js';
 import { generateId } from '../../utils/ids.js';
@@ -301,14 +302,28 @@ export function calculateToolRollLayout(
         pocketWidth: p.pocketWidth,
         flapBottomY: foldY - flapDepthPerPocket[i] - flapHemAllow,
       }));
+      // Free-edge hem fold path: same profile as cut top, offset DOWN by flapHemAllow.
+      // We pass the per-pocket y values (cutTopY + flapHemAllow) to the open-profile
+      // builder. This produces a line that hugs the body's top boundary.
+      const hemFoldPocketYs = pocketsForFlap.map(p => ({
+        x: p.x,
+        pocketWidth: p.pocketWidth,
+        y: p.flapBottomY + flapHemAllow,
+      }));
       flap = {
         cutPath: buildFlapProfilePath(
           pocketsForFlap,
-          0,             // include the back panel's full width — the side hem
-          patternWidth,  // allowance on the cut is shared between back panel and flap
+          0,
+          patternWidth,
           foldY,
           effectiveFlapTopStyle,
           'above',
+        ),
+        hemFoldPath: buildOpenProfilePath(
+          hemFoldPocketYs,
+          settings.sideHemAllowance,
+          patternWidth - settings.sideHemAllowance,
+          effectiveFlapTopStyle,
         ),
         boundingBox: { x: 0, y: 0, width: patternWidth, height: flapMaxHeight },
       };
@@ -318,6 +333,7 @@ export function calculateToolRollLayout(
       // patternWidth (shared with back panel's side hem allowance).
       flap = {
         cutPath: `M 0 0 H ${patternWidth} V ${flapMaxHeight} H 0 Z`,
+        hemFoldPath: `M ${settings.sideHemAllowance} ${flapHemAllow} H ${patternWidth - settings.sideHemAllowance}`,
         boundingBox: { x: 0, y: 0, width: patternWidth, height: flapMaxHeight },
       };
     }
@@ -375,11 +391,14 @@ export function calculateToolRollLayout(
   }
 
   // ── Hem lines ─────────────────────────────────────────────────────────────
+  // Side hems run vertically through BOTH the flap and the back panel since they
+  // share a single side-hem allowance baked into patternWidth.
+  const hemTopY = settings.flapEnabled ? 0 : backPanelTopY;
   const hemLines: HemLine[] = [
     {
       id: generateId('hem'),
       x1: settings.sideHemAllowance,
-      y1: backPanelTopY,
+      y1: hemTopY,
       x2: settings.sideHemAllowance,
       y2: backPanelBottomY,
       label: 'Left side hem',
@@ -387,7 +406,7 @@ export function calculateToolRollLayout(
     {
       id: generateId('hem'),
       x1: patternWidth - settings.sideHemAllowance,
-      y1: backPanelTopY,
+      y1: hemTopY,
       x2: patternWidth - settings.sideHemAllowance,
       y2: backPanelBottomY,
       label: 'Right side hem',

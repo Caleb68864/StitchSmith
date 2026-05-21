@@ -351,6 +351,67 @@ export function buildPocketPanelProfilePath(
  * Pocket inputs carry the precomputed `flapBottomY` (in laid-out coords). Style
  * controls the connection between pockets, mirroring the pocket-top styles.
  */
+/**
+ * Builds an OPEN path tracing only the per-pocket profile edge of the flap
+ * (without the side walls or attached-edge segments). Used for the free-edge
+ * hem fold line, which sits flapHemAllowance below the cut top and follows the
+ * same shape.
+ *
+ * Same input shape as buildFlapProfilePath, but emits only:
+ *   M leftX firstY  →  profile right-to-left  →  ends at rightX lastY
+ * (Or the reverse — endpoints don't include side walls.)
+ *
+ * Walks LEFT to RIGHT for natural reading order.
+ */
+export function buildOpenProfilePath(
+  pockets: { x: number; pocketWidth: number; y: number }[],
+  leftX: number,
+  rightX: number,
+  style: 'stepped' | 'sloped' | 'smooth' | 'arc',
+): SvgPathData {
+  if (pockets.length === 0) return '';
+  const parts: string[] = [];
+  const first = pockets[0];
+  parts.push(`M ${leftX} ${first.y}`);
+  if (style === 'stepped') {
+    for (let i = 0; i < pockets.length; i++) {
+      const cur = pockets[i];
+      const next = pockets[i + 1];
+      // Horizontal across this pocket
+      const endX = next ? cur.x + cur.pocketWidth : rightX;
+      parts.push(`H ${endX}`);
+      if (next) parts.push(`V ${next.y}`); // step to next pocket's y
+    }
+  } else if (style === 'sloped') {
+    for (let i = 0; i < pockets.length - 1; i++) {
+      const next = pockets[i + 1];
+      parts.push(`L ${next.x} ${next.y}`);
+    }
+    parts.push(`H ${rightX}`);
+  } else if (style === 'smooth') {
+    for (let i = 0; i < pockets.length - 1; i++) {
+      const cur = pockets[i];
+      const next = pockets[i + 1];
+      const startX = cur.x + cur.pocketWidth;
+      const endX = next.x;
+      const cp1x = startX - cur.pocketWidth / 2;
+      const cp2x = endX + next.pocketWidth / 2;
+      // We're walking L→R, so first emit H to the start of the curve, then C to next pocket
+      // Simpler: emit C from current position to (next.x, next.y) with horizontal tangents
+      parts.push(`C ${cp1x} ${cur.y}, ${cp2x} ${next.y}, ${next.x} ${next.y}`);
+    }
+    parts.push(`H ${rightX}`);
+  } else {
+    // Arc: single cubic Bezier from leftmost to rightmost
+    const last = pockets[pockets.length - 1];
+    const spanX = rightX - leftX;
+    const cp1x = leftX + spanX / 3;
+    const cp2x = rightX - spanX / 3;
+    parts.push(`C ${cp1x} ${first.y}, ${cp2x} ${last.y}, ${rightX} ${last.y}`);
+  }
+  return parts.join(' ');
+}
+
 export function buildFlapProfilePath(
   pockets: { x: number; pocketWidth: number; flapBottomY: number }[],
   leftX: number,

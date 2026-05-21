@@ -83,12 +83,16 @@ export const TileSvg: FC<TileSvgProps> = ({ tile, layout, settings, printMargin,
           </g>
         )}
 
-        {/* Fold lines — flap fold is already in layout.foldLines */}
+        {/* Fold lines — flap fold is in layout.foldLines; flap free-edge hem fold
+              is a profile path that may be curved/stepped. */}
         {settings.showFoldLines && (
           <g stroke="#2563eb" strokeWidth={0.5} strokeDasharray="8 3 2 3" fill="none">
             {layout.foldLines.map(l => (
               <line key={l.id} x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2} />
             ))}
+            {layout.flap?.hemFoldPath && (
+              <path d={layout.flap.hemFoldPath} />
+            )}
           </g>
         )}
 

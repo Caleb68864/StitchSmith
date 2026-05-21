@@ -232,6 +232,8 @@ export type PatternWarning = {
 export type PanelShape = {
   cutPath: SvgPathData;
   stitchPath?: SvgPathData;
+  /** Open path showing where the free-edge hem folds under (drawn as a fold line). */
+  hemFoldPath?: SvgPathData;
   boundingBox: BoundingBox;
 };
 
