@@ -402,12 +402,71 @@ export function buildOpenProfilePath(
     }
     parts.push(`H ${rightX}`);
   } else {
-    // Arc: single cubic Bezier from leftmost to rightmost
+    // Arc: single cubic Bézier from leftmost to rightmost, with the SAME post-
+    // correction logic used by buildPocketPanelProfilePath / buildFlapProfilePath
+    // so an offset profile parallels the cut path. Detects the constraint direction
+    // from the input: if pocket ys span "above" the endpoint baseline, we treat
+    // this as a flap-style profile (curve must stay ABOVE every pocket — y_curve <=
+    // pocket.y); otherwise it's pocket-style (curve must stay BELOW every pocket —
+    // y_curve >= pocket.y).
     const last = pockets[pockets.length - 1];
     const spanX = rightX - leftX;
-    const cp1x = leftX + spanX / 3;
-    const cp2x = rightX - spanX / 3;
-    parts.push(`C ${cp1x} ${first.y}, ${cp2x} ${last.y}, ${rightX} ${last.y}`);
+    let cp1x = leftX + spanX / 3;
+    let cp1y = first.y;
+    let cp2x = rightX - spanX / 3;
+    let cp2y = last.y;
+
+    const sampleY = (t: number, p0y: number, c1y: number, c2y: number, p3y: number) => {
+      const mt = 1 - t;
+      return mt * mt * mt * p0y + 3 * mt * mt * t * c1y + 3 * mt * t * t * c2y + t * t * t * p3y;
+    };
+    const findT = (targetX: number, p0x: number, c1x: number, c2x: number, p3x: number) => {
+      let lo = 0, hi = 1;
+      for (let i = 0; i < 24; i++) {
+        const mid = (lo + hi) / 2;
+        const mt = 1 - mid;
+        const x = mt * mt * mt * p0x + 3 * mt * mt * mid * c1x + 3 * mt * mid * mid * c2x + mid * mid * mid * p3x;
+        if (x < targetX) lo = mid;
+        else hi = mid;
+      }
+      return (lo + hi) / 2;
+    };
+
+    // Decide the constraint direction by sampling whether intermediate pocket ys
+    // are mostly ABOVE or BELOW the linear interpolation between endpoints.
+    // If pockets are mostly above the line (smaller y) we use 'flap' direction
+    // (curve must stay above them); otherwise 'pocket' direction.
+    let aboveCount = 0;
+    let belowCount = 0;
+    for (const p of pockets) {
+      const interp = first.y + (last.y - first.y) * ((p.x + p.pocketWidth / 2 - first.x) / (last.x - first.x || 1));
+      if (p.y < interp) aboveCount++;
+      else if (p.y > interp) belowCount++;
+    }
+    const flapStyle = aboveCount >= belowCount;
+
+    for (let pass = 0; pass < 6; pass++) {
+      let maxViolation = 0;
+      let violSide: 'left' | 'right' = 'left';
+      for (const p of pockets) {
+        const cx = p.x + p.pocketWidth / 2;
+        const t = findT(cx, leftX, cp1x, cp2x, rightX);
+        const yAtT = sampleY(t, first.y, cp1y, cp2y, last.y);
+        // pocket-style (constraint: curve.y >= p.y): violation = p.y - yAtT > 0
+        // flap-style    (constraint: curve.y <= p.y): violation = yAtT - p.y > 0
+        const violation = flapStyle ? yAtT - p.y : p.y - yAtT;
+        if (violation > maxViolation) {
+          maxViolation = violation;
+          violSide = t < 0.5 ? 'left' : 'right';
+        }
+      }
+      if (maxViolation <= 0.01) break;
+      const sign = flapStyle ? -1 : 1;
+      if (violSide === 'left') cp1y += sign * (maxViolation + 0.5);
+      else cp2y += sign * (maxViolation + 0.5);
+    }
+
+    parts.push(`C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${rightX} ${last.y}`);
   }
   return parts.join(' ');
 }

@@ -95,6 +95,8 @@ export type ToolRollSettings = {
   sideHemAllowance: number;
   /** Hem allowance on the pocket panel's free top edge (where tools enter the pockets). */
   pocketTopHemAllowance: number;
+  /** When false, the pocket panel's top edge is cut flush with the body — no hem added. */
+  pocketTopHemEnabled: boolean;
   bindingAllowance: number;
 
   // Layout margins
@@ -111,6 +113,8 @@ export type ToolRollSettings = {
   /** Shape of the flap's bottom edge when flapHeightMode === 'matchPockets'. */
   flapTopStyle: FlapTopStyle;
   flapHemAllowance: number;
+  /** When false, the flap's three exposed edges are cut flush with the body — no hem added. */
+  flapHemEnabled: boolean;
   flapSeamAllowance: number;
 
   // Tie

@@ -237,9 +237,14 @@ export function ToolRollSettingsPanel({ settings, units, onUpdate, onUnitsChange
           <Row label="Side hem allowance" tip="Fabric folded under at each side of the back panel. Typical: 3/8″ (9.5 mm).">
             <NumInput id="sideHemAllowance" value={settings.sideHemAllowance} units={units} onChange={v => onUpdate({ sideHemAllowance: v })} />
           </Row>
-          <Row label="Pocket top hem allowance" tip="Fabric folded under at the pocket panel's TOP edge (the free edge where tools enter). Typical: 1/2″ (12.7 mm).">
-            <NumInput id="pocketTopHemAllowance" value={settings.pocketTopHemAllowance} units={units} onChange={v => onUpdate({ pocketTopHemAllowance: v })} />
+          <Row label="Pocket top hem" tip="Toggle whether the pocket panel's top edge gets a hem. Disable if you'll finish that edge a different way (binding, raw edge with serging, etc.).">
+            <Switch checked={settings.pocketTopHemEnabled} onCheckedChange={v => onUpdate({ pocketTopHemEnabled: v })} />
           </Row>
+          {settings.pocketTopHemEnabled && (
+            <Row label="Pocket top hem allowance" tip="Fabric folded under at the pocket panel's TOP edge (the free edge where tools enter). Typical: 1/2″ (12.7 mm).">
+              <NumInput id="pocketTopHemAllowance" value={settings.pocketTopHemAllowance} units={units} onChange={v => onUpdate({ pocketTopHemAllowance: v })} />
+            </Row>
+          )}
           <Row label="Binding allowance" tip="Extra reference for binding (bias tape / grosgrain edge) along panel edges. v1 just draws a reference line — no construction logic. Leave 0 unless planning bound edges.">
             <NumInput id="bindingAllowance" value={settings.bindingAllowance} units={units} onChange={v => onUpdate({ bindingAllowance: v })} />
           </Row>
@@ -299,9 +304,14 @@ export function ToolRollSettingsPanel({ settings, units, onUpdate, onUnitsChange
               <NumInput id="flapHeight" value={settings.flapHeight} units={units} onChange={v => onUpdate({ flapHeight: v })} />
             </Row>
           )}
-          <Row label="Flap hem allowance" tip="Extra fabric folded under the flap's free edge for a finished hem. Typical: 3/8″ (9.5 mm).">
-            <NumInput id="flapHemAllowance" value={settings.flapHemAllowance} units={units} onChange={v => onUpdate({ flapHemAllowance: v })} />
+          <Row label="Flap hem" tip="Toggle whether the flap's three exposed edges (free edge + two sides) get a hem. Disable if you'll finish those edges differently (binding, serge, etc.).">
+            <Switch checked={settings.flapHemEnabled} onCheckedChange={v => onUpdate({ flapHemEnabled: v })} />
           </Row>
+          {settings.flapHemEnabled && (
+            <Row label="Flap hem allowance" tip="Extra fabric folded under the flap's free edge and sides for a finished hem. Typical: 3/8″ (9.5 mm).">
+              <NumInput id="flapHemAllowance" value={settings.flapHemAllowance} units={units} onChange={v => onUpdate({ flapHemAllowance: v })} />
+            </Row>
+          )}
           <Row label="Flap seam allowance" tip="Extra fabric at the flap's attachment edge where it's sewn to the back panel. Typical: 3/8″ (9.5 mm).">
             <NumInput id="flapSeamAllowance" value={settings.flapSeamAllowance} units={units} onChange={v => onUpdate({ flapSeamAllowance: v })} />
           </Row>

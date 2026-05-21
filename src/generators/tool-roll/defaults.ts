@@ -24,6 +24,7 @@ export const defaultToolRollSettings: ToolRollSettings = {
   bottomHemAllowance: 9.5, // 3/8"
   sideHemAllowance: 9.5,   // 3/8"
   pocketTopHemAllowance: 12.7, // 1/2" — folded under the top edge of the pocket panel
+  pocketTopHemEnabled: true,
   bindingAllowance: 0,
 
   // Layout margins
@@ -37,6 +38,7 @@ export const defaultToolRollSettings: ToolRollSettings = {
   flapOverlap: 25.4,        // 1" — how much past each pocket top the flap reaches when folded
   flapTopStyle: 'arc',
   flapHemAllowance: 9.5,    // 3/8"
+  flapHemEnabled: true,
   flapSeamAllowance: 9.5,   // 3/8"
 
   // Tie

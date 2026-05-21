@@ -137,7 +137,8 @@ export function calculateToolRollLayout(
   const maxReach = reachPerPocket.length > 0 ? Math.max(...reachPerPocket) : 0; // shortest tool
   // Flap's attached edge tucks under the back panel's top hem — no seam allowance there.
   // Only the three exposed sides (left, right, and free edge) need a hem.
-  const flapHemAllow = settings.flapHemAllowance;
+  // When flapHemEnabled is false, treat the hem allowance as zero (no extra fabric, no fold line).
+  const flapHemAllow = settings.flapHemEnabled ? settings.flapHemAllowance : 0;
 
   let flapMaxHeight = 0;
   let flapDepthPerPocket: number[] = [];
@@ -253,7 +254,7 @@ export function calculateToolRollLayout(
   // UP by this hem amount from the actual pocket-top body line. The hem fold
   // line (where the fabric folds under) runs along the original (un-offset)
   // pocket-top profile.
-  const pocketHemAllow = settings.pocketTopHemAllowance;
+  const pocketHemAllow = settings.pocketTopHemEnabled ? settings.pocketTopHemAllowance : 0;
   const pocketPanelHeight =
     maxEffectiveDepth +
     settings.pocketBottomAllowance +
@@ -274,8 +275,10 @@ export function calculateToolRollLayout(
     pocketBottomY + settings.pocketBottomAllowance,
     settings.pocketTopStyle,
   );
-  // Hem fold line: open profile along the body top.
-  const pocketHemFoldPath = pockets.length > 0
+  // Hem fold line: open profile along the body top — only when the hem is enabled
+  // (otherwise the body top IS the cut top, so a separate fold line would just
+  // duplicate the cut edge).
+  const pocketHemFoldPath = pockets.length > 0 && pocketHemAllow > 0
     ? buildOpenProfilePath(
         pocketTopsForBody.map(p => ({ x: p.x, pocketWidth: p.pocketWidth, y: p.topY })),
         settings.sideHemAllowance,
@@ -328,8 +331,7 @@ export function calculateToolRollLayout(
         flapBottomY: foldY - flapDepthPerPocket[i] - flapHemAllow,
       }));
       // Free-edge hem fold path: same profile as cut top, offset DOWN by flapHemAllow.
-      // We pass the per-pocket y values (cutTopY + flapHemAllow) to the open-profile
-      // builder. This produces a line that hugs the body's top boundary.
+      // Only emit when the hem is enabled (else the body top IS the cut top).
       const hemFoldPocketYs = pocketsForFlap.map(p => ({
         x: p.x,
         pocketWidth: p.pocketWidth,
@@ -344,12 +346,14 @@ export function calculateToolRollLayout(
           effectiveFlapTopStyle,
           'above',
         ),
-        hemFoldPath: buildOpenProfilePath(
-          hemFoldPocketYs,
-          settings.sideHemAllowance,
-          patternWidth - settings.sideHemAllowance,
-          effectiveFlapTopStyle,
-        ),
+        hemFoldPath: flapHemAllow > 0
+          ? buildOpenProfilePath(
+              hemFoldPocketYs,
+              settings.sideHemAllowance,
+              patternWidth - settings.sideHemAllowance,
+              effectiveFlapTopStyle,
+            )
+          : undefined,
         boundingBox: { x: 0, y: 0, width: patternWidth, height: flapMaxHeight },
       };
     } else {
@@ -358,7 +362,9 @@ export function calculateToolRollLayout(
       // patternWidth (shared with back panel's side hem allowance).
       flap = {
         cutPath: `M 0 0 H ${patternWidth} V ${flapMaxHeight} H 0 Z`,
-        hemFoldPath: `M ${settings.sideHemAllowance} ${flapHemAllow} H ${patternWidth - settings.sideHemAllowance}`,
+        hemFoldPath: flapHemAllow > 0
+          ? `M ${settings.sideHemAllowance} ${flapHemAllow} H ${patternWidth - settings.sideHemAllowance}`
+          : undefined,
         boundingBox: { x: 0, y: 0, width: patternWidth, height: flapMaxHeight },
       };
     }

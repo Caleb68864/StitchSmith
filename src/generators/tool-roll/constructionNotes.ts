@@ -42,10 +42,12 @@ export function generateConstructionNotes(
     `Fold and press ${fmt(settings.sideHemAllowance, units)} hem on each side of back panel to wrong side.`,
   );
 
-  notes.push(
-    `Fold and press a ${fmt(settings.pocketTopHemAllowance, units)} hem along the pocket panel's TOP edge (the free edge where tools enter). ` +
-    `Stitch the hem.`,
-  );
+  if (settings.pocketTopHemEnabled && settings.pocketTopHemAllowance > 0) {
+    notes.push(
+      `Fold and press a ${fmt(settings.pocketTopHemAllowance, units)} hem along the pocket panel's TOP edge (the free edge where tools enter). ` +
+      `Stitch the hem.`,
+    );
+  }
   notes.push(
     `Align pocket panel to back panel (wrong sides together), bottom edges even. Pin and baste.`,
   );
@@ -64,10 +66,12 @@ export function generateConstructionNotes(
   }
 
   if (layout.flap) {
-    notes.push(
-      `Fold and press a ${fmt(settings.flapHemAllowance, units)} hem along the flap's two sides and free (top) edge. ` +
-      `Stitch each hem.`,
-    );
+    if (settings.flapHemEnabled && settings.flapHemAllowance > 0) {
+      notes.push(
+        `Fold and press a ${fmt(settings.flapHemAllowance, units)} hem along the flap's two sides and free (top) edge. ` +
+        `Stitch each hem.`,
+      );
+    }
     notes.push(
       `Tuck the flap's attached edge under the back panel's top hem (the ${fmt(settings.topHemAllowance, units)} fold from earlier). ` +
       `Pin to keep the flap aligned with the back panel's top edge, then stitch through both layers along the back panel's top hem stitch line. ` +
