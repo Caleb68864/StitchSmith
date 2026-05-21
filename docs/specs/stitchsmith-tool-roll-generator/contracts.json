@@ -1,0 +1,206 @@
+{
+  "version": 1,
+  "spec_slug": "stitchsmith-tool-roll-generator",
+  "contracts": [
+    {
+      "owner_sub_spec": 2,
+      "consumer_sub_specs": [3, 4, 6, 7, 8, 9, 10],
+      "name": "ToolItem",
+      "kind": "type",
+      "signature": "type ToolItem = { id: string; name: string; width: number; thickness: number; height: number; visibleAmount: number; lockedOrder?: number; notes?: string }",
+      "file_path": "src/generators/tool-roll/types.ts"
+    },
+    {
+      "owner_sub_spec": 2,
+      "consumer_sub_specs": [3, 4, 6, 7, 8, 9, 10],
+      "name": "ToolRollSettings",
+      "kind": "type",
+      "signature": "type ToolRollSettings (see design §7.3)",
+      "file_path": "src/generators/tool-roll/types.ts"
+    },
+    {
+      "owner_sub_spec": 2,
+      "consumer_sub_specs": [3, 4, 6, 7, 8, 9, 10],
+      "name": "ToolRollProject",
+      "kind": "type",
+      "signature": "type ToolRollProject = { schemaVersion: 1; projectName: string; generatorId: 'tool-roll'; units: UnitSystem; settings: ToolRollSettings; tools: ToolItem[]; createdAt: string; updatedAt: string }",
+      "file_path": "src/generators/tool-roll/types.ts"
+    },
+    {
+      "owner_sub_spec": 2,
+      "consumer_sub_specs": [3, 6, 7, 8, 9, 10],
+      "name": "ToolRollLayout",
+      "kind": "type",
+      "signature": "type ToolRollLayout (see design §10)",
+      "file_path": "src/generators/tool-roll/types.ts"
+    },
+    {
+      "owner_sub_spec": 2,
+      "consumer_sub_specs": [4, 6, 10],
+      "name": "defaultToolRollSettings",
+      "kind": "type",
+      "signature": "const defaultToolRollSettings: ToolRollSettings",
+      "file_path": "src/generators/tool-roll/defaults.ts"
+    },
+    {
+      "owner_sub_spec": 2,
+      "consumer_sub_specs": [4, 6, 10],
+      "name": "sampleTools",
+      "kind": "type",
+      "signature": "const sampleTools: ToolItem[]",
+      "file_path": "src/generators/tool-roll/defaults.ts"
+    },
+    {
+      "owner_sub_spec": 2,
+      "consumer_sub_specs": [3, 6, 9],
+      "name": "PAPER_SIZES_MM",
+      "kind": "type",
+      "signature": "const PAPER_SIZES_MM: { letter: {width:number;height:number}; a4: {width:number;height:number} }",
+      "file_path": "src/utils/units.ts"
+    },
+    {
+      "owner_sub_spec": 2,
+      "consumer_sub_specs": [3, 6, 9],
+      "name": "getPaperSize",
+      "kind": "function",
+      "signature": "function getPaperSize(size: PrintPaperSize, orientation: PrintOrientation): { width: number; height: number }",
+      "file_path": "src/utils/units.ts"
+    },
+    {
+      "owner_sub_spec": 2,
+      "consumer_sub_specs": [6],
+      "name": "inchesToMm",
+      "kind": "function",
+      "signature": "function inchesToMm(value: number): number",
+      "file_path": "src/utils/units.ts"
+    },
+    {
+      "owner_sub_spec": 2,
+      "consumer_sub_specs": [6],
+      "name": "mmToInches",
+      "kind": "function",
+      "signature": "function mmToInches(value: number): number",
+      "file_path": "src/utils/units.ts"
+    },
+    {
+      "owner_sub_spec": 2,
+      "consumer_sub_specs": [4, 8],
+      "name": "downloadTextFile",
+      "kind": "function",
+      "signature": "function downloadTextFile(filename: string, content: string, mimeType: string): void",
+      "file_path": "src/utils/download.ts"
+    },
+    {
+      "owner_sub_spec": 3,
+      "consumer_sub_specs": [6, 7, 8, 9, 10],
+      "name": "calculateToolRollLayout",
+      "kind": "function",
+      "signature": "function calculateToolRollLayout(tools: ToolItem[], settings: ToolRollSettings, units: UnitSystem): ToolRollLayout",
+      "file_path": "src/generators/tool-roll/calculateToolRollLayout.ts"
+    },
+    {
+      "owner_sub_spec": 3,
+      "consumer_sub_specs": [4, 6],
+      "name": "validateTool",
+      "kind": "function",
+      "signature": "function validateTool(tool: ToolItem): PatternWarning[]",
+      "file_path": "src/generators/tool-roll/validation.ts"
+    },
+    {
+      "owner_sub_spec": 3,
+      "consumer_sub_specs": [4, 6],
+      "name": "validateSettings",
+      "kind": "function",
+      "signature": "function validateSettings(settings: ToolRollSettings): PatternWarning[]",
+      "file_path": "src/generators/tool-roll/validation.ts"
+    },
+    {
+      "owner_sub_spec": 3,
+      "consumer_sub_specs": [6],
+      "name": "generateConstructionNotes",
+      "kind": "function",
+      "signature": "function generateConstructionNotes(layout: ToolRollLayout, settings: ToolRollSettings): string[]",
+      "file_path": "src/generators/tool-roll/constructionNotes.ts"
+    },
+    {
+      "owner_sub_spec": 4,
+      "consumer_sub_specs": [6, 8, 10],
+      "name": "useToolRollProject",
+      "kind": "function",
+      "signature": "function useToolRollProject(): { project, setProject, addTool, updateTool, duplicateTool, deleteTool, moveToolUp, moveToolDown, updateSettings, resetProject, importProject, storageWarning }",
+      "file_path": "src/state/useToolRollProject.ts"
+    },
+    {
+      "owner_sub_spec": 5,
+      "consumer_sub_specs": [6, 8],
+      "name": "cn",
+      "kind": "function",
+      "signature": "function cn(...inputs: ClassValue[]): string",
+      "file_path": "src/lib/utils.ts"
+    },
+    {
+      "owner_sub_spec": 5,
+      "consumer_sub_specs": [8, 10],
+      "name": "AppHeader",
+      "kind": "function",
+      "signature": "function AppHeader(props: { onImport?: () => void; onExport?: () => void; onReset?: () => void; storageWarning?: boolean }): ReactNode",
+      "file_path": "src/components/layout/AppHeader.tsx"
+    },
+    {
+      "owner_sub_spec": 7,
+      "consumer_sub_specs": [8, 9],
+      "name": "FullPatternSvg",
+      "kind": "function",
+      "signature": "function FullPatternSvg(props: { layout: ToolRollLayout; settings: ToolRollSettings }): ReactNode",
+      "file_path": "src/components/svg/FullPatternSvg.tsx"
+    },
+    {
+      "owner_sub_spec": 8,
+      "consumer_sub_specs": [10],
+      "name": "exportFullSvg",
+      "kind": "function",
+      "signature": "function exportFullSvg(layout: ToolRollLayout, project: ToolRollProject): void",
+      "file_path": "src/export/exportSvg.ts"
+    },
+    {
+      "owner_sub_spec": 8,
+      "consumer_sub_specs": [10],
+      "name": "exportProjectJson",
+      "kind": "function",
+      "signature": "function exportProjectJson(project: ToolRollProject): void",
+      "file_path": "src/export/exportProjectJson.ts"
+    },
+    {
+      "owner_sub_spec": 8,
+      "consumer_sub_specs": [10],
+      "name": "parseProjectJson",
+      "kind": "function",
+      "signature": "function parseProjectJson(json: string): ToolRollProject",
+      "file_path": "src/export/importProjectJson.ts"
+    },
+    {
+      "owner_sub_spec": 9,
+      "consumer_sub_specs": [10],
+      "name": "exportPrintableHtml",
+      "kind": "function",
+      "signature": "function exportPrintableHtml(layout: ToolRollLayout, project: ToolRollProject): void",
+      "file_path": "src/export/exportPrintableHtml.ts"
+    },
+    {
+      "owner_sub_spec": 10,
+      "consumer_sub_specs": [],
+      "name": "PatternGenerator",
+      "kind": "interface",
+      "signature": "type PatternGenerator<TSettings, TInput, TLayout> = { id: string; name: string; description: string; defaultSettings: TSettings; calculate: (input: TInput, settings: TSettings, units: UnitSystem) => TLayout; renderSvg: (layout: TLayout) => ReactNode }",
+      "file_path": "src/generators/index.ts"
+    },
+    {
+      "owner_sub_spec": 10,
+      "consumer_sub_specs": [],
+      "name": "toolRollGenerator",
+      "kind": "type",
+      "signature": "const toolRollGenerator: PatternGenerator<ToolRollSettings, ToolItem[], ToolRollLayout>",
+      "file_path": "src/generators/index.ts"
+    }
+  ]
+}

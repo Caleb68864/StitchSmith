@@ -1,0 +1,74 @@
+{
+  "project_name": "StitchSmith",
+  "name": "StitchSmith",
+  "repo_root": ".",
+  "project_vault": "docs",
+
+  "build_command": "npm run build",
+  "test_command": "npm test -- --run",
+  "frontend_build": "npm run build",
+  "frontend_test": "npm test -- --run",
+  "start_command": "npm run preview",
+  "dev_server": "npm run dev",
+  "migrate_command": null,
+
+  "spec_output_dir": "docs/specs",
+  "notes_dir": "docs/notes",
+
+  "factory_aware_config": {
+    "frontend_test_runner": "vitest",
+    "frontend_build_tool": "vite",
+    "ts_strict_flags": [],
+    "tailwind_major": 3,
+    "is_esm_package": true,
+    "dotnet_test_framework": null,
+    "csharp_nullable_enabled": false,
+    "python_runtime": null,
+    "has_conda_env": false,
+    "notes": [
+      "Project scaffolded via `npm create vite@latest stitchsmith -- --template react-ts`.",
+      "Vitest is the planned test runner; install with the React Testing Library preset.",
+      "shadcn/ui components are copy-in via `npx shadcn@latest add ...` — not npm packages.",
+      "Tailwind v3 is planned; revisit if shipping with v4 at scaffold time.",
+      "Greenfield: build/test commands assume standard Vite/Vitest scripts will be present in package.json after scaffolding."
+    ]
+  },
+
+  "runtime_paths": [
+    "C:/Program Files/nodejs",
+    "C:/Users/CalebBennett/AppData/Roaming/npm"
+  ],
+
+  "reference_sources": {},
+
+  "infrastructure": {
+    "hosting": "Static hosting (Cloudflare Pages or GitHub Pages) — fully client-side SPA",
+    "database": null,
+    "secrets": null,
+    "network": "Standard — no backend, no required network after page load except asset fetching",
+    "additional_services": {
+      "storage": "Browser LocalStorage for working project state; JSON import/export for backups and sharing"
+    }
+  },
+
+  "dev_env_prerequisites": [
+    {
+      "name": "node",
+      "description": "Node.js 18+ for Vite",
+      "check_command": "node --version",
+      "fix_command": null,
+      "severity": "BLOCKING"
+    },
+    {
+      "name": "npm",
+      "description": "npm 9+ for package install",
+      "check_command": "npm --version",
+      "fix_command": null,
+      "severity": "BLOCKING"
+    }
+  ],
+
+  "well_known_blockers": [],
+
+  "envelope_validation_mode": "strict"
+}
