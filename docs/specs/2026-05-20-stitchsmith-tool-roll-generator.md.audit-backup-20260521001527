@@ -261,7 +261,7 @@ dispatch: factory
 ---
 sub_spec_id: SS-07
 phase: run
-depends_on: ['SS-02', 'SS-03', 'SS-05']
+depends_on: ['SS-03', 'SS-05']
 dispatch: factory
 ---
 
@@ -287,7 +287,7 @@ dispatch: factory
 ---
 sub_spec_id: SS-08
 phase: run
-depends_on: ['SS-03', 'SS-04', 'SS-06', 'SS-07']
+depends_on: ['SS-04', 'SS-06', 'SS-07']
 dispatch: factory
 ---
 
@@ -319,7 +319,7 @@ dispatch: factory
 ---
 sub_spec_id: SS-09
 phase: run
-depends_on: ['SS-03', 'SS-07', 'SS-08']
+depends_on: ['SS-07', 'SS-08']
 dispatch: factory
 ---
 
@@ -444,7 +444,7 @@ dispatch: factory
 - A change to any of design §11's geometry formulas is necessary.
 - shadcn install fails or imposes a Tailwind v4 upgrade not in scope.
 - Browser print testing exposes a scaling issue not solvable in CSS.
-- A breaking change requires bumping `schemaVersion` to 2 (deferred to v1.1+).
+- The schema needs a breaking change (`schemaVersion: 2`).
 
 ## Verification
 
