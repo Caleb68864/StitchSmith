@@ -52,18 +52,14 @@ describe('FullPatternSvg', () => {
     expect(container.querySelector('.layer-stitch')).not.toBeNull();
   });
 
-  it('renders no flap fold line when flapEnabled is false', () => {
-    const { layout, settings } = buildLayout({ flapEnabled: false });
-    const { container } = render(<FullPatternSvg layout={layout} settings={settings} />);
-    const flapFoldLine = container.querySelector('.flap-fold-line');
-    expect(flapFoldLine).toBeNull();
+  it('emits no Flap fold entry in foldLines when flapEnabled is false', () => {
+    const { layout } = buildLayout({ flapEnabled: false });
+    expect(layout.foldLines.some(l => l.label === 'Flap fold')).toBe(false);
   });
 
-  it('renders flap fold line when flapEnabled is true', () => {
-    const { layout, settings } = buildLayout({ flapEnabled: true });
-    const { container } = render(<FullPatternSvg layout={layout} settings={settings} />);
-    const flapFoldLine = container.querySelector('.flap-fold-line');
-    expect(flapFoldLine).not.toBeNull();
+  it('emits a Flap fold entry in foldLines when flapEnabled is true', () => {
+    const { layout } = buildLayout({ flapEnabled: true });
+    expect(layout.foldLines.some(l => l.label === 'Flap fold')).toBe(true);
   });
 
   it('omits grid when showGrid is false', () => {

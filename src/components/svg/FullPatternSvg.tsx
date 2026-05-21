@@ -92,36 +92,30 @@ export const FullPatternSvg: FC<FullPatternSvgProps> = ({ layout, settings }) =>
         </g>
       )}
 
-      {/* 7. Fold lines */}
+      {/* 7. Fold lines — flap fold is already in layout.foldLines (label 'Flap fold') */}
       {settings.showFoldLines && (
         <g className="layer-fold" stroke="#2563eb" strokeWidth={0.5} strokeDasharray="8 3 2 3" fill="none">
           {layout.foldLines.map(l => (
             <line key={l.id} x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2} />
           ))}
-          {/* Flap fold line: boundary between back panel and flap */}
-          {layout.flap && (
-            <line
-              className="flap-fold-line"
-              x1={0}
-              y1={layout.flap.boundingBox.y}
-              x2={patternWidth}
-              y2={layout.flap.boundingBox.y}
-            />
-          )}
         </g>
       )}
 
-      {/* 8. Tie marks */}
-      {layout.tieMarks.map(tie => (
-        <g key={tie.id} className="layer-tie" fill="none" stroke="#dc2626" strokeWidth={0.5}>
-          <rect x={tie.x - tie.width / 2} y={0} width={tie.width} height={patternHeight} strokeDasharray="4 2" />
-          {tie.label && (
-            <text x={tie.x} y={8} fontSize={4} fill="#dc2626" stroke="none" textAnchor="middle">
-              {tie.label}
-            </text>
-          )}
-        </g>
-      ))}
+      {/* 8. Tie marks — only span the back panel region, not the flap. */}
+      {layout.tieMarks.map(tie => {
+        const yTop = layout.backPanel.boundingBox.y;
+        const yHeight = layout.backPanel.boundingBox.height;
+        return (
+          <g key={tie.id} className="layer-tie" fill="none" stroke="#dc2626" strokeWidth={0.5}>
+            <rect x={tie.x - tie.width / 2} y={yTop} width={tie.width} height={yHeight} strokeDasharray="4 2" />
+            {tie.label && (
+              <text x={tie.x} y={yTop + 8} fontSize={4} fill="#dc2626" stroke="none" textAnchor="middle">
+                {tie.label}
+              </text>
+            )}
+          </g>
+        );
+      })}
 
       {/* 9. Notches */}
       {layout.notches.map(notch => {

@@ -16,15 +16,15 @@ interface ToolTableProps {
 }
 
 const COLUMN_HEADERS = [
-  { key: 'order', label: 'Order' },
-  { key: 'name', label: 'Name' },
-  { key: 'width', label: `Width` },
-  { key: 'thickness', label: 'Thickness' },
-  { key: 'height', label: 'Height' },
-  { key: 'visibleAmount', label: 'Visible Amount' },
-  { key: 'pocketWidth', label: 'Pocket Width (calc.)' },
-  { key: 'pocketDepth', label: 'Pocket Depth (calc.)' },
-  { key: 'actions', label: 'Actions' },
+  { key: 'order', label: 'Order', tip: 'Row number in the current sort order.' },
+  { key: 'name', label: 'Name', tip: 'Tool name. Shown on the pocket label in the preview and exports.' },
+  { key: 'width', label: `Width`, tip: 'Tool width at the point where it sits in the pocket (e.g. wrench-head width). Pocket width = this + side gap × 2 + thickness × ease factor.' },
+  { key: 'thickness', label: 'Thickness', tip: 'Tool thickness. Used to add ease to the pocket width so a thicker tool isn’t pinched.' },
+  { key: 'height', label: 'Height', tip: 'Total tool height. Pocket depth (% mode) is a fraction of this.' },
+  { key: 'visibleAmount', label: 'Visible Amount', tip: 'How much of the tool sticks up out of the pocket (only used when Pocket depth mode = Visible amount).' },
+  { key: 'pocketWidth', label: 'Pocket Width (calc.)', tip: 'Calculated pocket width (read-only). Updates as you change settings.' },
+  { key: 'pocketDepth', label: 'Pocket Depth (calc.)', tip: 'Calculated pocket depth (read-only). Updates as you change settings.' },
+  { key: 'actions', label: 'Actions', tip: 'Move up / move down (manual sort only), duplicate, delete.' },
 ];
 
 function makeDefaultTool(): Omit<ToolItem, 'id'> {
@@ -74,7 +74,11 @@ export function ToolTable({
               {COLUMN_HEADERS.map(col => (
                 <th
                   key={col.key}
-                  className="text-left text-xs font-medium text-muted-foreground px-2 py-1.5 whitespace-nowrap"
+                  className={
+                    'text-left text-xs font-medium text-muted-foreground px-2 py-1.5 whitespace-nowrap ' +
+                    (col.tip ? 'cursor-help underline decoration-dotted decoration-muted-foreground/40 underline-offset-2' : '')
+                  }
+                  title={col.tip}
                 >
                   {col.key !== 'order' && col.key !== 'name' && col.key !== 'actions'
                     ? `${col.label} ${unitLabel}`

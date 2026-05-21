@@ -27,6 +27,7 @@ export function ExportPanel({
           className="w-full justify-start text-xs"
           disabled={layout === null}
           onClick={onExportSvg}
+          title="Download the full pattern as a single real-dimension SVG. Best for printing on a copy-shop plotter or opening in vector software."
         >
           <Download className="h-3 w-3 mr-2" />
           Export full SVG
@@ -37,6 +38,7 @@ export function ExportPanel({
           className="w-full justify-start text-xs"
           disabled={layout === null}
           onClick={onExportPrintableHtml}
+          title="Download a self-contained HTML file with one page per tile. Open in a browser, set scaling to 100%, and print to tile the pattern across multiple sheets."
         >
           <Printer className="h-3 w-3 mr-2" />
           Export tiled printable HTML
@@ -46,6 +48,7 @@ export function ExportPanel({
           size="sm"
           className="w-full justify-start text-xs"
           onClick={onExportJson}
+          title="Download the project as JSON. Re-import later to restore tools and settings."
         >
           <FileJson className="h-3 w-3 mr-2" />
           Export project JSON

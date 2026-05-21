@@ -59,15 +59,15 @@ export function AppHeader({ project, layout, onImport, onReset }: AppHeaderProps
           className="hidden"
           onChange={handleFileChange}
         />
-        <Button variant="outline" size="sm" onClick={handleImportClick}>
+        <Button variant="outline" size="sm" onClick={handleImportClick} title="Load a project from a previously-exported JSON file.">
           <Upload className="h-4 w-4 mr-1" />
           Import
         </Button>
-        <Button variant="outline" size="sm" onClick={handleExport}>
+        <Button variant="outline" size="sm" onClick={handleExport} title="Download the full pattern as a real-dimension SVG (1 mm = 1 unit, opens in Inkscape/Illustrator at the correct size).">
           <Download className="h-4 w-4 mr-1" />
           Export
         </Button>
-        <Button variant="outline" size="sm" onClick={onReset}>
+        <Button variant="outline" size="sm" onClick={onReset} title="Replace the current project with the starter sample project (4 wrenches).">
           <RotateCcw className="h-4 w-4 mr-1" />
           Reset
         </Button>

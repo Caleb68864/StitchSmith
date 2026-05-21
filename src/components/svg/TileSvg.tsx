@@ -30,8 +30,9 @@ export const TileSvg: FC<TileSvgProps> = ({ tile, layout, settings, printMargin,
       height={`${h}mm`}
       viewBox={`0 0 ${w} ${h}`}
     >
-      {/* Translate pattern content to crop this tile — translate only, no scale */}
-      <g transform={`translate(${-tile.x} ${-tile.y})`}>
+      {/* Translate pattern content into the printable area (inside the print margin).
+          Pattern point at (tile.x, tile.y) lands at SVG (printMargin, printMargin). */}
+      <g transform={`translate(${printMargin - tile.x} ${printMargin - tile.y})`}>
         {settings.showGrid && (
           <SvgGrid width={patternWidth} height={patternHeight} />
         )}
@@ -82,35 +83,31 @@ export const TileSvg: FC<TileSvgProps> = ({ tile, layout, settings, printMargin,
           </g>
         )}
 
-        {/* Fold lines */}
+        {/* Fold lines — flap fold is already in layout.foldLines */}
         {settings.showFoldLines && (
           <g stroke="#2563eb" strokeWidth={0.5} strokeDasharray="8 3 2 3" fill="none">
             {layout.foldLines.map(l => (
               <line key={l.id} x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2} />
             ))}
-            {layout.flap && (
-              <line
-                x1={0}
-                y1={layout.flap.boundingBox.y}
-                x2={patternWidth}
-                y2={layout.flap.boundingBox.y}
-              />
-            )}
           </g>
         )}
 
-        {/* Tie marks */}
-        {layout.tieMarks.map(tie => (
-          <g key={tie.id} fill="none" stroke="#dc2626" strokeWidth={0.5}>
-            <rect
-              x={tie.x - tie.width / 2}
-              y={0}
-              width={tie.width}
-              height={patternHeight}
-              strokeDasharray="4 2"
-            />
-          </g>
-        ))}
+        {/* Tie marks — back panel area only */}
+        {layout.tieMarks.map(tie => {
+          const yTop = layout.backPanel.boundingBox.y;
+          const yHeight = layout.backPanel.boundingBox.height;
+          return (
+            <g key={tie.id} fill="none" stroke="#dc2626" strokeWidth={0.5}>
+              <rect
+                x={tie.x - tie.width / 2}
+                y={yTop}
+                width={tie.width}
+                height={yHeight}
+                strokeDasharray="4 2"
+              />
+            </g>
+          );
+        })}
 
         {/* Notches */}
         {layout.notches.map(notch => {

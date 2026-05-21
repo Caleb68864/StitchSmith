@@ -12,6 +12,7 @@ import { Legend } from './Legend.js';
 import { ExportPanel } from './ExportPanel.js';
 import { exportFullSvg } from '../../export/exportSvg.js';
 import { exportProjectJson } from '../../export/exportProjectJson.js';
+import { exportPrintableHtml } from '../../export/exportPrintableHtml.js';
 
 type ToolRollPageProps = Pick<
   UseToolRollProjectReturn,
@@ -67,6 +68,10 @@ export function ToolRollPage({
 
   function handleExportJson() {
     exportProjectJson(project);
+  }
+
+  function handleExportPrintableHtml() {
+    if (layout) exportPrintableHtml(layout, project);
   }
 
   function handleToggleTileGrid() {
@@ -142,6 +147,7 @@ export function ToolRollPage({
             project={project}
             onExportSvg={handleExportSvg}
             onExportJson={handleExportJson}
+            onExportPrintableHtml={handleExportPrintableHtml}
           />
         </div>
       </div>

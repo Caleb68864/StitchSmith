@@ -67,7 +67,7 @@ export function ToolRollSettingsPanel({ settings, units, onUpdate, onUnitsChange
       <AccordionItem value="units">
         <AccordionTrigger className="text-xs font-semibold py-2">Units & Sorting</AccordionTrigger>
         <AccordionContent>
-          <Row label="Unit system">
+          <Row label="Unit system" tip="Display unit for measurements in the tool table and settings. Internal storage is always millimeters; this just changes how values are shown and entered.">
             <Select value={units} onValueChange={v => onUnitsChange(v as 'mm' | 'in')}>
               <SelectTrigger className="h-7 text-xs w-24">
                 <SelectValue />
@@ -78,7 +78,7 @@ export function ToolRollSettingsPanel({ settings, units, onUpdate, onUnitsChange
               </SelectContent>
             </Select>
           </Row>
-          <Row label="Sort mode">
+          <Row label="Sort mode" tip="How tools are ordered in the pattern. Manual = the order shown in the table. Width / Height / Pocket Depth sort automatically; the table reflects the active order.">
             <Select
               value={settings.sortMode}
               onValueChange={v => onUpdate({ sortMode: v as ToolRollSettings['sortMode'] })}
@@ -199,10 +199,10 @@ export function ToolRollSettingsPanel({ settings, units, onUpdate, onUnitsChange
               </Row>
             </>
           )}
-          <Row label="Side gap">
+          <Row label="Side gap" tip="Extra clearance added to each side of a tool inside its pocket. Larger = looser fit. Each pocket gets 2× this value added to the tool width.">
             <NumInput id="sideGap" value={settings.sideGap} units={units} onChange={v => onUpdate({ sideGap: v })} />
           </Row>
-          <Row label="Thickness ease factor">
+          <Row label="Thickness ease factor" tip="Multiplier on tool thickness when sizing pocket width. Thick tools need more room. 0.5 means a 6mm-thick tool adds 3mm to pocket width. 0 = ignore thickness.">
             <Input
               id="thicknessEaseFactor"
               className="h-7 text-xs w-24"
@@ -212,10 +212,10 @@ export function ToolRollSettingsPanel({ settings, units, onUpdate, onUnitsChange
               onBlur={e => { const n = parseFloat(e.target.value); if (isFinite(n)) onUpdate({ thicknessEaseFactor: n }); }}
             />
           </Row>
-          <Row label="Minimum pocket width">
+          <Row label="Minimum pocket width" tip="Floor on pocket width. Pockets narrower than this get bumped up so they're easy to sew and use.">
             <NumInput id="minimumPocketWidth" value={settings.minimumPocketWidth} units={units} onChange={v => onUpdate({ minimumPocketWidth: v })} />
           </Row>
-          <Row label="Pocket bottom allowance">
+          <Row label="Pocket bottom allowance" tip="Extra fabric below the deepest pocket's bottom, between the pocket and the panel's bottom edge. Provides room for the pocket to round out when the tool sits in it.">
             <NumInput id="pocketBottomAllowance" value={settings.pocketBottomAllowance} units={units} onChange={v => onUpdate({ pocketBottomAllowance: v })} />
           </Row>
         </AccordionContent>
@@ -225,19 +225,19 @@ export function ToolRollSettingsPanel({ settings, units, onUpdate, onUnitsChange
       <AccordionItem value="seam">
         <AccordionTrigger className="text-xs font-semibold py-2">Seam & Hems</AccordionTrigger>
         <AccordionContent>
-          <Row label="Seam allowance">
+          <Row label="Seam allowance" tip="Standard sewing seam allowance — the strip of fabric between the cut edge and the stitch line. Typical: 3/8″ (9.5 mm).">
             <NumInput id="seamAllowance" value={settings.seamAllowance} units={units} onChange={v => onUpdate({ seamAllowance: v })} />
           </Row>
-          <Row label="Top hem allowance">
+          <Row label="Top hem allowance" tip="Fabric folded under at the top edge of the back panel for a finished hem. Typical: 1″ (25.4 mm). Larger for casings.">
             <NumInput id="topHemAllowance" value={settings.topHemAllowance} units={units} onChange={v => onUpdate({ topHemAllowance: v })} />
           </Row>
-          <Row label="Bottom hem allowance">
+          <Row label="Bottom hem allowance" tip="Fabric folded under at the bottom edge of the back panel. Typical: 3/8″ (9.5 mm).">
             <NumInput id="bottomHemAllowance" value={settings.bottomHemAllowance} units={units} onChange={v => onUpdate({ bottomHemAllowance: v })} />
           </Row>
-          <Row label="Side hem allowance">
+          <Row label="Side hem allowance" tip="Fabric folded under at each side of the back panel. Typical: 3/8″ (9.5 mm).">
             <NumInput id="sideHemAllowance" value={settings.sideHemAllowance} units={units} onChange={v => onUpdate({ sideHemAllowance: v })} />
           </Row>
-          <Row label="Binding allowance">
+          <Row label="Binding allowance" tip="Extra reference for binding (bias tape / grosgrain edge) along panel edges. v1 just draws a reference line — no construction logic. Leave 0 unless planning bound edges.">
             <NumInput id="bindingAllowance" value={settings.bindingAllowance} units={units} onChange={v => onUpdate({ bindingAllowance: v })} />
           </Row>
         </AccordionContent>
@@ -247,10 +247,10 @@ export function ToolRollSettingsPanel({ settings, units, onUpdate, onUnitsChange
       <AccordionItem value="margins">
         <AccordionTrigger className="text-xs font-semibold py-2">Layout Margins</AccordionTrigger>
         <AccordionContent>
-          <Row label="Top margin">
+          <Row label="Top margin" tip="Vertical space between the top hem and the tallest tool's pocket top. Needs to be at least the tallest tool's visible portion or the tool will stick out above the back panel.">
             <NumInput id="topMargin" value={settings.topMargin} units={units} onChange={v => onUpdate({ topMargin: v })} />
           </Row>
-          <Row label="Bottom margin">
+          <Row label="Bottom margin" tip="Vertical space between the bottom of the pocket panel and the bottom hem.">
             <NumInput id="bottomMargin" value={settings.bottomMargin} units={units} onChange={v => onUpdate({ bottomMargin: v })} />
           </Row>
         </AccordionContent>
@@ -319,10 +319,10 @@ export function ToolRollSettingsPanel({ settings, units, onUpdate, onUnitsChange
       <AccordionItem value="tie">
         <AccordionTrigger className="text-xs font-semibold py-2">Tie</AccordionTrigger>
         <AccordionContent>
-          <Row label="Enable tie">
+          <Row label="Enable tie" tip="Show a marker on the pattern for where to attach the tie/strap that holds the rolled-up roll closed.">
             <Switch checked={settings.tieEnabled} onCheckedChange={v => onUpdate({ tieEnabled: v })} />
           </Row>
-          <Row label="Tie placement">
+          <Row label="Tie placement" tip="How the tie's X position is determined. Centered = middle of the back panel. Based on Roll Diameter = position estimated from rolled-up bundle size (v1: not implemented). Manual = use the Tie position X value below.">
             <Select
               value={settings.tiePlacementMode}
               onValueChange={v => onUpdate({ tiePlacementMode: v as ToolRollSettings['tiePlacementMode'] })}
@@ -337,13 +337,13 @@ export function ToolRollSettingsPanel({ settings, units, onUpdate, onUnitsChange
               </SelectContent>
             </Select>
           </Row>
-          <Row label="Tie width">
+          <Row label="Tie width" tip="Width of the tie strip / strap material. Typical: 1″ (25.4 mm) for grosgrain or webbing.">
             <NumInput id="tieWidth" value={settings.tieWidth} units={units} onChange={v => onUpdate({ tieWidth: v })} />
           </Row>
-          <Row label="Tie length">
+          <Row label="Tie length" tip="Total length of tie material needed (both ties combined). Used in construction notes only.">
             <NumInput id="tieLength" value={settings.tieLength} units={units} onChange={v => onUpdate({ tieLength: v })} />
           </Row>
-          <Row label="Tie position X">
+          <Row label="Tie position X" tip="Manual X position of the tie placement (only used when Tie placement is Manual). 0 = left edge of pattern.">
             <NumInput id="tiePositionX" value={settings.tiePositionX} units={units} onChange={v => onUpdate({ tiePositionX: v })} />
           </Row>
         </AccordionContent>
@@ -353,7 +353,7 @@ export function ToolRollSettingsPanel({ settings, units, onUpdate, onUnitsChange
       <AccordionItem value="print">
         <AccordionTrigger className="text-xs font-semibold py-2">Print</AccordionTrigger>
         <AccordionContent>
-          <Row label="Paper size">
+          <Row label="Paper size" tip="Paper size for the tiled printable HTML export. Letter = 8.5×11″, A4 = 210×297 mm.">
             <Select
               value={settings.printPaperSize}
               onValueChange={v => onUpdate({ printPaperSize: v as ToolRollSettings['printPaperSize'] })}
@@ -367,7 +367,7 @@ export function ToolRollSettingsPanel({ settings, units, onUpdate, onUnitsChange
               </SelectContent>
             </Select>
           </Row>
-          <Row label="Orientation">
+          <Row label="Orientation" tip="Page orientation for printing. Landscape often reduces page count for wide patterns.">
             <Select
               value={settings.printOrientation}
               onValueChange={v => onUpdate({ printOrientation: v as ToolRollSettings['printOrientation'] })}
@@ -381,11 +381,57 @@ export function ToolRollSettingsPanel({ settings, units, onUpdate, onUnitsChange
               </SelectContent>
             </Select>
           </Row>
-          <Row label="Print margin">
+          <Row label="Print margin" tip="Non-printable margin on each side of every page. Default 1/2″ (12.7 mm) — most home printers can't print closer than that to the paper edge.">
             <NumInput id="printMargin" value={settings.printMargin} units={units} onChange={v => onUpdate({ printMargin: v })} />
           </Row>
-          <Row label="Tile overlap">
+          <Row label="Tile overlap" tip="How much adjacent pages overlap when tiled. Wider overlap makes alignment easier when taping pages together. Default 1/2″ (12.7 mm).">
             <NumInput id="tileOverlap" value={settings.tileOverlap} units={units} onChange={v => onUpdate({ tileOverlap: v })} />
+          </Row>
+        </AccordionContent>
+      </AccordionItem>
+
+      {/* §23.8 — Display Options (preview-only toggles) */}
+      <AccordionItem value="display">
+        <AccordionTrigger className="text-xs font-semibold py-2">Display Options</AccordionTrigger>
+        <AccordionContent>
+          <Row label="Show grid" tip="Background grid (10 mm spacing). Helpful for measuring pocket positions in the preview.">
+            <Switch checked={settings.showGrid} onCheckedChange={v => onUpdate({ showGrid: v })} />
+          </Row>
+          <Row label="Show tile grid" tip="Outline each page tile in the preview to see how the pattern will split across printed pages.">
+            <Switch checked={settings.showTileGrid} onCheckedChange={v => onUpdate({ showTileGrid: v })} />
+          </Row>
+          <Row label="Show stitch lines" tip="Green dashed lines where the needle sews (pocket dividers, etc).">
+            <Switch checked={settings.showStitchLines} onCheckedChange={v => onUpdate({ showStitchLines: v })} />
+          </Row>
+          <Row label="Show fold lines" tip="Blue long-dashed lines marking hems and the flap fold.">
+            <Switch checked={settings.showFoldLines} onCheckedChange={v => onUpdate({ showFoldLines: v })} />
+          </Row>
+          <Row label="Show hem lines" tip="Purple dashed lines marking hem boundaries on the back panel sides.">
+            <Switch checked={settings.showHemLines} onCheckedChange={v => onUpdate({ showHemLines: v })} />
+          </Row>
+          <Row label="Show seam lines" tip="Orange dashed lines marking seam allowance edges.">
+            <Switch checked={settings.showSeamLines} onCheckedChange={v => onUpdate({ showSeamLines: v })} />
+          </Row>
+          <Row label="Show labels" tip="Vertical tool-name labels inside each pocket.">
+            <Switch checked={settings.showLabels} onCheckedChange={v => onUpdate({ showLabels: v })} />
+          </Row>
+          <Row label="Show dimension lines" tip="Measurement annotations on the pattern (overall width, height, etc.).">
+            <Switch checked={settings.showDimensionLines} onCheckedChange={v => onUpdate({ showDimensionLines: v })} />
+          </Row>
+          <Row label="Label mode" tip="Which tool info appears in pocket labels. None hides them; toolNames shows just the tool name; toolNamesAndDimensions adds size info.">
+            <Select
+              value={settings.labelMode}
+              onValueChange={v => onUpdate({ labelMode: v as ToolRollSettings['labelMode'] })}
+            >
+              <SelectTrigger className="h-7 text-xs w-44">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">None</SelectItem>
+                <SelectItem value="toolNames">Tool names</SelectItem>
+                <SelectItem value="toolNamesAndDimensions">Tool names + dimensions</SelectItem>
+              </SelectContent>
+            </Select>
           </Row>
         </AccordionContent>
       </AccordionItem>

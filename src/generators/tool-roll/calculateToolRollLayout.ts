@@ -153,14 +153,25 @@ export function calculateToolRollLayout(
   // ── Pocket labels (vertical, reads from pocket bottom upward) ─────────────
   // Font size scales with pocket width so a narrow pocket gets a smaller label.
   // text-anchor='start' + rotate(-90, x, y) → text starts at (x, y) and reads upward.
-  const pocketLabels = settings.showLabels
-    ? pockets.map(p => {
+  // labelMode controls what's included in each label.
+  const pocketLabels = settings.showLabels && settings.labelMode !== 'none'
+    ? pockets.map((p, i) => {
         const fontSize = Math.min(4.5, Math.max(2.5, p.pocketWidth * 0.45));
+        let text = p.toolName;
+        if (settings.labelMode === 'toolNamesAndDimensions') {
+          const tool = sorted[i];
+          if (tool) {
+            const dim = units === 'in'
+              ? `${(tool.width / 25.4).toFixed(2)}×${(tool.height / 25.4).toFixed(2)}in`
+              : `${tool.width.toFixed(0)}×${tool.height.toFixed(0)}mm`;
+            text = `${p.toolName} (${dim})`;
+          }
+        }
         return {
           id: generateId('label'),
           x: p.x + p.pocketWidth / 2 + fontSize / 3,
           y: p.bottomY - 2,
-          text: p.toolName,
+          text,
           fontSize,
           anchor: 'start' as const,
           rotate: -90,
@@ -323,6 +334,29 @@ export function calculateToolRollLayout(
     },
   ];
 
+  // ── Tie marks ────────────────────────────────────────────────────────────
+  // The tie/strap attaches at the top of the back panel; the rectangle just
+  // shows the placement footprint. v1 supports 'centered' and 'manual' modes;
+  // 'basedOnRollDiameter' falls back to centered since roll-diameter prediction
+  // isn't implemented yet.
+  const tieMarks = settings.tieEnabled
+    ? [
+        (() => {
+          let tieX = patternWidth / 2;
+          if (settings.tiePlacementMode === 'manual') {
+            tieX = settings.tiePositionX;
+          }
+          return {
+            id: generateId('tie'),
+            x: tieX,
+            y: backPanelTopY,
+            width: settings.tieWidth,
+            label: 'Tie placement',
+          };
+        })(),
+      ]
+    : [];
+
   // ── Print layout ──────────────────────────────────────────────────────────
   const printLayout = calculatePrintLayout(patternWidth, patternHeight, settings);
 
@@ -340,7 +374,7 @@ export function calculateToolRollLayout(
     hemLines,
     seamAllowanceLines,
     notches: [],
-    tieMarks: [],
+    tieMarks,
     labels: pocketLabels,
     dimensionLines: [],
     warnings: [],
@@ -363,7 +397,7 @@ export function calculateToolRollLayout(
     hemLines,
     seamAllowanceLines,
     notches: [],
-    tieMarks: [],
+    tieMarks,
     labels: pocketLabels,
     dimensionLines: [],
     warnings: [],
