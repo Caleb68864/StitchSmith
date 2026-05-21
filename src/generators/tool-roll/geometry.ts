@@ -368,6 +368,13 @@ export function buildOpenProfilePath(
   leftX: number,
   rightX: number,
   style: 'stepped' | 'sloped' | 'smooth' | 'arc',
+  /**
+   * Constraint direction for arc-style post-correction.
+   * 'flap'   — curve must stay AT or ABOVE each pocket (curve.y <= pocket.y)
+   * 'pocket' — curve must stay AT or BELOW each pocket (curve.y >= pocket.y)
+   * Ignored for stepped/sloped/smooth (those pass through each anchor exactly).
+   */
+  arcDirection: 'flap' | 'pocket' = 'pocket',
 ): SvgPathData {
   if (pockets.length === 0) return '';
   const parts: string[] = [];
@@ -432,18 +439,10 @@ export function buildOpenProfilePath(
       return (lo + hi) / 2;
     };
 
-    // Decide the constraint direction by sampling whether intermediate pocket ys
-    // are mostly ABOVE or BELOW the linear interpolation between endpoints.
-    // If pockets are mostly above the line (smaller y) we use 'flap' direction
-    // (curve must stay above them); otherwise 'pocket' direction.
-    let aboveCount = 0;
-    let belowCount = 0;
-    for (const p of pockets) {
-      const interp = first.y + (last.y - first.y) * ((p.x + p.pocketWidth / 2 - first.x) / (last.x - first.x || 1));
-      if (p.y < interp) aboveCount++;
-      else if (p.y > interp) belowCount++;
-    }
-    const flapStyle = aboveCount >= belowCount;
+    // Caller specifies the constraint direction. flap-style requires curve.y <= pocket.y
+    // (curve sits AT or ABOVE each pocket); pocket-style requires curve.y >= pocket.y
+    // (curve sits AT or BELOW each pocket).
+    const flapStyle = arcDirection === 'flap';
 
     for (let pass = 0; pass < 6; pass++) {
       let maxViolation = 0;
@@ -452,8 +451,6 @@ export function buildOpenProfilePath(
         const cx = p.x + p.pocketWidth / 2;
         const t = findT(cx, leftX, cp1x, cp2x, rightX);
         const yAtT = sampleY(t, first.y, cp1y, cp2y, last.y);
-        // pocket-style (constraint: curve.y >= p.y): violation = p.y - yAtT > 0
-        // flap-style    (constraint: curve.y <= p.y): violation = yAtT - p.y > 0
         const violation = flapStyle ? yAtT - p.y : p.y - yAtT;
         if (violation > maxViolation) {
           maxViolation = violation;

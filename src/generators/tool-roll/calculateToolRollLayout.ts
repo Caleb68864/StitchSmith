@@ -284,6 +284,7 @@ export function calculateToolRollLayout(
         settings.sideHemAllowance,
         patternWidth - settings.sideHemAllowance,
         settings.pocketTopStyle,
+        'pocket',  // curve sits at or below each pocket's top
       )
     : undefined;
   const pocketPanel: PocketPanelShape = {
@@ -349,9 +350,10 @@ export function calculateToolRollLayout(
         hemFoldPath: flapHemAllow > 0
           ? buildOpenProfilePath(
               hemFoldPocketYs,
-              settings.sideHemAllowance,
-              patternWidth - settings.sideHemAllowance,
+              0,
+              patternWidth,
               effectiveFlapTopStyle,
+              'flap',  // curve sits at or above each pocket's body top
             )
           : undefined,
         boundingBox: { x: 0, y: 0, width: patternWidth, height: flapMaxHeight },
