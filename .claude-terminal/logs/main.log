@@ -1,0 +1,323 @@
+2026-05-20T23:06:52.781Z [INFO] --- Log session started ---
+2026-05-20T23:06:53.102Z [DEBUG] [sessions] persisted 1 tabs to C:\Users\CalebBennett\Documents\GitHub\PerfPlus\.claude-terminal\sessions.json
+2026-05-20T23:06:53.103Z [DEBUG] [sessions] persisted 2 tabs to C:\Users\CalebBennett\Documents\GitHub\logic-tool-plugins\.claude-terminal\sessions.json
+2026-05-20T23:06:53.104Z [DEBUG] [sessions] persisted 1 tabs to C:\Users\CalebBennett\Documents\GitHub\Flatwater Portal\.claude-terminal\sessions.json
+2026-05-20T23:06:53.104Z [DEBUG] [sessions] skip persist for %s: %d claude tab(s) still initializing C:\Users\CalebBennett\Documents\GitHub\StitchSmith 1
+2026-05-20T23:07:34.757Z [DEBUG] [ipc-raw] {"tabId":"tab-1779318412790-o7elvi","event":"tab:ready","data":"{\"sessionId\":\"933dcb53-60b4-4bb1-bf26-5f19cd30504a\",\"source\":\"startup\"}"}
+
+2026-05-20T23:07:34.757Z [DEBUG] [hook] tab:ready tab-1779318412790-o7elvi {"sessionId":"933dcb53-60b4-4bb1-bf26-5f19cd30504a","source":"startup"}
+2026-05-20T23:07:34.757Z [INFO] [tab:ready] tab-1779318412790-o7elvi sessionId: 933dcb53-60b4-4bb1-bf26-5f19cd30504a source: startup
+2026-05-20T23:07:34.962Z [DEBUG] [sessions] persisted 1 tabs to C:\Users\CalebBennett\Documents\GitHub\PerfPlus\.claude-terminal\sessions.json
+2026-05-20T23:07:34.965Z [DEBUG] [sessions] persisted 2 tabs to C:\Users\CalebBennett\Documents\GitHub\logic-tool-plugins\.claude-terminal\sessions.json
+2026-05-20T23:07:34.967Z [DEBUG] [sessions] persisted 1 tabs to C:\Users\CalebBennett\Documents\GitHub\Flatwater Portal\.claude-terminal\sessions.json
+2026-05-20T23:07:34.970Z [DEBUG] [sessions] persisted 1 tabs to C:\Users\CalebBennett\Documents\GitHub\StitchSmith\.claude-terminal\sessions.json
+2026-05-20T23:07:53.098Z [DEBUG] [ipc-raw] {"tabId":"tab-1779318412790-o7elvi","event":"tab:generate-name","data":"/forge:forge-brainstorm \n\n# Tool Roll Pattern Generator - React/Vite/shadcn Spec\n\n## 1. Project Summary\n\nBuild a single-pa
+2026-05-20T23:07:53.098Z [DEBUG] [hook] tab:generate-name tab-1779318412790-o7elvi /forge:forge-brainstorm 
+
+# Tool Roll Pattern Generator - React/Vite/shadcn Spec
+2026-05-20T23:07:53.098Z [DEBUG] [generateTabName] starting for tab tab-1779318412790-o7elvi prompt: /forge:forge-brainstorm 
+
+# Tool Roll Pattern Generator - React/Vite/shadcn Spec
+2026-05-20T23:07:53.099Z [DEBUG] [callHaikuForName] spawning: cmd.exe /c claude -p --no-session-persistence --model claude-haiku-4-5-20251001 --tools  --setting-sources 
+2026-05-20T23:07:58.859Z [DEBUG] [callHaikuForName] stdout: "Tool Roll Pattern Generator\n"
+2026-05-20T23:07:59.082Z [DEBUG] [sessions] persisted 1 tabs to C:\Users\CalebBennett\Documents\GitHub\PerfPlus\.claude-terminal\sessions.json
+2026-05-20T23:07:59.084Z [DEBUG] [sessions] persisted 2 tabs to C:\Users\CalebBennett\Documents\GitHub\logic-tool-plugins\.claude-terminal\sessions.json
+2026-05-20T23:07:59.087Z [DEBUG] [sessions] persisted 1 tabs to C:\Users\CalebBennett\Documents\GitHub\Flatwater Portal\.claude-terminal\sessions.json
+2026-05-20T23:07:59.089Z [DEBUG] [sessions] persisted 1 tabs to C:\Users\CalebBennett\Documents\GitHub\StitchSmith\.claude-terminal\sessions.json
+2026-05-20T23:08:01.646Z [DEBUG] [ipc-raw] {"tabId":"tab-1779142855333-dj9h2w","event":"tab:status:idle","data":null}
+
+2026-05-20T23:08:01.646Z [DEBUG] [hook] tab:status:idle tab-1779142855333-dj9h2w null
+2026-05-20T23:08:07.012Z [DEBUG] [ipc-raw] {"tabId":"tab-1779318412790-o7elvi","event":"tab:status:working","data":null}
+
+2026-05-20T23:08:07.012Z [DEBUG] [hook] tab:status:working tab-1779318412790-o7elvi null
+2026-05-20T23:08:14.464Z [DEBUG] [ipc-raw] {"tabId":"tab-1779318412790-o7elvi","event":"tab:status:working","data":null}
+
+2026-05-20T23:08:14.465Z [DEBUG] [hook] tab:status:working tab-1779318412790-o7elvi null
+2026-05-20T23:08:50.345Z [DEBUG] [ipc-raw] {"tabId":"tab-1779318412790-o7elvi","event":"tab:status:working","data":null}
+
+2026-05-20T23:08:50.345Z [DEBUG] [hook] tab:status:working tab-1779318412790-o7elvi null
+2026-05-20T23:09:13.530Z [DEBUG] [ipc-raw] {"tabId":"tab-1779142855333-dj9h2w","event":"tab:status:working","data":null}
+
+2026-05-20T23:09:13.530Z [DEBUG] [hook] tab:status:working tab-1779142855333-dj9h2w null
+2026-05-20T23:09:18.093Z [DEBUG] [ipc-raw] {"tabId":"tab-1779318412790-o7elvi","event":"tab:status:working","data":null}
+
+2026-05-20T23:09:18.093Z [DEBUG] [hook] tab:status:working tab-1779318412790-o7elvi null
+2026-05-20T23:09:24.201Z [DEBUG] [ipc-raw] {"tabId":"tab-1779142855333-dj9h2w","event":"tab:status:working","data":null}
+
+2026-05-20T23:09:24.201Z [DEBUG] [hook] tab:status:working tab-1779142855333-dj9h2w null
+2026-05-20T23:09:25.488Z [DEBUG] [ipc-raw] {"tabId":"tab-1779318412790-o7elvi","event":"tab:status:input","data":null}
+
+2026-05-20T23:09:25.488Z [DEBUG] [hook] tab:status:input tab-1779318412790-o7elvi null
+2026-05-20T23:09:32.668Z [DEBUG] [ipc-raw] {"tabId":"tab-1779142855333-dj9h2w","event":"tab:status:working","data":null}
+
+2026-05-20T23:09:32.669Z [DEBUG] [hook] tab:status:working tab-1779142855333-dj9h2w null
+2026-05-20T23:09:40.497Z [DEBUG] [ipc-raw] {"tabId":"tab-1779142855333-dj9h2w","event":"tab:status:working","data":null}
+
+2026-05-20T23:09:40.497Z [DEBUG] [hook] tab:status:working tab-1779142855333-dj9h2w null
+2026-05-20T23:09:48.399Z [DEBUG] [ipc-raw] {"tabId":"tab-1779142855333-dj9h2w","event":"tab:status:working","data":null}
+
+2026-05-20T23:09:48.399Z [DEBUG] [hook] tab:status:working tab-1779142855333-dj9h2w null
+2026-05-20T23:09:55.164Z [DEBUG] [ipc-raw] {"tabId":"tab-1779318412790-o7elvi","event":"tab:status:working","data":null}
+
+2026-05-20T23:09:55.164Z [DEBUG] [hook] tab:status:working tab-1779318412790-o7elvi null
+2026-05-20T23:10:02.235Z [DEBUG] [ipc-raw] {"tabId":"tab-1779142855333-dj9h2w","event":"tab:status:working","data":null}
+
+2026-05-20T23:10:02.235Z [DEBUG] [hook] tab:status:working tab-1779142855333-dj9h2w null
+2026-05-20T23:10:10.834Z [DEBUG] [ipc-raw] {"tabId":"tab-1779142855333-dj9h2w","event":"tab:status:working","data":null}
+
+2026-05-20T23:10:10.834Z [DEBUG] [hook] tab:status:working tab-1779142855333-dj9h2w null
+2026-05-20T23:10:27.223Z [DEBUG] [ipc-raw] {"tabId":"tab-1779142855333-dj9h2w","event":"tab:status:working","data":null}
+
+2026-05-20T23:10:27.223Z [DEBUG] [hook] tab:status:working tab-1779142855333-dj9h2w null
+2026-05-20T23:10:39.372Z [DEBUG] [ipc-raw] {"tabId":"tab-1779142855333-dj9h2w","event":"tab:status:working","data":null}
+
+2026-05-20T23:10:39.372Z [DEBUG] [hook] tab:status:working tab-1779142855333-dj9h2w null
+2026-05-20T23:10:49.564Z [DEBUG] [ipc-raw] {"tabId":"tab-1779142855333-dj9h2w","event":"tab:status:working","data":null}
+
+2026-05-20T23:10:49.564Z [DEBUG] [hook] tab:status:working tab-1779142855333-dj9h2w null
+2026-05-20T23:10:59.759Z [DEBUG] [ipc-raw] {"tabId":"tab-1779142855333-dj9h2w","event":"tab:status:working","data":null}
+
+2026-05-20T23:10:59.759Z [DEBUG] [hook] tab:status:working tab-1779142855333-dj9h2w null
+2026-05-20T23:11:26.919Z [DEBUG] [ipc-raw] {"tabId":"tab-1779142855333-dj9h2w","event":"tab:status:working","data":null}
+
+2026-05-20T23:11:26.920Z [DEBUG] [hook] tab:status:working tab-1779142855333-dj9h2w null
+2026-05-20T23:11:35.202Z [DEBUG] [ipc-raw] {"tabId":"tab-1779142855333-dj9h2w","event":"tab:status:working","data":null}
+
+2026-05-20T23:11:35.203Z [DEBUG] [hook] tab:status:working tab-1779142855333-dj9h2w null
+2026-05-20T23:11:46.824Z [DEBUG] [ipc-raw] {"tabId":"tab-1779318412790-o7elvi","event":"tab:status:working","data":null}
+
+2026-05-20T23:11:46.824Z [DEBUG] [hook] tab:status:working tab-1779318412790-o7elvi null
+2026-05-20T23:11:52.328Z [DEBUG] [ipc-raw] {"tabId":"tab-1779142855333-dj9h2w","event":"tab:status:working","data":null}
+
+2026-05-20T23:11:52.328Z [DEBUG] [hook] tab:status:working tab-1779142855333-dj9h2w null
+2026-05-20T23:11:52.594Z [DEBUG] [ipc-raw] {"tabId":"tab-1779318412790-o7elvi","event":"tab:status:working","data":null}
+
+2026-05-20T23:11:52.594Z [DEBUG] [hook] tab:status:working tab-1779318412790-o7elvi null
+2026-05-20T23:12:07.471Z [DEBUG] [ipc-raw] {"tabId":"tab-1779142855333-dj9h2w","event":"tab:status:working","data":null}
+
+2026-05-20T23:12:07.471Z [DEBUG] [hook] tab:status:working tab-1779142855333-dj9h2w null
+2026-05-20T23:12:09.201Z [DEBUG] [ipc-raw] {"tabId":"tab-1779318412790-o7elvi","event":"tab:status:working","data":null}
+
+2026-05-20T23:12:09.201Z [DEBUG] [hook] tab:status:working tab-1779318412790-o7elvi null
+2026-05-20T23:12:15.816Z [DEBUG] [ipc-raw] {"tabId":"tab-1779142855333-dj9h2w","event":"tab:status:working","data":null}
+
+2026-05-20T23:12:15.816Z [DEBUG] [hook] tab:status:working tab-1779142855333-dj9h2w null
+2026-05-20T23:12:24.626Z [DEBUG] [ipc-raw] {"tabId":"tab-1779142855333-dj9h2w","event":"tab:status:working","data":null}
+
+2026-05-20T23:12:24.626Z [DEBUG] [hook] tab:status:working tab-1779142855333-dj9h2w null
+2026-05-20T23:12:33.598Z [DEBUG] [ipc-raw] {"tabId":"tab-1779142855333-dj9h2w","event":"tab:status:working","data":null}
+
+2026-05-20T23:12:33.598Z [DEBUG] [hook] tab:status:working tab-1779142855333-dj9h2w null
+2026-05-20T23:12:45.167Z [DEBUG] [ipc-raw] {"tabId":"tab-1779318412790-o7elvi","event":"tab:status:working","data":null}
+
+2026-05-20T23:12:45.167Z [DEBUG] [hook] tab:status:working tab-1779318412790-o7elvi null
+2026-05-20T23:13:01.767Z [DEBUG] [ipc-raw] {"tabId":"tab-1779318412790-o7elvi","event":"tab:status:working","data":null}
+
+2026-05-20T23:13:01.767Z [DEBUG] [hook] tab:status:working tab-1779318412790-o7elvi null
+2026-05-20T23:13:09.002Z [DEBUG] [ipc-raw] {"tabId":"tab-1779318412790-o7elvi","event":"tab:status:working","data":null}
+
+2026-05-20T23:13:09.002Z [DEBUG] [hook] tab:status:working tab-1779318412790-o7elvi null
+2026-05-20T23:13:19.033Z [DEBUG] [ipc-raw] {"tabId":"tab-1779142855333-dj9h2w","event":"tab:status:working","data":null}
+
+2026-05-20T23:13:19.033Z [DEBUG] [hook] tab:status:working tab-1779142855333-dj9h2w null
+2026-05-20T23:13:21.030Z [DEBUG] [ipc-raw] {"tabId":"tab-1779142855333-dj9h2w","event":"tab:status:working","data":null}
+
+2026-05-20T23:13:21.030Z [DEBUG] [hook] tab:status:working tab-1779142855333-dj9h2w null
+2026-05-20T23:13:24.024Z [DEBUG] [ipc-raw] {"tabId":"tab-1779142855333-dj9h2w","event":"tab:status:working","data":null}
+
+2026-05-20T23:13:24.024Z [DEBUG] [hook] tab:status:working tab-1779142855333-dj9h2w null
+2026-05-20T23:13:24.027Z [DEBUG] [ipc-raw] {"tabId":"tab-1779142855333-dj9h2w","event":"tab:status:working","data":null}
+
+2026-05-20T23:13:24.027Z [DEBUG] [hook] tab:status:working tab-1779142855333-dj9h2w null
+2026-05-20T23:13:31.292Z [DEBUG] [ipc-raw] {"tabId":"tab-1779318412790-o7elvi","event":"tab:status:working","data":null}
+
+2026-05-20T23:13:31.293Z [DEBUG] [hook] tab:status:working tab-1779318412790-o7elvi null
+2026-05-20T23:13:37.108Z [DEBUG] [ipc-raw] {"tabId":"tab-1779142855333-dj9h2w","event":"tab:status:working","data":null}
+
+2026-05-20T23:13:37.108Z [DEBUG] [hook] tab:status:working tab-1779142855333-dj9h2w null
+2026-05-20T23:13:40.115Z [DEBUG] [ipc-raw] {"tabId":"tab-1779318412790-o7elvi","event":"tab:status:working","data":null}
+
+2026-05-20T23:13:40.115Z [DEBUG] [hook] tab:status:working tab-1779318412790-o7elvi null
+2026-05-20T23:13:49.446Z [DEBUG] [ipc-raw] {"tabId":"tab-1779142855333-dj9h2w","event":"tab:status:working","data":null}
+
+2026-05-20T23:13:49.446Z [DEBUG] [hook] tab:status:working tab-1779142855333-dj9h2w null
+2026-05-20T23:14:18.475Z [DEBUG] [ipc-raw] {"tabId":"tab-1779142855333-dj9h2w","event":"tab:status:working","data":null}
+
+2026-05-20T23:14:18.475Z [DEBUG] [hook] tab:status:working tab-1779142855333-dj9h2w null
+2026-05-20T23:14:27.893Z [DEBUG] [ipc-raw] {"tabId":"tab-1779142855333-dj9h2w","event":"tab:status:working","data":null}
+
+2026-05-20T23:14:27.893Z [DEBUG] [hook] tab:status:working tab-1779142855333-dj9h2w null
+2026-05-20T23:14:39.819Z [DEBUG] [ipc-raw] {"tabId":"tab-1779142855333-dj9h2w","event":"tab:status:working","data":null}
+
+2026-05-20T23:14:39.819Z [DEBUG] [hook] tab:status:working tab-1779142855333-dj9h2w null
+2026-05-20T23:14:50.628Z [DEBUG] [ipc-raw] {"tabId":"tab-1779142855333-dj9h2w","event":"tab:status:working","data":null}
+
+2026-05-20T23:14:50.628Z [DEBUG] [hook] tab:status:working tab-1779142855333-dj9h2w null
+2026-05-20T23:14:58.160Z [DEBUG] [ipc-raw] {"tabId":"tab-1779142855333-dj9h2w","event":"tab:status:working","data":null}
+
+2026-05-20T23:14:58.160Z [DEBUG] [hook] tab:status:working tab-1779142855333-dj9h2w null
+2026-05-20T23:15:06.832Z [DEBUG] [ipc-raw] {"tabId":"tab-1779142855333-dj9h2w","event":"tab:status:working","data":null}
+
+2026-05-20T23:15:06.832Z [DEBUG] [hook] tab:status:working tab-1779142855333-dj9h2w null
+2026-05-20T23:15:30.148Z [DEBUG] [ipc-raw] {"tabId":"tab-1779142855333-dj9h2w","event":"tab:status:working","data":null}
+
+2026-05-20T23:15:30.148Z [DEBUG] [hook] tab:status:working tab-1779142855333-dj9h2w null
+2026-05-20T23:15:31.936Z [DEBUG] [ipc-raw] {"tabId":"tab-1779318412790-o7elvi","event":"tab:status:working","data":null}
+
+2026-05-20T23:15:31.936Z [DEBUG] [hook] tab:status:working tab-1779318412790-o7elvi null
+2026-05-20T23:15:39.667Z [DEBUG] [ipc-raw] {"tabId":"tab-1779318412790-o7elvi","event":"tab:status:working","data":null}
+
+2026-05-20T23:15:39.667Z [DEBUG] [hook] tab:status:working tab-1779318412790-o7elvi null
+2026-05-20T23:15:55.839Z [DEBUG] [ipc-raw] {"tabId":"tab-1779142855333-dj9h2w","event":"tab:status:working","data":null}
+
+2026-05-20T23:15:55.839Z [DEBUG] [hook] tab:status:working tab-1779142855333-dj9h2w null
+2026-05-20T23:15:56.479Z [DEBUG] [ipc-raw] {"tabId":"tab-1779318412790-o7elvi","event":"tab:status:working","data":null}
+
+2026-05-20T23:15:56.479Z [DEBUG] [hook] tab:status:working tab-1779318412790-o7elvi null
+2026-05-20T23:16:24.370Z [DEBUG] [ipc-raw] {"tabId":"tab-1779142855333-dj9h2w","event":"tab:status:working","data":null}
+
+2026-05-20T23:16:24.370Z [DEBUG] [hook] tab:status:working tab-1779142855333-dj9h2w null
+2026-05-20T23:16:33.759Z [DEBUG] [ipc-raw] {"tabId":"tab-1779142855333-dj9h2w","event":"tab:status:working","data":null}
+
+2026-05-20T23:16:33.759Z [DEBUG] [hook] tab:status:working tab-1779142855333-dj9h2w null
+2026-05-20T23:16:57.577Z [DEBUG] [ipc-raw] {"tabId":"tab-1779142855333-dj9h2w","event":"tab:status:working","data":null}
+
+2026-05-20T23:16:57.577Z [DEBUG] [hook] tab:status:working tab-1779142855333-dj9h2w null
+2026-05-20T23:17:12.990Z [DEBUG] [ipc-raw] {"tabId":"tab-1779142855333-dj9h2w","event":"tab:status:working","data":null}
+
+2026-05-20T23:17:12.990Z [DEBUG] [hook] tab:status:working tab-1779142855333-dj9h2w null
+2026-05-20T23:17:12.991Z [DEBUG] [ipc-raw] {"tabId":"tab-1779142855333-dj9h2w","event":"tab:status:working","data":null}
+
+2026-05-20T23:17:12.991Z [DEBUG] [hook] tab:status:working tab-1779142855333-dj9h2w null
+2026-05-20T23:17:30.513Z [DEBUG] [ipc-raw] {"tabId":"tab-1779142855333-dj9h2w","event":"tab:status:working","data":null}
+
+2026-05-20T23:17:30.513Z [DEBUG] [hook] tab:status:working tab-1779142855333-dj9h2w null
+2026-05-20T23:17:38.343Z [DEBUG] [ipc-raw] {"tabId":"tab-1779142855333-dj9h2w","event":"tab:status:working","data":null}
+
+2026-05-20T23:17:38.343Z [DEBUG] [hook] tab:status:working tab-1779142855333-dj9h2w null
+2026-05-20T23:18:09.802Z [DEBUG] [ipc-raw] {"tabId":"tab-1779142855333-dj9h2w","event":"tab:status:working","data":null}
+
+2026-05-20T23:18:09.803Z [DEBUG] [hook] tab:status:working tab-1779142855333-dj9h2w null
+2026-05-20T23:18:20.276Z [DEBUG] [ipc-raw] {"tabId":"tab-1779142855333-dj9h2w","event":"tab:status:working","data":null}
+
+2026-05-20T23:18:20.276Z [DEBUG] [hook] tab:status:working tab-1779142855333-dj9h2w null
+2026-05-20T23:18:37.742Z [DEBUG] [ipc-raw] {"tabId":"tab-1779142855333-dj9h2w","event":"tab:status:working","data":null}
+
+2026-05-20T23:18:37.742Z [DEBUG] [hook] tab:status:working tab-1779142855333-dj9h2w null
+2026-05-20T23:18:48.749Z [DEBUG] [ipc-raw] {"tabId":"tab-1779142855333-dj9h2w","event":"tab:status:working","data":null}
+
+2026-05-20T23:18:48.749Z [DEBUG] [hook] tab:status:working tab-1779142855333-dj9h2w null
+2026-05-20T23:18:58.422Z [DEBUG] [ipc-raw] {"tabId":"tab-1779318412790-o7elvi","event":"tab:status:working","data":null}
+
+2026-05-20T23:18:58.422Z [DEBUG] [hook] tab:status:working tab-1779318412790-o7elvi null
+2026-05-20T23:19:06.049Z [DEBUG] [ipc-raw] {"tabId":"tab-1779318412790-o7elvi","event":"tab:status:working","data":null}
+
+2026-05-20T23:19:06.049Z [DEBUG] [hook] tab:status:working tab-1779318412790-o7elvi null
+2026-05-20T23:19:11.051Z [DEBUG] [ipc-raw] {"tabId":"tab-1779142855333-dj9h2w","event":"tab:status:working","data":null}
+
+2026-05-20T23:19:11.052Z [DEBUG] [hook] tab:status:working tab-1779142855333-dj9h2w null
+2026-05-20T23:19:19.433Z [DEBUG] [ipc-raw] {"tabId":"tab-1779142855333-dj9h2w","event":"tab:status:working","data":null}
+
+2026-05-20T23:19:19.433Z [DEBUG] [hook] tab:status:working tab-1779142855333-dj9h2w null
+2026-05-20T23:19:59.526Z [DEBUG] [ipc-raw] {"tabId":"tab-1779142855333-dj9h2w","event":"tab:status:working","data":null}
+
+2026-05-20T23:19:59.526Z [DEBUG] [hook] tab:status:working tab-1779142855333-dj9h2w null
+2026-05-20T23:20:00.055Z [DEBUG] [ipc-raw] {"tabId":"tab-1779142855333-dj9h2w","event":"tab:status:working","data":null}
+
+2026-05-20T23:20:00.055Z [DEBUG] [hook] tab:status:working tab-1779142855333-dj9h2w null
+2026-05-20T23:20:00.554Z [DEBUG] [ipc-raw] {"tabId":"tab-1779318412790-o7elvi","event":"tab:status:working","data":null}
+
+2026-05-20T23:20:00.554Z [DEBUG] [hook] tab:status:working tab-1779318412790-o7elvi null
+2026-05-20T23:20:11.211Z [DEBUG] [ipc-raw] {"tabId":"tab-1779142855333-dj9h2w","event":"tab:status:working","data":null}
+
+2026-05-20T23:20:11.211Z [DEBUG] [hook] tab:status:working tab-1779142855333-dj9h2w null
+2026-05-20T23:20:12.216Z [DEBUG] [ipc-raw] {"tabId":"tab-1779318412790-o7elvi","event":"tab:status:working","data":null}
+
+2026-05-20T23:20:12.216Z [DEBUG] [hook] tab:status:working tab-1779318412790-o7elvi null
+2026-05-20T23:20:21.822Z [DEBUG] [ipc-raw] {"tabId":"tab-1779318412790-o7elvi","event":"tab:status:working","data":null}
+
+2026-05-20T23:20:21.822Z [DEBUG] [hook] tab:status:working tab-1779318412790-o7elvi null
+2026-05-20T23:20:31.209Z [DEBUG] [ipc-raw] {"tabId":"tab-1779318412790-o7elvi","event":"tab:status:working","data":null}
+
+2026-05-20T23:20:31.209Z [DEBUG] [hook] tab:status:working tab-1779318412790-o7elvi null
+2026-05-20T23:20:33.389Z [DEBUG] [ipc-raw] {"tabId":"tab-1779142855333-dj9h2w","event":"tab:status:working","data":null}
+
+2026-05-20T23:20:33.389Z [DEBUG] [hook] tab:status:working tab-1779142855333-dj9h2w null
+2026-05-20T23:20:39.114Z [DEBUG] [ipc-raw] {"tabId":"tab-1779318412790-o7elvi","event":"tab:status:working","data":null}
+
+2026-05-20T23:20:39.114Z [DEBUG] [hook] tab:status:working tab-1779318412790-o7elvi null
+2026-05-20T23:20:45.846Z [DEBUG] [ipc-raw] {"tabId":"tab-1779318412790-o7elvi","event":"tab:status:working","data":null}
+
+2026-05-20T23:20:45.846Z [DEBUG] [hook] tab:status:working tab-1779318412790-o7elvi null
+2026-05-20T23:20:56.843Z [DEBUG] [ipc-raw] {"tabId":"tab-1779318412790-o7elvi","event":"tab:status:working","data":null}
+
+2026-05-20T23:20:56.844Z [DEBUG] [hook] tab:status:working tab-1779318412790-o7elvi null
+2026-05-20T23:21:04.168Z [DEBUG] [ipc-raw] {"tabId":"tab-1779142855333-dj9h2w","event":"tab:status:working","data":null}
+
+2026-05-20T23:21:04.168Z [DEBUG] [hook] tab:status:working tab-1779142855333-dj9h2w null
+2026-05-20T23:21:31.114Z [DEBUG] [ipc-raw] {"tabId":"tab-1779142855333-dj9h2w","event":"tab:status:working","data":null}
+
+2026-05-20T23:21:31.114Z [DEBUG] [hook] tab:status:working tab-1779142855333-dj9h2w null
+2026-05-20T23:21:38.886Z [DEBUG] [ipc-raw] {"tabId":"tab-1779318412790-o7elvi","event":"tab:status:working","data":null}
+
+2026-05-20T23:21:38.886Z [DEBUG] [hook] tab:status:working tab-1779318412790-o7elvi null
+2026-05-20T23:21:56.820Z [DEBUG] [ipc-raw] {"tabId":"tab-1779142855333-dj9h2w","event":"tab:status:working","data":null}
+
+2026-05-20T23:21:56.820Z [DEBUG] [hook] tab:status:working tab-1779142855333-dj9h2w null
+2026-05-20T23:22:09.980Z [DEBUG] [ipc-raw] {"tabId":"tab-1779318412790-o7elvi","event":"tab:status:working","data":null}
+
+2026-05-20T23:22:09.980Z [DEBUG] [hook] tab:status:working tab-1779318412790-o7elvi null
+2026-05-20T23:22:15.206Z [DEBUG] [ipc-raw] {"tabId":"tab-1779142855333-dj9h2w","event":"tab:status:working","data":null}
+
+2026-05-20T23:22:15.206Z [DEBUG] [hook] tab:status:working tab-1779142855333-dj9h2w null
+2026-05-20T23:22:29.668Z [DEBUG] [ipc-raw] {"tabId":"tab-1779142855333-dj9h2w","event":"tab:status:working","data":null}
+
+2026-05-20T23:22:29.668Z [DEBUG] [hook] tab:status:working tab-1779142855333-dj9h2w null
+2026-05-20T23:22:50.492Z [DEBUG] [ipc-raw] {"tabId":"tab-1779142855333-dj9h2w","event":"tab:status:idle","data":null}
+
+2026-05-20T23:22:50.492Z [DEBUG] [hook] tab:status:idle tab-1779142855333-dj9h2w null
+2026-05-20T23:22:53.873Z [DEBUG] [ipc-raw] {"tabId":"tab-1779318412790-o7elvi","event":"tab:status:working","data":null}
+
+2026-05-20T23:22:53.873Z [DEBUG] [hook] tab:status:working tab-1779318412790-o7elvi null
+2026-05-20T23:23:37.717Z [DEBUG] [ipc-raw] {"tabId":"tab-1779318412790-o7elvi","event":"tab:status:working","data":null}
+
+2026-05-20T23:23:37.717Z [DEBUG] [hook] tab:status:working tab-1779318412790-o7elvi null
+2026-05-20T23:24:14.371Z [DEBUG] [ipc-raw] {"tabId":"tab-1779318412790-o7elvi","event":"tab:status:working","data":null}
+
+2026-05-20T23:24:14.371Z [DEBUG] [hook] tab:status:working tab-1779318412790-o7elvi null
+2026-05-20T23:24:32.949Z [DEBUG] [ipc-raw] {"tabId":"tab-1779142855333-dj9h2w","event":"tab:status:input","data":null}
+
+2026-05-20T23:24:32.949Z [DEBUG] [hook] tab:status:input tab-1779142855333-dj9h2w null
+2026-05-20T23:24:48.813Z [DEBUG] [ipc-raw] {"tabId":"tab-1779318412790-o7elvi","event":"tab:status:working","data":null}
+
+2026-05-20T23:24:48.813Z [DEBUG] [hook] tab:status:working tab-1779318412790-o7elvi null
+2026-05-20T23:25:22.824Z [DEBUG] [ipc-raw] {"tabId":"tab-1779318412790-o7elvi","event":"tab:status:working","data":null}
+
+2026-05-20T23:25:22.824Z [DEBUG] [hook] tab:status:working tab-1779318412790-o7elvi null
+2026-05-20T23:25:59.620Z [DEBUG] [ipc-raw] {"tabId":"tab-1779318412790-o7elvi","event":"tab:status:working","data":null}
+
+2026-05-20T23:25:59.620Z [DEBUG] [hook] tab:status:working tab-1779318412790-o7elvi null
+2026-05-20T23:26:45.627Z [DEBUG] [ipc-raw] {"tabId":"tab-1779318412790-o7elvi","event":"tab:status:working","data":null}
+
+2026-05-20T23:26:45.627Z [DEBUG] [hook] tab:status:working tab-1779318412790-o7elvi null
+2026-05-20T23:27:33.569Z [DEBUG] [ipc-raw] {"tabId":"tab-1779318412790-o7elvi","event":"tab:status:working","data":null}
+
+2026-05-20T23:27:33.569Z [DEBUG] [hook] tab:status:working tab-1779318412790-o7elvi null
+2026-05-20T23:28:23.219Z [DEBUG] [ipc-raw] {"tabId":"tab-1779318412790-o7elvi","event":"tab:status:working","data":null}
+
+2026-05-20T23:28:23.219Z [DEBUG] [hook] tab:status:working tab-1779318412790-o7elvi null
+2026-05-20T23:28:57.367Z [DEBUG] [ipc-raw] {"tabId":"tab-1779318412790-o7elvi","event":"tab:status:working","data":null}
+
+2026-05-20T23:28:57.367Z [DEBUG] [hook] tab:status:working tab-1779318412790-o7elvi null
+2026-05-20T23:29:15.391Z [DEBUG] [ipc-raw] {"tabId":"tab-1779318412790-o7elvi","event":"tab:status:working","data":null}
+
+2026-05-20T23:29:15.391Z [DEBUG] [hook] tab:status:working tab-1779318412790-o7elvi null
+2026-05-20T23:29:26.068Z [DEBUG] [ipc-raw] {"tabId":"tab-1779318412790-o7elvi","event":"tab:status:working","data":null}
+
+2026-05-20T23:29:26.068Z [DEBUG] [hook] tab:status:working tab-1779318412790-o7elvi null
+2026-05-20T23:29:43.687Z [DEBUG] [ipc-raw] {"tabId":"tab-1779318412790-o7elvi","event":"tab:status:working","data":null}
+
+2026-05-20T23:29:43.687Z [DEBUG] [hook] tab:status:working tab-1779318412790-o7elvi null
+2026-05-20T23:29:50.573Z [DEBUG] [ipc-raw] {"tabId":"tab-1779318412790-o7elvi","event":"tab:status:input","data":null}
+
+2026-05-20T23:29:50.573Z [DEBUG] [hook] tab:status:input tab-1779318412790-o7elvi null
