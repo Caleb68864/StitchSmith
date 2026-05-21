@@ -1,0 +1,27 @@
+interface ConstructionNotesProps {
+  notes: string[];
+}
+
+export function ConstructionNotes({ notes }: ConstructionNotesProps) {
+  if (notes.length === 0) {
+    return (
+      <div className="rounded border border-border p-3">
+        <h3 className="text-xs font-semibold mb-1">Construction Notes</h3>
+        <p className="text-xs text-muted-foreground">No construction notes available.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded border border-border p-3">
+      <h3 className="text-xs font-semibold mb-2">Construction Notes</h3>
+      <ol className="space-y-1 list-decimal list-inside">
+        {notes.map((note, i) => (
+          <li key={i} className="text-xs text-muted-foreground leading-snug">
+            {note}
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+}
