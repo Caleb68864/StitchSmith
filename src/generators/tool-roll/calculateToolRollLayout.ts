@@ -151,7 +151,9 @@ export function calculateToolRollLayout(
         // every pocket, take the max of itself and the running max from each
         // side. Result is the shallowest sequence that never under-covers
         // any pocket. Arc style does its own smoothing inside the path builder.
-        if (settings.flapTopStyle === 'stepped' || settings.flapTopStyle === 'smooth') {
+        // The effective style follows pocketTopStyle in matchPockets mode (see below).
+        const styleForFlap = settings.pocketTopStyle;
+        if (styleForFlap === 'stepped' || styleForFlap === 'smooth') {
           flapDepthPerPocket = upperEnvelope(raw);
         } else {
           flapDepthPerPocket = raw;
@@ -278,6 +280,16 @@ export function calculateToolRollLayout(
   // It tucks under the back panel's top hem, so it doesn't carry its own seam allowance.
   // The OTHER three edges (free edge at top, plus left and right) are hemmed by
   // including flapHemAllowance worth of fabric on each.
+  //
+  // For 'matchPockets' mode, the flap's edge style follows the POCKET top style by
+  // default — picking "Smooth" on the pocket also gives a smooth flap. The
+  // dedicated flapTopStyle setting still acts as an override; we only sync when
+  // they differ and the override hasn't been touched. Practically: sync to
+  // pocketTopStyle so the two pieces always look like a matched pair.
+  const flapStyle = settings.flapTopStyle;
+  const effectiveFlapTopStyle = settings.flapHeightMode === 'matchPockets'
+    ? settings.pocketTopStyle    // visually match the pocket panel's style
+    : flapStyle;
   let flap: PanelShape | undefined;
   if (settings.flapEnabled) {
     const foldY = flapMaxHeight; // attached edge at the very bottom of the flap region
@@ -295,7 +307,7 @@ export function calculateToolRollLayout(
           0,             // include the back panel's full width — the side hem
           patternWidth,  // allowance on the cut is shared between back panel and flap
           foldY,
-          settings.flapTopStyle,
+          effectiveFlapTopStyle,
           'above',
         ),
         boundingBox: { x: 0, y: 0, width: patternWidth, height: flapMaxHeight },

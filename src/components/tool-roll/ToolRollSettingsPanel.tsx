@@ -284,22 +284,12 @@ export function ToolRollSettingsPanel({ settings, units, onUpdate, onUnitsChange
             <NumInput id="flapOverlap" value={settings.flapOverlap} units={units} onChange={v => onUpdate({ flapOverlap: v })} />
           </Row>
           {settings.flapHeightMode === 'matchPockets' && (
-            <Row label="Flap edge style" tip="Shape of the flap's free edge when matching the pocket profile. Same four options as the pocket top style: Stepped / Sloped / Smooth / Arc.">
-              <Select
-                value={settings.flapTopStyle}
-                onValueChange={v => onUpdate({ flapTopStyle: v as ToolRollSettings['flapTopStyle'] })}
-              >
-                <SelectTrigger className="h-7 text-xs w-40">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="stepped">Stepped</SelectItem>
-                  <SelectItem value="sloped">Sloped (diagonals)</SelectItem>
-                  <SelectItem value="smooth">Smooth (per-pocket curves)</SelectItem>
-                  <SelectItem value="arc">Arc (single curve)</SelectItem>
-                </SelectContent>
-              </Select>
-            </Row>
+            <div className="text-[10px] text-muted-foreground italic px-1 py-1">
+              Flap edge style automatically follows the Pocket top style ({settings.pocketTopStyle}).
+              The flap silhouette will MIRROR the pocket panel across the seam — short flap where the
+              pocket is deep, tall flap where the pocket is shallow. This is correct fold geometry:
+              when folded down 180° around the seam, every tool gets the same overlap past its pocket top.
+            </div>
           )}
           {settings.flapHeightMode === 'fixed' && (
             <Row label="Flap height" tip="Body height of the flap. The cut piece adds the flap hem + flap seam allowance on top of this.">
