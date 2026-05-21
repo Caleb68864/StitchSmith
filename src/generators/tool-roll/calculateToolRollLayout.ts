@@ -18,9 +18,11 @@ import {
   calculatePrintLayout,
   buildBackPanelPath,
   buildPocketPanelPath,
+  buildPocketPanelProfilePath,
 } from './geometry.js';
 import { generateConstructionNotes } from './constructionNotes.js';
 import { generateId } from '../../utils/ids.js';
+import { groupTools, toolFromGroup } from './grouping.js';
 
 // ── Effective pocket depth per height mode ─────────────────────────────────
 
@@ -49,10 +51,16 @@ export function calculateToolRollLayout(
   settings: ToolRollSettings,
   units: UnitSystem,
 ): ToolRollLayout {
-  const sorted = sortTools(tools, settings);
+  // Step 1: merge tools that share a pocket (no-op when grouping is off).
+  // Each group becomes a synthetic ToolItem the rest of the pipeline treats as one tool.
+  const groups = groupTools(tools, settings);
+  const mergedTools: ToolItem[] = groups.map(toolFromGroup);
+
+  // Step 2: sort the merged tools according to the active sort mode.
+  const sorted = sortTools(mergedTools, settings);
 
   // Compute pocket widths and depths
-  const rawDepths = sorted.map(t => calculatePocketDepth(t));
+  const rawDepths = sorted.map(t => calculatePocketDepth(t, settings));
   const maxRawDepth = rawDepths.length > 0 ? Math.max(...rawDepths) : 0;
 
   const pocketWidthResults = sorted.map(t => calculatePocketWidth(t, settings));
@@ -112,6 +120,24 @@ export function calculateToolRollLayout(
     return pocket;
   });
 
+  // ── Pocket labels (vertical, reads from pocket bottom upward) ─────────────
+  // Font size scales with pocket width so a narrow pocket gets a smaller label.
+  // text-anchor='start' + rotate(-90, x, y) → text starts at (x, y) and reads upward.
+  const pocketLabels = settings.showLabels
+    ? pockets.map(p => {
+        const fontSize = Math.min(4.5, Math.max(2.5, p.pocketWidth * 0.45));
+        return {
+          id: generateId('label'),
+          x: p.x + p.pocketWidth / 2 + fontSize / 3,
+          y: p.bottomY - 2,
+          text: p.toolName,
+          fontSize,
+          anchor: 'start' as const,
+          rotate: -90,
+        };
+      })
+    : [];
+
   // ── Back panel ────────────────────────────────────────────────────────────
   const backPanel: PanelShape = {
     cutPath: buildBackPanelPath(patternWidth, backPanelHeight),
@@ -125,10 +151,22 @@ export function calculateToolRollLayout(
     settings.pocketBottomAllowance +
     settings.seamAllowance;
 
+  // Two paths: a flat rectangle (the actual fabric piece dimensions) and a profile
+  // path (the visible silhouette where the panel sits on the back panel — used for preview).
+  const pocketPanelProfilePath = buildPocketPanelProfilePath(
+    pockets.map(p => ({ x: p.x, pocketWidth: p.pocketWidth, topY: p.topY })),
+    settings.sideHemAllowance,
+    patternWidth - settings.sideHemAllowance,
+    pocketBottomY + settings.pocketBottomAllowance,
+    settings.pocketTopStyle,
+  );
+
   const pocketPanel: PocketPanelShape = {
-    cutPath: buildPocketPanelPath(patternWidth, pocketPanelHeight),
+    cutPath: pocketPanelProfilePath,
     boundingBox: { x: 0, y: 0, width: patternWidth, height: pocketPanelHeight },
   };
+  // Keep the rectangular cut path available for export — sewing pieces are cut flat.
+  void buildPocketPanelPath; // referenced for future flat-piece export use
 
   // ── Flap panel ────────────────────────────────────────────────────────────
   let flap: PanelShape | undefined;
@@ -140,15 +178,19 @@ export function calculateToolRollLayout(
   }
 
   // ── Stitch lines ──────────────────────────────────────────────────────────
-  // Vertical dividers between pockets (on the pocket panel)
+  // Vertical dividers between pockets. Each divider runs from the bottom row up to
+  // the SHALLOWER of its two adjacent pockets' tops — beyond that the panel edge takes over.
   const stitchLines: StitchLine[] = [];
-  let dividerX = settings.sideHemAllowance;
   for (let i = 0; i < pockets.length - 1; i++) {
-    dividerX += pocketWidthResults[i].width;
+    const leftPocket = pockets[i];
+    const rightPocket = pockets[i + 1];
+    const dividerX = leftPocket.x + leftPocket.pocketWidth;
+    // Shallower pocket has the larger topY (closer to bottom).
+    const dividerTopY = Math.max(leftPocket.topY, rightPocket.topY);
     stitchLines.push({
       id: generateId('stitch'),
       x1: dividerX,
-      y1: pocketBottomY - maxEffectiveDepth,
+      y1: dividerTopY,
       x2: dividerX,
       y2: pocketBottomY,
     });
@@ -224,7 +266,7 @@ export function calculateToolRollLayout(
     seamAllowanceLines,
     notches: [],
     tieMarks: [],
-    labels: [],
+    labels: pocketLabels,
     dimensionLines: [],
     warnings: [],
     constructionNotes: [],
@@ -247,7 +289,7 @@ export function calculateToolRollLayout(
     seamAllowanceLines,
     notches: [],
     tieMarks: [],
-    labels: [],
+    labels: pocketLabels,
     dimensionLines: [],
     warnings: [],
     constructionNotes,

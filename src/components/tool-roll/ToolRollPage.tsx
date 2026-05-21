@@ -8,6 +8,7 @@ import { PatternSummary } from './PatternSummary.js';
 import { WarningsPanel } from './WarningsPanel.js';
 import { ConstructionNotes } from './ConstructionNotes.js';
 import { PatternPreview } from './PatternPreview.js';
+import { Legend } from './Legend.js';
 import { ExportPanel } from './ExportPanel.js';
 import { exportFullSvg } from '../../export/exportSvg.js';
 import { exportProjectJson } from '../../export/exportProjectJson.js';
@@ -112,11 +113,14 @@ export function ToolRollPage({
           />
 
           {layout ? (
-            <PatternPreview
-              layout={layout}
-              settings={project.settings}
-              onToggleTileGrid={handleToggleTileGrid}
-            />
+            <>
+              <PatternPreview
+                layout={layout}
+                settings={project.settings}
+                onToggleTileGrid={handleToggleTileGrid}
+              />
+              <Legend settings={project.settings} />
+            </>
           ) : (
             <div className="rounded border border-dashed border-border p-6 flex items-center justify-center bg-muted/20">
               <p className="text-xs text-muted-foreground">Add tools to see pattern preview.</p>

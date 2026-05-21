@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback, useEffect, type WheelEvent, type MouseEvent } from 'react';
+import { useRef, useState, useCallback, useEffect, type MouseEvent } from 'react';
 import { ZoomIn, ZoomOut, Maximize2, Grid } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { ToolRollLayout, ToolRollSettings } from '../../generators/tool-roll/types.js';
@@ -19,6 +19,8 @@ interface Transform {
 const MIN_SCALE = 0.05;
 const MAX_SCALE = 10;
 const ZOOM_FACTOR = 1.15;
+// FullPatternSvg renders with width/height in mm. Browsers render mm at 96 dpi → 3.7795 px/mm.
+const PX_PER_MM = 96 / 25.4;
 
 export function PatternPreview({ layout, settings, onToggleTileGrid }: PatternPreviewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -26,15 +28,19 @@ export function PatternPreview({ layout, settings, onToggleTileGrid }: PatternPr
   const [dragging, setDragging] = useState(false);
   const dragStart = useRef<{ x: number; y: number; tx: number; ty: number } | null>(null);
 
-  // Fit-to-screen on first render or when layout changes
+  // Fit-to-screen: SVG renders at PX_PER_MM, so convert pattern dimensions to pixels
+  // before sizing — otherwise the scale is off by ~3.78× and the SVG overflows.
   const fitToScreen = useCallback(() => {
     if (!containerRef.current) return;
     const { clientWidth: cw, clientHeight: ch } = containerRef.current;
-    const scaleX = cw / layout.patternWidth;
-    const scaleY = ch / layout.patternHeight;
-    const scale = Math.min(scaleX, scaleY) * 0.9;
-    const x = (cw - layout.patternWidth * scale) / 2;
-    const y = (ch - layout.patternHeight * scale) / 2;
+    if (cw === 0 || ch === 0) return;
+    const svgPxW = layout.patternWidth * PX_PER_MM;
+    const svgPxH = layout.patternHeight * PX_PER_MM;
+    const scaleX = cw / svgPxW;
+    const scaleY = ch / svgPxH;
+    const scale = Math.min(scaleX, scaleY) * 0.92;
+    const x = (cw - svgPxW * scale) / 2;
+    const y = (ch - svgPxH * scale) / 2;
     setTransform({ x, y, scale });
   }, [layout.patternWidth, layout.patternHeight]);
 
@@ -42,22 +48,29 @@ export function PatternPreview({ layout, settings, onToggleTileGrid }: PatternPr
     fitToScreen();
   }, [fitToScreen]);
 
-  const handleWheel = useCallback((e: WheelEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    const delta = e.deltaY < 0 ? ZOOM_FACTOR : 1 / ZOOM_FACTOR;
-    setTransform(prev => {
-      const rect = containerRef.current?.getBoundingClientRect();
-      if (!rect) return prev;
+  // Wheel listener must be non-passive to allow preventDefault. React's synthetic
+  // onWheel attaches passively in React 17+, so we attach a native one ourselves.
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const delta = e.deltaY < 0 ? ZOOM_FACTOR : 1 / ZOOM_FACTOR;
+      const rect = el.getBoundingClientRect();
       const mx = e.clientX - rect.left;
       const my = e.clientY - rect.top;
-      const newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, prev.scale * delta));
-      const scaleDiff = newScale / prev.scale;
-      return {
-        scale: newScale,
-        x: mx - (mx - prev.x) * scaleDiff,
-        y: my - (my - prev.y) * scaleDiff,
-      };
-    });
+      setTransform(prev => {
+        const newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, prev.scale * delta));
+        const scaleDiff = newScale / prev.scale;
+        return {
+          scale: newScale,
+          x: mx - (mx - prev.x) * scaleDiff,
+          y: my - (my - prev.y) * scaleDiff,
+        };
+      });
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
   }, []);
 
   const handleMouseDown = useCallback((e: MouseEvent<HTMLDivElement>) => {
@@ -121,7 +134,6 @@ export function PatternPreview({ layout, settings, onToggleTileGrid }: PatternPr
         ref={containerRef}
         className="flex-1 overflow-hidden relative"
         style={{ cursor: dragging ? 'grabbing' : 'grab' }}
-        onWheel={handleWheel}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}

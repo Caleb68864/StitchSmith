@@ -106,14 +106,24 @@ describe('sortTools', () => {
   });
 
   it('pocketDepthAscending: sorts by depth ascending', () => {
-    // depths: a=80, b=150, c=70
-    const sorted = sortTools([toolA, toolB, toolC], { ...defaultToolRollSettings, sortMode: 'pocketDepthAscending' });
+    // visibleAmount mode → depths: a=80, b=150, c=70
+    const sorted = sortTools([toolA, toolB, toolC], { ...defaultToolRollSettings, pocketDepthMode: 'visibleAmount', sortMode: 'pocketDepthAscending' });
     expect(sorted.map(t => t.id)).toEqual(['c', 'a', 'b']); // 70, 80, 150
   });
 
   it('pocketDepthDescending: sorts by depth descending', () => {
-    const sorted = sortTools([toolA, toolB, toolC], { ...defaultToolRollSettings, sortMode: 'pocketDepthDescending' });
+    // visibleAmount mode → depths: a=80, b=150, c=70
+    const sorted = sortTools([toolA, toolB, toolC], { ...defaultToolRollSettings, pocketDepthMode: 'visibleAmount', sortMode: 'pocketDepthDescending' });
     expect(sorted.map(t => t.id)).toEqual(['b', 'a', 'c']); // 150, 80, 70
+  });
+
+  it('pocketDepthAscending with heightPercentage mode sorts by tool height', () => {
+    // heightPercentage = 0.75 → depths: a=75, b=150, c=112.5 (proportional to height)
+    const sorted = sortTools(
+      [toolA, toolB, toolC],
+      { ...defaultToolRollSettings, pocketDepthMode: 'heightPercentage', pocketHeightPercentage: 0.75, sortMode: 'pocketDepthAscending' },
+    );
+    expect(sorted.map(t => t.id)).toEqual(['a', 'c', 'b']);
   });
 
   it('does not mutate the input array', () => {

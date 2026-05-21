@@ -1,7 +1,7 @@
+@import './styles/pattern-svg.css';
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-@import './styles/pattern-svg.css';
 
 @layer base {
   :root {

@@ -9,8 +9,20 @@ import { getPaperSize } from '../../utils/units.js';
 
 // ── Pocket geometry ────────────────────────────────────────────────────────
 
-/** Returns the pocket depth for a tool: height minus the visible amount above the pocket. */
-export function calculatePocketDepth(tool: Pick<ToolItem, 'height' | 'visibleAmount'>): number {
+/**
+ * Returns the pocket depth for a tool.
+ * If `settings` is omitted, falls back to visibleAmount mode (height - visibleAmount).
+ * With settings.pocketDepthMode === 'heightPercentage', returns height * pocketHeightPercentage,
+ * clamped to [0, height].
+ */
+export function calculatePocketDepth(
+  tool: Pick<ToolItem, 'height' | 'visibleAmount'>,
+  settings?: Pick<ToolRollSettings, 'pocketDepthMode' | 'pocketHeightPercentage'>,
+): number {
+  if (settings?.pocketDepthMode === 'heightPercentage') {
+    const pct = Math.max(0, Math.min(1, settings.pocketHeightPercentage));
+    return tool.height * pct;
+  }
   return tool.height - tool.visibleAmount;
 }
 
@@ -55,11 +67,11 @@ export function sortTools(tools: ToolItem[], settings: ToolRollSettings): ToolIt
       return copy.sort((a, b) => b.height - a.height);
     case 'pocketDepthAscending':
       return copy.sort(
-        (a, b) => calculatePocketDepth(a) - calculatePocketDepth(b),
+        (a, b) => calculatePocketDepth(a, settings) - calculatePocketDepth(b, settings),
       );
     case 'pocketDepthDescending':
       return copy.sort(
-        (a, b) => calculatePocketDepth(b) - calculatePocketDepth(a),
+        (a, b) => calculatePocketDepth(b, settings) - calculatePocketDepth(a, settings),
       );
     default:
       return copy;
@@ -137,4 +149,192 @@ export function buildBackPanelPath(width: number, height: number): SvgPathData {
 /** Returns a closed rectangular SVG path for the pocket panel cut line. */
 export function buildPocketPanelPath(width: number, height: number): SvgPathData {
   return `M 0 0 H ${width} V ${height} H 0 Z`;
+}
+
+/**
+ * Returns a closed SVG path for the pocket panel cut line with a stepped or sloped top edge.
+ * The panel sits in pattern coordinates with its bottom at `pocketBottomY` (the row where
+ * all pocket bottoms align) and its top profile rising and falling with each pocket's depth.
+ *
+ * Inputs:
+ *  - `pockets`: in left-to-right pattern order. Each carries x, pocketWidth, topY.
+ *  - `leftX`, `rightX`: outer left/right boundary of the panel (typically the side hem allowances).
+ *  - `bottomY`: y-coordinate of the bottom edge (in pattern coords; higher Y = further down).
+ *  - `style`: 'stepped' (zig-zag) or 'sloped' (diagonal connections between pocket tops).
+ */
+/**
+ * Builds a Fritsch–Carlson monotone cubic Hermite spline through a sorted set of
+ * (x, y) points and emits it as a stitched sequence of cubic Bézier segments
+ * starting from the first point with an implicit `M`. Monotonicity guarantees the
+ * curve never overshoots the input y values — so when used for a pocket top, the
+ * curve cannot rise above (smaller y than) any anchor point.
+ */
+function monotoneCubicSplineSegments(
+  points: { x: number; y: number }[],
+  startWithMove = false,
+): string {
+  if (points.length === 0) return '';
+  if (points.length === 1) {
+    return startWithMove ? `M ${points[0].x} ${points[0].y}` : '';
+  }
+  const n = points.length;
+  const dx: number[] = [];
+  const m: number[] = []; // secant slopes
+  for (let i = 0; i < n - 1; i++) {
+    dx.push(points[i + 1].x - points[i].x);
+    m.push((points[i + 1].y - points[i].y) / dx[i]);
+  }
+  // Initial tangents = average of adjacent secants, endpoints use one-sided
+  const t: number[] = new Array(n);
+  t[0] = m[0];
+  t[n - 1] = m[n - 2];
+  for (let i = 1; i < n - 1; i++) {
+    if (m[i - 1] * m[i] <= 0) t[i] = 0;
+    else t[i] = (m[i - 1] + m[i]) / 2;
+  }
+  // Fritsch–Carlson monotonicity adjustment
+  for (let i = 0; i < n - 1; i++) {
+    if (m[i] === 0) {
+      t[i] = 0;
+      t[i + 1] = 0;
+    } else {
+      const a = t[i] / m[i];
+      const b = t[i + 1] / m[i];
+      const s = a * a + b * b;
+      if (s > 9) {
+        const tau = 3 / Math.sqrt(s);
+        t[i] = tau * a * m[i];
+        t[i + 1] = tau * b * m[i];
+      }
+    }
+  }
+  const out: string[] = [];
+  if (startWithMove) out.push(`M ${points[0].x} ${points[0].y}`);
+  for (let i = 0; i < n - 1; i++) {
+    const cp1x = points[i].x + dx[i] / 3;
+    const cp1y = points[i].y + (t[i] * dx[i]) / 3;
+    const cp2x = points[i + 1].x - dx[i] / 3;
+    const cp2y = points[i + 1].y - (t[i + 1] * dx[i]) / 3;
+    out.push(`C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${points[i + 1].x} ${points[i + 1].y}`);
+  }
+  return out.join(' ');
+}
+
+export function buildPocketPanelProfilePath(
+  pockets: { x: number; pocketWidth: number; topY: number }[],
+  leftX: number,
+  rightX: number,
+  bottomY: number,
+  style: 'stepped' | 'sloped' | 'smooth' | 'arc',
+): SvgPathData {
+  if (pockets.length === 0) {
+    return `M ${leftX} 0 H ${rightX} V ${bottomY} H ${leftX} Z`;
+  }
+  // Start at bottom-left, walk clockwise.
+  const parts: string[] = [];
+  parts.push(`M ${leftX} ${bottomY}`);
+  parts.push(`H ${rightX}`); // bottom edge
+  // Right edge: go up to right-most pocket's top
+  const last = pockets[pockets.length - 1];
+  parts.push(`V ${last.topY}`);
+  if (style === 'stepped') {
+    // Walk pockets right→left along the top, stepping vertically at each boundary.
+    for (let i = pockets.length - 1; i > 0; i--) {
+      const cur = pockets[i];
+      const prev = pockets[i - 1];
+      parts.push(`H ${cur.x}`); // horizontal across this pocket's top
+      parts.push(`V ${prev.topY}`); // vertical step to neighbor's top
+    }
+    parts.push(`H ${leftX}`); // final horizontal across the leftmost pocket
+  } else if (style === 'sloped') {
+    // Sloped: each boundary is a single diagonal from this pocket's far edge to the
+    // neighbor's near edge. No intermediate horizontal — the pocket top is a sawtooth.
+    for (let i = pockets.length - 1; i > 0; i--) {
+      const cur = pockets[i];
+      const prev = pockets[i - 1];
+      parts.push(`L ${cur.x} ${prev.topY}`);
+    }
+    parts.push(`H ${leftX}`); // close across leftmost pocket
+  } else if (style === 'smooth') {
+    // Smooth: replace each diagonal with a cubic Bézier that meets the adjacent
+    // pocket horizontally at both ends. No angles anywhere along the top.
+    // For each pocket i: start at (cur.x + cur.width, cur.topY), end at (cur.x, prev.topY).
+    // Control points lie on horizontal tangents at start and end.
+    for (let i = pockets.length - 1; i > 0; i--) {
+      const cur = pockets[i];
+      const prev = pockets[i - 1];
+      const startX = cur.x + cur.pocketWidth;
+      const endX = cur.x;
+      const cp1x = startX - cur.pocketWidth / 2;
+      const cp2x = endX + cur.pocketWidth / 2;
+      parts.push(`C ${cp1x} ${cur.topY}, ${cp2x} ${prev.topY}, ${endX} ${prev.topY}`);
+    }
+    parts.push(`H ${leftX}`); // leftmost pocket top — still horizontal (C0 + C1 continuous)
+  } else {
+    // Arc: ONE cubic Bézier from the rightmost edge to the leftmost edge.
+    // Endpoints anchor at the first and last pockets' allowed tops; the curve
+    // sweeps smoothly between them with horizontal tangents at both ends.
+    //
+    // Constraint enforcement: after laying down the initial curve, we check
+    // each intermediate pocket's center. If the curve would dip ABOVE that
+    // pocket's allowed top (smaller y → deeper than 75%), we push the offending
+    // control point downward (larger y) until every pocket's ceiling is honored.
+    // Result: one sweeping arc that never makes any pocket deeper than allowed.
+    const firstTop = pockets[0].topY;
+    const lastTop = pockets[pockets.length - 1].topY;
+    const spanX = rightX - leftX;
+
+    // Initial horizontal-tangent handles (handle length = 1/3 of span).
+    let cp1x = leftX + spanX / 3;
+    let cp1y = firstTop;
+    let cp2x = rightX - spanX / 3;
+    let cp2y = lastTop;
+
+    // Helper: sample y at parametric t for a cubic Bézier with current cps.
+    const sampleY = (t: number, p0y: number, c1y: number, c2y: number, p3y: number) => {
+      const mt = 1 - t;
+      return mt * mt * mt * p0y + 3 * mt * mt * t * c1y + 3 * mt * t * t * c2y + t * t * t * p3y;
+    };
+    // Helper: find t such that bezier x(t) ≈ targetX (binary search).
+    const findT = (targetX: number, p0x: number, c1x: number, c2x: number, p3x: number) => {
+      let lo = 0, hi = 1;
+      for (let i = 0; i < 24; i++) {
+        const mid = (lo + hi) / 2;
+        const mt = 1 - mid;
+        const x = mt * mt * mt * p0x + 3 * mt * mt * mid * c1x + 3 * mt * mid * mid * c2x + mid * mid * mid * p3x;
+        if (x < targetX) lo = mid;
+        else hi = mid;
+      }
+      return (lo + hi) / 2;
+    };
+
+    // Up to a few correction passes: if curve overshoots any ceiling, lower the
+    // nearer control point's y just enough to clear it.
+    for (let pass = 0; pass < 6; pass++) {
+      let maxOver = 0;
+      let overSide: 'left' | 'right' = 'left';
+      for (const p of pockets) {
+        const cx = p.x + p.pocketWidth / 2;
+        const t = findT(cx, leftX, cp1x, cp2x, rightX);
+        const yAtT = sampleY(t, firstTop, cp1y, cp2y, lastTop);
+        // "Over" the ceiling means curve is above (smaller y than) the pocket's allowed top.
+        const overshoot = p.topY - yAtT; // positive = violation
+        if (overshoot > maxOver) {
+          maxOver = overshoot;
+          overSide = t < 0.5 ? 'left' : 'right';
+        }
+      }
+      if (maxOver <= 0.01) break; // tolerance in mm — close enough
+      // Push the nearer control point down by the overshoot amount (plus a small margin).
+      if (overSide === 'left') cp1y += maxOver + 0.5;
+      else cp2y += maxOver + 0.5;
+    }
+
+    // Emit one cubic, traversed right → left.
+    parts.push(`C ${cp2x} ${cp2y}, ${cp1x} ${cp1y}, ${leftX} ${firstTop}`);
+  }
+  // Suppress unused-var warning when monotoneCubicSplineSegments isn't called above.
+  void monotoneCubicSplineSegments;
+  parts.push(`Z`);
+  return parts.join(' ');
 }

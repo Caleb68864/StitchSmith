@@ -12,9 +12,16 @@ export type SortMode =
   | 'pocketDepthAscending'
   | 'pocketDepthDescending';
 
-export type PocketTopStyle = 'stepped' | 'sloped';
+export type PocketTopStyle = 'stepped' | 'sloped' | 'smooth' | 'arc';
 
 export type PocketHeightMode = 'individual' | 'steppedToIncrement' | 'sameAsTallest';
+
+/**
+ * How each pocket's depth is derived from the tool dimensions.
+ * - 'visibleAmount': pocketDepth = height - visibleAmount (per-tool field)
+ * - 'heightPercentage': pocketDepth = height * pocketHeightPercentage (global)
+ */
+export type PocketDepthMode = 'visibleAmount' | 'heightPercentage';
 
 export type FlapHeightMode = 'fixed' | 'basedOnTallestTool' | 'basedOnPocketDepth';
 
@@ -58,6 +65,16 @@ export type ToolRollSettings = {
   pocketTopStyle: PocketTopStyle;
   pocketHeightMode: PocketHeightMode;
   pocketHeightIncrement: number;
+  /** How pocket depth is derived: per-tool visibleAmount, or a percentage of tool height. */
+  pocketDepthMode: PocketDepthMode;
+  /** Fraction (0..1) of tool.height used as pocket depth when pocketDepthMode === 'heightPercentage'. Default 0.75. */
+  pocketHeightPercentage: number;
+  /** When true, tools within `groupHeightTolerance` mm of each other in height get merged into a single pocket. */
+  groupingEnabled: boolean;
+  /** Max height delta (mm) within a group — tools whose heights span ≤ this can share a pocket. */
+  groupHeightTolerance: number;
+  /** Max number of tools per merged pocket (e.g. 2 pairs SAE with metric, 3 packs trios, etc.). */
+  groupMaxSize: number;
   sideGap: number;
   thicknessEaseFactor: number;
   minimumPocketWidth: number;
@@ -175,6 +192,8 @@ export type PatternLabel = {
   text: string;
   fontSize?: number;
   anchor?: 'start' | 'middle' | 'end';
+  /** Rotation in degrees about (x, y). Used for vertical pocket labels (e.g. -90). */
+  rotate?: number;
 };
 
 export type DimensionLine = {

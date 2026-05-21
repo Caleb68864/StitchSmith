@@ -8,6 +8,11 @@ export const defaultToolRollSettings: ToolRollSettings = {
   pocketTopStyle: 'stepped',
   pocketHeightMode: 'individual',
   pocketHeightIncrement: 5,
+  pocketDepthMode: 'heightPercentage',
+  pocketHeightPercentage: 0.75,
+  groupingEnabled: false,
+  groupHeightTolerance: 15,  // mm
+  groupMaxSize: 2,
   sideGap: 3,
   thicknessEaseFactor: 0.5,
   minimumPocketWidth: 30,

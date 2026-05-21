@@ -1,6 +1,17 @@
 import type { ToolRollProject } from '../generators/tool-roll/types.js';
+import { defaultToolRollSettings } from '../generators/tool-roll/defaults.js';
 
 export const STORAGE_KEY = 'stitchsmith.tool-roll.v1';
+
+/**
+ * Merges saved settings with the current defaults so that newly-added setting
+ * fields are filled in for projects saved before they existed. Prevents undefined
+ * reads in the UI (e.g. NumInput calling .toFixed on a missing field).
+ */
+function migrateSettings(saved: unknown): ToolRollProject['settings'] {
+  if (typeof saved !== 'object' || saved === null) return { ...defaultToolRollSettings };
+  return { ...defaultToolRollSettings, ...(saved as ToolRollProject['settings']) };
+}
 
 // In-memory fallback when localStorage is unavailable
 let _inMemoryProject: ToolRollProject | null = null;
@@ -48,7 +59,8 @@ export function loadProject(): ToolRollProject | null {
     if (!raw) return null;
     const parsed: unknown = JSON.parse(raw);
     if (!isValidProject(parsed)) return null;
-    return parsed;
+    // Forward-migrate: fill any newer setting fields from defaults.
+    return { ...parsed, settings: migrateSettings(parsed.settings) };
   } catch {
     return null;
   }

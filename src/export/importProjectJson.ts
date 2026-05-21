@@ -1,4 +1,5 @@
 import type { ToolRollProject } from '../generators/tool-roll/types.js';
+import { defaultToolRollSettings } from '../generators/tool-roll/defaults.js';
 
 const MAX_TOOLS = 500;
 
@@ -42,5 +43,11 @@ export function parseProjectJson(json: string): ToolRollProject {
     );
   }
 
-  return parsed as ToolRollProject;
+  // Forward-migrate: merge any newly-added setting fields from the current defaults
+  // so older project files (e.g. the bundled wrenches.json) don't crash the UI.
+  const project = parsed as ToolRollProject;
+  return {
+    ...project,
+    settings: { ...defaultToolRollSettings, ...project.settings },
+  };
 }

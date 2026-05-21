@@ -1,5 +1,7 @@
+import { useMemo } from 'react';
 import type { ToolItem, ToolRollSettings } from '../../generators/tool-roll/types.js';
 import { ToolEditorRow } from './ToolEditorRow.js';
+import { sortTools } from '../../generators/tool-roll/geometry.js';
 
 interface ToolTableProps {
   tools: ToolItem[];
@@ -37,7 +39,7 @@ function makeDefaultTool(): Omit<ToolItem, 'id'> {
 
 export function ToolTable({
   tools,
-  settings: _settings,
+  settings,
   units,
   onAddTool,
   onUpdateTool,
@@ -47,6 +49,12 @@ export function ToolTable({
   onMoveToolDown,
 }: ToolTableProps) {
   const unitLabel = units === 'mm' ? '(mm)' : '(in)';
+  // Display tools in the active sort order. Manual mode preserves user-assigned order.
+  const displayTools = useMemo(
+    () => (settings.sortMode === 'manual' ? tools : sortTools(tools, settings)),
+    [tools, settings],
+  );
+  const arrowsActive = settings.sortMode === 'manual';
 
   return (
     <div className="space-y-2">
@@ -76,20 +84,20 @@ export function ToolTable({
             </tr>
           </thead>
           <tbody>
-            {tools.length === 0 ? (
+            {displayTools.length === 0 ? (
               <tr>
                 <td colSpan={COLUMN_HEADERS.length} className="text-center py-6 text-muted-foreground text-xs">
                   No tools added yet. Click "Add Tool" to get started.
                 </td>
               </tr>
             ) : (
-              tools.map((tool, index) => (
+              displayTools.map((tool, index) => (
                 <ToolEditorRow
                   key={tool.id}
                   tool={tool}
                   index={index}
-                  isFirst={index === 0}
-                  isLast={index === tools.length - 1}
+                  isFirst={index === 0 || !arrowsActive}
+                  isLast={index === displayTools.length - 1 || !arrowsActive}
                   units={units}
                   onUpdate={onUpdateTool}
                   onDuplicate={onDuplicateTool}

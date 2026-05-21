@@ -18,6 +18,7 @@ export const SvgLabels: FC<SvgLabelsProps> = ({ labels }) => {
           fontSize={label.fontSize ?? 5}
           textAnchor={label.anchor ?? 'start'}
           dominantBaseline="auto"
+          transform={label.rotate ? `rotate(${label.rotate} ${label.x} ${label.y})` : undefined}
         >
           {label.text}
         </text>

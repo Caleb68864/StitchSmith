@@ -25,7 +25,8 @@ function NumInput({
   onChange: (v: number) => void;
   min?: number;
 }) {
-  const display = units === 'in' ? (value / 25.4).toFixed(3) : value.toFixed(1);
+  const safe = Number.isFinite(value) ? value : 0;
+  const display = units === 'in' ? (safe / 25.4).toFixed(3) : safe.toFixed(1);
   return (
     <Input
       id={id}
@@ -105,7 +106,9 @@ export function ToolRollSettingsPanel({ settings, units, onUpdate, onUnitsChange
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="stepped">Stepped</SelectItem>
-                <SelectItem value="sloped">Sloped</SelectItem>
+                <SelectItem value="sloped">Sloped (diagonals)</SelectItem>
+                <SelectItem value="smooth">Smooth (per-pocket curves)</SelectItem>
+                <SelectItem value="arc">Arc (single curve)</SelectItem>
               </SelectContent>
             </Select>
           </Row>
@@ -127,6 +130,67 @@ export function ToolRollSettingsPanel({ settings, units, onUpdate, onUnitsChange
           <Row label="Pocket height increment">
             <NumInput id="pocketHeightIncrement" value={settings.pocketHeightIncrement} units={units} onChange={v => onUpdate({ pocketHeightIncrement: v })} />
           </Row>
+          <Row label="Pocket depth mode">
+            <Select
+              value={settings.pocketDepthMode}
+              onValueChange={v => onUpdate({ pocketDepthMode: v as ToolRollSettings['pocketDepthMode'] })}
+            >
+              <SelectTrigger className="h-7 text-xs w-40">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="visibleAmount">Visible amount (per tool)</SelectItem>
+                <SelectItem value="heightPercentage">% of tool height</SelectItem>
+              </SelectContent>
+            </Select>
+          </Row>
+          {settings.pocketDepthMode === 'heightPercentage' && (
+            <Row label="Pocket depth (% of height)">
+              <Input
+                id="pocketHeightPercentage"
+                className="h-7 text-xs w-24"
+                defaultValue={(settings.pocketHeightPercentage * 100).toFixed(0)}
+                key={`pocketHeightPercentage-${settings.pocketHeightPercentage}`}
+                inputMode="decimal"
+                onBlur={e => {
+                  const n = parseFloat(e.target.value);
+                  if (isFinite(n) && n > 0 && n < 100) onUpdate({ pocketHeightPercentage: n / 100 });
+                }}
+              />
+            </Row>
+          )}
+          <Row label="Group similar tools">
+            <Switch
+              id="groupingEnabled"
+              checked={settings.groupingEnabled}
+              onCheckedChange={v => onUpdate({ groupingEnabled: v })}
+            />
+          </Row>
+          {settings.groupingEnabled && (
+            <>
+              <Row label="Group height tolerance">
+                <NumInput
+                  id="groupHeightTolerance"
+                  value={settings.groupHeightTolerance}
+                  units={units}
+                  onChange={v => onUpdate({ groupHeightTolerance: v })}
+                />
+              </Row>
+              <Row label="Max tools per pocket">
+                <Input
+                  id="groupMaxSize"
+                  className="h-7 text-xs w-24"
+                  defaultValue={settings.groupMaxSize}
+                  key={`groupMaxSize-${settings.groupMaxSize}`}
+                  inputMode="numeric"
+                  onBlur={e => {
+                    const n = parseInt(e.target.value, 10);
+                    if (Number.isFinite(n) && n >= 1 && n <= 8) onUpdate({ groupMaxSize: n });
+                  }}
+                />
+              </Row>
+            </>
+          )}
           <Row label="Side gap">
             <NumInput id="sideGap" value={settings.sideGap} units={units} onChange={v => onUpdate({ sideGap: v })} />
           </Row>

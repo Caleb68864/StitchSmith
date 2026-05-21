@@ -101,6 +101,20 @@ export function validateSettings(settings: ToolRollSettings): PatternWarning[] {
     });
   }
 
+  if (settings.pocketDepthMode === 'heightPercentage') {
+    if (
+      settings.pocketHeightPercentage <= 0 ||
+      settings.pocketHeightPercentage >= 1
+    ) {
+      warnings.push({
+        id: generateId('warn'),
+        severity: 'error',
+        message: 'Pocket height percentage must be between 0 and 1 (exclusive)',
+        field: 'pocketHeightPercentage',
+      });
+    }
+  }
+
   if (settings.tileOverlap < 0) {
     warnings.push({
       id: generateId('warn'),
