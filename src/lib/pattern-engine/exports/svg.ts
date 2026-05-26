@@ -87,27 +87,38 @@ function pieceToSvgGroup(
   }
 
   if (showLabels) {
-    // Scale label font with piece size so it stays readable on big pieces
-    // without being huge on small ones. Clamp to [8, 28] mm.
-    const fontSize = Math.max(8, Math.min(28, Math.min(bbox.width, bbox.height) / 12));
     const centerX = bbox.minX + bbox.width / 2;
     const centerY = bbox.minY + bbox.height / 2;
+    // Pieces taller than ~2x their width get a rotated label so the text
+    // runs along the piece (book-spine orientation) instead of spilling
+    // out the sides. The narrow dimension still drives font size.
+    const isVertical = bbox.height > bbox.width * 2;
+    const narrowDim = Math.min(bbox.width, bbox.height);
+    const fontSize = Math.max(8, Math.min(28, narrowDim / 8));
+
     const lines: string[] = [piece.name];
-    // Tell the cutter how many copies and whether the piece is cut as a
-    // mirrored pair (e.g. shoulder straps) or on a fold (the engine doesn't
-    // currently emit cut-on-fold pieces, but the Piece type reserves the flag).
     const qtyParts: string[] = [`Cut ${piece.quantity}`];
     if (piece.cutOnFold) qtyParts.push('on fold');
     else if (piece.mirror) qtyParts.push('(mirrored pair)');
     lines.push(qtyParts.join(' '));
+
+    // For rotated text, tspans stack along the rotated-X axis (which is the
+    // piece's Y axis), so the anchor stays at the same x for every line.
+    const anchorX = isVertical ? 0 : centerX;
     const labelText = lines
       .map((line, i) => {
         const dy = i === 0 ? '0' : '1.2em';
-        return `<tspan x="${centerX}" dy="${dy}">${escXml(line)}</tspan>`;
+        return `<tspan x="${anchorX}" dy="${dy}">${escXml(line)}</tspan>`;
       })
       .join('');
+
+    const transform = isVertical
+      ? ` transform="translate(${centerX},${centerY}) rotate(-90)"`
+      : '';
+    const x = isVertical ? 0 : centerX;
+    const y = isVertical ? 0 : centerY;
     parts.push(
-      `<text x="${centerX}" y="${centerY}" font-size="${fontSize}" font-family="sans-serif" text-anchor="middle" dominant-baseline="middle" fill="#374151" opacity="0.7" pointer-events="none">${labelText}</text>`,
+      `<text x="${x}" y="${y}"${transform} font-size="${fontSize}" font-family="sans-serif" text-anchor="middle" dominant-baseline="middle" fill="#374151" opacity="0.7" pointer-events="none">${labelText}</text>`,
     );
   }
 
