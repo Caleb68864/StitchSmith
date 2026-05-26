@@ -1,0 +1,159 @@
+{
+  "version": 1,
+  "spec_slug": "tri-zip-backpack-engine",
+  "contracts": [
+    {
+      "owner_sub_spec": 1,
+      "consumer_sub_specs": [2, 3, 4, 5],
+      "name": "Pattern",
+      "kind": "interface",
+      "signature": "interface Pattern { id: string; name: string; units: 'mm'; pieces: Piece[]; materials: Material[]; hardware: Hardware[]; steps: Step[]; meta: PatternMeta }",
+      "file_path": "src/lib/pattern-engine/graph/Pattern.ts",
+      "content_sha256": "pending"
+    },
+    {
+      "owner_sub_spec": 1,
+      "consumer_sub_specs": [2, 3, 4, 5],
+      "name": "Piece",
+      "kind": "interface",
+      "signature": "interface Piece { id: string; name: string; mirror: boolean; quantity: number; paths: Path[]; materialId?: string; annotations?: PieceAnnotation[]; seamAllowances?: Record<EdgeId, number> }",
+      "file_path": "src/lib/pattern-engine/graph/Piece.ts",
+      "content_sha256": "pending"
+    },
+    {
+      "owner_sub_spec": 1,
+      "consumer_sub_specs": [2, 3, 5],
+      "name": "Edge",
+      "kind": "type",
+      "signature": "type Edge = Straight | Arc | Bezier (each with id, role: 'cut' | 'fold' | 'stitch' | 'seam' | 'notch')",
+      "file_path": "src/lib/pattern-engine/graph/Edge.ts",
+      "content_sha256": "pending"
+    },
+    {
+      "owner_sub_spec": 1,
+      "consumer_sub_specs": [3, 4],
+      "name": "Step",
+      "kind": "interface",
+      "signature": "interface Step { id: string; title: string; body: string; dependsOn: string[]; refsPieces: string[]; group?: string }",
+      "file_path": "src/lib/pattern-engine/instructions/Step.ts",
+      "content_sha256": "pending"
+    },
+    {
+      "owner_sub_spec": 1,
+      "consumer_sub_specs": [2, 3, 5],
+      "name": "offsetPath",
+      "kind": "function",
+      "signature": "function offsetPath(path: Path, sa: number | Record<EdgeId, number>): Result<Path, OffsetError>",
+      "file_path": "src/lib/pattern-engine/geometry/offset.ts",
+      "content_sha256": "pending"
+    },
+    {
+      "owner_sub_spec": 1,
+      "consumer_sub_specs": [4, 5],
+      "name": "exportSvg",
+      "kind": "function",
+      "signature": "function exportSvg(pattern: Pattern, opts?: SvgOptions): string",
+      "file_path": "src/lib/pattern-engine/exports/svg.ts",
+      "content_sha256": "pending"
+    },
+    {
+      "owner_sub_spec": 2,
+      "consumer_sub_specs": [4, 5],
+      "name": "loadPdfExporter",
+      "kind": "function",
+      "signature": "async function loadPdfExporter(): Promise<{ exportPdf: (pattern: Pattern, opts: PdfOptions) => Promise<Blob> }>",
+      "file_path": "src/lib/pattern-engine/exports/lazy.ts",
+      "content_sha256": "pending"
+    },
+    {
+      "owner_sub_spec": 2,
+      "consumer_sub_specs": [4, 5],
+      "name": "loadDxfExporter",
+      "kind": "function",
+      "signature": "async function loadDxfExporter(): Promise<{ exportDxf: (pattern: Pattern) => string }>",
+      "file_path": "src/lib/pattern-engine/exports/lazy.ts",
+      "content_sha256": "pending"
+    },
+    {
+      "owner_sub_spec": 2,
+      "consumer_sub_specs": [4, 5],
+      "name": "loadTiledHtmlExporter",
+      "kind": "function",
+      "signature": "async function loadTiledHtmlExporter(): Promise<{ exportTiledHtml: (pattern: Pattern, opts: TileOptions) => string }>",
+      "file_path": "src/lib/pattern-engine/exports/lazy.ts",
+      "content_sha256": "pending"
+    },
+    {
+      "owner_sub_spec": 2,
+      "consumer_sub_specs": [4, 5],
+      "name": "computeCutList",
+      "kind": "function",
+      "signature": "function computeCutList(pattern: Pattern): { byMaterial: Array<{ materialId; totalAreaMm2; pieces: string[] }>; byHardware: Array<{ hardwareId; count }> }",
+      "file_path": "src/lib/pattern-engine/exports/cutList.ts",
+      "content_sha256": "pending"
+    },
+    {
+      "owner_sub_spec": 2,
+      "consumer_sub_specs": [4, 5],
+      "name": "exportProjectJson",
+      "kind": "function",
+      "signature": "function exportProjectJson<T>(env: ProjectEnvelope<T>): string",
+      "file_path": "src/lib/pattern-engine/exports/projectJson.ts",
+      "content_sha256": "pending"
+    },
+    {
+      "owner_sub_spec": 2,
+      "consumer_sub_specs": [4, 5],
+      "name": "importProjectJson",
+      "kind": "function",
+      "signature": "function importProjectJson<T>(json: string, schema: InputSchema<T>): Result<ProjectEnvelope<T>, ImportError>",
+      "file_path": "src/lib/pattern-engine/exports/projectJson.ts",
+      "content_sha256": "pending"
+    },
+    {
+      "owner_sub_spec": 3,
+      "consumer_sub_specs": [4],
+      "name": "TriZipInputs",
+      "kind": "interface",
+      "signature": "TriZipInputs — see types.ts; includes height, width, depth, units, stylePresetName, and per-section parameter overrides",
+      "file_path": "src/generators/tri-zip-backpack/types.ts",
+      "content_sha256": "pending"
+    },
+    {
+      "owner_sub_spec": 3,
+      "consumer_sub_specs": [4],
+      "name": "STYLE_PRESETS",
+      "kind": "type",
+      "signature": "Six named presets: urban_assault, tactical, hiking, camera, medical, minimalist",
+      "file_path": "src/generators/tri-zip-backpack/stylePresets.ts",
+      "content_sha256": "pending"
+    },
+    {
+      "owner_sub_spec": 3,
+      "consumer_sub_specs": [4],
+      "name": "buildPattern",
+      "kind": "function",
+      "signature": "function buildPattern(inputs: TriZipInputs, preset: StylePreset): Result<Pattern, BuildError>",
+      "file_path": "src/generators/tri-zip-backpack/buildPattern.ts",
+      "content_sha256": "pending"
+    },
+    {
+      "owner_sub_spec": 4,
+      "consumer_sub_specs": [4],
+      "name": "PATTERNS",
+      "kind": "type",
+      "signature": "PatternRegistryEntry[] — consumed by LandingPage and App.tsx for view switching",
+      "file_path": "src/app/patternRegistry.ts",
+      "content_sha256": "pending"
+    },
+    {
+      "owner_sub_spec": 4,
+      "consumer_sub_specs": [4],
+      "name": "useTriZipProject",
+      "kind": "function",
+      "signature": "function useTriZipProject(): { project; updateInputs; setPreset; resetProject; importProject; storageWarning }",
+      "file_path": "src/state/useTriZipProject.ts",
+      "content_sha256": "pending"
+    }
+  ]
+}
