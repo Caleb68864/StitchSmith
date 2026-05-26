@@ -31,6 +31,13 @@ export function validateInputs(inputs: TriZipInputs): Result<true, BuildPatternE
     return { ok: false, error: { kind: 'invalid-inputs', message: 'center_panel_width_percent must be between 1 and 99' } };
   }
 
+  if (inputs.seam_allowance !== undefined && (!isFinite(inputs.seam_allowance) || inputs.seam_allowance < 0)) {
+    return { ok: false, error: { kind: 'invalid-inputs', message: 'seam_allowance must be a non-negative finite number' } };
+  }
+  if (inputs.hem_allowance !== undefined && (!isFinite(inputs.hem_allowance) || inputs.hem_allowance < 0)) {
+    return { ok: false, error: { kind: 'invalid-inputs', message: 'hem_allowance must be a non-negative finite number' } };
+  }
+
   return { ok: true, value: true };
 }
 
@@ -61,6 +68,7 @@ export function resolveInputs(inputs: TriZipInputs, preset: StylePreset): Resolv
     frame_sheet_margin: inputs.frame_sheet_margin ?? preset.frame_sheet_margin,
     split_gusset: inputs.split_gusset ?? false,
     seam_allowance: inputs.seam_allowance ?? 10,
+    hem_allowance: inputs.hem_allowance ?? 25,
   };
 }
 

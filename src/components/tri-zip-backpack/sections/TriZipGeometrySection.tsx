@@ -81,6 +81,23 @@ export function TriZipGeometrySection({ inputs, errors, onChange }: Props) {
           }}
         />
       </div>
+
+      <div className="space-y-1">
+        <Label htmlFor="tz-hem-allowance">Hem allowance (mm)</Label>
+        <Input
+          id="tz-hem-allowance"
+          type="number"
+          min={0}
+          value={inputs.hem_allowance ?? 25}
+          onChange={e => {
+            const n = parseFloat(e.target.value);
+            onChange({ hem_allowance: isNaN(n) ? 25 : n });
+          }}
+        />
+        <p className="text-xs text-muted-foreground">
+          Applied to free edges that fold under (laptop sleeve opening, gusset zipper tape edges).
+        </p>
+      </div>
     </div>
   );
 }

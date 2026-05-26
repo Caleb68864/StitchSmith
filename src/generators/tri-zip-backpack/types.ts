@@ -57,6 +57,8 @@ export interface TriZipInputs {
   frame_sheet_margin?: number;
   split_gusset?: boolean;
   seam_allowance?: number;
+  /** Hem allowance (mm) applied to free edges that fold under (laptop sleeve top, gusset long edges). */
+  hem_allowance?: number;
 }
 
 export interface ResolvedInputs {
@@ -81,6 +83,7 @@ export interface ResolvedInputs {
   frame_sheet_margin: number;
   split_gusset: boolean;
   seam_allowance: number;
+  hem_allowance: number;
 }
 
 export type Result<T, E> = { ok: true; value: T } | { ok: false; error: E };

@@ -237,6 +237,47 @@ describe('buildPattern', () => {
     }
   });
 
+  it('hem_allowance is applied to laptop sleeve top edge as a fold line', () => {
+    const result = buildPattern(
+      { ...DEFAULT_INPUTS, laptop_sleeve_attachment: 'seam-sewn', hem_allowance: 30 },
+      urban_assault,
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const front = findPieceById(result.value.pieces, 'laptop-sleeve-front');
+    expect(front).toBeDefined();
+    const hemPath = front!.paths.find((p: Path) => p.id === 'laptop-sleeve-panel-hem');
+    expect(hemPath).toBeDefined();
+    expect(hemPath!.edges[0].role).toBe('fold');
+    // fold line is horizontal at y = hem_allowance
+    const edge = hemPath!.edges[0];
+    if (edge.kind === 'straight') {
+      expect(edge.start.y).toBeCloseTo(30, 6);
+      expect(edge.end.y).toBeCloseTo(30, 6);
+    }
+  });
+
+  it('hem_allowance = 0 omits the fold line entirely', () => {
+    const result = buildPattern(
+      { ...DEFAULT_INPUTS, laptop_sleeve_attachment: 'seam-sewn', hem_allowance: 0 },
+      urban_assault,
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const front = findPieceById(result.value.pieces, 'laptop-sleeve-front');
+    expect(front).toBeDefined();
+    const hemPath = front!.paths.find((p: Path) => p.id === 'laptop-sleeve-panel-hem');
+    expect(hemPath).toBeUndefined();
+  });
+
+  it('rejects negative hem_allowance', () => {
+    const result = buildPattern({ ...DEFAULT_INPUTS, hem_allowance: -5 }, urban_assault);
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error.kind).toBe('invalid-inputs');
+    }
+  });
+
   it('all six presets build successfully with same dimensions', () => {
     for (const [name, preset] of Object.entries(STYLE_PRESETS)) {
       const result = buildPattern({ ...DEFAULT_INPUTS, stylePreset: name as keyof typeof STYLE_PRESETS }, preset);
