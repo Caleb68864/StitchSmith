@@ -1,21 +1,23 @@
 import type { Edge } from '../../../lib/pattern-engine/graph/Edge.js';
+import { makeEdgeIdGen } from '../../../lib/pattern-engine/graph/Edge.js';
 import type { Path } from '../../../lib/pattern-engine/graph/Path.js';
 import type { Piece } from '../../../lib/pattern-engine/graph/Piece.js';
 import type { ResolvedInputs, ModuleResult } from '../types.js';
 import { compressionStrapSteps } from '../steps.js';
 
 function pt(x: number, y: number) { return { x, y }; }
-function seg(sx: number, sy: number, ex: number, ey: number): Edge {
-  return { kind: 'straight', role: 'cut', start: pt(sx, sy), end: pt(ex, ey) };
-}
 
 const STRAP_WIDTH = 25;
 const SIDE_STRAP_LENGTH = 250;
 const BOTTOM_STRAP_LENGTH = 300;
 
 function makeStrap(id: string, name: string, w: number, l: number): Piece {
+  const pathId = `${id}-outline`;
+  const eid = makeEdgeIdGen(pathId);
+  const seg = (sx: number, sy: number, ex: number, ey: number): Edge =>
+    ({ kind: 'straight', id: eid(), role: 'cut', start: pt(sx, sy), end: pt(ex, ey) });
   const path: Path = {
-    id: `${id}-outline`,
+    id: pathId,
     edges: [
       seg(0, 0, w, 0),
       seg(w, 0, w, l),

@@ -128,7 +128,7 @@ describe('buildPattern', () => {
         paths: [
           {
             id: 'seam:test-seam',
-            edges: [{ kind: 'straight', role: 'seam', start: { x: 0, y: 0 }, end: { x: 0, y: 100 } }],
+            edges: [{ kind: 'straight', id: 'tst-a-e0', role: 'seam', start: { x: 0, y: 0 }, end: { x: 0, y: 100 } }],
             closed: false,
           },
         ],
@@ -141,7 +141,7 @@ describe('buildPattern', () => {
         paths: [
           {
             id: 'seam:test-seam',
-            edges: [{ kind: 'straight', role: 'seam', start: { x: 0, y: 0 }, end: { x: 0, y: 200 } }],
+            edges: [{ kind: 'straight', id: 'tst-b-e0', role: 'seam', start: { x: 0, y: 0 }, end: { x: 0, y: 200 } }],
             closed: false,
           },
         ],

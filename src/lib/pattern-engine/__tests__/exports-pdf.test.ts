@@ -68,9 +68,9 @@ describe('exportPatternToPdf', () => {
               id: 'path1',
               closed: true,
               edges: [
-                { kind: 'straight', role: 'cut', start: { x: 0, y: 0 }, end: { x: 100, y: 0 } },
-                { kind: 'straight', role: 'cut', start: { x: 100, y: 0 }, end: { x: 100, y: 100 } },
-                { kind: 'straight', role: 'cut', start: { x: 100, y: 100 }, end: { x: 0, y: 0 } },
+                { kind: 'straight', id: 'p1-e0', role: 'cut', start: { x: 0, y: 0 }, end: { x: 100, y: 0 } },
+                { kind: 'straight', id: 'p1-e1', role: 'cut', start: { x: 100, y: 0 }, end: { x: 100, y: 100 } },
+                { kind: 'straight', id: 'p1-e2', role: 'cut', start: { x: 100, y: 100 }, end: { x: 0, y: 0 } },
               ],
             },
           ],
@@ -103,6 +103,7 @@ describe('exportPatternToPdf', () => {
               edges: [
                 {
                   kind: 'arc',
+                  id: 'arc-e0',
                   role: 'cut',
                   start: { x: 10, y: 0 },
                   end: { x: -10, y: 0 },
@@ -135,6 +136,7 @@ describe('exportPatternToPdf', () => {
               edges: [
                 {
                   kind: 'bezier',
+                  id: 'bez-e0',
                   role: 'cut',
                   start: { x: 0, y: 0 },
                   end: { x: 100, y: 100 },

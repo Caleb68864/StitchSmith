@@ -25,9 +25,9 @@ function makePatternWithPieces(): Pattern {
             id: 'straight-path',
             closed: true,
             edges: [
-              { kind: 'straight', role: 'cut', start: { x: 0, y: 0 }, end: { x: 100, y: 0 } },
-              { kind: 'straight', role: 'cut', start: { x: 100, y: 0 }, end: { x: 100, y: 50 } },
-              { kind: 'straight', role: 'cut', start: { x: 100, y: 50 }, end: { x: 0, y: 0 } },
+              { kind: 'straight', id: 'sp-e0', role: 'cut', start: { x: 0, y: 0 }, end: { x: 100, y: 0 } },
+              { kind: 'straight', id: 'sp-e1', role: 'cut', start: { x: 100, y: 0 }, end: { x: 100, y: 50 } },
+              { kind: 'straight', id: 'sp-e2', role: 'cut', start: { x: 100, y: 50 }, end: { x: 0, y: 0 } },
             ],
           },
         ],
@@ -44,6 +44,7 @@ function makePatternWithPieces(): Pattern {
             edges: [
               {
                 kind: 'arc',
+                id: 'ap-e0',
                 role: 'cut',
                 start: { x: 10, y: 0 },
                 end: { x: -10, y: 0 },
@@ -59,6 +60,7 @@ function makePatternWithPieces(): Pattern {
             edges: [
               {
                 kind: 'bezier',
+                id: 'bp-e0',
                 role: 'cut',
                 start: { x: 0, y: 0 },
                 end: { x: 50, y: 50 },
@@ -173,6 +175,7 @@ describe('exportPatternToDxf', () => {
               edges: [
                 {
                   kind: 'arc',
+                  id: 'cw-e0',
                   role: 'cut',
                   start: { x: 10, y: 0 },
                   end: { x: -10, y: 0 },

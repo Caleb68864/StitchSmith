@@ -1,15 +1,16 @@
 import type { Edge } from '../../../lib/pattern-engine/graph/Edge.js';
+import { makeEdgeIdGen } from '../../../lib/pattern-engine/graph/Edge.js';
 import type { Path } from '../../../lib/pattern-engine/graph/Path.js';
 import type { Piece } from '../../../lib/pattern-engine/graph/Piece.js';
 import type { ResolvedInputs, ModuleResult } from '../types.js';
 import { perimeterGussetSteps } from '../steps.js';
 
 function pt(x: number, y: number) { return { x, y }; }
-function seg(sx: number, sy: number, ex: number, ey: number): Edge {
-  return { kind: 'straight', role: 'cut', start: pt(sx, sy), end: pt(ex, ey) };
-}
 
 function makeGussetPath(id: string, length: number, depth: number): Path {
+  const eid = makeEdgeIdGen(id);
+  const seg = (sx: number, sy: number, ex: number, ey: number): Edge =>
+    ({ kind: 'straight', id: eid(), role: 'cut', start: pt(sx, sy), end: pt(ex, ey) });
   return {
     id,
     edges: [

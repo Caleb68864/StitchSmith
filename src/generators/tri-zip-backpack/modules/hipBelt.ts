@@ -1,13 +1,11 @@
 import type { Edge } from '../../../lib/pattern-engine/graph/Edge.js';
+import { makeEdgeIdGen } from '../../../lib/pattern-engine/graph/Edge.js';
 import type { Path } from '../../../lib/pattern-engine/graph/Path.js';
 import type { Piece } from '../../../lib/pattern-engine/graph/Piece.js';
 import type { ResolvedInputs, ModuleResult } from '../types.js';
 import { hipBeltSteps } from '../steps.js';
 
 function pt(x: number, y: number) { return { x, y }; }
-function seg(sx: number, sy: number, ex: number, ey: number): Edge {
-  return { kind: 'straight', role: 'cut', start: pt(sx, sy), end: pt(ex, ey) };
-}
 
 const WEBBING_WIDTH = 50;
 const WEBBING_LENGTH = 600;
@@ -22,6 +20,9 @@ export function buildHipBelt(r: ResolvedInputs): ModuleResult {
 
   const pieces: Piece[] = [];
   const steps = hipBeltSteps();
+  const eid = makeEdgeIdGen('hip-belt-outline');
+  const seg = (sx: number, sy: number, ex: number, ey: number): Edge =>
+    ({ kind: 'straight', id: eid(), role: 'cut', start: pt(sx, sy), end: pt(ex, ey) });
 
   if (r.hip_belt === 'webbing') {
     const path: Path = {

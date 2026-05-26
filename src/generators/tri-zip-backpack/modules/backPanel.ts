@@ -1,4 +1,5 @@
 import type { Edge } from '../../../lib/pattern-engine/graph/Edge.js';
+import { makeEdgeIdGen } from '../../../lib/pattern-engine/graph/Edge.js';
 import type { Path } from '../../../lib/pattern-engine/graph/Path.js';
 import type { Piece } from '../../../lib/pattern-engine/graph/Piece.js';
 import type { ResolvedInputs, ModuleResult } from '../types.js';
@@ -6,15 +7,10 @@ import { backPanelSteps } from '../steps.js';
 
 function pt(x: number, y: number) { return { x, y }; }
 
-function seg(sx: number, sy: number, ex: number, ey: number): Edge {
-  return { kind: 'straight', role: 'cut', start: pt(sx, sy), end: pt(ex, ey) };
-}
-
-function arc(sx: number, sy: number, ex: number, ey: number, cx: number, cy: number, radius: number): Edge {
-  return { kind: 'arc', role: 'cut', start: pt(sx, sy), end: pt(ex, ey), center: pt(cx, cy), radius, clockwise: true };
-}
-
 function makeRectPath(id: string, w: number, h: number): Path {
+  const eid = makeEdgeIdGen(id);
+  const seg = (sx: number, sy: number, ex: number, ey: number): Edge =>
+    ({ kind: 'straight', id: eid(), role: 'cut', start: pt(sx, sy), end: pt(ex, ey) });
   return {
     id,
     edges: [
@@ -28,6 +24,11 @@ function makeRectPath(id: string, w: number, h: number): Path {
 }
 
 function makeRoundedPath(id: string, w: number, h: number, r: number): Path {
+  const eid = makeEdgeIdGen(id);
+  const seg = (sx: number, sy: number, ex: number, ey: number): Edge =>
+    ({ kind: 'straight', id: eid(), role: 'cut', start: pt(sx, sy), end: pt(ex, ey) });
+  const arc = (sx: number, sy: number, ex: number, ey: number, cx: number, cy: number, radius: number): Edge =>
+    ({ kind: 'arc', id: eid(), role: 'cut', start: pt(sx, sy), end: pt(ex, ey), center: pt(cx, cy), radius, clockwise: true });
   const edges: Edge[] = [
     seg(r, 0, w - r, 0),
     arc(w - r, 0, w, r, w - r, r, r),
@@ -40,6 +41,9 @@ function makeRoundedPath(id: string, w: number, h: number, r: number): Path {
 }
 
 function makeTacticalPath(id: string, w: number, h: number): Path {
+  const eid = makeEdgeIdGen(id);
+  const seg = (sx: number, sy: number, ex: number, ey: number): Edge =>
+    ({ kind: 'straight', id: eid(), role: 'cut', start: pt(sx, sy), end: pt(ex, ey) });
   const shoulderInset = w * 0.12;
   const shoulderDepth = h * 0.08;
   const edges: Edge[] = [

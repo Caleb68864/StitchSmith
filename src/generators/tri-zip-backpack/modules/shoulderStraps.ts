@@ -1,26 +1,27 @@
 import type { Edge } from '../../../lib/pattern-engine/graph/Edge.js';
+import { makeEdgeIdGen } from '../../../lib/pattern-engine/graph/Edge.js';
 import type { Path } from '../../../lib/pattern-engine/graph/Path.js';
 import type { Piece } from '../../../lib/pattern-engine/graph/Piece.js';
 import type { ResolvedInputs, ModuleResult } from '../types.js';
 import { shoulderStrapSteps } from '../steps.js';
 
 function pt(x: number, y: number) { return { x, y }; }
-function seg(sx: number, sy: number, ex: number, ey: number): Edge {
-  return { kind: 'straight', role: 'cut', start: pt(sx, sy), end: pt(ex, ey) };
-}
-function bezier(sx: number, sy: number, ex: number, ey: number,
-  cp1x: number, cp1y: number, cp2x: number, cp2y: number): Edge {
-  return {
-    kind: 'bezier', role: 'cut',
-    start: pt(sx, sy), end: pt(ex, ey),
-    cp1: pt(cp1x, cp1y), cp2: pt(cp2x, cp2y),
-  };
-}
 
 export function buildShoulderStraps(r: ResolvedInputs): ModuleResult {
   const { strap_width, height, curve_style } = r;
   // Shoulder strap approximate length = 0.75 * bag height + 350 mm for loop/adjustment
   const strapLength = height * 0.75 + 350;
+
+  const eid = makeEdgeIdGen('shoulder-strap-outline');
+  const seg = (sx: number, sy: number, ex: number, ey: number): Edge =>
+    ({ kind: 'straight', id: eid(), role: 'cut', start: pt(sx, sy), end: pt(ex, ey) });
+  const bezier = (sx: number, sy: number, ex: number, ey: number,
+    cp1x: number, cp1y: number, cp2x: number, cp2y: number): Edge =>
+    ({
+      kind: 'bezier', id: eid(), role: 'cut',
+      start: pt(sx, sy), end: pt(ex, ey),
+      cp1: pt(cp1x, cp1y), cp2: pt(cp2x, cp2y),
+    });
 
   let path: Path;
   if (curve_style === 's_curve') {

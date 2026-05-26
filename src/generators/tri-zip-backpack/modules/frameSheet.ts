@@ -1,13 +1,11 @@
 import type { Edge } from '../../../lib/pattern-engine/graph/Edge.js';
+import { makeEdgeIdGen } from '../../../lib/pattern-engine/graph/Edge.js';
 import type { Path } from '../../../lib/pattern-engine/graph/Path.js';
 import type { Piece } from '../../../lib/pattern-engine/graph/Piece.js';
 import type { ResolvedInputs, ModuleResult } from '../types.js';
 import { frameSheetSteps } from '../steps.js';
 
 function pt(x: number, y: number) { return { x, y }; }
-function seg(sx: number, sy: number, ex: number, ey: number): Edge {
-  return { kind: 'straight', role: 'cut', start: pt(sx, sy), end: pt(ex, ey) };
-}
 
 export function buildFrameSheet(r: ResolvedInputs): ModuleResult {
   const { frame_sheet, frame_sheet_margin, width, height } = r;
@@ -18,6 +16,10 @@ export function buildFrameSheet(r: ResolvedInputs): ModuleResult {
 
   const fw = width - 2 * frame_sheet_margin;
   const fh = height - 2 * frame_sheet_margin;
+
+  const eid = makeEdgeIdGen('frame-sheet-outline');
+  const seg = (sx: number, sy: number, ex: number, ey: number): Edge =>
+    ({ kind: 'straight', id: eid(), role: 'cut', start: pt(sx, sy), end: pt(ex, ey) });
 
   const path: Path = {
     id: 'frame-sheet-outline',
