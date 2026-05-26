@@ -1,3 +1,5 @@
+// SS-05: all numeric defaults are sewing-domain values in mm. Engine I/O boundaries
+// perform unit conversion; defaults are never exposed as raw engine primitives.
 import type { ToolRollSettings, ToolItem } from './types.js';
 
 export const defaultToolRollSettings: ToolRollSettings = {

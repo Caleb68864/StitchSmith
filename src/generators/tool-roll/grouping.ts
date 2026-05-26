@@ -1,3 +1,4 @@
+// SS-05: grouping logic is pure domain logic — no engine geometry dependency needed here.
 import type { ToolItem, ToolRollSettings } from './types.js';
 
 /**

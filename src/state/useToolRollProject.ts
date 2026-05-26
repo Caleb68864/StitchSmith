@@ -1,3 +1,5 @@
+// SS-05: project state hook is unchanged. schemaVersion=1 is set at creation and preserved
+// through save/load cycles. Cross-generator imports are rejected by parseProjectJson.
 import { useState, useEffect, useCallback, useRef } from 'react';
 import type { ToolRollProject, ToolItem, ToolRollSettings, PatternWarning } from '../generators/tool-roll/types.js';
 import { defaultToolRollSettings, sampleTools } from '../generators/tool-roll/defaults.js';

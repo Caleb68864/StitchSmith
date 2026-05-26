@@ -17,15 +17,32 @@ export function parseProjectJson(json: string): ToolRollProject {
 
   const obj = parsed as Record<string, unknown>;
 
-  if (!('schemaVersion' in obj) || obj.schemaVersion !== 1) {
+  if (!('generatorId' in obj)) {
+    throw new Error('Invalid project file: missing generatorId field.');
+  }
+
+  // Friendly cross-generator message before version check so the user gets
+  // actionable guidance rather than a confusing schema-version error.
+  if (obj.generatorId === 'tri-zip-backpack') {
     throw new Error(
-      'Invalid project file: missing or unsupported schemaVersion (expected 1).',
+      'This project is a Tri-Zip Backpack — switch to that generator to load it.',
     );
   }
 
-  if (!('generatorId' in obj) || obj.generatorId !== 'tool-roll') {
+  if (obj.generatorId !== 'tool-roll') {
     throw new Error(
-      "Invalid project file: missing or wrong generatorId (expected 'tool-roll').",
+      `Invalid project file: wrong generatorId "${obj.generatorId}" — this page only loads Tool Roll projects.`,
+    );
+  }
+
+  if (!('schemaVersion' in obj) || obj.schemaVersion !== 1) {
+    if (typeof obj.schemaVersion === 'number' && (obj.schemaVersion as number) > 1) {
+      throw new Error(
+        `Invalid project file: unsupported schemaVersion ${obj.schemaVersion}. Update to the latest version to load it.`,
+      );
+    }
+    throw new Error(
+      'Invalid project file: missing or unsupported schemaVersion (expected 1).',
     );
   }
 

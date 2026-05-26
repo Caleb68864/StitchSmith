@@ -1,3 +1,4 @@
+// SS-05: export buttons are unchanged; exports flow through the engine-backed layout pipeline.
 import { Download, FileJson, Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { ToolRollLayout, ToolRollProject } from '../../generators/tool-roll/types.js';

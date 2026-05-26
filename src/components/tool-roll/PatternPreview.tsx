@@ -1,3 +1,4 @@
+// SS-05: preview renders layout data produced by the engine-backed calculateToolRollLayout.
 import { useRef, useState, useCallback, useEffect, type MouseEvent } from 'react';
 import { ZoomIn, ZoomOut, Maximize2, Grid } from 'lucide-react';
 import { Button } from '@/components/ui/button';

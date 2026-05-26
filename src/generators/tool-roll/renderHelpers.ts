@@ -1,3 +1,4 @@
+// SS-05: render helpers operate on layout data only. Pure presentation — no geometry math.
 import type {
   UnitSystem,
   Point,

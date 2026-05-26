@@ -54,6 +54,12 @@ export type ToolItem = {
   notes?: string;
 };
 
+/**
+ * Tool Roll project file shape — schemaVersion 1.
+ * Loaded via importProjectJson.ts which runs the migrator chain from
+ * src/lib/pattern-engine/exports/ when schemaVersion changes in a future release.
+ * Cross-generator loads (generatorId !== 'tool-roll') produce a friendly error.
+ */
 export type ToolRollProject = {
   schemaVersion: 1;
   projectName: string;

@@ -1,3 +1,5 @@
+// SS-05: geometry math is now sourced from src/lib/pattern-engine/geometry/ via geometry.ts.
+// This file orchestrates the layout — no raw math lives here.
 import type {
   ToolItem,
   ToolRollSettings,

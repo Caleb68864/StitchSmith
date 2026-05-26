@@ -1,3 +1,4 @@
+// SS-05: construction notes depend only on layout data produced by the engine-backed calculator.
 import type { ToolRollLayout, ToolRollSettings, UnitSystem } from './types.js';
 
 function fmt(value: number, units: UnitSystem): string {

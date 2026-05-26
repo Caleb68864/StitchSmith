@@ -1,3 +1,5 @@
+// SS-05: SVG exporter operates on ToolRollLayout (produced by the engine-backed calculator).
+// The exported SVG format is unchanged from pre-migration.
 import { renderToStaticMarkup } from 'react-dom/server';
 import { createElement } from 'react';
 import type { ToolRollLayout } from '../generators/tool-roll/types.js';

@@ -6,6 +6,11 @@ import type {
   PrintTile,
 } from './types.js';
 import { getPaperSize } from '../../utils/units.js';
+import {
+  sampleBezierY,
+  findBezierT,
+  monotoneCubicSplineSegments,
+} from '../../lib/pattern-engine/geometry/index.js';
 
 // ── Pocket geometry ────────────────────────────────────────────────────────
 
@@ -162,64 +167,6 @@ export function buildPocketPanelPath(width: number, height: number): SvgPathData
  *  - `bottomY`: y-coordinate of the bottom edge (in pattern coords; higher Y = further down).
  *  - `style`: 'stepped' (zig-zag) or 'sloped' (diagonal connections between pocket tops).
  */
-/**
- * Builds a Fritsch–Carlson monotone cubic Hermite spline through a sorted set of
- * (x, y) points and emits it as a stitched sequence of cubic Bézier segments
- * starting from the first point with an implicit `M`. Monotonicity guarantees the
- * curve never overshoots the input y values — so when used for a pocket top, the
- * curve cannot rise above (smaller y than) any anchor point.
- */
-function monotoneCubicSplineSegments(
-  points: { x: number; y: number }[],
-  startWithMove = false,
-): string {
-  if (points.length === 0) return '';
-  if (points.length === 1) {
-    return startWithMove ? `M ${points[0].x} ${points[0].y}` : '';
-  }
-  const n = points.length;
-  const dx: number[] = [];
-  const m: number[] = []; // secant slopes
-  for (let i = 0; i < n - 1; i++) {
-    dx.push(points[i + 1].x - points[i].x);
-    m.push((points[i + 1].y - points[i].y) / dx[i]);
-  }
-  // Initial tangents = average of adjacent secants, endpoints use one-sided
-  const t: number[] = new Array(n);
-  t[0] = m[0];
-  t[n - 1] = m[n - 2];
-  for (let i = 1; i < n - 1; i++) {
-    if (m[i - 1] * m[i] <= 0) t[i] = 0;
-    else t[i] = (m[i - 1] + m[i]) / 2;
-  }
-  // Fritsch–Carlson monotonicity adjustment
-  for (let i = 0; i < n - 1; i++) {
-    if (m[i] === 0) {
-      t[i] = 0;
-      t[i + 1] = 0;
-    } else {
-      const a = t[i] / m[i];
-      const b = t[i + 1] / m[i];
-      const s = a * a + b * b;
-      if (s > 9) {
-        const tau = 3 / Math.sqrt(s);
-        t[i] = tau * a * m[i];
-        t[i + 1] = tau * b * m[i];
-      }
-    }
-  }
-  const out: string[] = [];
-  if (startWithMove) out.push(`M ${points[0].x} ${points[0].y}`);
-  for (let i = 0; i < n - 1; i++) {
-    const cp1x = points[i].x + dx[i] / 3;
-    const cp1y = points[i].y + (t[i] * dx[i]) / 3;
-    const cp2x = points[i + 1].x - dx[i] / 3;
-    const cp2y = points[i + 1].y - (t[i + 1] * dx[i]) / 3;
-    out.push(`C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${points[i + 1].x} ${points[i + 1].y}`);
-  }
-  return out.join(' ');
-}
-
 export function buildPocketPanelProfilePath(
   pockets: { x: number; pocketWidth: number; topY: number }[],
   leftX: number,
@@ -290,24 +237,6 @@ export function buildPocketPanelProfilePath(
     let cp2x = rightX - spanX / 3;
     let cp2y = lastTop;
 
-    // Helper: sample y at parametric t for a cubic Bézier with current cps.
-    const sampleY = (t: number, p0y: number, c1y: number, c2y: number, p3y: number) => {
-      const mt = 1 - t;
-      return mt * mt * mt * p0y + 3 * mt * mt * t * c1y + 3 * mt * t * t * c2y + t * t * t * p3y;
-    };
-    // Helper: find t such that bezier x(t) ≈ targetX (binary search).
-    const findT = (targetX: number, p0x: number, c1x: number, c2x: number, p3x: number) => {
-      let lo = 0, hi = 1;
-      for (let i = 0; i < 24; i++) {
-        const mid = (lo + hi) / 2;
-        const mt = 1 - mid;
-        const x = mt * mt * mt * p0x + 3 * mt * mt * mid * c1x + 3 * mt * mid * mid * c2x + mid * mid * mid * p3x;
-        if (x < targetX) lo = mid;
-        else hi = mid;
-      }
-      return (lo + hi) / 2;
-    };
-
     // Up to a few correction passes: if curve overshoots any ceiling, lower the
     // nearer control point's y just enough to clear it.
     for (let pass = 0; pass < 6; pass++) {
@@ -315,8 +244,8 @@ export function buildPocketPanelProfilePath(
       let overSide: 'left' | 'right' = 'left';
       for (const p of pockets) {
         const cx = p.x + p.pocketWidth / 2;
-        const t = findT(cx, leftX, cp1x, cp2x, rightX);
-        const yAtT = sampleY(t, firstTop, cp1y, cp2y, lastTop);
+        const t = findBezierT(cx, leftX, cp1x, cp2x, rightX);
+        const yAtT = sampleBezierY(t, firstTop, cp1y, cp2y, lastTop);
         // "Over" the ceiling means curve is above (smaller y than) the pocket's allowed top.
         const overshoot = p.topY - yAtT; // positive = violation
         if (overshoot > maxOver) {
@@ -333,8 +262,7 @@ export function buildPocketPanelProfilePath(
     // Emit one cubic, traversed right → left.
     parts.push(`C ${cp2x} ${cp2y}, ${cp1x} ${cp1y}, ${leftX} ${firstTop}`);
   }
-  // Suppress unused-var warning when monotoneCubicSplineSegments isn't called above.
-  void monotoneCubicSplineSegments;
+  void monotoneCubicSplineSegments; // re-exported from engine; available for future smooth-mode use
   parts.push(`Z`);
   return parts.join(' ');
 }
@@ -423,22 +351,6 @@ export function buildOpenProfilePath(
     let cp2x = rightX - spanX / 3;
     let cp2y = last.y;
 
-    const sampleY = (t: number, p0y: number, c1y: number, c2y: number, p3y: number) => {
-      const mt = 1 - t;
-      return mt * mt * mt * p0y + 3 * mt * mt * t * c1y + 3 * mt * t * t * c2y + t * t * t * p3y;
-    };
-    const findT = (targetX: number, p0x: number, c1x: number, c2x: number, p3x: number) => {
-      let lo = 0, hi = 1;
-      for (let i = 0; i < 24; i++) {
-        const mid = (lo + hi) / 2;
-        const mt = 1 - mid;
-        const x = mt * mt * mt * p0x + 3 * mt * mt * mid * c1x + 3 * mt * mid * mid * c2x + mid * mid * mid * p3x;
-        if (x < targetX) lo = mid;
-        else hi = mid;
-      }
-      return (lo + hi) / 2;
-    };
-
     // Caller specifies the constraint direction. flap-style requires curve.y <= pocket.y
     // (curve sits AT or ABOVE each pocket); pocket-style requires curve.y >= pocket.y
     // (curve sits AT or BELOW each pocket).
@@ -449,8 +361,8 @@ export function buildOpenProfilePath(
       let violSide: 'left' | 'right' = 'left';
       for (const p of pockets) {
         const cx = p.x + p.pocketWidth / 2;
-        const t = findT(cx, leftX, cp1x, cp2x, rightX);
-        const yAtT = sampleY(t, first.y, cp1y, cp2y, last.y);
+        const t = findBezierT(cx, leftX, cp1x, cp2x, rightX);
+        const yAtT = sampleBezierY(t, first.y, cp1y, cp2y, last.y);
         const violation = flapStyle ? yAtT - p.y : p.y - yAtT;
         if (violation > maxViolation) {
           maxViolation = violation;
@@ -530,29 +442,13 @@ export function buildFlapProfilePath(
     let cp2x = rightX - spanX / 3;
     let cp2y = lastBot;
 
-    const sampleY = (t: number, p0y: number, c1y: number, c2y: number, p3y: number) => {
-      const mt = 1 - t;
-      return mt * mt * mt * p0y + 3 * mt * mt * t * c1y + 3 * mt * t * t * c2y + t * t * t * p3y;
-    };
-    const findT = (targetX: number, p0x: number, c1x: number, c2x: number, p3x: number) => {
-      let lo = 0, hi = 1;
-      for (let i = 0; i < 24; i++) {
-        const mid = (lo + hi) / 2;
-        const mt = 1 - mid;
-        const x = mt * mt * mt * p0x + 3 * mt * mt * mid * c1x + 3 * mt * mid * mid * c2x + mid * mid * mid * p3x;
-        if (x < targetX) lo = mid;
-        else hi = mid;
-      }
-      return (lo + hi) / 2;
-    };
-
     for (let pass = 0; pass < 6; pass++) {
       let maxViolation = 0;
       let violSide: 'left' | 'right' = 'left';
       for (const p of pockets) {
         const cx = p.x + p.pocketWidth / 2;
-        const t = findT(cx, leftX, cp1x, cp2x, rightX);
-        const yAtT = sampleY(t, firstBot, cp1y, cp2y, lastBot);
+        const t = findBezierT(cx, leftX, cp1x, cp2x, rightX);
+        const yAtT = sampleBezierY(t, firstBot, cp1y, cp2y, lastBot);
         // For 'below' direction: under-coverage means curve.y < target.y → fix by pushing cp DOWN (+y).
         // For 'above' direction: under-coverage means curve.y > target.y → fix by pushing cp UP (−y).
         const violation = direction === 'below' ? p.flapBottomY - yAtT : yAtT - p.flapBottomY;

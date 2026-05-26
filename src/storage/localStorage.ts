@@ -1,7 +1,9 @@
+// SS-05: storage key follows P7 naming convention (stitchsmith.<generator-id>.project).
+// isValidProject checks schemaVersion=1 so cross-generator data in storage is silently ignored.
 import type { ToolRollProject } from '../generators/tool-roll/types.js';
 import { defaultToolRollSettings } from '../generators/tool-roll/defaults.js';
 
-export const STORAGE_KEY = 'stitchsmith.tool-roll.v1';
+export const STORAGE_KEY = 'stitchsmith.tool-roll.project';
 
 /**
  * Merges saved settings with the current defaults so that newly-added setting

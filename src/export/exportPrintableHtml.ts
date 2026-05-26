@@ -1,3 +1,4 @@
+// SS-05: tiled-HTML exporter operates on ToolRollLayout; print-layout math lives in geometry.ts.
 import { renderToStaticMarkup } from 'react-dom/server';
 import { createElement } from 'react';
 import type { ToolRollLayout, ToolRollProject } from '../generators/tool-roll/types.js';
