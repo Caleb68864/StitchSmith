@@ -8,23 +8,23 @@ import { SHARED_SEAM_PATH_ID } from './frontCenterPanel.js';
 
 function pt(x: number, y: number) { return { x, y }; }
 
-export function buildTriZipSubsystem(r: ResolvedInputs): ModuleResult & { seamRef: SeamRef } {
+export function buildTriZipSubsystem(r: ResolvedInputs): ModuleResult & { seamRef: SeamRef | null } {
   const { height, zipper_method, zipper_gusset_width } = r;
   const pieces: Piece[] = [];
 
-  // Shared seam path (same id as front-center-panel uses, same length = height).
-  const seamEid = makeEdgeIdGen(SHARED_SEAM_PATH_ID);
-  const sharedSeamPath: Path = {
-    id: SHARED_SEAM_PATH_ID,
-    edges: [{ kind: 'straight', id: seamEid(), role: 'seam', start: pt(0, 0), end: pt(0, height) }],
-    closed: false,
-  };
-
   if (zipper_method === 'gusseted') {
+    // Shared seam path lives on the gusset piece so verifySharedSeams can
+    // cross-check fcp ↔ tzi seam lengths.
+    const seamEid = makeEdgeIdGen(SHARED_SEAM_PATH_ID);
+    const sharedSeamPath: Path = {
+      id: SHARED_SEAM_PATH_ID,
+      edges: [{ kind: 'straight', id: seamEid(), role: 'seam', start: pt(0, 0), end: pt(0, height) }],
+      closed: false,
+    };
+
     const gussetEid = makeEdgeIdGen('tzi-gusset-outline');
     const seg = (role: Edge['role'], sx: number, sy: number, ex: number, ey: number): Edge =>
       ({ kind: 'straight', id: gussetEid(), role, start: pt(sx, sy), end: pt(ex, ey) });
-    // Zipper gusset strip: a rectangular strip that bridges front-center-panel to wing.
     const gussetPath: Path = {
       id: 'tzi-gusset-outline',
       edges: [
@@ -45,25 +45,19 @@ export function buildTriZipSubsystem(r: ResolvedInputs): ModuleResult & { seamRe
         { kind: 'label', label: `Zipper Gusset\n${zipper_gusset_width}×${height} mm` },
       ],
     });
-  } else {
-    // direct method: no gusset strip piece; zipper attaches directly to panels.
-    // We still need to carry the shared seam reference for the front-center-panel contract.
-    // Emit a minimal placeholder piece that holds the seam path.
-    pieces.push({
-      id: 'tri-zip-subsystem',
-      name: 'Tri-Zip Direct Zipper',
-      mirror: false,
-      quantity: 1,
-      paths: [sharedSeamPath],
-      annotations: [{ kind: 'label', label: 'Direct Zipper (no gusset strip)' }],
-    });
+
+    const seamRef: SeamRef = {
+      pieceId: 'tri-zip-subsystem',
+      pathId: SHARED_SEAM_PATH_ID,
+      length: height,
+    };
+    return { pieces, steps: triZipSubsystemSteps(), seamRef };
   }
 
-  const seamRef: SeamRef = {
-    pieceId: 'tri-zip-subsystem',
-    pathId: SHARED_SEAM_PATH_ID,
-    length: height,
-  };
-
-  return { pieces, steps: triZipSubsystemSteps(), seamRef };
+  // direct method: no piece to cut — the zipper tape attaches directly to the
+  // front-center-panel and the wings. We deliberately emit no placeholder
+  // piece (it would pollute the cut list and the SVG with a phantom). The
+  // shared seam still exists on the front-center-panel; verifySharedSeams
+  // skips paths that appear only once, so this is fine.
+  return { pieces: [], steps: triZipSubsystemSteps(), seamRef: null };
 }

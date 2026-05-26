@@ -89,15 +89,13 @@ describe('buildPattern', () => {
     expect(hasGussetOutline).toBe(true);
   });
 
-  it('direct zipper_method does NOT emit a zipper-gusset strip outline', () => {
+  it('direct zipper_method emits no tri-zip-subsystem piece at all', () => {
     const result = buildPattern({ ...DEFAULT_INPUTS, zipper_method: 'direct' }, urban_assault);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
 
     const tzi = findPieceById(result.value.pieces, 'tri-zip-subsystem');
-    expect(tzi).toBeDefined();
-    const hasGussetOutline = tzi!.paths.some((p: Path) => p.id === 'tzi-gusset-outline');
-    expect(hasGussetOutline).toBe(false);
+    expect(tzi).toBeUndefined();
   });
 
   it('shared seam path id is present in both front-center-panel and tri-zip-subsystem', () => {

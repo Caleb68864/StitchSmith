@@ -129,10 +129,10 @@ export function buildPattern(inputs: TriZipInputs, preset: StylePreset): Result<
 
   collect(buildFrontWing(r));
 
-  // Tri-Zip subsystem
+  // Tri-Zip subsystem (direct mode emits no pieces and a null seamRef).
   const tziResult = buildTriZipSubsystem(r);
   collect(tziResult);
-  seamRefs.push(tziResult.seamRef);
+  if (tziResult.seamRef) seamRefs.push(tziResult.seamRef);
 
   // Gusset
   collect(buildPerimeterGusset(r));

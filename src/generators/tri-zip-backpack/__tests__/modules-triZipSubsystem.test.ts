@@ -25,19 +25,21 @@ describe('buildTriZipSubsystem', () => {
     expect(hasGusset).toBe(true);
   });
 
-  it('direct method does not emit a gusset strip outline path', () => {
+  it('direct method emits no piece and a null seamRef', () => {
     const result = buildTriZipSubsystem(makeResolved({ zipper_method: 'direct' }));
-    expect(result.pieces).toHaveLength(1);
-    const hasGusset = result.pieces[0].paths.some((p: Path) => p.id === 'tzi-gusset-outline');
-    expect(hasGusset).toBe(false);
+    expect(result.pieces).toHaveLength(0);
+    expect(result.seamRef).toBeNull();
   });
 
-  it('both gusseted and direct include the shared seam path', () => {
-    for (const method of ['gusseted', 'direct'] as const) {
-      const result = buildTriZipSubsystem(makeResolved({ zipper_method: method }));
-      const hasSeam = result.pieces[0].paths.some((p: Path) => p.id === SHARED_SEAM_PATH_ID);
-      expect(hasSeam, `method ${method} should have shared seam path`).toBe(true);
-    }
+  it('direct method still emits assembly steps for stitching the zipper directly', () => {
+    const result = buildTriZipSubsystem(makeResolved({ zipper_method: 'direct' }));
+    expect(result.steps.length).toBeGreaterThan(0);
+  });
+
+  it('gusseted includes the shared seam path on its piece', () => {
+    const result = buildTriZipSubsystem(makeResolved({ zipper_method: 'gusseted' }));
+    const hasSeam = result.pieces[0].paths.some((p: Path) => p.id === SHARED_SEAM_PATH_ID);
+    expect(hasSeam, 'gusseted method should have shared seam path on its piece').toBe(true);
   });
 
   it('shared seam path id matches front-center-panel shared seam path id', () => {
@@ -98,8 +100,10 @@ describe('buildTriZipSubsystem', () => {
     expect(stepIds.some(id => id.includes('tri-zip-subsystem'))).toBe(true);
   });
 
-  it('seamRef has correct pieceId and pathId', () => {
+  it('seamRef has correct pieceId and pathId in gusseted mode', () => {
     const result = buildTriZipSubsystem(makeResolved());
+    expect(result.seamRef).not.toBeNull();
+    if (!result.seamRef) return;
     expect(result.seamRef.pieceId).toBe('tri-zip-subsystem');
     expect(result.seamRef.pathId).toBe(SHARED_SEAM_PATH_ID);
     expect(result.seamRef.length).toBeGreaterThan(0);
