@@ -1,20 +1,11 @@
 
-## 2026-05-26 — Tri-Zip seam-allowance + hem completeness series
-- c7ebed2: Edge.id + Piece.seamAllowances
-- bbb7133: Per-edge SA offset + SVG outer cut line
-- 7815632: hem_allowance + fold-role edges
-- b8cc520: Drop direct-zipper phantom piece
-- 3f4243e: Derive laptop sleeve from pack inputs
-- 49808c0: NaN/Infinity hardening
-- dca51b0: Polish 1 — single header, confirm-before-reset, labeled errors
-
-## 2026-05-26 — Polish pass 2: visual quality + delight
-- Symptom: Tri-Zip preview rendered an SVG with four distinct line styles (cut black solid, SA green dashed, fold blue dashed, seam red solid) but no legend to explain what they meant. The preview also gave no feedback about piece count, total quantity to cut, or active SA/hem values — the user had to count pieces by eye. Landing copy was generic and didn't explain what the tool actually does.
+## 2026-05-26 — Bug fixes from preview screenshot review
+- Symptom 1: With SA + hem on, adjacent pieces in the preview overlapped because the layout algorithm bbox'd only the body cut, ignoring the SA polygon that extends outward.
+- Symptom 2: Preview was static — no zoom/pan, so users couldn't inspect detail on a tall pack.
+- Symptom 3: Switching presets after editing fields kept the edits because the user's overrides masked the preset values — opposite of expected behavior.
 - Fix:
-  - New `TriZipLegend` component lists the four SVG line styles with stroke samples and one-line descriptions of when to use each cut line.
-  - PatternPreview now shows a metadata strip above the SVG: piece-type count, total quantity to cut, and a "SA: N mm · Hem: N mm" reminder so the user can verify the values without bouncing back to the sidebar.
-  - PatternPreview's empty + error states are now distinct: the "validation errors" state is informational; build-error state is destructive-styled and shows the actual engine error message.
-  - LandingPage hero copy upgraded from "Browser-based sewing pattern generators. Choose a project to get started." to a sentence that names the output formats (SVG, PDF, DXF) and the parametric value-prop ("cut line, seam, and hem to scale"). Added a footer hint that projects autosave + Export creates portable files.
-  - Pattern cards lift slightly on hover (translate-y + shadow) for cheap delight.
-- Surfaces: src/components/tri-zip-backpack/{Legend.tsx (new), PatternPreview.tsx, TriZipPage.tsx}, src/components/landing/LandingPage.tsx.
+  - svg.ts: new `bboxFromPieceWithSa` unions the body bbox with the SA polygon's bbox. Layout uses this so SA outer cut lines never overlap with the next piece.
+  - PatternPreview: wheel zoom (cursor-anchored), drag pan, zoom in/out/reset buttons. Scale clamped to 10%–800%.
+  - StyleAndDimensionsSection: PRESET_CONTROLLED_FIELDS list; on preset change, if any of those have been customized, confirm with the user that the edits will be lost; on confirm, clear them all to undefined so the new preset's values flow through `resolveInputs`. A subtle hint appears below the preset selector whenever overrides are active.
+- Surfaces: src/lib/pattern-engine/exports/svg.ts, src/components/tri-zip-backpack/PatternPreview.tsx, src/components/tri-zip-backpack/sections/StyleAndDimensionsSection.tsx.
 - Commit: <pending>

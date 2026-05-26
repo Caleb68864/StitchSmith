@@ -13,6 +13,30 @@ const PRESETS: { value: PresetName; label: string }[] = [
   { value: 'minimalist', label: 'Minimalist' },
 ];
 
+// Fields a preset controls. When the user picks a new preset, any of these
+// that the user previously overrode are reset to undefined so the new preset
+// values take effect.
+const PRESET_CONTROLLED_FIELDS: (keyof TriZipInputs)[] = [
+  'strap_width',
+  'foam_thickness',
+  'curve_style',
+  'back_panel_shape',
+  'compression_straps',
+  'hip_belt',
+  'laptop_sleeve_attachment',
+  'sternum_strap',
+  'y_split_height_percent',
+  'center_panel_width_percent',
+  'zipper_method',
+  'zipper_gusset_width',
+  'frame_sheet',
+  'frame_sheet_margin',
+];
+
+function hasCustomEdits(inputs: TriZipInputs): boolean {
+  return PRESET_CONTROLLED_FIELDS.some((f) => inputs[f] !== undefined);
+}
+
 interface Props {
   inputs: TriZipInputs;
   errors: Record<string, string>;
@@ -34,7 +58,21 @@ export function StyleAndDimensionsSection({ inputs, errors, onChange }: Props) {
         <Label htmlFor="tz-preset">Style preset</Label>
         <Select
           value={inputs.stylePreset}
-          onValueChange={v => onChange({ stylePreset: v as PresetName })}
+          onValueChange={v => {
+            const next = v as PresetName;
+            if (next === inputs.stylePreset) return;
+            if (hasCustomEdits(inputs)) {
+              if (!window.confirm(
+                `Switching to "${PRESETS.find(p => p.value === next)?.label ?? next}" will overwrite your customized settings (straps, panel shape, hip belt, etc.) with the preset defaults. Continue?`
+              )) {
+                return;
+              }
+            }
+            // Clear all user overrides so the new preset's values take effect.
+            const cleared: Partial<TriZipInputs> = { stylePreset: next };
+            for (const f of PRESET_CONTROLLED_FIELDS) cleared[f] = undefined;
+            onChange(cleared);
+          }}
         >
           <SelectTrigger id="tz-preset">
             <SelectValue />
@@ -45,6 +83,11 @@ export function StyleAndDimensionsSection({ inputs, errors, onChange }: Props) {
             ))}
           </SelectContent>
         </Select>
+        {hasCustomEdits(inputs) && (
+          <p className="text-xs text-muted-foreground">
+            Some preset fields have been customized. Picking another preset will reset them.
+          </p>
+        )}
       </div>
 
       <div className="space-y-1">
