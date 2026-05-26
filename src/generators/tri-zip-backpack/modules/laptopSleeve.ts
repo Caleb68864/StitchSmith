@@ -7,10 +7,23 @@ import { laptopSleeveSteps } from '../steps.js';
 
 function pt(x: number, y: number) { return { x, y }; }
 
-// Standard laptop sleeve dimensions: fits up to 15" laptops
-const SLEEVE_WIDTH = 280;
-const SLEEVE_HEIGHT = 370;
-const SLEEVE_DEPTH = 20;
+// Clearance between the sleeve and the inside of the pack body. Enough to
+// slide a 15" laptop into the sleeve when the pack is partially open.
+const SLEEVE_BODY_CLEARANCE = 20; // mm per side
+const SLEEVE_TOP_CLEARANCE = 30;  // mm above the sleeve so the zipper run clears
+const SLEEVE_BOTTOM_CLEARANCE = 30; // mm below for impact protection
+// Floor sizes: don't shrink below a usable 11" laptop opening.
+const SLEEVE_MIN_WIDTH = 200;
+const SLEEVE_MIN_HEIGHT = 240;
+// Fixed depth — a single laptop is ~20-30 mm thick; one foam-padded gusset
+// covers that range. Not derived from pack depth, which is the whole bag.
+const SLEEVE_DEPTH_MM = 25;
+
+function computeSleeveDimensions(packWidth: number, packHeight: number): { width: number; height: number; depth: number } {
+  const width = Math.max(SLEEVE_MIN_WIDTH, packWidth - 2 * SLEEVE_BODY_CLEARANCE);
+  const height = Math.max(SLEEVE_MIN_HEIGHT, packHeight - SLEEVE_TOP_CLEARANCE - SLEEVE_BOTTOM_CLEARANCE);
+  return { width, height, depth: SLEEVE_DEPTH_MM };
+}
 
 export function buildLaptopSleeve(r: ResolvedInputs): ModuleResult {
   const { laptop_sleeve_attachment, hem_allowance } = r;
@@ -18,6 +31,11 @@ export function buildLaptopSleeve(r: ResolvedInputs): ModuleResult {
   if (laptop_sleeve_attachment === 'none') {
     return { pieces: [], steps: [] };
   }
+
+  const dims = computeSleeveDimensions(r.width, r.height);
+  const SLEEVE_WIDTH = dims.width;
+  const SLEEVE_HEIGHT = dims.height;
+  const sleeveDepth = dims.depth;
 
   const steps = laptopSleeveSteps();
   const pieces: Piece[] = [];
@@ -57,9 +75,9 @@ export function buildLaptopSleeve(r: ResolvedInputs): ModuleResult {
   const gussetPath: Path = {
     id: 'laptop-sleeve-gusset-outline',
     edges: [
-      segGusset(0, 0, SLEEVE_DEPTH, 0),
-      segGusset(SLEEVE_DEPTH, 0, SLEEVE_DEPTH, SLEEVE_HEIGHT * 2 + SLEEVE_WIDTH),
-      segGusset(SLEEVE_DEPTH, SLEEVE_HEIGHT * 2 + SLEEVE_WIDTH, 0, SLEEVE_HEIGHT * 2 + SLEEVE_WIDTH),
+      segGusset(0, 0, sleeveDepth, 0),
+      segGusset(sleeveDepth, 0, sleeveDepth, SLEEVE_HEIGHT * 2 + SLEEVE_WIDTH),
+      segGusset(sleeveDepth, SLEEVE_HEIGHT * 2 + SLEEVE_WIDTH, 0, SLEEVE_HEIGHT * 2 + SLEEVE_WIDTH),
       segGusset(0, SLEEVE_HEIGHT * 2 + SLEEVE_WIDTH, 0, 0),
     ],
     closed: true,
@@ -115,7 +133,7 @@ export function buildLaptopSleeve(r: ResolvedInputs): ModuleResult {
     mirror: false,
     quantity: 1,
     paths: [gussetPath],
-    annotations: [{ kind: 'label', label: `Laptop Sleeve Gusset\n${SLEEVE_DEPTH}×${SLEEVE_HEIGHT * 2 + SLEEVE_WIDTH} mm` }],
+    annotations: [{ kind: 'label', label: `Laptop Sleeve Gusset\n${sleeveDepth}×${SLEEVE_HEIGHT * 2 + SLEEVE_WIDTH} mm` }],
   });
 
   return { pieces, steps };

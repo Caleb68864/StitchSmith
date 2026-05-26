@@ -235,6 +235,38 @@ describe('buildPattern', () => {
     }
   });
 
+  it('laptop sleeve dimensions scale with the pack width and height', () => {
+    const small = buildPattern(
+      { ...DEFAULT_INPUTS, width: 280, height: 380, laptop_sleeve_attachment: 'seam-sewn' },
+      urban_assault,
+    );
+    const large = buildPattern(
+      { ...DEFAULT_INPUTS, width: 400, height: 600, laptop_sleeve_attachment: 'seam-sewn' },
+      urban_assault,
+    );
+    expect(small.ok && large.ok).toBe(true);
+    if (!small.ok || !large.ok) return;
+    const smallFront = small.value.pieces.find(p => p.id === 'laptop-sleeve-front')!;
+    const largeFront = large.value.pieces.find(p => p.id === 'laptop-sleeve-front')!;
+    // Larger pack → larger sleeve (assuming both are above the floor sizes).
+    const smallEnds = smallFront.paths[0].edges.flatMap(e => [e.start.x, e.end.x]);
+    const largeEnds = largeFront.paths[0].edges.flatMap(e => [e.start.x, e.end.x]);
+    expect(Math.max(...largeEnds)).toBeGreaterThan(Math.max(...smallEnds));
+  });
+
+  it('laptop sleeve clamps to a minimum size for tiny packs', () => {
+    const tiny = buildPattern(
+      { ...DEFAULT_INPUTS, width: 100, height: 100, laptop_sleeve_attachment: 'seam-sewn', hem_allowance: 0 },
+      urban_assault,
+    );
+    expect(tiny.ok).toBe(true);
+    if (!tiny.ok) return;
+    const front = tiny.value.pieces.find(p => p.id === 'laptop-sleeve-front')!;
+    const xs = front.paths[0].edges.flatMap(e => [e.start.x, e.end.x]);
+    // Should be SLEEVE_MIN_WIDTH = 200
+    expect(Math.max(...xs)).toBeGreaterThanOrEqual(200);
+  });
+
   it('hem_allowance is applied to laptop sleeve top edge as a fold line', () => {
     const result = buildPattern(
       { ...DEFAULT_INPUTS, laptop_sleeve_attachment: 'seam-sewn', hem_allowance: 30 },
