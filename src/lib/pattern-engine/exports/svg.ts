@@ -3,6 +3,7 @@ import type { Piece } from '../graph/Piece.js';
 import type { Path } from '../graph/Path.js';
 import type { Edge } from '../graph/Edge.js';
 import { bboxFromPiece } from '../geometry/bbox.js';
+import { computeSeamAllowancePolygon } from '../geometry/offset.js';
 
 function edgeToSvgCommands(edge: Edge, isFirst: boolean): string {
   switch (edge.kind) {
@@ -33,8 +34,28 @@ function pathToSvgPath(path: Path, role?: string): string {
   return `<path d="${d}${close}" fill="none" stroke="${stroke}" stroke-width="0.5"${strokeDash}/>`;
 }
 
-function pieceToSvgGroup(piece: Piece, offsetX: number, offsetY: number): string {
+function saPolygonToSvgPath(vertices: { x: number; y: number }[]): string {
+  if (vertices.length < 3) return '';
+  const d = vertices
+    .map((v, i) => (i === 0 ? `M ${v.x} ${v.y}` : `L ${v.x} ${v.y}`))
+    .join(' ');
+  return `<path d="${d} Z" fill="none" stroke="#2e7d32" stroke-width="0.4" stroke-dasharray="3,2"/>`;
+}
+
+function pieceToSvgGroup(piece: Piece, offsetX: number, offsetY: number, defaultSa: number): string {
   const parts: string[] = [];
+
+  // SA outer cut line drawn first so the body cut line strokes on top.
+  if (piece.seamAllowances || defaultSa > 0) {
+    for (const path of piece.paths) {
+      if (!path.closed) continue;
+      const saResult = computeSeamAllowancePolygon(piece, path, defaultSa);
+      if (saResult.ok && saResult.value) {
+        parts.push(saPolygonToSvgPath(saResult.value));
+      }
+    }
+  }
+
   for (const path of piece.paths) {
     const role = path.edges[0]?.role;
     parts.push(pathToSvgPath(path, role));
@@ -51,6 +72,11 @@ function escXml(s: string): string {
 export interface SvgOptions {
   margin?: number;
   pieceGap?: number;
+  /**
+   * Default seam allowance (mm) applied to closed paths whose Piece has no
+   * `seamAllowances` entry. 0 disables SA rendering unless per-edge SA is set.
+   */
+  defaultSeamAllowance?: number;
 }
 
 /**
@@ -60,6 +86,7 @@ export interface SvgOptions {
 export function patternToSvg(pattern: Pattern, options: SvgOptions = {}): string {
   const margin = options.margin ?? 10;
   const gap = options.pieceGap ?? 5;
+  const defaultSa = options.defaultSeamAllowance ?? 0;
 
   if (pattern.pieces.length === 0) {
     return `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"></svg>`;
@@ -77,7 +104,7 @@ export function patternToSvg(pattern: Pattern, options: SvgOptions = {}): string
     const bbox = bboxes[i];
     const ox = cursorX - bbox.minX;
     const oy = margin - bbox.minY;
-    groups.push(pieceToSvgGroup(piece, ox, oy));
+    groups.push(pieceToSvgGroup(piece, ox, oy, defaultSa));
     cursorX += bbox.width + gap;
   }
 

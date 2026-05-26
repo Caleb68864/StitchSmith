@@ -75,4 +75,23 @@ describe('patternToSvg', () => {
     const svg = patternToSvg(empty);
     expect(svg).toContain('<svg');
   });
+
+  it('renders an SA outer cut line when defaultSeamAllowance > 0', () => {
+    const svg = patternToSvg(squarePattern, { defaultSeamAllowance: 10 });
+    expect(svg).toContain('stroke="#2e7d32"');
+    expect(svg).toContain('stroke-dasharray="3,2"');
+  });
+
+  it('omits SA line when defaultSeamAllowance is 0 and no per-edge SA', () => {
+    const svg = patternToSvg(squarePattern, { defaultSeamAllowance: 0 });
+    expect(svg).not.toContain('stroke="#2e7d32"');
+  });
+
+  it('honors per-edge SA from Piece.seamAllowances even without default', () => {
+    const piece = makeSquarePiece(100);
+    piece.seamAllowances = { 'sq-e0': 5, 'sq-e1': 10, 'sq-e2': 10, 'sq-e3': 10 };
+    const pattern: Pattern = { id: 't', name: 'T', pieces: [piece] };
+    const svg = patternToSvg(pattern);
+    expect(svg).toContain('stroke="#2e7d32"');
+  });
 });

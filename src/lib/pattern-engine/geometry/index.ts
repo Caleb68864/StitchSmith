@@ -1,5 +1,5 @@
 export type { Result } from './offset.js';
-export { offsetPolygon, polygonArea } from './offset.js';
+export { offsetPolygon, offsetPolygonPerEdge, polygonArea, computeSeamAllowancePolygon } from './offset.js';
 export type {
   ArcConstraintDirection,
   AnchorPoint,

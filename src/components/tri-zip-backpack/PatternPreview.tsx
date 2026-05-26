@@ -16,7 +16,7 @@ export function PatternPreview({ inputs, hasErrors }: Props) {
       const preset = getPreset(inputs.stylePreset);
       const result = buildPattern(inputs, preset);
       if (!result.ok) return null;
-      return patternToSvg(result.value);
+      return patternToSvg(result.value, { defaultSeamAllowance: inputs.seam_allowance ?? 10 });
     } catch {
       return null;
     }

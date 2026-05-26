@@ -1,4 +1,7 @@
 import type { Point } from '../graph/Point.js';
+import type { Edge } from '../graph/Edge.js';
+import type { Path } from '../graph/Path.js';
+import type { Piece } from '../graph/Piece.js';
 
 export type Result<T, E = string> =
   | { ok: true; value: T }
@@ -109,4 +112,142 @@ function signedArea(vertices: Point[]): number {
 
 export function polygonArea(vertices: Point[]): number {
   return Math.abs(signedArea(vertices));
+}
+
+/**
+ * Sample a curved edge into a polyline. Straight edges return [start, end].
+ * Arcs and beziers are sampled at `segments` points; 24 is fine for fabric SA
+ * which is small relative to typical curve radii.
+ */
+function sampleEdge(edge: Edge, segments = 24): Point[] {
+  switch (edge.kind) {
+    case 'straight':
+      return [edge.start, edge.end];
+    case 'arc': {
+      const { center, radius, clockwise } = edge;
+      let startAngle = Math.atan2(edge.start.y - center.y, edge.start.x - center.x);
+      let endAngle = Math.atan2(edge.end.y - center.y, edge.end.x - center.x);
+      if (clockwise && endAngle < startAngle) endAngle += 2 * Math.PI;
+      if (!clockwise && endAngle > startAngle) endAngle -= 2 * Math.PI;
+      const pts: Point[] = [];
+      for (let i = 0; i <= segments; i++) {
+        const t = i / segments;
+        const a = startAngle + (endAngle - startAngle) * t;
+        pts.push({ x: center.x + radius * Math.cos(a), y: center.y + radius * Math.sin(a) });
+      }
+      return pts;
+    }
+    case 'bezier': {
+      const pts: Point[] = [];
+      for (let i = 0; i <= segments; i++) {
+        const t = i / segments;
+        const mt = 1 - t;
+        pts.push({
+          x: mt * mt * mt * edge.start.x + 3 * mt * mt * t * edge.cp1.x + 3 * mt * t * t * edge.cp2.x + t * t * t * edge.end.x,
+          y: mt * mt * mt * edge.start.y + 3 * mt * mt * t * edge.cp1.y + 3 * mt * t * t * edge.cp2.y + t * t * t * edge.end.y,
+        });
+      }
+      return pts;
+    }
+  }
+}
+
+/**
+ * Flatten a closed Path's edges to a vertex list, with a parallel array of
+ * per-segment SA values. Each Edge contributes its sampled segments; every
+ * segment inherits its parent Edge's SA value.
+ */
+function flattenPath(
+  path: Path,
+  saByEdgeId: Record<string, number>,
+  defaultSa: number,
+): { vertices: Point[]; saPerEdge: number[] } {
+  const vertices: Point[] = [];
+  const saPerEdge: number[] = [];
+  for (const edge of path.edges) {
+    const sa = saByEdgeId[edge.id] ?? defaultSa;
+    const sampled = sampleEdge(edge);
+    const start = vertices.length === 0 ? 0 : 1;
+    for (let i = start; i < sampled.length; i++) {
+      vertices.push(sampled[i]);
+      saPerEdge.push(sa);
+    }
+  }
+  if (path.closed && vertices.length > 1) {
+    const first = vertices[0];
+    const last = vertices[vertices.length - 1];
+    if (Math.hypot(first.x - last.x, first.y - last.y) < 1e-9) {
+      vertices.pop();
+      saPerEdge.pop();
+    }
+  }
+  return { vertices, saPerEdge };
+}
+
+/**
+ * Offset a polygon edge-by-edge with a per-edge distance array.
+ * `distances[i]` applies to the edge from vertices[i] to vertices[i+1].
+ */
+export function offsetPolygonPerEdge(vertices: Point[], distances: number[]): Result<Point[]> {
+  const n = vertices.length;
+  if (n < 3) return { ok: false, error: 'polygon must have at least 3 vertices' };
+  if (distances.length !== n) return { ok: false, error: `distances length ${distances.length} must equal vertices length ${n}` };
+
+  const offsetEdges: { p: Point; dir: Point }[] = [];
+  for (let i = 0; i < n; i++) {
+    const a = vertices[i];
+    const b = vertices[(i + 1) % n];
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const len = Math.hypot(dx, dy);
+    if (len < 1e-12) return { ok: false, error: `degenerate edge at index ${i}` };
+    const nx = dy / len;
+    const ny = -dx / len;
+    const d = distances[i];
+    offsetEdges.push({
+      p: { x: a.x + d * nx, y: a.y + d * ny },
+      dir: { x: dx, y: dy },
+    });
+  }
+
+  const result: Point[] = [];
+  for (let i = 0; i < n; i++) {
+    const cur = offsetEdges[i];
+    const nxt = offsetEdges[(i + 1) % n];
+    const pt = lineIntersect(cur.p, cur.dir, nxt.p, nxt.dir);
+    if (!pt) {
+      result.push({ x: cur.p.x + cur.dir.x, y: cur.p.y + cur.dir.y });
+    } else {
+      result.push(pt);
+    }
+  }
+
+  if (distances.some((d) => d < 0)) {
+    const origSigned = signedArea(vertices);
+    const resSigned = signedArea(result);
+    if (origSigned * resSigned < 0) {
+      return { ok: false, error: 'self-intersection detected in inward offset' };
+    }
+  }
+
+  return { ok: true, value: result };
+}
+
+/**
+ * Compute the seam-allowance outer cut line for a closed path on a piece.
+ * Reads `piece.seamAllowances` keyed by `Edge.id`; edges without an entry
+ * fall back to `defaultSa`. Returns ok:null when every edge has 0 SA.
+ * SA convention: positive = outward (away from the body).
+ */
+export function computeSeamAllowancePolygon(
+  piece: Piece,
+  path: Path,
+  defaultSa = 0,
+): Result<Point[] | null> {
+  if (!path.closed) return { ok: false, error: 'seam allowance only supported for closed paths' };
+  const sa = piece.seamAllowances ?? {};
+  const { vertices, saPerEdge } = flattenPath(path, sa, defaultSa);
+  if (vertices.length < 3) return { ok: false, error: 'flattened path has fewer than 3 vertices' };
+  if (saPerEdge.every((d) => d === 0)) return { ok: true, value: null };
+  return offsetPolygonPerEdge(vertices, saPerEdge);
 }

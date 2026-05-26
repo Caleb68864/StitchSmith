@@ -44,7 +44,7 @@ export function ExportPanel({ inputs, project, hasErrors, onImportProject }: Pro
   function handleSvg() {
     const r = getPattern();
     if (!r) return;
-    const svg = patternToSvg(r);
+    const svg = patternToSvg(r, { defaultSeamAllowance: inputs.seam_allowance ?? 10 });
     downloadTextFile(`${project.projectName}.svg`, svg, 'image/svg+xml');
   }
 
