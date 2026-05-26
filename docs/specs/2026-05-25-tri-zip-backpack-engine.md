@@ -125,9 +125,7 @@ dispatch: factory
   - `[STRUCTURAL]` `Edge.ts` exports an `Edge` discriminated union with variants `Straight | Arc | Bezier` and a `role: 'cut' | 'fold' | 'stitch' | 'seam' | 'notch'` field.
   - `[STRUCTURAL]` `Piece.ts` exports a `Piece` interface with at least `id: string`, `name: string`, `mirror: boolean`, `quantity: number`, `paths: Path[]`, `materialId?: string`, `annotations?: PieceAnnotation[]`.
   - `[STRUCTURAL]` `Step.ts` matches the shape in the source design (id, title, body, dependsOn, refsPieces, optional group).
-  - `[MECHANICAL]` `grep -r "from.*src/generators" src/lib/pattern-engine/` returns no matches.
-  - `[MECHANICAL]` `grep -r "from.*src/components" src/lib/pattern-engine/` returns no matches.
-  - `[MECHANICAL]` `npm test -- --run src/lib/pattern-engine/__tests__/boundaries.test.ts` exits 0; the test asserts no offending import strings in the engine source tree.
+  - `[MECHANICAL]` `npm test -- --run src/lib/pattern-engine/__tests__/boundaries.test.ts` exits 0. This vitest contract test walks the engine source tree and asserts no offending import strings (patterns: `../generators`, `../components`, `@/generators`, `@/components`, `src/generators`, `src/components`). The vitest test is the sole cross-platform enforcement mechanism; redundant shell grep checks intentionally omitted because they break on Windows (cmd.exe / PowerShell don't recognize bash `!` negation).
   - `[MECHANICAL]` `npm run build` exits 0 and `npm test -- --run` exits 0 with all existing tests still passing.
   - `[BEHAVIORAL]` `exports/svg.ts` takes a `Pattern` with one square `Piece` (cut role) and returns an SVG string containing `<path>` with absolute `M`/`L` commands and dimensions matching the piece's bbox in mm.
   - `[BEHAVIORAL]` `geometry/offset.ts` offsets a unit square (CCW, 1 mm seam allowance) outward to a 1.002 m² area (within float epsilon); inward offset by 0.5 mm produces a 0.999 m² area. Self-intersection on tight inner curves emits a `Result` error variant rather than throwing.
