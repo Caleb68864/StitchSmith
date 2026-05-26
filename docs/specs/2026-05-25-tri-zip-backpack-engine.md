@@ -274,7 +274,7 @@ dispatch: factory
 ---
 sub_spec_id: SS-05
 phase: run
-depends_on: ['SS-01', 'SS-04']
+depends_on: ['SS-01', 'SS-02', 'SS-04']
 dispatch: factory
 ---
 
