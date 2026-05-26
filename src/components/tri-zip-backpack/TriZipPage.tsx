@@ -58,6 +58,7 @@ function deriveErrors(inputs: UseTriZipProjectReturn['project']['inputs']): Reco
 
 export function TriZipPage({ project, updateInputs, resetProject, importProject }: TriZipPageProps) {
   const [topHandleLength, setTopHandleLength] = useState(100);
+  const [showLabels, setShowLabels] = useState(true);
 
   const errors = useMemo(() => deriveErrors(project.inputs), [project.inputs]);
   const hasErrors = Object.keys(errors).length > 0;
@@ -102,7 +103,12 @@ export function TriZipPage({ project, updateInputs, resetProject, importProject 
         </div>
 
         <div className="w-full md:flex-1 md:min-w-0 space-y-3">
-          <PatternPreview inputs={project.inputs} hasErrors={!engineValid} />
+          <PatternPreview
+            inputs={project.inputs}
+            hasErrors={!engineValid}
+            showLabels={showLabels}
+            onShowLabelsChange={setShowLabels}
+          />
           <TriZipLegend />
 
           {hasErrors && (
@@ -122,6 +128,7 @@ export function TriZipPage({ project, updateInputs, resetProject, importProject 
             inputs={project.inputs}
             project={project}
             hasErrors={!engineValid}
+            showLabels={showLabels}
             onImportProject={importProject}
           />
         </div>

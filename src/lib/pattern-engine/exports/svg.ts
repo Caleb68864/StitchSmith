@@ -60,7 +60,14 @@ function saPolygonToSvgPath(vertices: { x: number; y: number }[]): string {
   return `<path d="${d} Z" fill="none" stroke="#2e7d32" stroke-width="0.4" stroke-dasharray="3,2"/>`;
 }
 
-function pieceToSvgGroup(piece: Piece, offsetX: number, offsetY: number, defaultSa: number): string {
+function pieceToSvgGroup(
+  piece: Piece,
+  offsetX: number,
+  offsetY: number,
+  defaultSa: number,
+  showLabels: boolean,
+  bbox: BoundingBox,
+): string {
   const parts: string[] = [];
 
   // SA outer cut line drawn first so the body cut line strokes on top.
@@ -78,8 +85,32 @@ function pieceToSvgGroup(piece: Piece, offsetX: number, offsetY: number, default
     const role = path.edges[0]?.role;
     parts.push(pathToSvgPath(path, role));
   }
-  const label = `<text x="${offsetX}" y="${offsetY - 3}" font-size="6" font-family="sans-serif">${escXml(piece.name)}</text>`;
-  parts.push(label);
+
+  if (showLabels) {
+    // Scale label font with piece size so it stays readable on big pieces
+    // without being huge on small ones. Clamp to [8, 28] mm.
+    const fontSize = Math.max(8, Math.min(28, Math.min(bbox.width, bbox.height) / 12));
+    const centerX = bbox.minX + bbox.width / 2;
+    const centerY = bbox.minY + bbox.height / 2;
+    const lines: string[] = [piece.name];
+    // Tell the cutter how many copies and whether the piece is cut as a
+    // mirrored pair (e.g. shoulder straps) or on a fold (the engine doesn't
+    // currently emit cut-on-fold pieces, but the Piece type reserves the flag).
+    const qtyParts: string[] = [`Cut ${piece.quantity}`];
+    if (piece.cutOnFold) qtyParts.push('on fold');
+    else if (piece.mirror) qtyParts.push('(mirrored pair)');
+    lines.push(qtyParts.join(' '));
+    const labelText = lines
+      .map((line, i) => {
+        const dy = i === 0 ? '0' : '1.2em';
+        return `<tspan x="${centerX}" dy="${dy}">${escXml(line)}</tspan>`;
+      })
+      .join('');
+    parts.push(
+      `<text x="${centerX}" y="${centerY}" font-size="${fontSize}" font-family="sans-serif" text-anchor="middle" dominant-baseline="middle" fill="#374151" opacity="0.7" pointer-events="none">${labelText}</text>`,
+    );
+  }
+
   return `<g id="piece-${escXml(piece.id)}" transform="translate(${offsetX},${offsetY})">\n  ${parts.join('\n  ')}\n</g>`;
 }
 
@@ -95,6 +126,11 @@ export interface SvgOptions {
    * `seamAllowances` entry. 0 disables SA rendering unless per-edge SA is set.
    */
   defaultSeamAllowance?: number;
+  /**
+   * When true (default), draws each piece's name + quantity centered inside
+   * the piece. Toggle off for a clean cut-line-only export.
+   */
+  showLabels?: boolean;
 }
 
 /**
@@ -105,6 +141,7 @@ export function patternToSvg(pattern: Pattern, options: SvgOptions = {}): string
   const margin = options.margin ?? 10;
   const gap = options.pieceGap ?? 5;
   const defaultSa = options.defaultSeamAllowance ?? 0;
+  const showLabels = options.showLabels ?? true;
 
   if (pattern.pieces.length === 0) {
     return `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"></svg>`;
@@ -122,7 +159,7 @@ export function patternToSvg(pattern: Pattern, options: SvgOptions = {}): string
     const bbox = bboxes[i];
     const ox = cursorX - bbox.minX;
     const oy = margin - bbox.minY;
-    groups.push(pieceToSvgGroup(piece, ox, oy, defaultSa));
+    groups.push(pieceToSvgGroup(piece, ox, oy, defaultSa, showLabels, bbox));
     cursorX += bbox.width + gap;
   }
 

@@ -23,10 +23,11 @@ interface Props {
   inputs: TriZipInputs;
   project: TriZipProject;
   hasErrors: boolean;
+  showLabels?: boolean;
   onImportProject: (p: TriZipProject) => void;
 }
 
-export function ExportPanel({ inputs, project, hasErrors, onImportProject }: Props) {
+export function ExportPanel({ inputs, project, hasErrors, showLabels = true, onImportProject }: Props) {
   const [showCutList, setShowCutList] = useState(false);
   const [cutListData, setCutListData] = useState<ExportCutList | null>(null);
   const [pdfLoading, setPdfLoading] = useState(false);
@@ -44,7 +45,10 @@ export function ExportPanel({ inputs, project, hasErrors, onImportProject }: Pro
   function handleSvg() {
     const r = getPattern();
     if (!r) return;
-    const svg = patternToSvg(r, { defaultSeamAllowance: inputs.seam_allowance ?? 10 });
+    const svg = patternToSvg(r, {
+      defaultSeamAllowance: inputs.seam_allowance ?? 10,
+      showLabels,
+    });
     downloadTextFile(`${project.projectName}.svg`, svg, 'image/svg+xml');
   }
 

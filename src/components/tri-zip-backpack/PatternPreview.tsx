@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState, useCallback } from 'react';
-import { ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
+import { ZoomIn, ZoomOut, Maximize2, Tag, TagsIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { TriZipInputs } from '../../generators/tri-zip-backpack/types.js';
 import { buildPattern } from '../../generators/tri-zip-backpack/buildPattern.js';
@@ -9,6 +9,8 @@ import { patternToSvg } from '../../lib/pattern-engine/exports/svg.js';
 interface Props {
   inputs: TriZipInputs;
   hasErrors: boolean;
+  showLabels: boolean;
+  onShowLabelsChange: (v: boolean) => void;
 }
 
 interface PatternResult {
@@ -21,21 +23,24 @@ interface PatternResult {
 const MIN_SCALE = 0.1;
 const MAX_SCALE = 8;
 
-export function PatternPreview({ inputs, hasErrors }: Props) {
+export function PatternPreview({ inputs, hasErrors, showLabels, onShowLabelsChange }: Props) {
   const result = useMemo<PatternResult | null>(() => {
     if (hasErrors) return null;
     try {
       const preset = getPreset(inputs.stylePreset);
       const r = buildPattern(inputs, preset);
       if (!r.ok) return { svg: '', pieceCount: 0, totalQuantity: 0, buildError: r.error.message };
-      const svg = patternToSvg(r.value, { defaultSeamAllowance: inputs.seam_allowance ?? 10 });
+      const svg = patternToSvg(r.value, {
+        defaultSeamAllowance: inputs.seam_allowance ?? 10,
+        showLabels,
+      });
       const pieceCount = r.value.pieces.length;
       const totalQuantity = r.value.pieces.reduce((s, p) => s + p.quantity, 0);
       return { svg, pieceCount, totalQuantity, buildError: null };
     } catch (e) {
       return { svg: '', pieceCount: 0, totalQuantity: 0, buildError: (e as Error).message };
     }
-  }, [inputs, hasErrors]);
+  }, [inputs, hasErrors, showLabels]);
 
   const [scale, setScale] = useState(1);
   const [translate, setTranslate] = useState({ x: 0, y: 0 });
@@ -115,6 +120,17 @@ export function PatternPreview({ inputs, hasErrors }: Props) {
       </div>
       <div className="rounded border border-border bg-white relative">
         <div className="absolute top-2 right-2 z-10 flex gap-1 bg-white/90 backdrop-blur rounded border border-border p-1 shadow-sm">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onShowLabelsChange(!showLabels)}
+            className={`h-7 w-7 p-0 ${showLabels ? 'text-foreground' : 'text-muted-foreground'}`}
+            title={showLabels ? 'Hide piece labels' : 'Show piece labels'}
+            aria-pressed={showLabels}
+          >
+            {showLabels ? <Tag className="h-3.5 w-3.5" /> : <TagsIcon className="h-3.5 w-3.5 opacity-40" />}
+          </Button>
+          <span className="w-px bg-border self-stretch mx-0.5" aria-hidden />
           <Button variant="ghost" size="sm" onClick={zoomOut} className="h-7 w-7 p-0" title="Zoom out (or scroll down)">
             <ZoomOut className="h-3.5 w-3.5" />
           </Button>
