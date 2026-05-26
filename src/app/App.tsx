@@ -17,22 +17,30 @@ export function App() {
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
-      <header className="border-b bg-background px-4 py-3 flex items-center justify-between">
-        <button
-          className="text-lg font-semibold tracking-tight hover:opacity-75 transition-opacity"
-          onClick={() => setView('landing')}
-        >
-          StitchSmith
-        </button>
-        {view === 'tool-roll' && (
-          <AppHeader
-            project={toolRollState.project}
-            layout={null}
-            onImport={toolRollState.importProject}
-            onReset={toolRollState.resetProject}
-          />
-        )}
-      </header>
+      {view === 'landing' ? (
+        <header className="border-b bg-background px-4 py-3">
+          <span className="text-lg font-semibold tracking-tight">StitchSmith</span>
+        </header>
+      ) : view === 'tool-roll' ? (
+        <AppHeader
+          project={toolRollState.project}
+          layout={null}
+          onImport={toolRollState.importProject}
+          onReset={toolRollState.resetProject}
+          onHome={() => setView('landing')}
+        />
+      ) : (
+        <header className="border-b bg-background px-4 py-3 flex items-center justify-between">
+          <button
+            className="text-lg font-semibold tracking-tight hover:opacity-75 transition-opacity"
+            onClick={() => setView('landing')}
+            aria-label="Back to home"
+          >
+            StitchSmith
+          </button>
+          <span className="text-xs text-muted-foreground">Tri-Zip Backpack Generator</span>
+        </header>
+      )}
       <PageShell>
         {view === 'landing' && (
           <LandingPage onSelectPattern={(route: PatternEntry['route']) => setView(route)} />

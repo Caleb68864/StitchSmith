@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { App } from './App.js';
 import { _resetStorage } from '../state/useToolRollProject.js';
@@ -6,6 +6,8 @@ import { _resetStorage } from '../state/useToolRollProject.js';
 beforeEach(() => {
   localStorage.clear();
   _resetStorage();
+  // Reset/destructive actions now confirm via window.confirm; auto-accept in tests.
+  vi.spyOn(window, 'confirm').mockReturnValue(true);
 });
 
 describe('App integration', () => {
@@ -69,6 +71,6 @@ describe('App integration', () => {
     render(<App />);
     const openBtn = screen.getByRole('button', { name: /Open Tri-Zip Backpack/i });
     fireEvent.click(openBtn);
-    expect(screen.getByText(/Tri-Zip Backpack Generator/i)).toBeTruthy();
+    expect(screen.getAllByText(/Tri-Zip Backpack Generator/i).length).toBeGreaterThan(0);
   });
 });

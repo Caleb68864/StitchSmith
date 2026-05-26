@@ -10,6 +10,16 @@ type TriZipPageProps = Pick<
   'project' | 'updateInputs' | 'resetProject' | 'importProject'
 >;
 
+const FIELD_LABELS: Record<string, string> = {
+  height: 'Height',
+  width: 'Width',
+  depth: 'Depth',
+  y_split_height_percent: 'Y-split height',
+  center_panel_width_percent: 'Center panel width',
+  seam_allowance: 'Seam allowance',
+  hem_allowance: 'Hem allowance',
+};
+
 function deriveErrors(inputs: UseTriZipProjectReturn['project']['inputs']): Record<string, string> {
   const errors: Record<string, string> = {};
   const { height, width, depth, units } = inputs;
@@ -17,13 +27,13 @@ function deriveErrors(inputs: UseTriZipProjectReturn['project']['inputs']): Reco
   const toMm = (v: number) => units === 'in' ? v * 25.4 : v;
 
   if (!isFinite(height) || toMm(height) <= 0) {
-    errors['height'] = 'Height must be a positive number';
+    errors['height'] = 'Must be a positive number';
   }
   if (!isFinite(width) || toMm(width) <= 0) {
-    errors['width'] = 'Width must be a positive number';
+    errors['width'] = 'Must be a positive number';
   }
   if (!isFinite(depth) || toMm(depth) <= 0) {
-    errors['depth'] = 'Depth must be a positive number';
+    errors['depth'] = 'Must be a positive number';
   }
 
   const yp = inputs.y_split_height_percent;
@@ -33,6 +43,13 @@ function deriveErrors(inputs: UseTriZipProjectReturn['project']['inputs']): Reco
   const cp = inputs.center_panel_width_percent;
   if (cp !== undefined && (cp < 1 || cp > 99)) {
     errors['center_panel_width_percent'] = 'Must be between 1 and 99';
+  }
+
+  if (inputs.seam_allowance !== undefined && (!isFinite(inputs.seam_allowance) || inputs.seam_allowance < 0)) {
+    errors['seam_allowance'] = 'Must be 0 or greater';
+  }
+  if (inputs.hem_allowance !== undefined && (!isFinite(inputs.hem_allowance) || inputs.hem_allowance < 0)) {
+    errors['hem_allowance'] = 'Must be 0 or greater';
   }
 
   return errors;
@@ -51,6 +68,12 @@ export function TriZipPage({ project, updateInputs, resetProject, importProject 
     return r.ok;
   }, [project.inputs, hasErrors]);
 
+  function handleReset() {
+    if (window.confirm('Reset will discard all changes and restore default Tri-Zip settings. This cannot be undone — continue?')) {
+      resetProject();
+    }
+  }
+
   return (
     <div className="flex flex-col gap-4 max-w-full">
       <div className="flex items-center justify-between">
@@ -59,7 +82,7 @@ export function TriZipPage({ project, updateInputs, resetProject, importProject 
           <p className="text-xs text-muted-foreground">Tri-Zip Backpack Generator</p>
         </div>
         <button
-          onClick={resetProject}
+          onClick={handleReset}
           className="text-xs text-muted-foreground hover:text-foreground transition-colors"
         >
           Reset
@@ -82,10 +105,10 @@ export function TriZipPage({ project, updateInputs, resetProject, importProject 
 
           {hasErrors && (
             <div className="rounded border border-destructive/50 bg-destructive/5 p-3 space-y-1">
-              <p className="text-xs font-semibold text-destructive">Validation errors</p>
+              <p className="text-xs font-semibold text-destructive">Fix these before exporting</p>
               {Object.entries(errors).map(([field, msg]) => (
                 <p key={field} className="text-xs text-destructive">
-                  {field}: {msg}
+                  <span className="font-medium">{FIELD_LABELS[field] ?? field}:</span> {msg}
                 </p>
               ))}
             </div>

@@ -11,9 +11,10 @@ interface AppHeaderProps {
   layout?: ToolRollLayout | null
   onImport?: (p: ToolRollProject) => void
   onReset?: () => void
+  onHome?: () => void
 }
 
-export function AppHeader({ project, layout, onImport, onReset }: AppHeaderProps) {
+export function AppHeader({ project, layout, onImport, onReset, onHome }: AppHeaderProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   function handleImportClick() {
@@ -46,11 +47,30 @@ export function AppHeader({ project, layout, onImport, onReset }: AppHeaderProps
     }
   }
 
+  function handleReset() {
+    if (!onReset) return
+    if (window.confirm('Reset will replace your current project with the starter sample (4 wrenches). This cannot be undone — continue?')) {
+      onReset()
+    }
+  }
+
+  const titleElement = onHome ? (
+    <button
+      onClick={onHome}
+      className="text-lg font-semibold tracking-tight hover:opacity-75 transition-opacity"
+      aria-label="Back to home"
+    >
+      StitchSmith <span className="text-muted-foreground font-normal">— Tool Roll Generator</span>
+    </button>
+  ) : (
+    <h1 className="text-lg font-semibold tracking-tight">
+      StitchSmith — Tool Roll Generator
+    </h1>
+  )
+
   return (
     <header className="border-b bg-background px-4 py-3 flex items-center justify-between">
-      <h1 className="text-lg font-semibold tracking-tight">
-        StitchSmith — Tool Roll Generator
-      </h1>
+      {titleElement}
       <div className="flex items-center gap-2">
         <input
           ref={fileInputRef}
@@ -67,7 +87,7 @@ export function AppHeader({ project, layout, onImport, onReset }: AppHeaderProps
           <Download className="h-4 w-4 mr-1" />
           Export
         </Button>
-        <Button variant="outline" size="sm" onClick={onReset} title="Replace the current project with the starter sample project (4 wrenches).">
+        <Button variant="outline" size="sm" onClick={handleReset} title="Replace the current project with the starter sample project (4 wrenches).">
           <RotateCcw className="h-4 w-4 mr-1" />
           Reset
         </Button>
