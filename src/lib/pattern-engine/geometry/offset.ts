@@ -29,6 +29,12 @@ function lineIntersect(
 export function offsetPolygon(vertices: Point[], d: number): Result<Point[]> {
   const n = vertices.length;
   if (n < 3) return { ok: false, error: 'polygon must have at least 3 vertices' };
+  if (!isFinite(d)) return { ok: false, error: `offset distance must be a finite number (got ${d})` };
+  for (let i = 0; i < n; i++) {
+    if (!isFinite(vertices[i].x) || !isFinite(vertices[i].y)) {
+      return { ok: false, error: `vertex ${i} has non-finite coordinates` };
+    }
+  }
 
   // Compute outward normals for each edge
   const normals: Point[] = [];
@@ -192,6 +198,14 @@ export function offsetPolygonPerEdge(vertices: Point[], distances: number[]): Re
   const n = vertices.length;
   if (n < 3) return { ok: false, error: 'polygon must have at least 3 vertices' };
   if (distances.length !== n) return { ok: false, error: `distances length ${distances.length} must equal vertices length ${n}` };
+  for (let i = 0; i < n; i++) {
+    if (!isFinite(vertices[i].x) || !isFinite(vertices[i].y)) {
+      return { ok: false, error: `vertex ${i} has non-finite coordinates` };
+    }
+    if (!isFinite(distances[i])) {
+      return { ok: false, error: `distance ${i} must be a finite number (got ${distances[i]})` };
+    }
+  }
 
   const offsetEdges: { p: Point; dir: Point }[] = [];
   for (let i = 0; i < n; i++) {

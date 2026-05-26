@@ -55,6 +55,34 @@ describe('offsetPolygon — error cases', () => {
     const r = offsetPolygon([{ x: 0, y: 0 }, { x: 1, y: 0 }], 1);
     expect(r.ok).toBe(false);
   });
+
+  it('rejects NaN offset distance', () => {
+    const r = offsetPolygon(unitSquareCCW, NaN);
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error).toMatch(/finite/);
+  });
+
+  it('rejects Infinity offset distance', () => {
+    const r = offsetPolygon(unitSquareCCW, Infinity);
+    expect(r.ok).toBe(false);
+  });
+
+  it('rejects non-finite vertex coordinates', () => {
+    const r = offsetPolygon(
+      [{ x: 0, y: 0 }, { x: NaN, y: 0 }, { x: 1, y: 1 }, { x: 0, y: 1 }],
+      1,
+    );
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error).toMatch(/non-finite/);
+  });
+});
+
+describe('offsetPolygonPerEdge — robustness', () => {
+  it('rejects NaN in any distance', () => {
+    const r = offsetPolygonPerEdge(unitSquareCCW, [1, NaN, 1, 1]);
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error).toMatch(/finite/);
+  });
 });
 
 describe('polygonArea', () => {

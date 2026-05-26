@@ -308,6 +308,32 @@ describe('buildPattern', () => {
     }
   });
 
+  it('rejects NaN dimensions', () => {
+    const r = buildPattern({ ...DEFAULT_INPUTS, height: NaN }, urban_assault);
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error.kind).toBe('invalid-inputs');
+  });
+
+  it('rejects Infinity dimensions', () => {
+    const r = buildPattern({ ...DEFAULT_INPUTS, width: Infinity }, urban_assault);
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error.kind).toBe('invalid-inputs');
+  });
+
+  it('rejects NaN seam_allowance', () => {
+    const r = buildPattern({ ...DEFAULT_INPUTS, seam_allowance: NaN }, urban_assault);
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error.kind).toBe('invalid-inputs');
+  });
+
+  it('builds successfully at the floor pack size (laptop sleeve clamps cleanly)', () => {
+    const r = buildPattern(
+      { ...DEFAULT_INPUTS, width: 50, height: 50, depth: 50, laptop_sleeve_attachment: 'seam-sewn' },
+      urban_assault,
+    );
+    expect(r.ok).toBe(true);
+  });
+
   it('all six presets build successfully with same dimensions', () => {
     for (const [name, preset] of Object.entries(STYLE_PRESETS)) {
       const result = buildPattern({ ...DEFAULT_INPUTS, stylePreset: name as keyof typeof STYLE_PRESETS }, preset);
