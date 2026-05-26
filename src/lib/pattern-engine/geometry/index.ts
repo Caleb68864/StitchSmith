@@ -27,3 +27,8 @@ export {
   bboxFromPiece,
   unionBbox,
 } from './bbox.js';
+export type { BoxedCornerResult } from './boxedCorner.js';
+export { boxedCornerStitchLine } from './boxedCorner.js';
+export { FRENCH_SEAM_TOTAL_MM, frenchSeamAllowance } from './frenchSeam.js';
+export type { RollTopClosureResult } from './rollTopClosure.js';
+export { rollTopClosure } from './rollTopClosure.js';
