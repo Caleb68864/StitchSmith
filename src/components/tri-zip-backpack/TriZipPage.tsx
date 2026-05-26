@@ -4,6 +4,7 @@ import { validateInputs } from '../../generators/tri-zip-backpack/inputs.js';
 import { TriZipSettingsPanel } from './TriZipSettingsPanel.js';
 import { PatternPreview } from './PatternPreview.js';
 import { ExportPanel } from './ExportPanel.js';
+import { TriZipLegend } from './Legend.js';
 
 type TriZipPageProps = Pick<
   UseTriZipProjectReturn,
@@ -102,6 +103,7 @@ export function TriZipPage({ project, updateInputs, resetProject, importProject 
 
         <div className="w-full md:flex-1 md:min-w-0 space-y-3">
           <PatternPreview inputs={project.inputs} hasErrors={!engineValid} />
+          <TriZipLegend />
 
           {hasErrors && (
             <div className="rounded border border-destructive/50 bg-destructive/5 p-3 space-y-1">
