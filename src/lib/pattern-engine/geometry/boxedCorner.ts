@@ -6,7 +6,7 @@ export interface BoxedCornerResult {
 
 export function boxedCornerStitchLine({
   panelWidth,
-  panelHeight,
+  panelHeight: _panelHeight,
   bottomWidth,
 }: {
   panelWidth: number;

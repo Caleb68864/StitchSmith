@@ -3,7 +3,7 @@ export interface PatternEntry {
   title: string;
   description: string;
   available: boolean;
-  route: 'tool-roll' | 'tri-zip';
+  route: 'tool-roll' | 'tri-zip' | 'roll-top';
 }
 
 export const PATTERNS: PatternEntry[] = [
@@ -20,5 +20,12 @@ export const PATTERNS: PatternEntry[] = [
     description: 'Generate sewing patterns for a modular tri-zip backpack with customizable sections, shoulder straps, and organizational panels.',
     available: true,
     route: 'tri-zip',
+  },
+  {
+    id: 'roll-top-sack',
+    title: 'Roll-Top Stuff Sack',
+    description: 'Parametric ultralight roll-top stuff sack with french seams and boxed corners.',
+    available: true,
+    route: 'roll-top',
   },
 ];

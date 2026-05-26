@@ -3,9 +3,11 @@ import { AppHeader } from '../components/layout/AppHeader.js';
 import { PageShell } from '../components/layout/PageShell.js';
 import { ToolRollPage } from '../components/tool-roll/ToolRollPage.js';
 import { TriZipPage } from '../components/tri-zip-backpack/TriZipPage.js';
+import { RollTopSackPage } from '../components/roll-top-sack/RollTopSackPage.js';
 import { LandingPage } from '../components/landing/LandingPage.js';
 import { useToolRollProject } from '../state/useToolRollProject.js';
 import { useTriZipProject } from '../state/useTriZipProject.js';
+import { useRollTopSackProject } from '../state/useRollTopSackProject.js';
 import type { PatternEntry } from './patternRegistry.js';
 
 type View = 'landing' | PatternEntry['route'];
@@ -14,6 +16,7 @@ export function App() {
   const [view, setView] = useState<View>('landing');
   const toolRollState = useToolRollProject();
   const triZipState = useTriZipProject();
+  const rollTopState = useRollTopSackProject();
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
@@ -29,7 +32,7 @@ export function App() {
           onReset={toolRollState.resetProject}
           onHome={() => setView('landing')}
         />
-      ) : (
+      ) : view === 'tri-zip' ? (
         <header className="border-b bg-background px-4 py-3 flex items-center justify-between">
           <button
             className="text-lg font-semibold tracking-tight hover:opacity-75 transition-opacity"
@@ -39,6 +42,17 @@ export function App() {
             StitchSmith
           </button>
           <span className="text-xs text-muted-foreground">Tri-Zip Backpack Generator</span>
+        </header>
+      ) : (
+        <header className="border-b bg-background px-4 py-3 flex items-center justify-between">
+          <button
+            className="text-lg font-semibold tracking-tight hover:opacity-75 transition-opacity"
+            onClick={() => setView('landing')}
+            aria-label="Back to home"
+          >
+            StitchSmith
+          </button>
+          <span className="text-xs text-muted-foreground">Roll-Top Stuff Sack Generator</span>
         </header>
       )}
       <PageShell>
@@ -65,6 +79,14 @@ export function App() {
             updateInputs={triZipState.updateInputs}
             resetProject={triZipState.resetProject}
             importProject={triZipState.importProject}
+          />
+        )}
+        {view === 'roll-top' && (
+          <RollTopSackPage
+            project={rollTopState.project}
+            updateInputs={rollTopState.updateInputs}
+            resetProject={rollTopState.resetProject}
+            importProject={rollTopState.importProject}
           />
         )}
       </PageShell>
