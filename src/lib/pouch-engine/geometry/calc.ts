@@ -232,19 +232,28 @@ function _assemblePieces(edgeSet: EdgeSet, ctx: CalcContext): Piece[] {
   const w = saGeo.cutWidth;
   const h = saGeo.cutHeight;
 
-  // Build a single perimeter Path from the four cut edges.
+  const cutIdSet = new Set(edgeSet.cutEdgeIds);
+  const foldIdSet = new Set(edgeSet.foldEdgeIds);
+  const cutEdges = edgeSet.allEdges.filter(e => cutIdSet.has(e.id));
+  const foldEdges = edgeSet.allEdges.filter(e => foldIdSet.has(e.id));
+
   const perimeterPath: Path = {
     id: 'body-perimeter',
     closed: true,
-    edges: edgeSet.allEdges,
+    edges: cutEdges,
   };
+  const foldPaths: Path[] = foldEdges.map(e => ({
+    id: `body-fold-${e.id}`,
+    closed: false,
+    edges: [e],
+  }));
 
   const piece: Piece = {
     id: 'body',
     name: 'Body',
     mirror: false,
     quantity: 1,
-    paths: [perimeterPath],
+    paths: [perimeterPath, ...foldPaths],
     seamAllowances: edgeSet.seamAllowances,
     annotations: [
       {

@@ -182,20 +182,31 @@ export function patternToSvg(pattern: Pattern, options: SvgOptions = {}): string
     return `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"></svg>`;
   }
 
-  const bboxes = pattern.pieces.map((p) => bboxFromPieceWithSa(p, defaultSa));
+  // Expand each piece into N visual copies based on quantity so the preview
+  // reflects what actually gets cut. Cap absurdly large quantities to keep the
+  // SVG renderable; the label still says "Cut N" so users see the true count.
+  const MAX_COPIES_PER_PIECE = 12;
+  type Visual = { piece: Piece; copyIndex: number; bbox: BoundingBox };
+  const visuals: Visual[] = [];
+  for (const piece of pattern.pieces) {
+    const copies = Math.max(1, Math.min(MAX_COPIES_PER_PIECE, piece.quantity ?? 1));
+    const bbox = bboxFromPieceWithSa(piece, defaultSa);
+    for (let c = 0; c < copies; c++) {
+      visuals.push({ piece, copyIndex: c, bbox });
+    }
+  }
 
-  // Layout: arrange pieces left-to-right
   let cursorX = margin;
-  const rowHeight = Math.max(...bboxes.map((b) => b.height));
+  const rowHeight = Math.max(...visuals.map((v) => v.bbox.height));
   const groups: string[] = [];
 
-  for (let i = 0; i < pattern.pieces.length; i++) {
-    const piece = pattern.pieces[i];
-    const bbox = bboxes[i];
-    const ox = cursorX - bbox.minX;
-    const oy = margin - bbox.minY;
-    groups.push(pieceToSvgGroup(piece, ox, oy, defaultSa, showLabels, bbox));
-    cursorX += bbox.width + gap;
+  for (const v of visuals) {
+    const ox = cursorX - v.bbox.minX;
+    const oy = margin - v.bbox.minY;
+    // Only the first copy renders the piece label so the preview isn't cluttered.
+    const labelThisCopy = showLabels && v.copyIndex === 0;
+    groups.push(pieceToSvgGroup(v.piece, ox, oy, defaultSa, labelThisCopy, v.bbox));
+    cursorX += v.bbox.width + gap;
   }
 
   const totalWidth = cursorX - gap + margin;
