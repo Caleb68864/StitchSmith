@@ -38,13 +38,14 @@ function makeRectOutline(id: string, w: number, h: number, role: Edge['role'] = 
   };
 }
 
-function makeHorizLine(id: string, y: number, w: number, role: Edge['role']): Path {
+function makeHorizLine(id: string, y: number, w: number, role: Edge['role'], label?: string): Path {
   return {
     id,
     closed: false,
     edges: [
       { kind: 'straight', id: `${id}:e0`, role, start: pt(0, y), end: pt(w, y) },
     ],
+    label,
   };
 }
 
@@ -78,15 +79,25 @@ export function buildPattern(inputs: RollTopSackInputs): Result<RollTopSackBuild
   // Build body panel piece
   const outline = makeRectOutline('body-panel-outline', cutWidth, cutHeight, 'cut');
 
-  // Top hem fold line (fold at top_hem distance from top = y=0 is top, y increases downward)
-  const topHemLine = makeHorizLine('body-panel-top-hem', DEFAULT_TOP_HEM_MM, cutWidth, 'fold');
+  // Top hem fold: the strip above this line folds UNDER to the wrong side
+  // to form the clean top edge of the collar.
+  const topHemLine = makeHorizLine(
+    'body-panel-top-hem',
+    DEFAULT_TOP_HEM_MM,
+    cutWidth,
+    'fold',
+    'Top hem — fold above this line under',
+  );
 
-  // Collar bottom fold line (separates roll collar from bag body)
+  // Collar fold: reference line where the bag transitions from roll-down
+  // collar to body. Not folded during construction — it's where the rolling
+  // happens when the user closes the bag.
   const collarFoldLine = makeHorizLine(
     'body-panel-collar-fold',
     DEFAULT_TOP_HEM_MM + collar_height,
     cutWidth,
     'fold',
+    'Collar fold — roll here to close',
   );
 
   // Boxed-corner stitch markers as a stitch-role path at the panel bottom
@@ -111,6 +122,7 @@ export function buildPattern(inputs: RollTopSackInputs): Result<RollTopSackBuild
     edges: [
       { kind: 'straight', id: 'body-panel-left-stitch:e0', role: 'seam', start: pt(sideStitchAllowance, 0), end: pt(sideStitchAllowance, cutHeight) },
     ],
+    label: 'Side seam',
   };
   const rightStitchPath: Path = {
     id: 'body-panel-right-stitch',
@@ -118,6 +130,7 @@ export function buildPattern(inputs: RollTopSackInputs): Result<RollTopSackBuild
     edges: [
       { kind: 'straight', id: 'body-panel-right-stitch:e0', role: 'seam', start: pt(cutWidth - sideStitchAllowance, 0), end: pt(cutWidth - sideStitchAllowance, cutHeight) },
     ],
+    label: 'Side seam',
   };
   // Bottom-seam stitch line: inward by DEFAULT_BOTTOM_SEAM_MM from the cut bottom.
   const bottomStitchPath: Path = {
@@ -126,6 +139,7 @@ export function buildPattern(inputs: RollTopSackInputs): Result<RollTopSackBuild
     edges: [
       { kind: 'straight', id: 'body-panel-bottom-stitch:e0', role: 'seam', start: pt(0, cutHeight - DEFAULT_BOTTOM_SEAM_MM), end: pt(cutWidth, cutHeight - DEFAULT_BOTTOM_SEAM_MM) },
     ],
+    label: 'Bottom seam',
   };
 
   // Webbing attachment mark

@@ -4,10 +4,10 @@
 ## 2026-05-26 — Shared engine legend (147aa36)
 ## 2026-05-26 — Construction-steps panel on roll-top page (bcc2317)
 ## 2026-05-26 — Roll-top SA swap + expanded instructions (cc065d9)
+## 2026-05-26 — Roll-top SA was double-counted; switched to inward stitch lines (bbee9b3)
 
-## 2026-05-26 — Roll-top SA was double-counted; switched to inward stitch lines
-- Symptom: After the e0/e2 swap fix, the SA polygon still looked off. Root cause was double-counting — the cut dimensions already include all four allowances baked in (cutWidth = bottom_length + 2× frenchSeamAllowance, cutHeight = body + collar + top_hem + bottom_seam), and Piece.seamAllowances was ALSO applying the same values as an outward offset. The four asymmetric values (25.4 / 19 / 9.5 / 19) made the doubled SA polygon look "uneven."
-- Fix: Set every entry in seamAllowances to 0 so the outline IS the cut line. Added comment block explaining the math. Emit three new stitch-role open paths INSIDE the panel (left, right, bottom) so the user still sees where the stitches fall — engine svg.ts renders 'seam' role as red solid lines.
-- Surfaces: src/generators/roll-top-sack/buildPattern.ts.
-- Watch: Future patterns choose ONE convention — either bake SA into the cut and emit inward stitch lines (roll-top style), or use body dimensions for the cut and let Piece.seamAllowances draw an outward SA polygon (tri-zip style). Mixing the two double-counts.
+## 2026-05-26 — Label fold/stitch lines so meaning is self-evident
+- Symptom: Both the top-hem fold and the collar fold render as identical blue dashed lines. User couldn't tell which fold to crease during construction (top hem) vs which was just a reference for closing the bag (collar). Same ambiguity for side vs bottom stitch lines.
+- Fix: Added optional `Path.label?: string`. SVG exporter draws a small label colored to match the line stroke near the start of the path. Roll-top labels its four annotation paths: top hem "fold above this line under", collar "roll here to close", side/bottom "Side seam"/"Bottom seam". Legend captions rewritten to point readers at the per-line labels.
+- Surfaces: src/lib/pattern-engine/graph/Path.ts, src/lib/pattern-engine/exports/svg.ts, src/generators/roll-top-sack/buildPattern.ts, src/components/shared/PatternEngineLegend.tsx.
 - Commit: <pending>

@@ -49,7 +49,19 @@ function pathToSvgPath(path: Path, role?: string): string {
   const close = path.closed ? ' Z' : '';
   const stroke = role === 'fold' ? '#0066cc' : role === 'seam' ? '#cc0000' : '#000000';
   const strokeDash = role === 'fold' ? ' stroke-dasharray="5,3"' : '';
-  return `<path d="${d}${close}" fill="none" stroke="${stroke}" stroke-width="0.5"${strokeDash}/>`;
+  const pathEl = `<path d="${d}${close}" fill="none" stroke="${stroke}" stroke-width="0.5"${strokeDash}/>`;
+
+  if (!path.label) return pathEl;
+
+  // Draw the label near the start of the first edge, offset slightly along the
+  // line's normal so it doesn't overlap the dashes. For open horizontal lines
+  // (the typical fold/stitch case) the label sits 4 mm above the line.
+  const first = path.edges[0];
+  if (first.kind !== 'straight') return pathEl;
+  const labelX = first.start.x + 8;
+  const labelY = first.start.y - 4;
+  const labelEl = `<text x="${labelX}" y="${labelY}" font-size="6" font-family="sans-serif" fill="${stroke}" opacity="0.85" pointer-events="none">${escXml(path.label)}</text>`;
+  return `${pathEl}\n  ${labelEl}`;
 }
 
 function saPolygonToSvgPath(vertices: { x: number; y: number }[]): string {

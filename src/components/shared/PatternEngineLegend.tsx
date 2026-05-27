@@ -25,13 +25,13 @@ const ITEMS: LegendItem[] = [
     stroke: '#0066cc',
     strokeWidth: 2,
     dash: '8 3',
-    description: 'Where the fabric folds — hems, collars, and handles.',
+    description: 'Crease the fabric ALONG this line — the label says which side folds (hem, collar, handle).',
   },
   {
-    label: 'Shared seam',
+    label: 'Stitch / seam line',
     stroke: '#cc0000',
     strokeWidth: 2,
-    description: 'Two pieces meet here at the same length — verified by the engine.',
+    description: 'Where the needle sews. The label names the seam (side, bottom, etc.).',
   },
 ];
 
