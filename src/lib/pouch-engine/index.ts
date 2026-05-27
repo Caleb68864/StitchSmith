@@ -19,6 +19,19 @@ import { tacoDefaults } from './construction/taco.js';
 
 // ─── Public type re-exports ───────────────────────────────────────────────────
 
+export type {
+  AttachmentStyle,
+  AttachmentSpec,
+  AttachmentResult,
+} from './components/attachment.js';
+export { buildAttachment, palsRowCount } from './components/attachment.js';
+export type {
+  DrainageStyle,
+  DrainageSpec,
+  DrainageResult,
+} from './components/drainage.js';
+export { buildDrainage, GROMMET_EXPOSURE_WARNING } from './components/drainage.js';
+
 export type { CarriedObject } from './object/index.js';
 export type { FitParams } from './fit/index.js';
 export type {
