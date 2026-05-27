@@ -77,7 +77,10 @@ describe('buildPattern', () => {
     if (!result.ok) return;
     const stepIds = result.value.steps.map(s => s.id);
     expect(stepIds).toContain('roll-top-sack.cut-panels');
-    expect(stepIds).toContain('roll-top-sack.french-seam-sides');
+    // French seam is now broken into three sub-steps (pass 1 / trim+press / pass 2)
+    // so the user gets explicit instruction for each phase of the construction.
+    expect(stepIds).toContain('roll-top-sack.french-seam-pass1');
+    expect(stepIds).toContain('roll-top-sack.french-seam-pass2');
     expect(stepIds).toContain('roll-top-sack.box-corners');
     expect(stepIds).toContain('roll-top-sack.attach-webbing');
   });

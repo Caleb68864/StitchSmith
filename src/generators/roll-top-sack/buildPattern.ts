@@ -18,7 +18,7 @@ import type { Step } from '../../lib/pattern-engine/instructions/Step.js';
 import type { RollTopSackInputs, ResolvedInputs, RollTopSackBuildResult, BuildPatternError, Result } from './types.js';
 import { validateInputs, resolveInputs } from './inputs.js';
 import { buildBom } from './bom.js';
-import { DEFAULT_TOP_HEM_MM, DEFAULT_BOTTOM_SEAM_MM, DEFAULT_WEBBING_WIDTH_MM } from './defaults.js';
+import { DEFAULT_TOP_HEM_MM, DEFAULT_BOTTOM_SEAM_MM, DEFAULT_WEBBING_WIDTH_MM, DEFAULT_BUCKLE_SIZE_MM } from './defaults.js';
 import { frenchSeamAllowance } from '../../lib/pattern-engine/geometry/frenchSeam.js';
 import { boxedCornerStitchLine } from '../../lib/pattern-engine/geometry/boxedCorner.js';
 import { rollTopClosure } from '../../lib/pattern-engine/geometry/rollTopClosure.js';
@@ -128,66 +128,143 @@ export function buildPattern(inputs: RollTopSackInputs): Result<RollTopSackBuild
       { kind: 'grain', label: 'Grain', point: pt(cutWidth / 2, cutHeight / 2), angle: 90 },
       { kind: 'label', label: `Body Panel\nCut 2\n${Math.round(cutWidth)} × ${Math.round(cutHeight)} mm` },
     ],
+    // Edge order from makeRectOutline:
+    //   e0 top (y=0 → going right), e1 right, e2 bottom, e3 left.
+    // Top edge folds under as the collar hem; bottom edge takes the closing
+    // seam; left/right take the French seam allowance.
     seamAllowances: {
-      'body-panel-outline:e0': DEFAULT_BOTTOM_SEAM_MM,
+      'body-panel-outline:e0': DEFAULT_TOP_HEM_MM,
       'body-panel-outline:e1': frenchSeamAllowance(saMm),
-      'body-panel-outline:e2': DEFAULT_TOP_HEM_MM,
+      'body-panel-outline:e2': DEFAULT_BOTTOM_SEAM_MM,
       'body-panel-outline:e3': frenchSeamAllowance(saMm),
     },
   };
 
   const pieces: Piece[] = [bodyPanel];
 
+  const halfFrench = frenchSeamAllowance(saMm) / 2;
+  const fullFrench = frenchSeamAllowance(saMm);
+  const collarFoldY = Math.round(DEFAULT_TOP_HEM_MM + collar_height);
+  const webbingCenterX = Math.round(webbingAttachment.x + webbingAttachment.width / 2);
+  const webbingY = Math.round(DEFAULT_TOP_HEM_MM + webbingAttachment.y);
+  const bottomStitchOffset = Math.round(boxed.stitchLineOffsetFromCorner);
+
   const steps: Step[] = [
+    // ── Preparation ────────────────────────────────────────────────────
+    {
+      id: 'roll-top-sack.materials',
+      title: 'Gather materials',
+      body: `Main fabric: enough for 2 panels at ${Math.round(cutWidth)} × ${Math.round(cutHeight)} mm (allow extra for trimming, ${Math.round(cutWidth * cutHeight * 2 / 1000)} cm² minimum). Closure hardware: one ${DEFAULT_BUCKLE_SIZE_MM} mm side-release buckle and ~${Math.round(cutWidth + 200)} mm of ${DEFAULT_WEBBING_WIDTH_MM} mm webbing. Thread to match (polyester recommended for stuff sacks — UV resistant). A walking foot helps with slippery fabrics like silnylon.`,
+      dependsOn: [],
+      refsPieces: ['body-panel'],
+      group: 'Preparation',
+    },
     {
       id: 'roll-top-sack.cut-panels',
       title: 'Cut body panels',
-      body: `Cut 2 body panels at ${Math.round(cutWidth)} × ${Math.round(cutHeight)} mm. Mark the collar-fold line at ${Math.round(DEFAULT_TOP_HEM_MM + collar_height)} mm from the top.`,
-      dependsOn: [],
+      body: `Cut 2 rectangles at ${Math.round(cutWidth)} × ${Math.round(cutHeight)} mm. Cut along the grain — the long edge (${Math.round(cutHeight)} mm) should run with the fabric's straight grain so the bag doesn't twist when loaded. If your fabric has a directional print, make sure both panels are oriented the same way before cutting.`,
+      dependsOn: ['roll-top-sack.materials'],
       refsPieces: ['body-panel'],
       group: 'Cutting',
     },
     {
-      id: 'roll-top-sack.french-seam-sides',
-      title: 'French-seam side edges',
-      body: 'With wrong sides together, stitch side edges at half the French seam allowance. Press open, flip right sides together, stitch at the remaining allowance to enclose the raw edge.',
+      id: 'roll-top-sack.mark-fold-lines',
+      title: 'Mark fold and stitch lines',
+      body: `On the wrong side of each panel, mark: (a) top-hem fold at ${Math.round(DEFAULT_TOP_HEM_MM)} mm from the top, (b) collar fold at ${collarFoldY} mm from the top — this is where the bag transitions from rolled collar to body, (c) bottom stitch line at ${bottomStitchOffset} mm from the bottom corner along the diagonal (for box corners), and (d) webbing-attach mark at ${webbingCenterX} mm from the left edge, ${webbingY} mm from the top. Use tailor's chalk or a heat-erase pen — pencil is fine on cotton/canvas but bleeds on synthetics.`,
       dependsOn: ['roll-top-sack.cut-panels'],
+      refsPieces: ['body-panel'],
+      group: 'Cutting',
+    },
+
+    // ── Side seams (French) ────────────────────────────────────────────
+    {
+      id: 'roll-top-sack.french-seam-pass1',
+      title: 'French seam — first pass (WRONG sides together)',
+      body: `Place the two panels WRONG sides together (right sides facing outward — this is the opposite of a normal seam). Pin one side. Stitch at ${halfFrench.toFixed(1)} mm from the raw edge, the full length of the panel. Backstitch 10 mm at each end. Repeat for the other side. The seam allowance should be visible on the OUTSIDE at this point — that's correct.`,
+      dependsOn: ['roll-top-sack.mark-fold-lines'],
+      refsPieces: ['body-panel'],
+      group: 'Construction',
+    },
+    {
+      id: 'roll-top-sack.french-seam-trim',
+      title: 'Trim and press',
+      body: `Trim each side seam allowance to about 3 mm — be careful not to clip the stitching. Press the seam allowance flat to one side, then press the seam itself flat. A pressed first pass is the difference between a French seam that looks tailored and one that looks lumpy.`,
+      dependsOn: ['roll-top-sack.french-seam-pass1'],
+      refsPieces: ['body-panel'],
+      group: 'Construction',
+    },
+    {
+      id: 'roll-top-sack.french-seam-pass2',
+      title: 'French seam — second pass (RIGHT sides together)',
+      body: `Turn the bag inside out so the RIGHT sides are now together (the trimmed raw edges are tucked inside). Press the seam crisp along the edge. Stitch ${halfFrench.toFixed(1)} mm in from the folded edge — this encloses the raw edge inside the new seam. Backstitch both ends. Repeat for the other side. Total enclosed seam = ${fullFrench.toFixed(1)} mm; this is the standard waterproof seam for dry bags and stuff sacks.`,
+      dependsOn: ['roll-top-sack.french-seam-trim'],
+      refsPieces: ['body-panel'],
+      group: 'Construction',
+    },
+
+    // ── Bottom closure + boxed corners ─────────────────────────────────
+    {
+      id: 'roll-top-sack.bottom-seam',
+      title: 'Stitch the bottom seam',
+      body: `Keep the bag right-sides-together (still inside-out from the French seam). Pin the two bottom edges. Stitch across the bottom at ${DEFAULT_BOTTOM_SEAM_MM} mm from the edge. Backstitch both ends. This seam will be hidden inside the boxed corners — no need for a French seam here.`,
+      dependsOn: ['roll-top-sack.french-seam-pass2'],
       refsPieces: ['body-panel'],
       group: 'Construction',
     },
     {
       id: 'roll-top-sack.box-corners',
       title: 'Box the bottom corners',
-      body: `Flatten each bottom corner so the side seam aligns with the bottom seam. Stitch across at the marked stitch line (offset = ${Math.round(boxed.stitchLineOffsetFromCorner)} mm from corner tip). Trim to ${boxed.trimAllowanceMm} mm.`,
-      dependsOn: ['roll-top-sack.french-seam-sides'],
+      body: `For each bottom corner: flatten the corner so the bottom seam lines up exactly with the side seam, forming a triangle. The corner becomes a horizontal line, not a point. Measure ${bottomStitchOffset} mm in from the corner tip along this line and mark a perpendicular stitch line. Stitch across that line — backstitch at both ends. This gives the bag a ${Math.round(bottom_width)} mm flat base. Trim the corner triangle off, leaving ${boxed.trimAllowanceMm} mm beyond the new seam (don't trim closer or the seam can pop under load). Optional: zigzag or bind the cut edges for extra durability.`,
+      dependsOn: ['roll-top-sack.bottom-seam'],
       refsPieces: ['body-panel'],
       group: 'Construction',
     },
+
+    // ── Top hem + closure ─────────────────────────────────────────────
     {
-      id: 'roll-top-sack.top-hem',
-      title: 'Fold and stitch top hem',
-      body: `Fold top edge down ${Math.round(DEFAULT_TOP_HEM_MM)} mm and stitch to form a clean collar edge.`,
-      dependsOn: ['roll-top-sack.cut-panels'],
-      refsPieces: ['body-panel'],
-      group: 'Construction',
-    },
-    {
-      id: 'roll-top-sack.attach-webbing',
-      title: 'Attach roll-top webbing',
-      body: `Bar-tack the webbing loop centred at ${Math.round(webbingAttachment.x + webbingAttachment.width / 2)} mm from the left edge, at mid-collar height. Thread through buckle.`,
-      dependsOn: ['roll-top-sack.top-hem'],
+      id: 'roll-top-sack.top-hem-fold',
+      title: 'Fold and press the top hem',
+      body: `Turn the bag right-side out (push corners with a chopstick or point turner — don't poke through). Fold the top edge to the inside by ${Math.round(DEFAULT_TOP_HEM_MM)} mm. To avoid a raw edge inside the hem, fold once at ${Math.round(DEFAULT_TOP_HEM_MM / 2)} mm, then again at ${Math.round(DEFAULT_TOP_HEM_MM / 2)} mm (double-rolled hem). Press the fold all the way around the opening.`,
+      dependsOn: ['roll-top-sack.box-corners'],
       refsPieces: ['body-panel'],
       group: 'Closure',
     },
     {
+      id: 'roll-top-sack.top-hem-stitch',
+      title: 'Stitch the top hem',
+      body: `Stitch ${Math.max(2, Math.round(DEFAULT_TOP_HEM_MM / 8))} mm from the folded edge, going all the way around the opening. Overlap the start by 10 mm and backstitch — don't backstitch in the middle of the hem, that creates a bulge that catches when rolling. Press flat.`,
+      dependsOn: ['roll-top-sack.top-hem-fold'],
+      refsPieces: ['body-panel'],
+      group: 'Closure',
+    },
+    {
+      id: 'roll-top-sack.attach-webbing',
+      title: 'Attach the closure webbing',
+      body: `Cut two webbing pieces: a short male-buckle tail (~100 mm) and a longer female-buckle strap (~${Math.round(cutWidth + 100)} mm — enough to wrap the rolled top with adjustment slack). Singe the cut ends with a lighter to prevent fraying. Bar-tack the SHORT tail centered at ${webbingCenterX} mm from the left side seam on ONE panel, at the mid-collar mark (${webbingY} mm from the top edge). Bar-tack the LONG strap on the SAME panel about ${Math.round(cutWidth / 4)} mm to the right of center. A bar-tack is a tight zigzag, 6-8 mm long, sewn back and forth 3-4 times — it's what holds the load.`,
+      dependsOn: ['roll-top-sack.top-hem-stitch'],
+      refsPieces: ['body-panel'],
+      group: 'Closure',
+    },
+    {
+      id: 'roll-top-sack.assemble-buckle',
+      title: 'Assemble the buckle',
+      body: `Thread the short tail through the male half of the side-release buckle, fold back ~25 mm, and bar-tack the loop closed. Thread the long strap through the female half, around the adjuster (if your buckle has one), and through the slot — leave the free end loose. Test the buckle clicks and releases freely.`,
+      dependsOn: ['roll-top-sack.attach-webbing'],
+      refsPieces: ['body-panel'],
+      group: 'Closure',
+    },
+
+    // ── Finish ─────────────────────────────────────────────────────────
+    {
       id: 'roll-top-sack.finish',
-      title: 'Final inspection',
-      body: 'Check all seams are enclosed, collar rolls cleanly, and buckle functions. Turn right-side out.',
-      dependsOn: ['roll-top-sack.attach-webbing', 'roll-top-sack.box-corners'],
+      title: 'Final inspection and roll test',
+      body: `Inspect: all four corners crisp, no raw edges visible inside or outside, French seams flat with no twist, buckle releases cleanly. Roll-test the closure: fill the bag with a soft object (towel, jacket), roll the collar down 3-4 times tightly toward the body, clip the buckle. The roll should sit flat against the load without ballooning. If the collar is too tall to roll comfortably, the bag is overfilled — load to height_when_rolled (${Math.round(height_when_rolled)} mm) max.`,
+      dependsOn: ['roll-top-sack.assemble-buckle'],
       refsPieces: ['body-panel'],
       group: 'Finish',
     },
   ];
+
 
   const bom = buildBom(r);
 
