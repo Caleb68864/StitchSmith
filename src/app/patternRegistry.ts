@@ -3,7 +3,7 @@ export interface PatternEntry {
   title: string;
   description: string;
   available: boolean;
-  route: 'tool-roll' | 'tri-zip' | 'roll-top';
+  route: 'tool-roll' | 'tri-zip' | 'roll-top' | 'mag-pouch';
 }
 
 export const PATTERNS: PatternEntry[] = [
@@ -29,3 +29,24 @@ export const PATTERNS: PatternEntry[] = [
     route: 'roll-top',
   },
 ];
+
+/**
+ * Register a new pattern entry in the PATTERNS array.
+ * Idempotent — if an entry with the same `id` already exists, this is a no-op.
+ * Pattern registry entries are append-only; existing entries are never overwritten.
+ */
+export function registerPattern(entry: PatternEntry): void {
+  if (PATTERNS.some(p => p.id === entry.id)) {
+    return;
+  }
+  PATTERNS.push(entry);
+}
+
+// Register the mag-pouch entry (idempotent — safe to call multiple times)
+registerPattern({
+  id: 'mag-pouch',
+  title: 'Mag Pouch',
+  description: 'Parametric magazine pouch with MOLLE/PALS attachment, retention flap, and drainage options.',
+  available: true,
+  route: 'mag-pouch',
+});
