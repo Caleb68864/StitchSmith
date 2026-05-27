@@ -8,6 +8,9 @@ import { PatternPreview } from './PatternPreview.js';
 import { ExportPanel } from './ExportPanel.js';
 import { CutListTable } from './CutListTable.js';
 import { ConstructionSteps } from '../shared/ConstructionSteps.js';
+// Same WarningsPanel primitive used by other generators (structural requirement)
+import { WarningsPanel } from '../tool-roll/WarningsPanel.js';
+import type { PatternWarning } from '../../generators/tool-roll/types.js';
 
 interface Props {
   project: MagPouchProject;
@@ -43,9 +46,17 @@ export function MagPouchPage({ project, updateInputs, resetProject, importProjec
     return undefined;
   }, [inputs.magazine]);
 
-  // Also check warnings from build result
-  const warnings = result?.warnings ?? [];
-  const allWarnings = [...(akWarning ? [akWarning] : []), ...warnings].filter(Boolean);
+  // Combine engine warnings with any UI-level warnings; convert to PatternWarning shape
+  // used by the shared WarningsPanel primitive.
+  const allWarnings = useMemo<PatternWarning[]>(() => {
+    const engineWarnings: string[] = result?.warnings ?? [];
+    const allStrings = [...(akWarning ? [akWarning] : []), ...engineWarnings].filter(Boolean);
+    return allStrings.map((message, i) => ({
+      id: `mag-pouch-warning-${i}`,
+      severity: 'warning' as const,
+      message,
+    }));
+  }, [result, akWarning]);
 
   return (
     <div className="flex flex-col gap-4 max-w-6xl mx-auto px-4 py-4">
@@ -72,15 +83,9 @@ export function MagPouchPage({ project, updateInputs, resetProject, importProjec
         </div>
       )}
 
+      {/* Shared WarningsPanel — same primitive as Tool Roll and Tri-Zip */}
       {allWarnings.length > 0 && (
-        <div className="rounded border border-amber-300 bg-amber-50 p-3 space-y-1 dark:border-amber-700 dark:bg-amber-950/30">
-          <p className="text-xs font-semibold text-amber-800 dark:text-amber-200">Warnings</p>
-          <ul className="space-y-0.5">
-            {allWarnings.map((w, i) => (
-              <li key={i} className="text-xs text-amber-800 dark:text-amber-200">{w}</li>
-            ))}
-          </ul>
-        </div>
+        <WarningsPanel warnings={allWarnings} />
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-4">

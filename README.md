@@ -175,6 +175,32 @@ Internet Explorer and legacy Edge are not supported.
 
 ---
 
+## Mag Pouch
+
+The Mag Pouch generator produces flat-pattern sewing templates for MOLLE-compatible rifle magazine pouches. Enter your magazine type (or custom width × thickness × height dimensions), choose a retention style, attachment method, and drainage option, and StitchSmith computes a folded-T construction pattern with seam-allowance cut lines, fold lines, grommet placements, and PALS/MOLLE webbing strip counts — then exports to SVG, PDF, DXF, tiled print sheet, cut-list CSV, and step-by-step assembly instructions.
+
+**Supported magazines** (all measured width × thickness × height, floorplate to feed-lip ridge):
+
+- AR-15 / M4 30-round USGI aluminum (2.55 × 1.00 × 7.50 in)
+- AR-15 20-round USGI aluminum (2.55 × 1.00 × 5.50 in)
+- Magpul PMAG 30 Gen M2 MOE (2.60 × 1.05 × 7.50 in)
+- Magpul PMAG 30 Gen M3 (2.60 × 1.05 × 7.50 in)
+- Lancer Systems L5AWM 30-round hybrid (2.55 × 1.05 × 7.50 in)
+- M4/STANAG-pattern 30-round steel (2.55 × 1.00 × 7.50 in)
+
+> **AK-pattern magazines are not supported in v1.** AK-47 / AK-74 magazines have a
+> pronounced rear-locking-lug curve and body taper that does not fit a straight
+> folded-T construction without distortion. If you enter custom dimensions that match
+> an AK profile (height ≥ 8.5 in AND thickness ≥ 1.05 in), the generator surfaces a
+> non-blocking warning and recommends verifying fit with a physical mock-up. A
+> `boxed_gusset` construction strategy that can accommodate curved bodies is planned
+> for a future release.
+
+> **Screenshot placeholder** — add a `docs/screenshots/mag-pouch-preview.png` showing
+> the settings panel and folded-T SVG preview for an AR-15 30-round mag.
+
+---
+
 ## Roadmap / Ideas
 
 - Additional generator templates (knife rolls, bit organizers, gardening rolls)

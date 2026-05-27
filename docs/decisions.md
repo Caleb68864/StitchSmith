@@ -43,3 +43,10 @@
 - Surfaces: src/components/mag-pouch/{MagPouchPage,MagPouchSettingsPanel,PatternPreview,ExportPanel,CutListTable}.tsx, src/components/mag-pouch/sections/{Magazine,Fit,Retention,Closure,Attachment,Drainage}Section.tsx, src/components/mag-pouch/__tests__/{MagPouchPage,ExportPanel,CutListTable,InstructionsPanel,no-ui-revalidation}, src/state/useMagPouchProject.ts, src/app/patternRegistry.ts, src/app/__tests__/patternRegistry.test.ts, src/components/landing/LandingPage.tsx, src/app/App.tsx.
 - Watch: SS-05 integration polish + end-to-end tests + warnings catalog still pending. Main bundle reported 541 KB pre-gzip / 165 KB gzipped — well under the 350 KB gzipped target.
 - Commit: <pending>
+
+## 2026-05-27 — Pouch engine SS-05 integration polish + end-to-end smoke
+- Symptom: SS-05 final wiring — needed mag-pouch v3 LocalStorage migrator, end-to-end smoke covering buildPattern → preview → exporters, README mention, and the WarningsPanel surface on MagPouchPage.
+- Fix: added src/lib/pattern-engine/exports/migrators/mag-pouch-v3.ts and registered it in migrators/index.ts. Added src/lib/pouch-engine/__tests__/end-to-end.test.ts (68 tests: full preset matrix, warning surfacing, BOM exhaustiveness, exporter happy paths). Updated MagPouchPage.tsx to surface buildPattern warnings via the existing WarningsPanel pattern (no custom revalidation per M13). Added a mag-pouch line to README.md.
+- Surfaces: src/lib/pattern-engine/exports/migrators/mag-pouch-v3.ts, src/lib/pattern-engine/exports/migrators/index.ts, src/lib/pouch-engine/__tests__/end-to-end.test.ts, src/components/mag-pouch/MagPouchPage.tsx, README.md.
+- Watch: bundle still under the 350 KB gzipped target (165 KB main, 178 KB lazy pdf chunk). Pouch-engine spec is now end-to-end complete: SS-01..SS-05 all on the canonical branch.
+- Commit: <pending>
