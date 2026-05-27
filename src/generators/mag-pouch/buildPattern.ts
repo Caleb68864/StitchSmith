@@ -16,6 +16,11 @@ import type { Step } from '../../lib/pattern-engine/instructions/Step.js';
 import { buildPouch } from '../../lib/pouch-engine/index.js';
 import { buildAttachment } from '../../lib/pouch-engine/components/attachment.js';
 import { buildDrainage } from '../../lib/pouch-engine/components/drainage.js';
+import { buildRetention } from '../../lib/pouch-engine/components/retention.js';
+import {
+  DEFAULT_HOOK_LENGTH_MM,
+  DEFAULT_LOOP_LENGTH_MM,
+} from './defaults.js';
 import type {
   MagPouchInputs,
   MagPouchBuildResult,
@@ -254,12 +259,29 @@ export function buildPattern(inputs: MagPouchInputs): MagPouchBuildResult {
   });
   warnings.push(...drainageResult.warnings);
 
+  // ── Retention pieces (velcro strips, etc.) ──────────────────────────────────
+
+  const IN_TO_MM = 25.4;
+  const retentionResult = buildRetention({
+    style: inputs.retention,
+    hookLength_mm: inputs.hook_length != null
+      ? inputs.hook_length * IN_TO_MM
+      : DEFAULT_HOOK_LENGTH_MM,
+    loopLength_mm: inputs.loop_length != null
+      ? inputs.loop_length * IN_TO_MM
+      : DEFAULT_LOOP_LENGTH_MM,
+  });
+  warnings.push(...retentionResult.warnings);
+
   // ── Merge pieces into final pattern ─────────────────────────────────────────
 
-  // Replace original body piece with drained version; append attachment pieces
+  // Replace original body piece with drained version; append retention +
+  // attachment pieces. Retention strips go first so they sit next to the body
+  // in the side-by-side preview layout.
   const mergedPieces: Piece[] = [
     drainageResult.piecePatches,
     ...basePattern.pieces.slice(1),
+    ...retentionResult.pieces,
     ...attachResult.pieces,
   ];
 
