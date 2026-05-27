@@ -102,6 +102,32 @@ export function buildPattern(inputs: RollTopSackInputs): Result<RollTopSackBuild
     })),
   };
 
+  // Side-seam stitch lines: inward by the French seam allowance on each side.
+  // These show the user where the side seams will land inside the cut piece.
+  const sideStitchAllowance = frenchSeamAllowance(saMm);
+  const leftStitchPath: Path = {
+    id: 'body-panel-left-stitch',
+    closed: false,
+    edges: [
+      { kind: 'straight', id: 'body-panel-left-stitch:e0', role: 'seam', start: pt(sideStitchAllowance, 0), end: pt(sideStitchAllowance, cutHeight) },
+    ],
+  };
+  const rightStitchPath: Path = {
+    id: 'body-panel-right-stitch',
+    closed: false,
+    edges: [
+      { kind: 'straight', id: 'body-panel-right-stitch:e0', role: 'seam', start: pt(cutWidth - sideStitchAllowance, 0), end: pt(cutWidth - sideStitchAllowance, cutHeight) },
+    ],
+  };
+  // Bottom-seam stitch line: inward by DEFAULT_BOTTOM_SEAM_MM from the cut bottom.
+  const bottomStitchPath: Path = {
+    id: 'body-panel-bottom-stitch',
+    closed: false,
+    edges: [
+      { kind: 'straight', id: 'body-panel-bottom-stitch:e0', role: 'seam', start: pt(0, cutHeight - DEFAULT_BOTTOM_SEAM_MM), end: pt(cutWidth, cutHeight - DEFAULT_BOTTOM_SEAM_MM) },
+    ],
+  };
+
   // Webbing attachment mark
   const { webbingAttachment } = closure;
   const webbingMarkPath: Path = {
@@ -123,20 +149,22 @@ export function buildPattern(inputs: RollTopSackInputs): Result<RollTopSackBuild
     name: 'Body Panel',
     mirror: false,
     quantity: 2,
-    paths: [outline, topHemLine, collarFoldLine, boxedCornerPath, webbingMarkPath],
+    paths: [outline, topHemLine, collarFoldLine, leftStitchPath, rightStitchPath, bottomStitchPath, boxedCornerPath, webbingMarkPath],
     annotations: [
       { kind: 'grain', label: 'Grain', point: pt(cutWidth / 2, cutHeight / 2), angle: 90 },
       { kind: 'label', label: `Body Panel\nCut 2\n${Math.round(cutWidth)} × ${Math.round(cutHeight)} mm` },
     ],
-    // Edge order from makeRectOutline:
-    //   e0 top (y=0 → going right), e1 right, e2 bottom, e3 left.
-    // Top edge folds under as the collar hem; bottom edge takes the closing
-    // seam; left/right take the French seam allowance.
+    // The cut dimensions already include all four allowances:
+    //   cutWidth  = bottom_length + 2 × frenchSeamAllowance  (left/right SA)
+    //   cutHeight = body + collar + top_hem + bottom_seam    (top/bottom SA)
+    // So the outline IS the cut line — no additional outward offset needed.
+    // The fold paths (top hem, collar fold) and the stitch-role paths below
+    // tell the cutter where the stitch lines fall inside the cut.
     seamAllowances: {
-      'body-panel-outline:e0': DEFAULT_TOP_HEM_MM,
-      'body-panel-outline:e1': frenchSeamAllowance(saMm),
-      'body-panel-outline:e2': DEFAULT_BOTTOM_SEAM_MM,
-      'body-panel-outline:e3': frenchSeamAllowance(saMm),
+      'body-panel-outline:e0': 0,
+      'body-panel-outline:e1': 0,
+      'body-panel-outline:e2': 0,
+      'body-panel-outline:e3': 0,
     },
   };
 
