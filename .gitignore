@@ -61,5 +61,11 @@ INTEGRATION-evidence.md
 launch.bat
 wrenches.json
 
+# Audit / preview screenshots (local only)
+audit-pass*.png
+mag-pouch-*.png
+viewport-*.png
+.playwright-mcp/
+
 # Project docs / planning (local only)
 docs/
