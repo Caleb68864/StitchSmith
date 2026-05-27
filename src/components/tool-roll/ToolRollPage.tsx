@@ -10,6 +10,7 @@ import { ConstructionNotes } from './ConstructionNotes.js';
 import { PatternPreview } from './PatternPreview.js';
 import { Legend } from './Legend.js';
 import { ExportPanel } from './ExportPanel.js';
+import { PatternPageShell } from '../shared/PatternPageShell.js';
 import { exportFullSvg } from '../../export/exportSvg.js';
 import { exportProjectJson } from '../../export/exportProjectJson.js';
 import { exportPrintableHtml } from '../../export/exportPrintableHtml.js';
@@ -54,87 +55,57 @@ export function ToolRollPage({
     return storageWarning ? [storageWarning, ...ws] : ws;
   }, [layout, storageWarning]);
 
-  function handleUnitsChange(u: 'mm' | 'in') {
-    setProject({ ...project, units: u });
-  }
-
-  function handleAddTool() {
-    addTool(makeDefaultTool());
-  }
-
-  function handleExportSvg() {
-    if (layout) exportFullSvg(layout, project);
-  }
-
-  function handleExportJson() {
-    exportProjectJson(project);
-  }
-
-  function handleExportPrintableHtml() {
-    if (layout) exportPrintableHtml(layout, project);
-  }
-
-  function handleToggleTileGrid() {
-    updateSettings({ showTileGrid: !project.settings.showTileGrid });
-  }
-
   return (
-    <div className="flex flex-col gap-4 max-w-full">
-      {/* Page title */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-semibold">{project.projectName}</h1>
-          <p className="text-xs text-muted-foreground">Tool Roll Generator</p>
+    <PatternPageShell
+      title={project.projectName}
+      subtitle="Tool Roll Generator"
+      settings={
+        <div className="rounded border border-border p-3">
+          <h2 className="text-xs font-semibold mb-2">Settings</h2>
+          <ToolRollSettingsPanel
+            settings={project.settings}
+            units={project.units}
+            onUpdate={updateSettings}
+            onUnitsChange={(u) => setProject({ ...project, units: u })}
+          />
         </div>
-      </div>
-
-      {/* Responsive two-column layout: stacked on mobile, side-by-side on md+ */}
-      <div className="flex flex-col md:flex-row gap-4 items-start">
-        {/* Left column: settings (full-width mobile, fixed-width desktop) */}
-        <div className="w-full md:w-72 md:shrink-0 space-y-3">
-          <div className="rounded border border-border p-3">
-            <h2 className="text-xs font-semibold mb-2">Settings</h2>
-            <ToolRollSettingsPanel
-              settings={project.settings}
-              units={project.units}
-              onUpdate={updateSettings}
-              onUnitsChange={handleUnitsChange}
-            />
-          </div>
-        </div>
-
-        {/* Center column: tool table + pattern preview */}
-        <div className="w-full md:flex-1 md:min-w-0 space-y-3">
+      }
+      preview={
+        <div className="space-y-3">
           <ToolTable
             tools={project.tools}
             settings={project.settings}
             units={project.units}
-            onAddTool={handleAddTool}
+            onAddTool={() => addTool(makeDefaultTool())}
             onUpdateTool={updateTool}
             onDuplicateTool={duplicateTool}
             onDeleteTool={deleteTool}
             onMoveToolUp={moveToolUp}
             onMoveToolDown={moveToolDown}
           />
-
           {layout ? (
-            <>
-              <PatternPreview
-                layout={layout}
-                settings={project.settings}
-                onToggleTileGrid={handleToggleTileGrid}
-              />
-              <Legend settings={project.settings} />
-            </>
+            <PatternPreview
+              layout={layout}
+              settings={project.settings}
+              onToggleTileGrid={() => updateSettings({ showTileGrid: !project.settings.showTileGrid })}
+            />
           ) : (
             <div className="rounded border border-dashed border-border p-6 flex items-center justify-center bg-muted/20">
               <p className="text-xs text-muted-foreground">Add tools to see pattern preview.</p>
             </div>
           )}
         </div>
-
-        {/* Right column: summary + warnings + notes + export */}
-        <div className="w-full md:w-64 md:shrink-0 space-y-3">
+      }
+      sidebar={
+        <>
+          <Legend settings={project.settings} />
+          <ExportPanel
+            layout={layout}
+            project={project}
+            onExportSvg={() => layout && exportFullSvg(layout, project)}
+            onExportJson={() => exportProjectJson(project)}
+            onExportPrintableHtml={() => layout && exportPrintableHtml(layout, project)}
+          />
           <PatternSummary
             layout={layout}
             toolCount={project.tools.length}
@@ -142,15 +113,8 @@ export function ToolRollPage({
           />
           <WarningsPanel warnings={warnings} />
           <ConstructionNotes notes={layout?.constructionNotes ?? []} />
-          <ExportPanel
-            layout={layout}
-            project={project}
-            onExportSvg={handleExportSvg}
-            onExportJson={handleExportJson}
-            onExportPrintableHtml={handleExportPrintableHtml}
-          />
-        </div>
-      </div>
-    </div>
+        </>
+      }
+    />
   );
 }
