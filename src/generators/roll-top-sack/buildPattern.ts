@@ -100,7 +100,11 @@ export function buildPattern(inputs: RollTopSackInputs): Result<RollTopSackBuild
     'Collar fold — roll here to close',
   );
 
-  // Boxed-corner stitch markers as a stitch-role path at the panel bottom
+  // Boxed-corner stitch markers as a stitch-role path at the panel bottom.
+  // These are NOT cut lines — they show where the corner-boxing seam lands
+  // AFTER the side and bottom seams have been sewn and the corner is
+  // flattened into a triangle. The construction note (roll-top-sack.box-
+  // corners) walks the user through fold-then-stitch in detail.
   const boxedCornerPath: Path = {
     id: 'body-panel-boxed-corner',
     closed: false,
@@ -111,6 +115,7 @@ export function buildPattern(inputs: RollTopSackInputs): Result<RollTopSackBuild
       start: pt(m.x, cutHeight - boxed.stitchLineOffsetFromCorner),
       end: pt(m.x, cutHeight),
     })),
+    label: 'Box corner — see step',
   };
 
   // Side-seam stitch lines: inward by the French seam allowance on each side.
@@ -256,7 +261,15 @@ export function buildPattern(inputs: RollTopSackInputs): Result<RollTopSackBuild
     {
       id: 'roll-top-sack.box-corners',
       title: 'Box the bottom corners',
-      body: `For each bottom corner: flatten the corner so the bottom seam lines up exactly with the side seam, forming a triangle. The corner becomes a horizontal line, not a point. Measure ${bottomStitchOffset} mm in from the corner tip along this line and mark a perpendicular stitch line. Stitch across that line — backstitch at both ends. This gives the bag a ${Math.round(bottom_width)} mm flat base. Trim the corner triangle off, leaving ${boxed.trimAllowanceMm} mm beyond the new seam (don't trim closer or the seam can pop under load). Optional: zigzag or bind the cut edges for extra durability.`,
+      body:
+        `IMPORTANT: the two short dashed-red marks at the bottom of the pattern are NOT cut lines. They mark where the new corner seam will land AFTER you fold the corner. ` +
+        `Here's the operation for each bottom corner: ` +
+        `(1) The bag is still inside-out from the bottom seam. Pinch a bottom corner between thumb and forefinger and "open" it — pull the side seam and the bottom seam apart so they meet face-to-face, forming a small triangle with the corner tip at the apex. ` +
+        `(2) Lay this triangle flat. The side seam should sit directly on top of the bottom seam (they should LINE UP — if they offset, the corner won't be square). ` +
+        `(3) From the tip of the triangle, measure ${bottomStitchOffset} mm UP along the centre line (this distance = bottom_width / 2 = ${Math.round(bottom_width)} / 2). Mark a horizontal line perpendicular to the centre at that point — it will be ${Math.round(bottom_width)} mm wide, base-to-base across the triangle. ` +
+        `(4) Stitch along that horizontal line. Backstitch both ends. This new seam is what makes the bag's bottom a flat rectangle (${Math.round(bottom_width)} mm wide) instead of a point. ` +
+        `(5) Trim the corner triangle off, leaving ${boxed.trimAllowanceMm} mm of fabric beyond the new seam. Don't trim closer — under load the seam can pop. Optional: zigzag or bind the cut edges. ` +
+        `(6) Repeat for the other bottom corner. Your bag now has a flat ${Math.round(bottom_length)} × ${Math.round(bottom_width)} mm base.`,
       dependsOn: ['roll-top-sack.bottom-seam'],
       refsPieces: ['body-panel'],
       group: 'Construction',

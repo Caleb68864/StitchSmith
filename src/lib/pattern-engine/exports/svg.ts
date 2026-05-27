@@ -47,8 +47,20 @@ function pathToSvgPath(path: Path, role?: string): string {
     .map((edge, i) => edgeToSvgCommands(edge, i === 0))
     .join(' ');
   const close = path.closed ? ' Z' : '';
-  const stroke = role === 'fold' ? '#0066cc' : role === 'seam' ? '#cc0000' : '#000000';
-  const strokeDash = role === 'fold' ? ' stroke-dasharray="5,3"' : '';
+  // Visual convention:
+  //   cut    — black solid (the line the cutter follows)
+  //   fold   — blue dashed  (crease here; label says which side folds)
+  //   seam   — red solid    (continuous stitch line, e.g. the side seam)
+  //   stitch — red dashed   (construction marker / stitch reference, e.g.
+  //                          where the boxed-corner seam lands after folding)
+  //   notch  — purple solid (small registration tick)
+  let stroke = '#000000';
+  if (role === 'fold') stroke = '#0066cc';
+  else if (role === 'seam' || role === 'stitch') stroke = '#cc0000';
+  else if (role === 'notch') stroke = '#7c3aed';
+  let strokeDash = '';
+  if (role === 'fold') strokeDash = ' stroke-dasharray="5,3"';
+  else if (role === 'stitch') strokeDash = ' stroke-dasharray="3,2"';
   const pathEl = `<path d="${d}${close}" fill="none" stroke="${stroke}" stroke-width="0.5"${strokeDash}/>`;
 
   if (!path.label) return pathEl;
