@@ -21,10 +21,6 @@ function inToMm(inches: number): number {
   return inches * IN_TO_MM;
 }
 
-function toMm(value: number, units: 'in' | 'mm'): number {
-  return units === 'mm' ? value : inToMm(value);
-}
-
 /**
  * Resolve magazine dimensions (in inches) from `MagPouchInputs`.
  * Returns `{ width, thickness, height }` in inches.

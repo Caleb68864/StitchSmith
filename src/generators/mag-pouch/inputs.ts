@@ -21,12 +21,6 @@ import {
 
 const VALID_SA: ReadonlySet<number> = new Set([0.25, 0.375, 0.5]);
 
-const IN_TO_MM = 25.4;
-
-function toIn(value: number, units: 'in' | 'mm'): number {
-  return units === 'mm' ? value / IN_TO_MM : value;
-}
-
 /**
  * Validate `MagPouchInputs` and return a result object.
  *

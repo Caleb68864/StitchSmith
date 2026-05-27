@@ -29,10 +29,6 @@ import {
   AK_THRESHOLD_HEIGHT_IN,
   AK_THRESHOLD_THICKNESS_IN,
 } from './unsupportedMagazines.js';
-import {
-  DEFAULT_EASE_WIDTH_IN,
-  DEFAULT_EASE_DEPTH_IN,
-} from './defaults.js';
 import { getMagazine } from './magazines.js';
 
 // ─── AK profile detection ─────────────────────────────────────────────────────
