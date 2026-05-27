@@ -1,0 +1,3 @@
+export const DEFAULT_SEAM_ALLOWANCE_MM = 9.5;
+export const DEFAULT_TOP_BOTTOM_HEM_MM = 12;
+export const DEFAULT_PEN_HOLDER_HEIGHT_MM = 80;
