@@ -1,0 +1,44 @@
+/* Pattern SVG line styles — design §29 */
+
+.pattern-cut-line {
+  stroke: #1a1a1a;
+  stroke-width: 1.5;
+  stroke-dasharray: none;
+  fill: none;
+}
+
+.pattern-stitch-line {
+  stroke: #555555;
+  stroke-width: 1;
+  stroke-dasharray: 4 2;
+  fill: none;
+}
+
+.pattern-fold-line {
+  stroke: #3b82f6;
+  stroke-width: 1;
+  stroke-dasharray: 8 4;
+  fill: none;
+}
+
+.pattern-hem-line {
+  stroke: #8b5cf6;
+  stroke-width: 1;
+  stroke-dasharray: 6 2 2 2;
+  fill: none;
+}
+
+.pattern-seam-line {
+  stroke: #e11d48;
+  stroke-width: 1;
+  stroke-dasharray: 5 3;
+  fill: none;
+}
+
+.pattern-label {
+  font-family: 'Inter', sans-serif;
+  font-size: 10px;
+  fill: #374151;
+  dominant-baseline: middle;
+  text-anchor: middle;
+}

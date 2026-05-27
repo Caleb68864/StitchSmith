@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Tool Roll migration snapshot — sample project: 4 combination wrenches (8 mm, 10 mm, 12 mm, 15 mm)
+  Generated with default settings (pocketTopStyle=stepped, flapHeightMode=matchPockets)
+  Committed before geometry.ts was migrated to consume src/lib/pattern-engine/geometry/.
+
+  Layout metrics (all values in mm):
+    patternWidth  = 152
+    patternHeight = 342.9
+    panelOffsetY  = 113.05   (flap region height including hem)
+
+  Pocket positions (x / width / topY / bottomY):
+    8 mm  wrench : x=9.5   w=30    topY=191.2   bottomY=311.2
+    10 mm wrench : x=39.5  w=30.5  topY=179.95  bottomY=311.2
+    12 mm wrench : x=70    w=34    topY=168.7   bottomY=311.2
+    15 mm wrench : x=104   w=38.5  topY=157.45  bottomY=311.2
+-->
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 152 342.9"
+  width="152mm"
+  height="342.9mm"
+  data-generator="tool-roll"
+  data-schema-version="1"
+  data-snapshot-for="geometric-equivalence-test"
+>
+  <!-- Back panel cut line (closed path) -->
+  <path
+    class="layer-cut back-panel-cut"
+    data-piece="back-panel"
+    data-type="cut"
+    d="M 0 113.05 H 152 V 342.9 H 0 Z"
+  />
+
+  <!-- Flap cut line (closed path, stepped profile matching pocket tops) -->
+  <path
+    class="layer-cut flap-cut"
+    data-piece="flap"
+    data-type="cut"
+    d="M 0 113.05 H 152 V 33.75 H 104 V 22.5 H 70 V 11.25 H 39.5 V 0 H 0 Z"
+  />
+
+  <!-- Pocket panel cut line (closed path, stepped profile) -->
+  <path
+    class="layer-cut pocket-panel-cut"
+    data-piece="pocket-panel"
+    data-type="cut"
+    d="M 9.5 320.7 H 142.5 V 144.75 H 104 V 156 H 70 V 167.25 H 39.5 V 178.5 H 9.5 Z"
+  />
+
+  <!-- Pocket panel hem fold line (open path — body top edge, before hem offset) -->
+  <path
+    class="layer-fold pocket-panel-hem-fold"
+    data-piece="pocket-panel"
+    data-type="hem-fold"
+    d="M 9.5 191.2 H 39.5 V 179.95 H 70 V 168.7 H 104 V 157.45 H 142.5"
+  />
+
+  <!-- Flap free-edge hem fold line (open path — body edge, inside the hem allowance) -->
+  <path
+    class="layer-fold flap-hem-fold"
+    data-piece="flap"
+    data-type="hem-fold"
+    d="M 0 9.5 H 39.5 V 20.75 H 70 V 32 H 104 V 43.25 H 152"
+  />
+</svg>
