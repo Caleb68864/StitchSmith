@@ -5,11 +5,13 @@ import { ToolRollPage } from '../components/tool-roll/ToolRollPage.js';
 import { TriZipPage } from '../components/tri-zip-backpack/TriZipPage.js';
 import { RollTopSackPage } from '../components/roll-top-sack/RollTopSackPage.js';
 import { MagPouchPage } from '../components/mag-pouch/MagPouchPage.js';
+import { BookCoverPage } from '../components/book-cover/BookCoverPage.js';
 import { LandingPage } from '../components/landing/LandingPage.js';
 import { useToolRollProject } from '../state/useToolRollProject.js';
 import { useTriZipProject } from '../state/useTriZipProject.js';
 import { useRollTopSackProject } from '../state/useRollTopSackProject.js';
 import { useMagPouchProject } from '../state/useMagPouchProject.js';
+import { useBookCoverProject } from '../state/useBookCoverProject.js';
 import type { PatternEntry } from './patternRegistry.js';
 
 type View = 'landing' | PatternEntry['route'];
@@ -20,6 +22,7 @@ export function App() {
   const triZipState = useTriZipProject();
   const rollTopState = useRollTopSackProject();
   const magPouchState = useMagPouchProject();
+  const bookCoverState = useBookCoverProject();
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
@@ -57,7 +60,7 @@ export function App() {
           </button>
           <span className="text-xs text-muted-foreground">Roll-Top Stuff Sack Generator</span>
         </header>
-      ) : (
+      ) : view === 'mag-pouch' ? (
         <header className="border-b bg-background px-4 py-3 flex items-center justify-between">
           <button
             className="text-lg font-semibold tracking-tight hover:opacity-75 transition-opacity"
@@ -67,6 +70,17 @@ export function App() {
             StitchSmith
           </button>
           <span className="text-xs text-muted-foreground">Mag Pouch Generator</span>
+        </header>
+      ) : (
+        <header className="border-b bg-background px-4 py-3 flex items-center justify-between">
+          <button
+            className="text-lg font-semibold tracking-tight hover:opacity-75 transition-opacity"
+            onClick={() => setView('landing')}
+            aria-label="Back to home"
+          >
+            StitchSmith
+          </button>
+          <span className="text-xs text-muted-foreground">Book Cover Generator</span>
         </header>
       )}
       <PageShell>
@@ -109,6 +123,17 @@ export function App() {
             updateInputs={magPouchState.updateInputs}
             resetProject={magPouchState.resetProject}
             importProject={magPouchState.importProject}
+          />
+        )}
+        {view === 'book-cover' && (
+          <BookCoverPage
+            project={bookCoverState.project}
+            updateInputs={bookCoverState.updateInputs}
+            resetProject={bookCoverState.resetProject}
+            importProject={bookCoverState.importProject}
+            toggleOuterPocket={bookCoverState.toggleOuterPocket}
+            toggleInnerPocket={bookCoverState.toggleInnerPocket}
+            togglePenHolder={bookCoverState.togglePenHolder}
           />
         )}
       </PageShell>

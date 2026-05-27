@@ -3,7 +3,7 @@ export interface PatternEntry {
   title: string;
   description: string;
   available: boolean;
-  route: 'tool-roll' | 'tri-zip' | 'roll-top' | 'mag-pouch';
+  route: 'tool-roll' | 'tri-zip' | 'roll-top' | 'mag-pouch' | 'book-cover';
 }
 
 export const PATTERNS: PatternEntry[] = [
@@ -49,4 +49,13 @@ registerPattern({
   description: 'Parametric magazine pouch with MOLLE/PALS attachment, retention flap, and drainage options.',
   available: true,
   route: 'mag-pouch',
+});
+
+// Register the book-cover entry (idempotent — safe to call multiple times)
+registerPattern({
+  id: 'book-cover',
+  title: 'Book Cover',
+  description: 'Parametric fabric book cover with adjustable spine width, optional flaps, and seam allowance.',
+  available: true,
+  route: 'book-cover',
 });
