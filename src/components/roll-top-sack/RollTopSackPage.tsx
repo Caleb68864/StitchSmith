@@ -4,6 +4,7 @@ import { validateInputs } from '../../generators/roll-top-sack/inputs.js';
 import { RollTopSackSettingsPanel } from './RollTopSackSettingsPanel.js';
 import { PatternPreview } from './PatternPreview.js';
 import { ExportPanel } from './ExportPanel.js';
+import { PatternEngineLegend } from '../shared/PatternEngineLegend.js';
 
 type RollTopSackPageProps = Pick<
   UseRollTopSackProjectReturn,
@@ -85,6 +86,7 @@ export function RollTopSackPage({ project, updateInputs, resetProject }: RollTop
             inputs={project.inputs}
             hasErrors={!engineValid}
           />
+          <PatternEngineLegend />
 
           {hasErrors && (
             <div className="rounded border border-destructive/50 bg-destructive/5 p-3 space-y-1">
