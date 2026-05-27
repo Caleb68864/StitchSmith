@@ -65,6 +65,8 @@ wrenches.json
 audit-pass*.png
 mag-pouch-*.png
 viewport-*.png
+final-*.png
+multipiece-*.png
 .playwright-mcp/
 
 # Project docs / planning (local only)
