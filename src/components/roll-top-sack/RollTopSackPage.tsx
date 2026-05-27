@@ -1,10 +1,12 @@
 import { useMemo } from 'react';
 import type { UseRollTopSackProjectReturn } from '../../state/useRollTopSackProject.js';
 import { validateInputs } from '../../generators/roll-top-sack/inputs.js';
+import { buildPattern } from '../../generators/roll-top-sack/index.js';
 import { RollTopSackSettingsPanel } from './RollTopSackSettingsPanel.js';
 import { PatternPreview } from './PatternPreview.js';
 import { ExportPanel } from './ExportPanel.js';
 import { PatternEngineLegend } from '../shared/PatternEngineLegend.js';
+import { ConstructionSteps } from '../shared/ConstructionSteps.js';
 
 type RollTopSackPageProps = Pick<
   UseRollTopSackProjectReturn,
@@ -51,6 +53,12 @@ export function RollTopSackPage({ project, updateInputs, resetProject }: RollTop
     return r.ok;
   }, [project.inputs, hasErrors]);
 
+  const steps = useMemo(() => {
+    if (!engineValid) return [];
+    const r = buildPattern(project.inputs);
+    return r.ok ? r.value.steps : [];
+  }, [project.inputs, engineValid]);
+
   function handleReset() {
     if (window.confirm('Reset will discard all changes and restore default Roll-Top Sack settings. Continue?')) {
       resetProject();
@@ -87,6 +95,7 @@ export function RollTopSackPage({ project, updateInputs, resetProject }: RollTop
             hasErrors={!engineValid}
           />
           <PatternEngineLegend />
+          {steps.length > 0 && <ConstructionSteps steps={steps} />}
 
           {hasErrors && (
             <div className="rounded border border-destructive/50 bg-destructive/5 p-3 space-y-1">
