@@ -210,8 +210,8 @@ export function buildPattern(inputs: BookCoverInputs): Result<BookCoverBuildResu
   };
 }
 
-function buildSteps(r: ResolvedInputs, cutWidth: number, cutHeight: number, pieceCount: number) {
-  const { book_height, book_width, spine_width, flap_depth, seam_allowance: SA, top_bottom_hem } = r;
+function buildSteps(r: ResolvedInputs, cutWidth: number, cutHeight: number, _pieceCount: number) {
+  const { book_width, spine_width, flap_depth, seam_allowance: SA, top_bottom_hem } = r;
   const steps = [
     {
       id: 'book-cover.materials',
