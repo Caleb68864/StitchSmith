@@ -556,7 +556,7 @@ export function buildPattern(inputs: BookCoverInputs): Result<BookCoverBuildResu
 }
 
 function buildStepsWithLining(r: ResolvedInputs, cutWidth: number, cutHeight: number): Step[] {
-  const { book_width, seam_allowance: SA, top_bottom_hem, flap_depth } = r;
+  const { spine_width, seam_allowance: SA, top_bottom_hem, flap_depth } = r;
   const effectiveClosure = r.closure?.kind === 'none' ? undefined : r.closure;
   const flapCutWidth = flap_depth + SA + top_bottom_hem;
 
@@ -631,7 +631,7 @@ function buildStepsWithLining(r: ResolvedInputs, cutWidth: number, cutHeight: nu
     {
       id: 'book-cover.fit-test',
       title: 'Fit test',
-      body: `Insert the book into the cover. Both inner sleeves should hold the covers snugly. The spine fold lines (${Math.round(book_width)} mm from each short edge) should align with the book's spine. If the fit is loose, adjust the spine fold lines; if tight, check the ${SA} mm seam allowances.`,
+      body: `Insert the book into the cover. Both inner sleeves should hold the covers snugly. The spine area (between the two spine fold lines, ${Math.round(spine_width)} mm apart) should align with the book's bound spine. If the fit is loose, the width ease may be too generous (try reducing width_ease); if tight, increase width_ease by 3–6 mm and re-cut. Check that the top and bottom hems sit flush against the book's top and bottom edges.`,
       dependsOn: ['book-cover.closure'],
       refsPieces: ['cover-panel'],
       group: 'Finishing',
@@ -798,10 +798,11 @@ function buildSteps(r: ResolvedInputs, cutWidth: number, cutHeight: number, _pie
     });
   } else if (effectiveClosure?.kind === 'elastic') {
     const widthMm = effectiveClosure.width_mm ?? CLOSURE_DEFAULTS.elastic.width_mm;
+    const tension = effectiveClosure.tension ?? CLOSURE_DEFAULTS.elastic.tension;
     steps.push({
       id: 'book-cover.elastic-attach',
       title: 'Attach elastic closure',
-      body: `Cut elastic to ${widthMm} mm wide. Thread the elastic through the channel on the back cover's short edge between the two notch marks and tack each end securely. The elastic wraps around the closed cover front to hold the book shut. Adjust tension before final stitching.`,
+      body: `Cut ${widthMm} mm wide ${tension}-tension elastic to about ${Math.round(cutWidth + 50)} mm long. Thread the elastic between the two notch marks on the back cover's short edge and tack each end securely through all layers. When the book is closed, the elastic wraps around the cover front to hold it shut. Test fit with the book before final stitching — adjust length to the book's bound thickness.`,
       dependsOn: [lastBodyStep],
       refsPieces: ['cover-panel'],
       group: 'Closure',
@@ -811,7 +812,7 @@ function buildSteps(r: ResolvedInputs, cutWidth: number, cutHeight: number, _pie
     steps.push({
       id: 'book-cover.snap-install',
       title: 'Install snap closures',
-      body: `Install ${count} magnetic or sew-on snap${count > 1 ? 's' : ''} at the notch marks on both short edges. The snaps are spaced symmetrically about the horizontal centerline of the cover. For sew-on snaps, backstitch through all layers for strength; for magnetic snaps, use a washer backing on the inside face.`,
+      body: `Install ${count} snap${count > 1 ? 's' : ''} (magnetic or sew-on) at the notch marks on the cover's short edges. Snaps are spaced symmetrically about the cover's vertical centerline. For sew-on snaps, backstitch through all layers for strength. For magnetic snaps, use a washer backing on the inside face to distribute force. Test that male and female halves align when the cover closes around the book.`,
       dependsOn: [lastBodyStep],
       refsPieces: ['cover-panel'],
       group: 'Closure',
