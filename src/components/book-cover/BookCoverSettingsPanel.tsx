@@ -56,6 +56,7 @@ function NumericField({
   disabled,
   min,
   placeholder,
+  help,
   onChange,
 }: {
   id: string;
@@ -65,8 +66,14 @@ function NumericField({
   disabled?: boolean;
   min?: number;
   placeholder?: string;
+  /**
+   * Optional one-line help text displayed below the input. Use for advanced
+   * fields where the right value isn't obvious (ease, bulge, tactical mode).
+   */
+  help?: string;
   onChange: (v: number) => void;
 }) {
+  const describedBy = error ? `${id}-error` : help ? `${id}-help` : undefined;
   return (
     <div className="space-y-1">
       <Label htmlFor={id} className={`text-xs ${disabled ? 'text-muted-foreground' : ''}`}>
@@ -82,13 +89,17 @@ function NumericField({
         placeholder={placeholder}
         onChange={e => onChange(parseFloat(e.target.value))}
         className={`h-8 text-xs ${error ? 'border-destructive' : ''} ${disabled ? 'opacity-50' : ''}`}
-        aria-describedby={error ? `${id}-error` : undefined}
+        aria-describedby={describedBy}
       />
-      {error && (
+      {error ? (
         <p id={`${id}-error`} className="text-xs text-destructive">
           {error}
         </p>
-      )}
+      ) : help ? (
+        <p id={`${id}-help`} className="text-[10px] text-muted-foreground leading-snug">
+          {help}
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -478,6 +489,7 @@ export function BookCoverSettingsPanel({
             error={errors['width_ease']}
             min={0}
             placeholder={`auto: ${widthEaseAuto.toFixed(1)} mm`}
+            help="Extra slack added across the cover width so the fabric wraps the bound spine without pulling. Auto = max(6.35, spine / 2)."
             onChange={v => onChange({ width_ease: v })}
           />
           <NumericField
@@ -487,6 +499,7 @@ export function BookCoverSettingsPanel({
             error={errors['spine_bulge']}
             min={0}
             placeholder={`auto: ${spineBulgeAuto.toFixed(1)} mm`}
+            help="Height correction for hardcover books — the spine arch lifts the cover by ~6.35 mm when closed. Auto = 6.35 for hardcover presets, 0 for softcover."
             onChange={v => onChange({ spine_bulge: v })}
           />
         </div>
@@ -691,6 +704,9 @@ export function BookCoverSettingsPanel({
         onToggle={v => onToggleTactical?.(v)}
       >
         <div className="space-y-3">
+          <p className="text-[10px] text-muted-foreground leading-snug">
+            Enables a loop-side Velcro panel on the inside front cover (Bible-cover / concealed-carry pattern). The cover provides the Velcro field; the user supplies their own Kydex holster with a hook-side wing. Toggling on also forces lining and HDPE interfacing. Minimum recommended panel: 4″ × 6″ (101.6 × 152.4 mm).
+          </p>
           <div className="grid grid-cols-2 gap-3">
             <NumericField
               id="tactical-velcro-panel-width"
