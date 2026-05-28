@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Download, FileJson, Printer, FileCode, List, BookOpen } from 'lucide-react';
+import { Download, Printer, FileCode, List, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { TriZipInputs } from '../../generators/tri-zip-backpack/types.js';
 import type { TriZipProject } from '../../state/useTriZipProject.js';
@@ -9,7 +9,6 @@ import { finalAssemblySteps } from '../../generators/tri-zip-backpack/steps.js';
 import { patternToSvg } from '../../lib/pattern-engine/exports/svg.js';
 import { exportCutList, exportCutListCsv } from '../../lib/pattern-engine/exports/cutList.js';
 import { renderHtml } from '../../lib/pattern-engine/instructions/compile.js';
-import { exportProjectJson } from '../../lib/pattern-engine/exports/projectJson.js';
 import {
   loadPdfExporter,
   loadDxfExporter,
@@ -24,10 +23,11 @@ interface Props {
   project: TriZipProject;
   hasErrors: boolean;
   showLabels?: boolean;
-  onImportProject: (p: TriZipProject) => void;
+  /** @deprecated PatternPageShell now owns project JSON I/O. Kept for back-compat with the page wiring. */
+  onImportProject?: (p: TriZipProject) => void;
 }
 
-export function ExportPanel({ inputs, project, hasErrors, showLabels = true, onImportProject }: Props) {
+export function ExportPanel({ inputs, project, hasErrors, showLabels = true }: Props) {
   const [showCutList, setShowCutList] = useState(false);
   const [cutListData, setCutListData] = useState<ExportCutList | null>(null);
   const [pdfLoading, setPdfLoading] = useState(false);
@@ -120,34 +120,6 @@ export function ExportPanel({ inputs, project, hasErrors, showLabels = true, onI
     if (!result.ok) return;
     const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${project.projectName} — Assembly Instructions</title></head><body>${result.value}</body></html>`;
     downloadTextFile(`${project.projectName}-instructions.html`, html, 'text/html');
-  }
-
-  function handleSaveProject() {
-    const envelope = {
-      schemaVersion: 2 as const,
-      generatorId: 'tri-zip-backpack',
-      inputs,
-    };
-    const json = exportProjectJson(envelope);
-    downloadTextFile(`${project.projectName}.stitch.json`, json, 'application/json');
-  }
-
-  function handleImportProject(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = ev => {
-      try {
-        const parsed = JSON.parse(ev.target?.result as string) as TriZipProject;
-        if (parsed.schemaVersion === 2 && parsed.generatorId === 'tri-zip-backpack') {
-          onImportProject(parsed);
-        }
-      } catch {
-        // invalid file — ignore
-      }
-    };
-    reader.readAsText(file);
-    e.target.value = '';
   }
 
   const disabled = hasErrors;
@@ -246,36 +218,9 @@ export function ExportPanel({ inputs, project, hasErrors, showLabels = true, onI
           Instructions
         </Button>
 
-        <Button
-          variant="outline"
-          size="sm"
-          className="w-full justify-start text-xs"
-          onClick={handleSaveProject}
-          title="Save project as JSON for re-import later."
-        >
-          <FileJson className="h-3 w-3 mr-2" />
-          Save Project
-        </Button>
-
-        <label className="w-full">
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full justify-start text-xs pointer-events-none"
-            asChild
-          >
-            <span>
-              <FileJson className="h-3 w-3 mr-2" />
-              Import Project
-            </span>
-          </Button>
-          <input
-            type="file"
-            accept=".json"
-            className="sr-only"
-            onChange={handleImportProject}
-          />
-        </label>
+        {/* Save / Import buttons removed — the page header (PatternPageShell)
+            now owns project JSON I/O. Keeping them here duplicated the
+            functionality and created two competing UIs. */}
       </div>
 
       {disabled && (

@@ -1,12 +1,11 @@
 import { useState } from 'react';
-import { Download, FileJson, Printer, FileCode, List, BookOpen } from 'lucide-react';
+import { Download, Printer, FileCode, List, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { MagPouchInputs, MagPouchBuildResult } from '../../generators/mag-pouch/types.js';
 import type { MagPouchProject } from '../../state/useMagPouchProject.js';
 import { patternToSvg } from '../../lib/pattern-engine/exports/svg.js';
 import { exportCutList, exportCutListCsv } from '../../lib/pattern-engine/exports/cutList.js';
 import { renderHtml } from '../../lib/pattern-engine/instructions/compile.js';
-import { exportProjectJson } from '../../lib/pattern-engine/exports/projectJson.js';
 import {
   loadPdfExporter,
   loadDxfExporter,
@@ -21,10 +20,11 @@ interface Props {
   project: MagPouchProject;
   result: MagPouchBuildResult | null;
   hasErrors: boolean;
-  onImportProject: (p: MagPouchProject) => void;
+  /** @deprecated PatternPageShell now owns project JSON I/O. Kept for back-compat with the page wiring. */
+  onImportProject?: (p: MagPouchProject) => void;
 }
 
-export function ExportPanel({ inputs, project, result, hasErrors, onImportProject }: Props) {
+export function ExportPanel({ inputs, project, result, hasErrors }: Props) {
   const [showCutList, setShowCutList] = useState(false);
   const [engineCutList, setEngineCutList] = useState<ExportCutList | null>(null);
   const [pdfLoading, setPdfLoading] = useState(false);
@@ -113,37 +113,6 @@ export function ExportPanel({ inputs, project, result, hasErrors, onImportProjec
     downloadTextFile(`${project.projectName}-instructions.html`, html, 'text/html');
   }
 
-  function handleSaveProject() {
-    const envelope = {
-      schemaVersion: 3 as const,
-      generatorId: 'mag-pouch',
-      inputs,
-      stylePresetName: undefined,
-    };
-    const json = exportProjectJson(envelope);
-    downloadTextFile(`${project.projectName}.stitch.json`, json, 'application/json');
-  }
-
-  function handleImportProject(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = ev => {
-      try {
-        const parsed = JSON.parse(ev.target?.result as string) as MagPouchProject;
-        if (parsed.schemaVersion === 3 && parsed.generatorId === 'mag-pouch') {
-          onImportProject(parsed);
-        } else {
-          // Wrong generator
-          console.warn('Import error: wrong generator or schema version', parsed);
-        }
-      } catch {
-        // invalid JSON
-      }
-    };
-    reader.readAsText(file);
-    e.target.value = '';
-  }
 
   return (
     <div className="rounded border border-border p-3 space-y-2">
@@ -253,36 +222,9 @@ export function ExportPanel({ inputs, project, result, hasErrors, onImportProjec
           Instructions
         </Button>
 
-        <Button
-          variant="outline"
-          size="sm"
-          className="w-full justify-start text-xs"
-          onClick={handleSaveProject}
-          title="Save project as JSON for re-import later."
-        >
-          <FileJson className="h-3 w-3 mr-2" />
-          Save Project
-        </Button>
-
-        <label className="w-full">
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full justify-start text-xs pointer-events-none"
-            asChild
-          >
-            <span>
-              <FileJson className="h-3 w-3 mr-2" />
-              Import Project
-            </span>
-          </Button>
-          <input
-            type="file"
-            accept=".json"
-            className="sr-only"
-            onChange={handleImportProject}
-          />
-        </label>
+        {/* Save / Import buttons removed — the page header (PatternPageShell)
+            now owns project JSON I/O. Keeping them here duplicated the
+            functionality and created two competing UIs. */}
       </div>
 
       {disabled && (

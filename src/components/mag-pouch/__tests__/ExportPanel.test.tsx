@@ -25,9 +25,10 @@ describe('ExportPanel (MagPouch)', () => {
     expect(screen.getByRole('button', { name: /Instructions/i })).toBeTruthy();
   });
 
-  it('shows Save Project button', () => {
+  it('does NOT show Save/Import Project buttons (now owned by PatternPageShell)', () => {
     render(<ExportPanel {...makeProps()} />);
-    expect(screen.getByRole('button', { name: /Save Project/i })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /Save Project/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Import Project/i })).toBeNull();
   });
 
   it('disables all export buttons when hasErrors is true', () => {
