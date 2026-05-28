@@ -5,7 +5,7 @@ import type { Point } from '../../lib/pattern-engine/graph/Point.js';
 import type { BookCoverInputs, ResolvedInputs, BookCoverBuildResult, BuildPatternError, Result, PocketConfig, PenHolderConfig, ClosureConfig, ResolvedTacticalConfig } from './types.js';
 import { validateInputs, resolveInputs } from './inputs.js';
 import { buildBom } from './bom.js';
-import { DEFAULT_PEN_HOLDER_HEIGHT_MM, CLOSURE_DEFAULTS } from './defaults.js';
+import { DEFAULT_PEN_HOLDER_HEIGHT_MM, CLOSURE_DEFAULTS, CARD_SLOTS_DEFAULTS, BOOKMARK_RIBBON_DEFAULTS } from './defaults.js';
 import { offsetPolygon } from '../../lib/pattern-engine/geometry/offset.js';
 import {
   point as pt,
@@ -297,8 +297,9 @@ function buildLiningPiece(r: ResolvedInputs): Piece {
 
 function buildCardSlotStackPiece(r: ResolvedInputs): Piece {
   const { book_width, card_slots } = r;
-  const count = card_slots!.count;
-  const slotH = card_slots!.slot_height!;
+  if (!card_slots) throw new Error('buildCardSlotStackPiece: card_slots is required on ResolvedInputs');
+  const count = card_slots.count;
+  const slotH = card_slots.slot_height ?? CARD_SLOTS_DEFAULTS.slot_height;
   const pieceW = book_width;
 
   // N cut-role rectangular paths (one per slot row) + N-1 fold-role topstitch dividers
@@ -341,8 +342,9 @@ function buildCardSlotStackPiece(r: ResolvedInputs): Piece {
 
 function buildBookmarkRibbonPiece(r: ResolvedInputs): Piece {
   const { book_height, bookmark_ribbon } = r;
-  const count = bookmark_ribbon!.count;
-  const widthMm = bookmark_ribbon!.width_mm!;
+  if (!bookmark_ribbon) throw new Error('buildBookmarkRibbonPiece: bookmark_ribbon is required on ResolvedInputs');
+  const count = bookmark_ribbon.count;
+  const widthMm = bookmark_ribbon.width_mm ?? BOOKMARK_RIBBON_DEFAULTS.width_mm;
   const cutHeight = book_height + 50;
 
   const outline = makeRectOutline('bookmark-ribbon-outline', widthMm, cutHeight, 'cut');
@@ -362,8 +364,9 @@ function buildBookmarkRibbonPiece(r: ResolvedInputs): Piece {
 
 function buildInternalZipPocketPiece(r: ResolvedInputs): Piece {
   const { book_width, book_height, seam_allowance: SA, internal_zip_pocket } = r;
-  const cutWidth = (internal_zip_pocket!.width ?? book_width) + 2 * SA;
-  const cutHeight = (internal_zip_pocket!.height ?? Math.round(book_height * 0.4)) + 2 * SA;
+  if (!internal_zip_pocket) throw new Error('buildInternalZipPocketPiece: internal_zip_pocket is required on ResolvedInputs');
+  const cutWidth = (internal_zip_pocket.width ?? book_width) + 2 * SA;
+  const cutHeight = (internal_zip_pocket.height ?? Math.round(book_height * 0.4)) + 2 * SA;
 
   const outline = makeRectOutline('internal-zip-pocket-outline', cutWidth, cutHeight, 'cut');
 
@@ -388,13 +391,14 @@ function buildInternalZipPocketPiece(r: ResolvedInputs): Piece {
 
 function buildMeshPocketPiece(r: ResolvedInputs): Piece {
   const { book_width, book_height, seam_allowance: SA, mesh_pocket } = r;
-  const cutWidth = (mesh_pocket!.width ?? book_width) + 2 * SA;
-  const cutHeight = (mesh_pocket!.height ?? Math.round(book_height * 0.5)) + 2 * SA;
+  if (!mesh_pocket) throw new Error('buildMeshPocketPiece: mesh_pocket is required on ResolvedInputs');
+  const cutWidth = (mesh_pocket.width ?? book_width) + 2 * SA;
+  const cutHeight = (mesh_pocket.height ?? Math.round(book_height * 0.5)) + 2 * SA;
 
   const outline = makeRectOutline('mesh-pocket-outline', cutWidth, cutHeight, 'cut');
   const paths: Path[] = [outline];
 
-  if (mesh_pocket!.elastic_top) {
+  if (mesh_pocket.elastic_top) {
     paths.push(makeHorizLine('mesh-pocket-fold-elastic-top', SA, cutWidth, 'fold', 'Elastic top — fold and stitch channel'));
   }
 
