@@ -290,6 +290,103 @@ describe('buildPattern — SVG smoke tests', () => {
   });
 });
 
+describe('buildPattern — closure modes', () => {
+  it('closure { kind: "none" } returns same body outline as no closure', () => {
+    const withNone = buildPattern({ ...BASE, closure: { kind: 'none' } });
+    const withoutClosure = buildPattern(BASE);
+    expect(withNone.ok).toBe(true);
+    expect(withoutClosure.ok).toBe(true);
+    if (!withNone.ok || !withoutClosure.ok) return;
+    const panelNone = withNone.value.pieces.find(p => p.id === 'cover-panel')!;
+    const panelBase = withoutClosure.value.pieces.find(p => p.id === 'cover-panel')!;
+    const outlineNone = panelNone.paths.find(p => p.id === 'cover-panel-outline')!;
+    const outlineBase = panelBase.paths.find(p => p.id === 'cover-panel-outline')!;
+    expect(outlineNone.edges.length).toBe(outlineBase.edges.length);
+    expect(outlineNone.edges.every(e => e.kind === 'straight')).toBe(true);
+  });
+
+  it('zipper outline has exactly 4 ArcEdge entries', () => {
+    const result = buildPattern({ ...BASE, closure: { kind: 'zipper', gauge: '#5', corner_radius: 31.75 } });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const panel = result.value.pieces.find(p => p.id === 'cover-panel')!;
+    const outline = panel.paths.find(p => p.id === 'cover-panel-outline')!;
+    const arcs = outline.edges.filter(e => e.kind === 'arc');
+    expect(arcs).toHaveLength(4);
+  });
+
+  it('zipper outline has exactly 4 StraightEdge entries', () => {
+    const result = buildPattern({ ...BASE, closure: { kind: 'zipper', gauge: '#5', corner_radius: 31.75 } });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const panel = result.value.pieces.find(p => p.id === 'cover-panel')!;
+    const outline = panel.paths.find(p => p.id === 'cover-panel-outline')!;
+    const straights = outline.edges.filter(e => e.kind === 'straight');
+    expect(straights).toHaveLength(4);
+  });
+
+  it('flap-buckle returns 4 pieces (body + 2 flaps + strap)', () => {
+    const result = buildPattern({ ...BASE, closure: { kind: 'flap-buckle', strap_width: 25.4, buckle_size: 25.4 } });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.pieces).toHaveLength(4);
+  });
+
+  it('flap-buckle strap width = book_width + spine_width + 2*SA', () => {
+    const SA = 9.5;
+    const result = buildPattern({ ...BASE, closure: { kind: 'flap-buckle', strap_width: 25.4, buckle_size: 25.4 } });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const strap = result.value.pieces.find(p => p.id === 'flap-buckle-strap')!;
+    const outline = strap.paths.find(p => p.id === 'flap-buckle-strap-outline')!;
+    const maxX = Math.max(...outline.edges.flatMap(e => [e.start.x, e.end.x]));
+    expect(maxX).toBeCloseTo(BASE.book_width! + BASE.spine_width! + 2 * SA, 5);
+  });
+
+  it('flap-buckle strap height = strap_width + 2*SA', () => {
+    const SA = 9.5;
+    const strapWidth = 25.4;
+    const result = buildPattern({ ...BASE, closure: { kind: 'flap-buckle', strap_width: strapWidth, buckle_size: 25.4 } });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const strap = result.value.pieces.find(p => p.id === 'flap-buckle-strap')!;
+    const outline = strap.paths.find(p => p.id === 'flap-buckle-strap-outline')!;
+    const maxY = Math.max(...outline.edges.flatMap(e => [e.start.y, e.end.y]));
+    expect(maxY).toBeCloseTo(strapWidth + 2 * SA, 5);
+  });
+
+  it('snap count=2 returns body with 4 notch annotations', () => {
+    const result = buildPattern({ ...BASE, closure: { kind: 'snap', count: 2 } });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const panel = result.value.pieces.find(p => p.id === 'cover-panel')!;
+    const notches = panel.annotations?.filter(a => a.kind === 'notch') ?? [];
+    expect(notches).toHaveLength(4);
+  });
+
+  it('elastic with attach_offset returns body with 2 notch annotations', () => {
+    const result = buildPattern({ ...BASE, closure: { kind: 'elastic', strap_width: 12.7, attach_offset: 30 } });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const panel = result.value.pieces.find(p => p.id === 'cover-panel')!;
+    const notches = panel.annotations?.filter(a => a.kind === 'notch') ?? [];
+    expect(notches).toHaveLength(2);
+  });
+
+  it('elastic notches placed at y = cutHeight/2 ± attach_offset', () => {
+    const attachOffset = 30;
+    const cutHeight = BASE.book_height! + 2 * 12; // book_height + 2*top_bottom_hem = 200 + 24 = 224
+    const result = buildPattern({ ...BASE, closure: { kind: 'elastic', strap_width: 12.7, attach_offset: attachOffset } });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const panel = result.value.pieces.find(p => p.id === 'cover-panel')!;
+    const notches = panel.annotations?.filter(a => a.kind === 'notch') ?? [];
+    const ys = notches.map(n => n.point!.y).sort((a, b) => a - b);
+    expect(ys[0]).toBeCloseTo(cutHeight / 2 - attachOffset, 5);
+    expect(ys[1]).toBeCloseTo(cutHeight / 2 + attachOffset, 5);
+  });
+});
+
 describe('buildPattern — construction steps', () => {
   it('bare cover has at least 5 steps', () => {
     const result = buildPattern(BASE);

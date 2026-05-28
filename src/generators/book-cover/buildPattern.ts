@@ -1,11 +1,11 @@
-import type { Piece } from '../../lib/pattern-engine/graph/Piece.js';
+import type { Piece, PieceAnnotation } from '../../lib/pattern-engine/graph/Piece.js';
 import type { Path } from '../../lib/pattern-engine/graph/Path.js';
 import type { Edge } from '../../lib/pattern-engine/graph/Edge.js';
 import type { Point } from '../../lib/pattern-engine/graph/Point.js';
-import type { BookCoverInputs, ResolvedInputs, BookCoverBuildResult, BuildPatternError, Result, PocketConfig, PenHolderConfig } from './types.js';
+import type { BookCoverInputs, ResolvedInputs, BookCoverBuildResult, BuildPatternError, Result, PocketConfig, PenHolderConfig, ClosureConfig } from './types.js';
 import { validateInputs, resolveInputs } from './inputs.js';
 import { buildBom } from './bom.js';
-import { DEFAULT_PEN_HOLDER_HEIGHT_MM } from './defaults.js';
+import { DEFAULT_PEN_HOLDER_HEIGHT_MM, CLOSURE_DEFAULTS } from './defaults.js';
 import { offsetPolygon } from '../../lib/pattern-engine/geometry/offset.js';
 
 function pt(x: number, y: number): Point { return { x, y }; }
@@ -19,6 +19,58 @@ function makeRectOutline(id: string, w: number, h: number, role: Edge['role'] = 
       { kind: 'straight', id: `${id}:e1`, role, start: pt(w, 0), end: pt(w, h) },
       { kind: 'straight', id: `${id}:e2`, role, start: pt(w, h), end: pt(0, h) },
       { kind: 'straight', id: `${id}:e3`, role, start: pt(0, h), end: pt(0, 0) },
+    ],
+  };
+}
+
+function makeRoundedRectOutline(id: string, w: number, h: number, r: number, role: Edge['role'] = 'cut'): Path {
+  return {
+    id,
+    closed: true,
+    edges: [
+      // Bottom: left-corner tangent to right-corner tangent
+      { kind: 'straight', id: `${id}:e0`, role, start: pt(r, 0), end: pt(w - r, 0) },
+      // Bottom-right arc: center (w-r, r)
+      { kind: 'arc', id: `${id}:e1`, role, start: pt(w - r, 0), end: pt(w, r), center: pt(w - r, r), radius: r, clockwise: true },
+      // Right edge
+      { kind: 'straight', id: `${id}:e2`, role, start: pt(w, r), end: pt(w, h - r) },
+      // Top-right arc: center (w-r, h-r)
+      { kind: 'arc', id: `${id}:e3`, role, start: pt(w, h - r), end: pt(w - r, h), center: pt(w - r, h - r), radius: r, clockwise: true },
+      // Top: right to left
+      { kind: 'straight', id: `${id}:e4`, role, start: pt(w - r, h), end: pt(r, h) },
+      // Top-left arc: center (r, h-r)
+      { kind: 'arc', id: `${id}:e5`, role, start: pt(r, h), end: pt(0, h - r), center: pt(r, h - r), radius: r, clockwise: true },
+      // Left edge
+      { kind: 'straight', id: `${id}:e6`, role, start: pt(0, h - r), end: pt(0, r) },
+      // Bottom-left arc: center (r, r)
+      { kind: 'arc', id: `${id}:e7`, role, start: pt(0, r), end: pt(r, 0), center: pt(r, r), radius: r, clockwise: true },
+    ],
+  };
+}
+
+function makeRoundedRectSaPath(id: string, w: number, h: number, r: number, SA: number): Path | null {
+  const innerR = r - SA;
+  if (innerR <= 0) return null;
+  return {
+    id,
+    closed: true,
+    edges: [
+      // Inner bottom
+      { kind: 'straight', id: `${id}:e0`, role: 'seam', start: pt(r, SA), end: pt(w - r, SA) },
+      // Inner bottom-right arc
+      { kind: 'arc', id: `${id}:e1`, role: 'seam', start: pt(w - r, SA), end: pt(w - SA, r), center: pt(w - r, r), radius: innerR, clockwise: true },
+      // Inner right
+      { kind: 'straight', id: `${id}:e2`, role: 'seam', start: pt(w - SA, r), end: pt(w - SA, h - r) },
+      // Inner top-right arc
+      { kind: 'arc', id: `${id}:e3`, role: 'seam', start: pt(w - SA, h - r), end: pt(w - r, h - SA), center: pt(w - r, h - r), radius: innerR, clockwise: true },
+      // Inner top
+      { kind: 'straight', id: `${id}:e4`, role: 'seam', start: pt(w - r, h - SA), end: pt(r, h - SA) },
+      // Inner top-left arc
+      { kind: 'arc', id: `${id}:e5`, role: 'seam', start: pt(r, h - SA), end: pt(SA, h - r), center: pt(r, h - r), radius: innerR, clockwise: true },
+      // Inner left
+      { kind: 'straight', id: `${id}:e6`, role: 'seam', start: pt(SA, h - r), end: pt(SA, r) },
+      // Inner bottom-left arc
+      { kind: 'arc', id: `${id}:e7`, role: 'seam', start: pt(SA, r), end: pt(r, SA), center: pt(r, r), radius: innerR, clockwise: true },
     ],
   };
 }
@@ -62,25 +114,35 @@ function makePathFromPoints(id: string, pts: Point[], role: Edge['role']): Path 
 
 function buildCoverPanel(r: ResolvedInputs): Piece {
   const { book_width, spine_width, book_height, seam_allowance: SA, top_bottom_hem } = r;
+  const effectiveClosure = r.closure?.kind === 'none' ? undefined : r.closure;
 
-  // Body wraps front cover + spine + back cover. The inner-cover sleeves
-  // are separate flap pieces (buildInnerFlapPiece) sewn to the body's
-  // short edges, so the body itself does NOT include flap_depth.
   const cutWidth = 2 * book_width + spine_width + 2 * SA;
   const cutHeight = book_height + 2 * top_bottom_hem;
 
-  const outline = makeRectOutline('cover-panel-outline', cutWidth, cutHeight, 'cut');
+  let outline: Path;
+  const extraPaths: Path[] = [];
 
-  const paths: Path[] = [outline];
-  if (SA > 0) {
-    const outlineVerts: Point[] = [
-      pt(0, 0), pt(cutWidth, 0), pt(cutWidth, cutHeight), pt(0, cutHeight),
-    ];
-    const saResult = offsetPolygon(outlineVerts, -SA);
-    if (saResult.ok && saResult.value) {
-      paths.push(makePathFromPoints('cover-panel-sa-seam', saResult.value, 'seam'));
+  if (effectiveClosure?.kind === 'zipper') {
+    const cornerR = effectiveClosure.corner_radius!;
+    outline = makeRoundedRectOutline('cover-panel-outline', cutWidth, cutHeight, cornerR, 'cut');
+    if (SA > 0) {
+      const saPath = makeRoundedRectSaPath('cover-panel-sa-seam', cutWidth, cutHeight, cornerR, SA);
+      if (saPath) extraPaths.push(saPath);
+    }
+  } else {
+    outline = makeRectOutline('cover-panel-outline', cutWidth, cutHeight, 'cut');
+    if (SA > 0) {
+      const outlineVerts: Point[] = [
+        pt(0, 0), pt(cutWidth, 0), pt(cutWidth, cutHeight), pt(0, cutHeight),
+      ];
+      const saResult = offsetPolygon(outlineVerts, -SA);
+      if (saResult.ok && saResult.value) {
+        extraPaths.push(makePathFromPoints('cover-panel-sa-seam', saResult.value, 'seam'));
+      }
     }
   }
+
+  const paths: Path[] = [outline, ...extraPaths];
 
   // Two vertical fold lines marking the spine boundaries
   const foldXs = [SA + book_width, SA + book_width + spine_width];
@@ -93,6 +155,11 @@ function buildCoverPanel(r: ResolvedInputs): Piece {
   paths.push(makeHorizLine('cover-panel-fold-top', top_bottom_hem, cutWidth, 'fold', 'Top hem — fold to wrong side'));
   paths.push(makeHorizLine('cover-panel-fold-bottom', cutHeight - top_bottom_hem, cutWidth, 'fold', 'Bottom hem — fold to wrong side'));
 
+  const seamAllowances: Record<string, number> = {};
+  for (const edge of outline.edges) {
+    seamAllowances[edge.id] = 0;
+  }
+
   return {
     id: 'cover-panel',
     name: 'Book Cover Panel',
@@ -103,18 +170,11 @@ function buildCoverPanel(r: ResolvedInputs): Piece {
       { kind: 'grain', label: 'Grain', point: pt(cutWidth / 2, cutHeight / 2), angle: 90 },
       { kind: 'label', label: `Book Cover Panel\nCut 1\n${Math.round(cutWidth)} × ${Math.round(cutHeight)} mm` },
     ],
-    seamAllowances: {
-      'cover-panel-outline:e0': 0,
-      'cover-panel-outline:e1': 0,
-      'cover-panel-outline:e2': 0,
-      'cover-panel-outline:e3': 0,
-    },
+    seamAllowances,
   };
 }
 
 // Inner flap piece — sleeve that holds one side of the book cover.
-// Laid out with the outer (sewn-to-body) edge at x=0 and the open
-// sleeve-mouth edge at x=cutWidth. The mouth gets a hem.
 function buildInnerFlapPiece(side: 'left' | 'right', r: ResolvedInputs): Piece {
   const { flap_depth, book_height, seam_allowance: SA, top_bottom_hem } = r;
 
@@ -126,7 +186,6 @@ function buildInnerFlapPiece(side: 'left' | 'right', r: ResolvedInputs): Piece {
 
   const outline = makeRectOutline(`${id}-outline`, cutWidth, cutHeight, 'cut');
 
-  // Mouth hem on the inward-facing vertical edge
   const mouthHemX = cutWidth - top_bottom_hem;
   const mouthHem = makeVertLine(`${id}-fold-mouth`, mouthHemX, cutHeight, 'fold', 'Sleeve mouth — hem');
 
@@ -181,7 +240,6 @@ function buildPenHolderPiece(ph: PenHolderConfig, SA: number): Piece {
   const outline = makeRectOutline('pen-holder-outline', cutWidth, cutHeight, 'cut');
   const paths: Path[] = [outline];
 
-  // count - 1 vertical fold lines at SA + slot_width * i intervals
   for (let i = 1; i < ph.count; i++) {
     const x = SA + i * ph.slot_width;
     paths.push(makeVertLine(`pen-holder-fold-v${i - 1}`, x, cutHeight, 'fold', `Slot ${i} divider`));
@@ -205,18 +263,98 @@ function buildPenHolderPiece(ph: PenHolderConfig, SA: number): Piece {
   };
 }
 
+function buildFlapBuckleStrapPiece(closure: Extract<ClosureConfig, { kind: 'flap-buckle' }>, r: ResolvedInputs): Piece {
+  const { book_width, spine_width, seam_allowance: SA } = r;
+  const strapWidth = closure.strap_width ?? CLOSURE_DEFAULTS['flap-buckle'].strap_width;
+
+  const cutWidth = book_width + spine_width + 2 * SA;
+  const cutHeight = strapWidth + 2 * SA;
+
+  const outline = makeRectOutline('flap-buckle-strap-outline', cutWidth, cutHeight, 'cut');
+
+  return {
+    id: 'flap-buckle-strap',
+    name: 'Flap Buckle Strap',
+    mirror: false,
+    quantity: 1,
+    paths: [outline],
+    annotations: [
+      { kind: 'label', label: `Flap Buckle Strap\nCut 1\n${Math.round(cutWidth)} × ${Math.round(cutHeight)} mm` },
+    ],
+    seamAllowances: {
+      'flap-buckle-strap-outline:e0': 0,
+      'flap-buckle-strap-outline:e1': 0,
+      'flap-buckle-strap-outline:e2': 0,
+      'flap-buckle-strap-outline:e3': 0,
+    },
+  };
+}
+
+function addNotchAnnotations(piece: Piece, closure: ClosureConfig, r: ResolvedInputs): void {
+  const { book_width, spine_width, book_height, seam_allowance: SA, top_bottom_hem } = r;
+  const cutWidth = 2 * book_width + spine_width + 2 * SA;
+  const cutHeight = book_height + 2 * top_bottom_hem;
+
+  if (!piece.annotations) piece.annotations = [];
+
+  if (closure.kind === 'snap') {
+    const count = closure.count ?? CLOSURE_DEFAULTS.snap.count;
+    const usableHeight = cutHeight - 2 * top_bottom_hem;
+    for (let i = 0; i < count; i++) {
+      const y = top_bottom_hem + usableHeight * (i + 1) / (count + 1);
+      // Left short edge notch
+      piece.annotations.push({
+        kind: 'notch',
+        label: `Snap ${i + 1} (left)`,
+        point: pt(0, y),
+      } as PieceAnnotation);
+      // Right short edge notch
+      piece.annotations.push({
+        kind: 'notch',
+        label: `Snap ${i + 1} (right)`,
+        point: pt(cutWidth, y),
+      } as PieceAnnotation);
+    }
+  } else if (closure.kind === 'elastic') {
+    const attachOffset = closure.attach_offset ?? (cutHeight * 0.15);
+    const cy = cutHeight / 2;
+    // Two attachment notches on the back-cover-side short edge (right edge)
+    piece.annotations.push({
+      kind: 'notch',
+      label: 'Elastic attach (top)',
+      point: pt(cutWidth, cy - attachOffset),
+    } as PieceAnnotation);
+    piece.annotations.push({
+      kind: 'notch',
+      label: 'Elastic attach (bottom)',
+      point: pt(cutWidth, cy + attachOffset),
+    } as PieceAnnotation);
+  }
+}
+
 export function buildPattern(inputs: BookCoverInputs): Result<BookCoverBuildResult, BuildPatternError> {
   const validation = validateInputs(inputs);
   if (!validation.ok) return validation;
 
   const r: ResolvedInputs = resolveInputs(inputs);
   const { book_height, book_width, spine_width, seam_allowance: SA, top_bottom_hem } = r;
+  const effectiveClosure = r.closure?.kind === 'none' ? undefined : r.closure;
+
+  const bodyPiece = buildCoverPanel(r);
+
+  if (effectiveClosure?.kind === 'snap' || effectiveClosure?.kind === 'elastic') {
+    addNotchAnnotations(bodyPiece, effectiveClosure, r);
+  }
 
   const pieces: Piece[] = [
-    buildCoverPanel(r),
+    bodyPiece,
     buildInnerFlapPiece('left', r),
     buildInnerFlapPiece('right', r),
   ];
+
+  if (effectiveClosure?.kind === 'flap-buckle') {
+    pieces.push(buildFlapBuckleStrapPiece(effectiveClosure, r));
+  }
 
   if (r.outer_pocket) {
     pieces.push(buildPocketPiece('outer-pocket', 'Outer Pocket', r.outer_pocket, SA, top_bottom_hem));
