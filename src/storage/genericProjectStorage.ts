@@ -7,7 +7,14 @@
 //   - JSON parse failures
 //   - quota errors mid-session (subsequent writes silently fall back to memory)
 //
+// When storage is unavailable at construction time or a write fails mid-session,
+// the helper fires a toast so the user knows their work won't persist. This
+// replaces the Tool-Roll-specific `storageWarning` field that other generators
+// had no equivalent for.
+//
 // Convention: storage keys are `stitchsmith.<generator-id>.project`.
+
+import { toast } from '../lib/toast/toast.js';
 
 export interface ProjectStorage<T> {
   /** Returns the parsed project or null if missing/invalid. */
@@ -56,10 +63,20 @@ export function makeProjectStorage<T>(opts: MakeProjectStorageOpts<T>): ProjectS
   let warnedOnce = false;
   let timer: ReturnType<typeof setTimeout> | null = null;
   let available: boolean | null = null;
+  let probeToastFired = false;
 
   function isAvailable(): boolean {
     if (writeFailed) return false;
-    if (available === null) available = probeStorage();
+    if (available === null) {
+      available = probeStorage();
+      if (!available && !probeToastFired) {
+        probeToastFired = true;
+        toast.warning(
+          "Browser storage unavailable",
+          "Your changes won't be saved between page reloads. Use Export to save your work as a file.",
+        );
+      }
+    }
     return available;
   }
 
@@ -91,6 +108,10 @@ export function makeProjectStorage<T>(opts: MakeProjectStorageOpts<T>): ProjectS
         if (!warnedOnce) {
           warnedOnce = true;
           console.warn(`[stitchsmith] Saving ${opts.key} failed; subsequent changes will be kept only in memory.`, err);
+          toast.warning(
+            "Couldn't save to browser storage",
+            "Your changes are still visible but won't survive a page reload. Use Export to save your work as a file.",
+          );
         }
       }
     }, DEBOUNCE_MS);
