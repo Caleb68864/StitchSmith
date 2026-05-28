@@ -5,17 +5,29 @@ import type { Hardware } from '../../lib/pattern-engine/materials/Hardware.js';
 export function buildBom(r: ResolvedInputs): Bom {
   const { book_height, book_width, spine_width, flap_depth, seam_allowance: SA, top_bottom_hem } = r;
 
-  const cutWidth = 2 * flap_depth + 2 * book_width + spine_width + 2 * SA;
   const cutHeight = book_height + 2 * top_bottom_hem;
+
+  // Body panel (without flap_depth — flaps are separate sleeve pieces)
+  const bodyCutWidth = 2 * book_width + spine_width + 2 * SA;
+  const flapCutWidth = flap_depth + SA + top_bottom_hem;
 
   const materials: Material[] = [
     {
       id: 'cover-fabric',
       name: 'Main Cover Fabric',
       type: 'fabric',
-      notes: `Cut 1 panel at ${Math.round(cutWidth)} × ${Math.round(cutHeight)} mm`,
+      notes: `Cut 1 body panel at ${Math.round(bodyCutWidth)} × ${Math.round(cutHeight)} mm AND 2 inner sleeve flaps at ${Math.round(flapCutWidth)} × ${Math.round(cutHeight)} mm each.`,
     },
   ];
+
+  if (r.lining?.enabled) {
+    materials.push({
+      id: 'lining-fabric',
+      name: 'Lining Fabric',
+      type: 'fabric',
+      notes: `Cut 1 lining panel at ${Math.round(bodyCutWidth)} × ${Math.round(cutHeight)} mm (matches the body). Use a lightweight, smooth fabric.`,
+    });
+  }
 
   if (r.outer_pocket) {
     const p = r.outer_pocket;
@@ -59,7 +71,7 @@ export function buildBom(r: ResolvedInputs): Bom {
       id: 'lining-interfacing',
       name: interfacingName,
       type: 'interfacing',
-      notes: `Cut 1 panel at ${Math.round(cutWidth)} × ${Math.round(cutHeight)} mm`,
+      notes: `Cut 1 panel at ${Math.round(bodyCutWidth)} × ${Math.round(cutHeight)} mm`,
     });
   }
 
@@ -170,6 +182,25 @@ export function buildBom(r: ResolvedInputs): Bom {
   if (r.tactical?.enabled) {
     const vpW = r.tactical.velcro_panel_width;
     const vpH = r.tactical.velcro_panel_height;
+    // The Velcro itself (hardware) and a backing fabric (material) for the panel.
+    materials.push({
+      id: 'tactical-velcro-panel-fabric',
+      name: 'Tactical Velcro Backing',
+      type: 'fabric',
+      notes: `Cut 1 backing panel at ${Math.round(vpW + 2 * SA)} × ${Math.round(vpH + 2 * SA)} mm. Loop-side Velcro is bonded or stitched to this panel.`,
+    });
+    if (r.tactical.spare_mag_pocket) {
+      // Spare-mag pocket dimensions: scaled to a standard magazine pouch — about
+      // 30 mm wide × 80 mm tall internal, plus SA and a top hem for the opening.
+      const smW = 30 + 2 * SA;
+      const smH = 80 + 2 * SA + top_bottom_hem;
+      materials.push({
+        id: 'spare-mag-pocket-fabric',
+        name: 'Spare-Mag Pocket Fabric',
+        type: 'fabric',
+        notes: `Cut 1 pocket at ${Math.round(smW)} × ${Math.round(smH)} mm. Attaches to the inside back cover.`,
+      });
+    }
     hardware.push({
       id: 'tactical-velcro-loop',
       name: 'Loop Velcro',
@@ -199,8 +230,9 @@ export function buildBom(r: ResolvedInputs): Bom {
   }
 
   const notes: string[] = [
-    `Cover wraps book: ${Math.round(book_width)} mm front + ${Math.round(spine_width)} mm spine + ${Math.round(book_width)} mm back + ${Math.round(flap_depth)} mm flaps on each side.`,
-    `Top and bottom hems are ${top_bottom_hem} mm each.`,
+    `Body panel: ${Math.round(bodyCutWidth)} × ${Math.round(cutHeight)} mm — front (${Math.round(book_width)}) + spine (${Math.round(spine_width)}) + back (${Math.round(book_width)}) plus 2 × ${SA} mm seam allowance and 2 × ${top_bottom_hem} mm hem.`,
+    `Each inner sleeve flap: ${Math.round(flapCutWidth)} × ${Math.round(cutHeight)} mm — flap_depth ${Math.round(flap_depth)} + ${SA} mm SA + ${top_bottom_hem} mm sleeve-mouth hem.`,
+    `Top and bottom hems are ${top_bottom_hem} mm each, folded to the wrong side and topstitched 2 mm from the fold.`,
   ];
 
   return { materials, hardware, notes };

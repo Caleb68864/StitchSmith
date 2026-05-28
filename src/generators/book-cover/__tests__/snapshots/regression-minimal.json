@@ -497,13 +497,14 @@
         "id": "cover-fabric",
         "name": "Main Cover Fabric",
         "type": "fabric",
-        "notes": "Cut 1 panel at 484 × 224 mm"
+        "notes": "Cut 1 body panel at 344 × 224 mm AND 2 inner sleeve flaps at 92 × 224 mm each."
       }
     ],
     "hardware": [],
     "notes": [
-      "Cover wraps book: 150 mm front + 25 mm spine + 150 mm back + 70 mm flaps on each side.",
-      "Top and bottom hems are 12 mm each."
+      "Body panel: 344 × 224 mm — front (150) + spine (25) + back (150) plus 2 × 9.5 mm seam allowance and 2 × 12 mm hem.",
+      "Each inner sleeve flap: 92 × 224 mm — flap_depth 70 + 9.5 mm SA + 12 mm sleeve-mouth hem.",
+      "Top and bottom hems are 12 mm each, folded to the wrong side and topstitched 2 mm from the fold."
     ]
   },
   "warnings": []
