@@ -96,6 +96,12 @@ export interface BuildPatternError {
   sharedPathId?: string;
   length1?: number;
   length2?: number;
+  /**
+   * Optional input-field key the message refers to (e.g. `'panel_height'`).
+   * UI can use this to highlight the offending input directly without
+   * regex-matching the message string. See docs/notes/polish-pass-learnings.md L6.
+   */
+  field?: string;
 }
 
 export interface ModuleResult {

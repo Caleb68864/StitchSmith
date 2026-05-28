@@ -37,6 +37,12 @@ export interface RollTopSackBuildResult {
 export interface BuildPatternError {
   kind: 'invalid-inputs';
   message: string;
+  /**
+   * Optional input-field key the message refers to (e.g. `'bottom_length'`).
+   * UI can use this to highlight the offending input directly without
+   * regex-matching the message string. See docs/notes/polish-pass-learnings.md L6.
+   */
+  field?: string;
 }
 
 export type Result<T, E> = { ok: true; value: T } | { ok: false; error: E };
