@@ -1,5 +1,5 @@
-import type { BookCoverInputs, ResolvedInputs, Result, BuildPatternError, ZipperGauge, ElasticTension, ClosureConfig } from './types.js';
-import { DEFAULT_SEAM_ALLOWANCE_MM, DEFAULT_TOP_BOTTOM_HEM_MM, BOOK_PRESETS, FOLDOVER_PRESETS, ZIPPER_GAUGE_DEFAULTS, CLOSURE_DEFAULTS } from './defaults.js';
+import type { BookCoverInputs, ResolvedInputs, Result, BuildPatternError, ZipperGauge, ElasticTension, ClosureConfig, InterfacingKind, LiningConfig } from './types.js';
+import { DEFAULT_SEAM_ALLOWANCE_MM, DEFAULT_TOP_BOTTOM_HEM_MM, BOOK_PRESETS, FOLDOVER_PRESETS, ZIPPER_GAUGE_DEFAULTS, CLOSURE_DEFAULTS, LINING_DEFAULTS, CARD_SLOTS_DEFAULTS, BOOKMARK_RIBBON_DEFAULTS, INTERNAL_ZIP_POCKET_DEFAULTS, TACTICAL_DEFAULTS } from './defaults.js';
 
 const IN_TO_MM = 25.4;
 
@@ -102,6 +102,96 @@ export function validateInputs(inputs: BookCoverInputs): Result<true, BuildPatte
     }
   }
 
+  // Lining-required-for-features check
+  const hasFeatureRequiringLining =
+    inputs.card_slots !== undefined ||
+    inputs.bookmark_ribbon !== undefined ||
+    inputs.internal_zip_pocket !== undefined ||
+    inputs.mesh_pocket !== undefined;
+  const liningEffectivelyEnabled =
+    inputs.lining?.enabled === true || inputs.tactical?.enabled === true;
+  if (hasFeatureRequiringLining && !liningEffectivelyEnabled) {
+    return { ok: false, error: { kind: 'invalid-inputs', message: 'lining-required-for-features: card_slots, bookmark_ribbon, internal_zip_pocket, and mesh_pocket all require lining.enabled to be true' } };
+  }
+
+  // Lining validation
+  if (inputs.lining !== undefined) {
+    if (inputs.lining.interfacing !== undefined) {
+      const validInterfacing: InterfacingKind[] = ['fusible', 'sew-in', 'hdpe', 'eva', 'none'];
+      if (!validInterfacing.includes(inputs.lining.interfacing)) {
+        return { ok: false, error: { kind: 'invalid-inputs', message: `lining.interfacing must be one of fusible, sew-in, hdpe, eva, none; got "${inputs.lining.interfacing}"` } };
+      }
+    }
+  }
+
+  // Card slots validation
+  if (inputs.card_slots !== undefined) {
+    const { count } = inputs.card_slots;
+    if (!Number.isInteger(count) || count < 1 || count > 5) {
+      return { ok: false, error: { kind: 'invalid-inputs', message: `card_slots.count must be an integer between 1 and 5; got ${count}` } };
+    }
+    if (inputs.card_slots.slot_height !== undefined) {
+      if (!isPositiveFinite(inputs.card_slots.slot_height)) {
+        return { ok: false, error: { kind: 'invalid-inputs', message: 'card_slots.slot_height must be a positive finite number' } };
+      }
+    }
+  }
+
+  // Bookmark ribbon validation
+  if (inputs.bookmark_ribbon !== undefined) {
+    const { count } = inputs.bookmark_ribbon;
+    if (!Number.isInteger(count) || count < 1) {
+      return { ok: false, error: { kind: 'invalid-inputs', message: 'bookmark_ribbon.count must be an integer >= 1' } };
+    }
+    if (inputs.bookmark_ribbon.width_mm !== undefined) {
+      if (!isPositiveFinite(inputs.bookmark_ribbon.width_mm)) {
+        return { ok: false, error: { kind: 'invalid-inputs', message: 'bookmark_ribbon.width_mm must be a positive finite number' } };
+      }
+    }
+  }
+
+  // Internal zip pocket validation
+  if (inputs.internal_zip_pocket !== undefined) {
+    const p = inputs.internal_zip_pocket;
+    if (p.width !== undefined && !isPositiveFinite(p.width)) {
+      return { ok: false, error: { kind: 'invalid-inputs', message: 'internal_zip_pocket.width must be a positive finite number' } };
+    }
+    if (p.height !== undefined && !isPositiveFinite(p.height)) {
+      return { ok: false, error: { kind: 'invalid-inputs', message: 'internal_zip_pocket.height must be a positive finite number' } };
+    }
+    if (p.gauge !== undefined) {
+      const validGauges: ZipperGauge[] = ['#3', '#5', '#10'];
+      if (!validGauges.includes(p.gauge)) {
+        return { ok: false, error: { kind: 'invalid-inputs', message: `internal_zip_pocket.gauge must be one of #3, #5, #10; got "${p.gauge}"` } };
+      }
+    }
+  }
+
+  // Mesh pocket validation
+  if (inputs.mesh_pocket !== undefined) {
+    const p = inputs.mesh_pocket;
+    if (p.width !== undefined && !isPositiveFinite(p.width)) {
+      return { ok: false, error: { kind: 'invalid-inputs', message: 'mesh_pocket.width must be a positive finite number' } };
+    }
+    if (p.height !== undefined && !isPositiveFinite(p.height)) {
+      return { ok: false, error: { kind: 'invalid-inputs', message: 'mesh_pocket.height must be a positive finite number' } };
+    }
+  }
+
+  // Tactical validation (velcro_panel_width >= 101.6 mm is the minimum, warn below)
+  if (inputs.tactical !== undefined) {
+    if (inputs.tactical.velcro_panel_width !== undefined) {
+      if (!isPositiveFinite(inputs.tactical.velcro_panel_width)) {
+        return { ok: false, error: { kind: 'invalid-inputs', message: 'tactical.velcro_panel_width must be a positive finite number' } };
+      }
+    }
+    if (inputs.tactical.velcro_panel_height !== undefined) {
+      if (!isPositiveFinite(inputs.tactical.velcro_panel_height)) {
+        return { ok: false, error: { kind: 'invalid-inputs', message: 'tactical.velcro_panel_height must be a positive finite number' } };
+      }
+    }
+  }
+
   if (inputs.closure !== undefined) {
     const c = inputs.closure;
     if (c.kind === 'zipper') {
@@ -185,6 +275,57 @@ export function resolveInputs(inputs: BookCoverInputs): ResolvedInputs {
     }
   }
 
+  // Tactical mode cascade: compute resolved tactical config, then derive lining/foldover defaults
+  let resolvedTactical: import('./types.js').ResolvedTacticalConfig | undefined;
+  if (inputs.tactical?.enabled) {
+    resolvedTactical = {
+      enabled: true,
+      velcro_panel_width: inputs.tactical.velcro_panel_width ?? TACTICAL_DEFAULTS.velcro_panel_width,
+      velcro_panel_height: inputs.tactical.velcro_panel_height ?? TACTICAL_DEFAULTS.velcro_panel_height,
+    };
+  }
+
+  // Resolve lining: tactical mode forces lining.enabled = true and interfacing = 'hdpe' unless user overrides
+  let resolvedLining: LiningConfig | undefined;
+  if (inputs.lining !== undefined || resolvedTactical !== undefined) {
+    if (resolvedTactical !== undefined) {
+      resolvedLining = {
+        enabled: inputs.lining?.enabled ?? true,
+        interfacing: inputs.lining?.interfacing ?? TACTICAL_DEFAULTS.lining_interfacing,
+        fabric: inputs.lining?.fabric,
+      };
+    } else if (inputs.lining !== undefined) {
+      resolvedLining = {
+        enabled: inputs.lining.enabled,
+        interfacing: inputs.lining.interfacing ?? LINING_DEFAULTS.interfacing,
+        fabric: inputs.lining.fabric,
+      };
+    }
+  }
+
+  // Foldover preset: tactical mode defaults to 'tactical'
+  const foldover_preset =
+    inputs.foldover_preset ??
+    (resolvedTactical !== undefined ? TACTICAL_DEFAULTS.foldover_preset : undefined);
+
+  // Resolve card slots
+  const card_slots = inputs.card_slots !== undefined
+    ? { count: inputs.card_slots.count, slot_height: inputs.card_slots.slot_height ?? CARD_SLOTS_DEFAULTS.slot_height }
+    : undefined;
+
+  // Resolve bookmark ribbon
+  const bookmark_ribbon = inputs.bookmark_ribbon !== undefined
+    ? { count: inputs.bookmark_ribbon.count, width_mm: inputs.bookmark_ribbon.width_mm ?? BOOKMARK_RIBBON_DEFAULTS.width_mm }
+    : undefined;
+
+  // Resolve internal zip pocket
+  const internal_zip_pocket = inputs.internal_zip_pocket !== undefined
+    ? { ...inputs.internal_zip_pocket, gauge: inputs.internal_zip_pocket.gauge ?? INTERNAL_ZIP_POCKET_DEFAULTS.gauge }
+    : undefined;
+
+  // Resolve mesh pocket
+  const mesh_pocket = inputs.mesh_pocket !== undefined ? { ...inputs.mesh_pocket } : undefined;
+
   return {
     book_height,
     book_width,
@@ -194,7 +335,7 @@ export function resolveInputs(inputs: BookCoverInputs): ResolvedInputs {
     top_bottom_hem: DEFAULT_TOP_BOTTOM_HEM_MM,
     units,
     book_preset: inputs.book_preset,
-    foldover_preset: inputs.foldover_preset,
+    foldover_preset,
     width_ease,
     spine_bulge,
     is_hardcover,
@@ -202,5 +343,11 @@ export function resolveInputs(inputs: BookCoverInputs): ResolvedInputs {
     inner_pocket: inputs.inner_pocket,
     pen_holder: inputs.pen_holder,
     closure,
+    lining: resolvedLining,
+    card_slots,
+    bookmark_ribbon,
+    internal_zip_pocket,
+    mesh_pocket,
+    tactical: resolvedTactical,
   };
 }

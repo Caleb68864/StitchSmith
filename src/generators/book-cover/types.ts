@@ -25,6 +25,47 @@ export type ClosureConfig =
   | { kind: 'snap'; count?: number }
   | { kind: 'flap-buckle'; strap_width?: number; buckle_size?: number };
 
+export type InterfacingKind = 'fusible' | 'sew-in' | 'hdpe' | 'eva' | 'none';
+
+export interface LiningConfig {
+  enabled: boolean;
+  interfacing?: InterfacingKind;
+  fabric?: string;
+}
+
+export interface CardSlotsConfig {
+  count: number;
+  slot_height?: number;
+}
+
+export interface BookmarkRibbonConfig {
+  count: number;
+  width_mm?: number;
+}
+
+export interface InternalZipPocketConfig {
+  width?: number;
+  height?: number;
+  gauge?: ZipperGauge;
+}
+
+export interface MeshPocketConfig {
+  width?: number;
+  height?: number;
+}
+
+export interface TacticalConfig {
+  enabled: boolean;
+  velcro_panel_width?: number;
+  velcro_panel_height?: number;
+}
+
+export interface ResolvedTacticalConfig {
+  enabled: boolean;
+  velcro_panel_width: number;
+  velcro_panel_height: number;
+}
+
 export interface BookCoverInputs {
   book_height?: number;
   book_width?: number;
@@ -41,6 +82,12 @@ export interface BookCoverInputs {
   inner_pocket?: PocketConfig;
   pen_holder?: PenHolderConfig;
   closure?: ClosureConfig;
+  lining?: LiningConfig;
+  card_slots?: CardSlotsConfig;
+  bookmark_ribbon?: BookmarkRibbonConfig;
+  internal_zip_pocket?: InternalZipPocketConfig;
+  mesh_pocket?: MeshPocketConfig;
+  tactical?: TacticalConfig;
 }
 
 export interface ResolvedInputs {
@@ -60,6 +107,12 @@ export interface ResolvedInputs {
   inner_pocket?: PocketConfig;
   pen_holder?: PenHolderConfig;
   closure?: ClosureConfig;
+  lining?: LiningConfig;
+  card_slots?: CardSlotsConfig;
+  bookmark_ribbon?: BookmarkRibbonConfig;
+  internal_zip_pocket?: InternalZipPocketConfig;
+  mesh_pocket?: MeshPocketConfig;
+  tactical?: ResolvedTacticalConfig;
 }
 
 export interface Bom {

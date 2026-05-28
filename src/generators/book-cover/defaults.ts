@@ -79,3 +79,29 @@ export const CLOSURE_DEFAULTS = {
     buckle_size: 25.4,
   },
 } as const;
+
+export const LINING_DEFAULTS = {
+  interfacing: 'fusible' as const,
+} as const;
+
+export const CARD_SLOTS_DEFAULTS = {
+  slot_height: 57,
+} as const;
+
+export const BOOKMARK_RIBBON_DEFAULTS = {
+  width_mm: 9.5,
+} as const;
+
+export const INTERNAL_ZIP_POCKET_DEFAULTS = {
+  gauge: '#5' as const,
+} as const;
+
+export const MESH_POCKET_DEFAULTS = {
+} as const;
+
+export const TACTICAL_DEFAULTS = {
+  velcro_panel_width: 101.6,
+  velcro_panel_height: 152.4,
+  lining_interfacing: 'hdpe' as const,
+  foldover_preset: 'tactical' as const,
+} as const;
