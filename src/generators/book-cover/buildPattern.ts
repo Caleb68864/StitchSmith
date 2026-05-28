@@ -1,3 +1,4 @@
+import type { Step } from '../../lib/pattern-engine/instructions/Step.js';
 import type { Piece, PieceAnnotation } from '../../lib/pattern-engine/graph/Piece.js';
 import type { Path } from '../../lib/pattern-engine/graph/Path.js';
 import type { Edge } from '../../lib/pattern-engine/graph/Edge.js';
@@ -650,7 +651,154 @@ export function buildPattern(inputs: BookCoverInputs): Result<BookCoverBuildResu
   };
 }
 
+function buildStepsWithLining(r: ResolvedInputs, cutWidth: number, cutHeight: number): Step[] {
+  const { book_width, seam_allowance: SA, top_bottom_hem, flap_depth } = r;
+  const effectiveClosure = r.closure?.kind === 'none' ? undefined : r.closure;
+  const flapCutWidth = flap_depth + SA + top_bottom_hem;
+
+  const piecesList = ['cover panel', 'lining panel', 'two inner flap pieces'];
+  if (r.card_slots) piecesList.push('card slot stack');
+  if (r.bookmark_ribbon) piecesList.push(`${r.bookmark_ribbon.count} bookmark ribbon${r.bookmark_ribbon.count > 1 ? 's' : ''}`);
+  if (r.internal_zip_pocket) piecesList.push('internal zip pocket panel');
+  if (r.mesh_pocket) piecesList.push('mesh pocket panel');
+  if (r.tactical?.enabled) {
+    piecesList.push('Velcro panel');
+    if (r.tactical.retention_strap) piecesList.push('retention strap');
+  }
+
+  const interfacingKind = r.lining?.interfacing ?? 'fusible';
+  const interfacingNote = interfacingKind === 'none'
+    ? 'No interfacing selected.'
+    : interfacingKind === 'hdpe' || interfacingKind === 'eva'
+    ? `Insert ${interfacingKind.toUpperCase()} sheet (${Math.round(cutWidth)} × ${Math.round(cutHeight)} mm) into the body panel before assembling.`
+    : `Apply ${interfacingKind} interfacing to the wrong side of the body panel (${Math.round(cutWidth)} × ${Math.round(cutHeight)} mm). Press according to manufacturer instructions.`;
+
+  const internalFeaturesBody = buildInternalFeaturesBody(r, SA, top_bottom_hem);
+
+  const steps: Step[] = [
+    {
+      id: 'book-cover.cut',
+      title: 'Cut all pieces',
+      body: `Cut: ${piecesList.join(', ')}. Body panel ${Math.round(cutWidth)} × ${Math.round(cutHeight)} mm; lining panel same dimensions; each inner flap ${Math.round(flapCutWidth)} × ${Math.round(cutHeight)} mm. Seam allowance of ${SA} mm is included in all dimensions.`,
+      dependsOn: [],
+      refsPieces: ['cover-panel', 'lining', 'inner-flap-left', 'inner-flap-right'],
+      group: 'Preparation',
+    },
+    {
+      id: 'book-cover.interfacing',
+      title: 'Apply interfacing',
+      body: interfacingNote,
+      dependsOn: ['book-cover.cut'],
+      refsPieces: ['cover-panel'],
+      group: 'Preparation',
+    },
+    {
+      id: 'book-cover.internal-features',
+      title: 'Assemble internal features',
+      body: internalFeaturesBody,
+      dependsOn: ['book-cover.interfacing'],
+      refsPieces: ['lining'],
+      group: 'Construction',
+    },
+    {
+      id: 'book-cover.sleeves',
+      title: 'Prepare sleeve flaps',
+      body: `On each inner flap piece, fold the inward-facing vertical edge (sleeve mouth) to the wrong side by ${top_bottom_hem} mm. Press and stitch 2 mm from the fold. This finished edge becomes the open mouth of each sleeve.`,
+      dependsOn: ['book-cover.internal-features'],
+      refsPieces: ['inner-flap-left', 'inner-flap-right'],
+      group: 'Construction',
+    },
+    {
+      id: 'book-cover.perimeter',
+      title: 'Stitch perimeter',
+      body: `Place inner flaps on the body right-side-down, aligning outer vertical edges. Stitch outer vertical edges at ${SA} mm. Press flaps open. Place lining and body right-sides together; pin perimeter. Stitch the top and bottom edges at ${SA} mm, catching all layers. Turn right side out; press. Topstitch ${top_bottom_hem} mm from the top and bottom edges, locking flaps and lining in place.`,
+      dependsOn: ['book-cover.sleeves'],
+      refsPieces: ['cover-panel', 'lining', 'inner-flap-left', 'inner-flap-right'],
+      group: 'Construction',
+    },
+    {
+      id: 'book-cover.closure',
+      title: 'Install closure',
+      body: buildClosureBody(effectiveClosure, r, cutWidth, cutHeight, SA),
+      dependsOn: ['book-cover.perimeter'],
+      refsPieces: ['cover-panel'],
+      group: 'Closure',
+    },
+    {
+      id: 'book-cover.fit-test',
+      title: 'Fit test',
+      body: `Insert the book into the cover. Both inner sleeves should hold the covers snugly. The spine fold lines (${Math.round(book_width)} mm from each short edge) should align with the book's spine. If the fit is loose, adjust the spine fold lines; if tight, check the ${SA} mm seam allowances.`,
+      dependsOn: ['book-cover.closure'],
+      refsPieces: ['cover-panel'],
+      group: 'Finishing',
+    },
+  ];
+
+  return steps;
+}
+
+function buildInternalFeaturesBody(r: ResolvedInputs, _SA: number, _top_bottom_hem: number): string {
+  const parts: string[] = [];
+  if (r.card_slots) {
+    const count = r.card_slots.count;
+    const slotH = r.card_slots.slot_height ?? 57;
+    parts.push(`Assemble the ${count}-slot card stack (${count} × ${Math.round(slotH)} mm slots); topstitch dividers.`);
+  }
+  if (r.internal_zip_pocket) {
+    parts.push('Construct the internal zip pocket and install the zipper before attaching to the lining.');
+  }
+  if (r.mesh_pocket) {
+    const elastic = r.mesh_pocket.elastic_top ? ' Thread elastic through the top channel.' : '';
+    parts.push(`Hem the mesh pocket perimeter.${elastic}`);
+  }
+  if (r.bookmark_ribbon) {
+    const count = r.bookmark_ribbon.count;
+    parts.push(`Baste ${count} grosgrain ribbon${count > 1 ? 's' : ''} to the top edge of the lining panel before closing the perimeter.`);
+  }
+  if (r.tactical?.enabled) {
+    parts.push('Sew the Velcro loop panel to the designated zone on the lining or body front face. If retention strap: assemble webbing with hook tab and bar-tack to the cover spine area.');
+  }
+  if (parts.length === 0) {
+    parts.push('No internal features configured. Proceed to sleeve preparation.');
+  }
+  return parts.join(' ');
+}
+
+function buildClosureBody(
+  closure: import('./types.js').ClosureConfig | undefined,
+  _r: ResolvedInputs,
+  cutWidth: number,
+  cutHeight: number,
+  _SA: number
+): string {
+  if (!closure) return 'No closure configured. The cover wraps around the book without hardware.';
+  if (closure.kind === 'zipper') {
+    const gauge = closure.gauge;
+    const cornerR = closure.corner_radius ?? CLOSURE_DEFAULTS_ZIPPER[gauge];
+    const perimeterMm = Math.round(2 * cutHeight + cutWidth);
+    return `Install a ${gauge} coil zipper around the U-shaped perimeter (${perimeterMm} mm). Clip the seam allowance at the rounded corners (radius ${Math.round(cornerR)} mm). Topstitch 2 mm from the teeth.`;
+  }
+  if (closure.kind === 'elastic') {
+    const widthMm = closure.width_mm ?? CLOSURE_DEFAULTS.elastic.width_mm;
+    return `Attach ${widthMm} mm wide elastic to the back cover short edge notch marks. Adjust tension before final stitching.`;
+  }
+  if (closure.kind === 'snap') {
+    const count = closure.count ?? CLOSURE_DEFAULTS.snap.count;
+    return `Install ${count} snap${count > 1 ? 's' : ''} at the notch marks on both short edges.`;
+  }
+  if (closure.kind === 'flap-buckle') {
+    const strapWidth = closure.strap_width ?? CLOSURE_DEFAULTS['flap-buckle'].strap_width;
+    const buckleSize = closure.buckle_size ?? CLOSURE_DEFAULTS['flap-buckle'].buckle_size;
+    return `Prepare the ${strapWidth} mm wide flap strap with ${buckleSize} mm buckle. Attach to the spine center on the back cover face.`;
+  }
+  return 'No closure configured.';
+}
+
 function buildSteps(r: ResolvedInputs, cutWidth: number, cutHeight: number, _pieceCount: number) {
+  if (r.lining?.enabled) {
+    return buildStepsWithLining(r, cutWidth, cutHeight);
+  }
+
   const { flap_depth, seam_allowance: SA, top_bottom_hem } = r;
   const effectiveClosure = r.closure?.kind === 'none' ? undefined : r.closure;
   const flapCutWidth = flap_depth + SA + top_bottom_hem;

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { BookCoverProjectInputs } from '../../state/useBookCoverProject.js';
 import { BOOK_PRESETS, FOLDOVER_PRESETS, ZIPPER_GAUGE_DEFAULTS } from '../../generators/book-cover/defaults.js';
-import type { ZipperGauge } from '../../generators/book-cover/types.js';
+import type { ZipperGauge, InterfacingKind } from '../../generators/book-cover/types.js';
 
 interface Props {
   inputs: BookCoverProjectInputs;
@@ -15,6 +15,12 @@ interface Props {
   onToggleOuterPocket: (enabled: boolean) => void;
   onToggleInnerPocket: (enabled: boolean) => void;
   onTogglePenHolder: (enabled: boolean) => void;
+  onToggleLining?: (enabled: boolean) => void;
+  onToggleCardSlots?: (enabled: boolean) => void;
+  onToggleBookmarkRibbon?: (enabled: boolean) => void;
+  onToggleInternalZipPocket?: (enabled: boolean) => void;
+  onToggleMeshPocket?: (enabled: boolean) => void;
+  onToggleTactical?: (enabled: boolean) => void;
 }
 
 const IN_TO_MM = 25.4;
@@ -92,13 +98,15 @@ function CollapsibleSection({
   enabled,
   onToggle,
   children,
+  defaultOpen,
 }: {
   title: string;
   enabled: boolean;
   onToggle: (v: boolean) => void;
   children: React.ReactNode;
+  defaultOpen?: boolean;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(defaultOpen ?? false);
 
   return (
     <div className="rounded border border-border">
@@ -143,6 +151,14 @@ const CLOSURE_KIND_LABELS: Record<string, string> = {
 };
 
 const ZIPPER_GAUGES: ZipperGauge[] = ['#3', '#5', '#10'];
+
+const INTERFACING_KINDS: { value: InterfacingKind; label: string }[] = [
+  { value: 'fusible', label: 'Fusible' },
+  { value: 'sew-in', label: 'Sew-In' },
+  { value: 'hdpe', label: 'HDPE Sheet' },
+  { value: 'eva', label: 'EVA Foam' },
+  { value: 'none', label: 'None' },
+];
 
 function getClosureKind(inputs: BookCoverProjectInputs): string {
   return inputs.closure?.kind ?? 'none';
@@ -303,6 +319,12 @@ export function BookCoverSettingsPanel({
   onToggleOuterPocket,
   onToggleInnerPocket,
   onTogglePenHolder,
+  onToggleLining,
+  onToggleCardSlots,
+  onToggleBookmarkRibbon,
+  onToggleInternalZipPocket,
+  onToggleMeshPocket,
+  onToggleTactical,
 }: Props) {
   const widthEaseAuto = getWidthEaseAuto(inputs);
   const isHardcover = getSpineBulgeAuto(inputs);
@@ -544,6 +566,170 @@ export function BookCoverSettingsPanel({
           </div>
         </CollapsibleSection>
       </div>
+
+      <CollapsibleSection
+        title="Lining"
+        enabled={inputs.lining?.enabled ?? false}
+        defaultOpen={inputs.lining?.enabled ?? false}
+        onToggle={v => onToggleLining?.(v)}
+      >
+        <div className="space-y-1">
+          <Label htmlFor="lining-interfacing" className="text-xs">Interfacing</Label>
+          <div data-testid="lining-interfacing-select">
+            <Select
+              value={inputs.lining?.interfacing ?? 'fusible'}
+              onValueChange={v => onChange({ lining: { ...inputs.lining, enabled: inputs.lining?.enabled ?? true, interfacing: v as InterfacingKind } })}
+            >
+              <SelectTrigger id="lining-interfacing" className="h-8 text-xs">
+                <SelectValue placeholder="Fusible" />
+              </SelectTrigger>
+              <SelectContent>
+                {INTERFACING_KINDS.map(k => (
+                  <SelectItem key={k.value} value={k.value}>{k.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </CollapsibleSection>
+
+      <CollapsibleSection
+        title="Internal Features"
+        enabled={!!(inputs.card_slots || inputs.bookmark_ribbon || inputs.internal_zip_pocket || inputs.mesh_pocket)}
+        onToggle={() => {}}
+      >
+        <div className="space-y-2">
+          <CollapsibleSection
+            title="Card Slots"
+            enabled={inputs.card_slots !== undefined}
+            onToggle={v => onToggleCardSlots?.(v)}
+          >
+            <NumericField
+              id="card-slots-count"
+              label="Slot Count"
+              value={inputs.card_slots?.count}
+              disabled={!inputs.card_slots}
+              min={1}
+              onChange={v => onChange({ card_slots: { ...inputs.card_slots, count: Math.max(1, Math.round(v)) } })}
+            />
+          </CollapsibleSection>
+
+          <CollapsibleSection
+            title="Bookmark Ribbon"
+            enabled={inputs.bookmark_ribbon !== undefined}
+            onToggle={v => onToggleBookmarkRibbon?.(v)}
+          >
+            <div className="grid grid-cols-2 gap-3">
+              <NumericField
+                id="bookmark-ribbon-count"
+                label="Count"
+                value={inputs.bookmark_ribbon?.count}
+                disabled={!inputs.bookmark_ribbon}
+                min={1}
+                onChange={v => onChange({ bookmark_ribbon: { ...inputs.bookmark_ribbon, count: Math.max(1, Math.round(v)) } })}
+              />
+              <NumericField
+                id="bookmark-ribbon-width"
+                label="Width (mm)"
+                value={inputs.bookmark_ribbon?.width_mm}
+                disabled={!inputs.bookmark_ribbon}
+                placeholder="9.5 mm"
+                onChange={v => onChange({ bookmark_ribbon: { count: inputs.bookmark_ribbon?.count ?? 1, ...inputs.bookmark_ribbon, width_mm: v } })}
+              />
+            </div>
+          </CollapsibleSection>
+
+          <CollapsibleSection
+            title="Internal Zip Pocket"
+            enabled={inputs.internal_zip_pocket !== undefined}
+            onToggle={v => onToggleInternalZipPocket?.(v)}
+          >
+            <div className="space-y-1">
+              <Label htmlFor="internal-zip-pocket-gauge" className="text-xs">Zipper Gauge</Label>
+              <div data-testid="internal-zip-pocket-gauge-select">
+                <Select
+                  value={inputs.internal_zip_pocket?.gauge ?? '#5'}
+                  onValueChange={g => onChange({ internal_zip_pocket: { ...inputs.internal_zip_pocket, gauge: g as ZipperGauge } })}
+                >
+                  <SelectTrigger id="internal-zip-pocket-gauge" className="h-8 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ZIPPER_GAUGES.map(g => (
+                      <SelectItem key={g} value={g}>{g}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </CollapsibleSection>
+
+          <CollapsibleSection
+            title="Mesh Pocket"
+            enabled={inputs.mesh_pocket !== undefined}
+            onToggle={v => onToggleMeshPocket?.(v)}
+          >
+            <label className="flex items-center gap-2 text-xs cursor-pointer">
+              <input
+                type="checkbox"
+                checked={inputs.mesh_pocket?.elastic_top ?? false}
+                disabled={!inputs.mesh_pocket}
+                onChange={e => onChange({ mesh_pocket: { ...inputs.mesh_pocket, elastic_top: e.target.checked } })}
+                className="h-3.5 w-3.5"
+              />
+              Elastic top channel
+            </label>
+          </CollapsibleSection>
+        </div>
+      </CollapsibleSection>
+
+      <CollapsibleSection
+        title="Tactical mode"
+        enabled={inputs.tactical?.enabled ?? false}
+        defaultOpen={inputs.tactical?.enabled ?? false}
+        onToggle={v => onToggleTactical?.(v)}
+      >
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <NumericField
+              id="tactical-velcro-panel-width"
+              label="Velcro Panel Width (mm)"
+              value={inputs.tactical?.velcro_panel_width}
+              disabled={!inputs.tactical?.enabled}
+              placeholder="101.6 mm"
+              onChange={v => onChange({ tactical: { ...inputs.tactical, enabled: inputs.tactical?.enabled ?? true, velcro_panel_width: v } })}
+            />
+            <NumericField
+              id="tactical-velcro-panel-height"
+              label="Velcro Panel Height (mm)"
+              value={inputs.tactical?.velcro_panel_height}
+              disabled={!inputs.tactical?.enabled}
+              placeholder="152.4 mm"
+              onChange={v => onChange({ tactical: { ...inputs.tactical, enabled: inputs.tactical?.enabled ?? true, velcro_panel_height: v } })}
+            />
+          </div>
+          <label className="flex items-center gap-2 text-xs cursor-pointer">
+            <input
+              type="checkbox"
+              checked={inputs.tactical?.retention_strap ?? false}
+              disabled={!inputs.tactical?.enabled}
+              onChange={e => onChange({ tactical: { ...inputs.tactical, enabled: inputs.tactical?.enabled ?? true, retention_strap: e.target.checked } })}
+              className="h-3.5 w-3.5"
+            />
+            Retention strap
+          </label>
+          <label className="flex items-center gap-2 text-xs cursor-pointer">
+            <input
+              type="checkbox"
+              checked={inputs.tactical?.spare_mag_pocket ?? false}
+              disabled={!inputs.tactical?.enabled}
+              onChange={e => onChange({ tactical: { ...inputs.tactical, enabled: inputs.tactical?.enabled ?? true, spare_mag_pocket: e.target.checked } })}
+              className="h-3.5 w-3.5"
+            />
+            Spare magazine pocket
+          </label>
+        </div>
+      </CollapsibleSection>
     </div>
   );
 }

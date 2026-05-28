@@ -48,7 +48,69 @@ export function buildBom(r: ResolvedInputs): Bom {
     });
   }
 
+  if (r.lining?.enabled && r.lining?.interfacing && r.lining.interfacing !== 'none') {
+    const kind = r.lining.interfacing;
+    const interfacingName = kind === 'fusible' ? 'Fusible Interfacing'
+      : kind === 'sew-in' ? 'Sew-In Interfacing'
+      : kind === 'hdpe' ? 'HDPE Sheet Interfacing'
+      : kind === 'eva' ? 'EVA Foam Interfacing'
+      : 'Interfacing';
+    materials.push({
+      id: 'lining-interfacing',
+      name: interfacingName,
+      type: 'interfacing',
+      notes: `Cut 1 panel at ${Math.round(cutWidth)} × ${Math.round(cutHeight)} mm`,
+    });
+  }
+
+  if (r.mesh_pocket) {
+    const mp = r.mesh_pocket;
+    const mpWidth = (mp.width ?? book_width) + 2 * SA;
+    const mpHeight = (mp.height ?? Math.round(book_height * 0.5)) + 2 * SA;
+    materials.push({
+      id: 'mesh-pocket-fabric',
+      name: 'Mesh Pocket Fabric',
+      type: 'fabric',
+      notes: `Cut 1 piece at ${Math.round(mpWidth)} × ${Math.round(mpHeight)} mm`,
+    });
+  }
+
   const hardware: Hardware[] = [];
+
+  if (r.bookmark_ribbon) {
+    const ribbonLength = book_height + 50;
+    const ribbonWidth = r.bookmark_ribbon.width_mm ?? 9.5;
+    hardware.push({
+      id: 'bookmark-ribbon',
+      name: 'Grosgrain Ribbon',
+      type: 'other',
+      quantity: r.bookmark_ribbon.count,
+      sizeMm: ribbonWidth,
+      notes: `${ribbonWidth} mm wide grosgrain ribbon, ~${Math.round(ribbonLength)} mm per ribbon (book height + 50 mm tail)`,
+    });
+  }
+
+  if (r.internal_zip_pocket) {
+    const gauge = r.internal_zip_pocket.gauge ?? '#5';
+    hardware.push({
+      id: 'internal-zip-pocket-zipper',
+      name: `Internal Zipper ${gauge}`,
+      type: 'zipper',
+      quantity: 1,
+      notes: `${gauge} zipper for internal zip pocket`,
+    });
+  }
+
+  if (r.mesh_pocket?.elastic_top) {
+    hardware.push({
+      id: 'mesh-pocket-elastic',
+      name: 'Elastic (mesh pocket top)',
+      type: 'other',
+      quantity: 1,
+      sizeMm: 12.7,
+      notes: `12.7 mm elastic for mesh pocket top channel, ~${Math.round(book_width + 20)} mm`,
+    });
+  }
 
   if (r.closure && r.closure.kind !== 'none') {
     const c = r.closure;
@@ -101,6 +163,37 @@ export function buildBom(r: ResolvedInputs): Bom {
         quantity: 1,
         sizeMm: strapWidth,
         notes: `${strapWidth} mm wide webbing, ~${webbingLength} mm length`,
+      });
+    }
+  }
+
+  if (r.tactical?.enabled) {
+    const vpW = r.tactical.velcro_panel_width;
+    const vpH = r.tactical.velcro_panel_height;
+    hardware.push({
+      id: 'tactical-velcro-loop',
+      name: 'Loop Velcro',
+      type: 'other',
+      quantity: 1,
+      notes: `${Math.round(vpW)} × ${Math.round(vpH)} mm loop-side Velcro panel`,
+    });
+    if (r.tactical.retention_strap) {
+      const webbingLength = Math.round(book_height + 50 + 2 * SA);
+      hardware.push({
+        id: 'retention-strap-webbing',
+        name: 'Nylon Webbing (retention strap)',
+        type: 'other',
+        quantity: 1,
+        sizeMm: 25.4,
+        notes: `25.4 mm wide webbing, ~${webbingLength} mm`,
+      });
+      hardware.push({
+        id: 'retention-strap-hook-tab',
+        name: 'Hook Tab (retention strap)',
+        type: 'other',
+        quantity: 1,
+        sizeMm: 25.4,
+        notes: '25.4 mm hook tab for retention strap attachment',
       });
     }
   }
