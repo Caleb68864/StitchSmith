@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import type {
   BookCoverInputs,
   PocketConfig,
@@ -12,6 +12,22 @@ import type {
 } from '../generators/book-cover/types.js';
 import { DEFAULT_SEAM_ALLOWANCE_MM, DEFAULT_TOP_BOTTOM_HEM_MM, DEFAULT_PEN_HOLDER_HEIGHT_MM } from '../generators/book-cover/defaults.js';
 import { toast } from '../lib/toast/toast.js';
+import { makeProjectStorage } from '../storage/genericProjectStorage.js';
+
+const STORAGE_KEY = 'stitchsmith.book-cover.project';
+
+function isValidBookCoverProject(value: unknown): value is BookCoverProject {
+  if (typeof value !== 'object' || value === null) return false;
+  const v = value as Record<string, unknown>;
+  return v.schemaVersion === 4 && v.generatorId === 'book-cover' && typeof v.inputs === 'object';
+}
+
+const storage = makeProjectStorage<BookCoverProject>({
+  key: STORAGE_KEY,
+  isValid: isValidBookCoverProject,
+});
+
+export const _resetBookCoverStorage = storage._reset;
 
 export interface BookCoverProjectInputs extends BookCoverInputs {
   top_bottom_hem?: number;
@@ -94,7 +110,14 @@ const FEATURE_LABEL: Record<string, string> = {
 };
 
 export function useBookCoverProject(): UseBookCoverProjectReturn {
-  const [project, setProjectState] = useState<BookCoverProject>(makeDefaultBookCoverProject);
+  const [project, setProjectState] = useState<BookCoverProject>(() => {
+    return storage.load() ?? makeDefaultBookCoverProject();
+  });
+
+  // Auto-save on every project change (debounced inside storage).
+  useEffect(() => {
+    storage.save(project);
+  }, [project]);
 
   const setProject = useCallback((p: BookCoverProject) => {
     setProjectState(p);
@@ -107,6 +130,7 @@ export function useBookCoverProject(): UseBookCoverProjectReturn {
   }, []);
 
   const resetProject = useCallback(() => {
+    storage.clear();
     setProjectState(makeDefaultBookCoverProject());
   }, []);
 

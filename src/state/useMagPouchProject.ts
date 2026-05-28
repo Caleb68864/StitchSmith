@@ -1,5 +1,17 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import type { MagPouchInputs, RetentionStyle, AttachmentStyle, DrainageStyle, SeamAllowance } from '../generators/mag-pouch/types.js';
+import { makeProjectStorage } from '../storage/genericProjectStorage.js';
+
+const STORAGE_KEY = 'stitchsmith.mag-pouch.project';
+
+function isValidMagPouchProject(value: unknown): value is MagPouchProject {
+  if (typeof value !== 'object' || value === null) return false;
+  const v = value as Record<string, unknown>;
+  return v.schemaVersion === 3 && v.generatorId === 'mag-pouch' && typeof v.inputs === 'object';
+}
+
+const storage = makeProjectStorage<MagPouchProject>({ key: STORAGE_KEY, isValid: isValidMagPouchProject });
+export const _resetMagPouchStorage = storage._reset;
 import {
   DEFAULT_EASE_WIDTH_IN,
   DEFAULT_EASE_DEPTH_IN,
@@ -64,7 +76,9 @@ export type UseMagPouchProjectReturn = {
 };
 
 export function useMagPouchProject(): UseMagPouchProjectReturn {
-  const [project, setProjectState] = useState<MagPouchProject>(makeDefaultMagPouchProject);
+  const [project, setProjectState] = useState<MagPouchProject>(() => storage.load() ?? makeDefaultMagPouchProject());
+
+  useEffect(() => { storage.save(project); }, [project]);
 
   const setProject = useCallback((p: MagPouchProject) => {
     setProjectState(p);
@@ -77,6 +91,7 @@ export function useMagPouchProject(): UseMagPouchProjectReturn {
   }, []);
 
   const resetProject = useCallback(() => {
+    storage.clear();
     setProjectState(makeDefaultMagPouchProject());
   }, []);
 

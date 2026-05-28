@@ -1,5 +1,17 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import type { RollTopSackInputs } from '../generators/roll-top-sack/types.js';
+import { makeProjectStorage } from '../storage/genericProjectStorage.js';
+
+const STORAGE_KEY = 'stitchsmith.roll-top-sack.project';
+
+function isValidRollTopSackProject(value: unknown): value is RollTopSackProject {
+  if (typeof value !== 'object' || value === null) return false;
+  const v = value as Record<string, unknown>;
+  return v.schemaVersion === 1 && v.generatorId === 'roll-top-sack' && typeof v.inputs === 'object';
+}
+
+const storage = makeProjectStorage<RollTopSackProject>({ key: STORAGE_KEY, isValid: isValidRollTopSackProject });
+export const _resetRollTopSackStorage = storage._reset;
 
 export interface RollTopSackProject {
   schemaVersion: 1;
@@ -41,7 +53,9 @@ export type UseRollTopSackProjectReturn = {
 };
 
 export function useRollTopSackProject(): UseRollTopSackProjectReturn {
-  const [project, setProjectState] = useState<RollTopSackProject>(makeDefaultRollTopSackProject);
+  const [project, setProjectState] = useState<RollTopSackProject>(() => storage.load() ?? makeDefaultRollTopSackProject());
+
+  useEffect(() => { storage.save(project); }, [project]);
 
   const setProject = useCallback((p: RollTopSackProject) => {
     setProjectState(p);
@@ -54,6 +68,7 @@ export function useRollTopSackProject(): UseRollTopSackProjectReturn {
   }, []);
 
   const resetProject = useCallback(() => {
+    storage.clear();
     setProjectState(makeDefaultRollTopSackProject());
   }, []);
 

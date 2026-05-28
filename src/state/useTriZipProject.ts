@@ -1,5 +1,17 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import type { TriZipInputs, PresetName } from '../generators/tri-zip-backpack/types.js';
+import { makeProjectStorage } from '../storage/genericProjectStorage.js';
+
+const STORAGE_KEY = 'stitchsmith.tri-zip-backpack.project';
+
+function isValidTriZipProject(value: unknown): value is TriZipProject {
+  if (typeof value !== 'object' || value === null) return false;
+  const v = value as Record<string, unknown>;
+  return v.schemaVersion === 2 && v.generatorId === 'tri-zip-backpack' && typeof v.inputs === 'object';
+}
+
+const storage = makeProjectStorage<TriZipProject>({ key: STORAGE_KEY, isValid: isValidTriZipProject });
+export const _resetTriZipStorage = storage._reset;
 
 export interface TriZipProject {
   schemaVersion: 2;
@@ -42,7 +54,9 @@ export type UseTriZipProjectReturn = {
 };
 
 export function useTriZipProject(): UseTriZipProjectReturn {
-  const [project, setProjectState] = useState<TriZipProject>(makeDefaultTriZipProject);
+  const [project, setProjectState] = useState<TriZipProject>(() => storage.load() ?? makeDefaultTriZipProject());
+
+  useEffect(() => { storage.save(project); }, [project]);
 
   const setProject = useCallback((p: TriZipProject) => {
     setProjectState(p);
@@ -61,6 +75,7 @@ export function useTriZipProject(): UseTriZipProjectReturn {
   }, []);
 
   const resetProject = useCallback(() => {
+    storage.clear();
     setProjectState(makeDefaultTriZipProject());
   }, []);
 
