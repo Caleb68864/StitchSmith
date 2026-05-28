@@ -385,6 +385,7 @@ export function buildPattern(inputs: BookCoverInputs): Result<BookCoverBuildResu
 
 function buildSteps(r: ResolvedInputs, cutWidth: number, cutHeight: number, _pieceCount: number) {
   const { flap_depth, seam_allowance: SA, top_bottom_hem } = r;
+  const effectiveClosure = r.closure?.kind === 'none' ? undefined : r.closure;
   const flapCutWidth = flap_depth + SA + top_bottom_hem;
   const steps = [
     {
@@ -461,7 +462,71 @@ function buildSteps(r: ResolvedInputs, cutWidth: number, cutHeight: number, _pie
     });
   }
 
+  const lastBodyStep = steps[steps.length - 1]?.id ?? 'book-cover.hems';
+
+  if (effectiveClosure?.kind === 'zipper') {
+    const gauge = effectiveClosure.gauge;
+    const cornerR = effectiveClosure.corner_radius ?? CLOSURE_DEFAULTS_ZIPPER[gauge];
+    // U-shape perimeter: top + two sides + bottom = 2*(cutHeight) + cutWidth (approximation for rounded-corner U)
+    const perimeterMm = Math.round(2 * cutHeight + cutWidth);
+    steps.push({
+      id: 'book-cover.zipper-install',
+      title: 'Install zipper',
+      body: `Install a ${gauge} coil zipper around the U-shaped perimeter of the cover (${perimeterMm} mm). The zipper runs along the top edge, down both short sides, and back along the bottom. The rounded corners (radius ${Math.round(cornerR)} mm) ease the zipper tape around the bends — clip the tape seam allowance at the arcs. Align the zipper tape with the ${SA} mm seam line on the wrong side and topstitch 2 mm from the teeth.`,
+      dependsOn: [lastBodyStep],
+      refsPieces: ['cover-panel'],
+      group: 'Closure',
+    });
+  } else if (effectiveClosure?.kind === 'elastic') {
+    const widthMm = effectiveClosure.width_mm ?? CLOSURE_DEFAULTS.elastic.width_mm;
+    steps.push({
+      id: 'book-cover.elastic-attach',
+      title: 'Attach elastic closure',
+      body: `Cut elastic to ${widthMm} mm wide. Thread the elastic through the channel on the back cover's short edge between the two notch marks and tack each end securely. The elastic wraps around the closed cover front to hold the book shut. Adjust tension before final stitching.`,
+      dependsOn: [lastBodyStep],
+      refsPieces: ['cover-panel'],
+      group: 'Closure',
+    });
+  } else if (effectiveClosure?.kind === 'snap') {
+    const count = effectiveClosure.count ?? CLOSURE_DEFAULTS.snap.count;
+    steps.push({
+      id: 'book-cover.snap-install',
+      title: 'Install snap closures',
+      body: `Install ${count} magnetic or sew-on snap${count > 1 ? 's' : ''} at the notch marks on both short edges. The snaps are spaced symmetrically about the horizontal centerline of the cover. For sew-on snaps, backstitch through all layers for strength; for magnetic snaps, use a washer backing on the inside face.`,
+      dependsOn: [lastBodyStep],
+      refsPieces: ['cover-panel'],
+      group: 'Closure',
+    });
+  } else if (effectiveClosure?.kind === 'flap-buckle') {
+    const strapWidth = effectiveClosure.strap_width ?? CLOSURE_DEFAULTS['flap-buckle'].strap_width;
+    const buckleSize = effectiveClosure.buckle_size ?? CLOSURE_DEFAULTS['flap-buckle'].buckle_size;
+    steps.push(
+      {
+        id: 'book-cover.flap-buckle-strap',
+        title: 'Prepare flap buckle strap',
+        body: `Cut the strap piece at ${strapWidth} mm wide. Fold long edges in by ${SA} mm and press. Fold in half lengthwise, press again, and topstitch both long edges. Thread one end through a ${buckleSize} mm buckle and fold back ${SA * 2} mm; stitch through to secure the buckle.`,
+        dependsOn: [lastBodyStep],
+        refsPieces: ['flap-buckle-strap'],
+        group: 'Closure',
+      },
+      {
+        id: 'book-cover.flap-buckle-attach',
+        title: 'Attach strap to cover',
+        body: `Sew the strap to the spine on the back cover side, centered vertically. The free strap end extends across the front cover face to a bar-tack receiver point. Fold the loose end back to create a keeper loop or sew a D-ring for adjustable length.`,
+        dependsOn: ['book-cover.flap-buckle-strap'],
+        refsPieces: ['cover-panel', 'flap-buckle-strap'],
+        group: 'Closure',
+      }
+    );
+  }
+
   return steps;
 }
+
+const CLOSURE_DEFAULTS_ZIPPER: Record<'#3' | '#5' | '#10', number> = {
+  '#3': 19.05,
+  '#5': 31.75,
+  '#10': 50.8,
+};
 
 export { validateInputs, resolveInputs } from './inputs.js';

@@ -5,7 +5,8 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { BookCoverProjectInputs } from '../../state/useBookCoverProject.js';
-import { BOOK_PRESETS, FOLDOVER_PRESETS } from '../../generators/book-cover/defaults.js';
+import { BOOK_PRESETS, FOLDOVER_PRESETS, ZIPPER_GAUGE_DEFAULTS } from '../../generators/book-cover/defaults.js';
+import type { ZipperGauge } from '../../generators/book-cover/types.js';
 
 interface Props {
   inputs: BookCoverProjectInputs;
@@ -127,6 +128,168 @@ function CollapsibleSection({
       {open && (
         <div className={`px-3 pb-3 space-y-3 border-t border-border pt-3 ${!enabled ? 'opacity-50 pointer-events-none' : ''}`}>
           {children}
+        </div>
+      )}
+    </div>
+  );
+}
+
+const CLOSURE_KIND_LABELS: Record<string, string> = {
+  none: 'None (wrap)',
+  zipper: 'Zipper',
+  elastic: 'Elastic',
+  snap: 'Snap',
+  'flap-buckle': 'Flap & Buckle',
+};
+
+const ZIPPER_GAUGES: ZipperGauge[] = ['#3', '#5', '#10'];
+
+function getClosureKind(inputs: BookCoverProjectInputs): string {
+  return inputs.closure?.kind ?? 'none';
+}
+
+function getZipperCornerRadiusPlaceholder(gauge: ZipperGauge, units: 'mm' | 'in'): string {
+  const mm = ZIPPER_GAUGE_DEFAULTS[gauge].corner_radius_mm;
+  if (units === 'in') return `${(mm / 25.4).toFixed(2)} in`;
+  return `${Math.round(mm)} mm`;
+}
+
+function ClosureSection({
+  inputs,
+  onChange,
+}: {
+  inputs: BookCoverProjectInputs;
+  onChange: (changes: Partial<BookCoverProjectInputs>) => void;
+}) {
+  const kind = getClosureKind(inputs);
+
+  function handleKindChange(newKind: string) {
+    if (newKind === 'none') {
+      onChange({ closure: { kind: 'none' } });
+    } else if (newKind === 'zipper') {
+      onChange({ closure: { kind: 'zipper', gauge: '#5' } });
+    } else if (newKind === 'elastic') {
+      onChange({ closure: { kind: 'elastic' } });
+    } else if (newKind === 'snap') {
+      onChange({ closure: { kind: 'snap' } });
+    } else if (newKind === 'flap-buckle') {
+      onChange({ closure: { kind: 'flap-buckle' } });
+    }
+  }
+
+  const closure = inputs.closure;
+  const zipperClosure = closure?.kind === 'zipper' ? closure : undefined;
+  const elasticClosure = closure?.kind === 'elastic' ? closure : undefined;
+  const snapClosure = closure?.kind === 'snap' ? closure : undefined;
+  const flapBuckleClosure = closure?.kind === 'flap-buckle' ? closure : undefined;
+
+  return (
+    <div className="rounded border border-border p-3 space-y-3">
+      <h2 className="text-xs font-semibold">Closure</h2>
+      <div className="space-y-1">
+        <Label htmlFor="closure-kind" className="text-xs">Type</Label>
+        <div data-testid="closure-select">
+          <Select
+            value={kind}
+            onValueChange={handleKindChange}
+          >
+            <SelectTrigger id="closure-kind" className="h-8 text-xs">
+              <SelectValue placeholder="None (wrap)" />
+            </SelectTrigger>
+            <SelectContent>
+              {Object.entries(CLOSURE_KIND_LABELS).map(([v, label]) => (
+                <SelectItem key={v} value={v}>{label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {zipperClosure && (
+        <div className="space-y-3">
+          <div className="space-y-1">
+            <Label htmlFor="zipper-gauge" className="text-xs">Gauge</Label>
+            <div data-testid="zipper-gauge-select">
+              <Select
+                value={zipperClosure.gauge}
+                onValueChange={(g) =>
+                  onChange({ closure: { kind: 'zipper', gauge: g as ZipperGauge, corner_radius: zipperClosure.corner_radius } })
+                }
+              >
+                <SelectTrigger id="zipper-gauge" className="h-8 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {ZIPPER_GAUGES.map(g => (
+                    <SelectItem key={g} value={g}>{g}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <NumericField
+            id="zipper-corner-radius"
+            label={`Corner Radius (${inputs.units})`}
+            value={zipperClosure.corner_radius !== undefined
+              ? (inputs.units === 'in' ? zipperClosure.corner_radius / 25.4 : zipperClosure.corner_radius)
+              : undefined}
+            placeholder={getZipperCornerRadiusPlaceholder(zipperClosure.gauge, inputs.units)}
+            onChange={v =>
+              onChange({
+                closure: {
+                  kind: 'zipper',
+                  gauge: zipperClosure.gauge,
+                  corner_radius: inputs.units === 'in' ? v * 25.4 : v,
+                },
+              })
+            }
+          />
+        </div>
+      )}
+
+      {elasticClosure && (
+        <NumericField
+          id="elastic-width"
+          label="Elastic Width (mm)"
+          value={elasticClosure.width_mm}
+          placeholder="25 mm"
+          onChange={v => onChange({ closure: { kind: 'elastic', width_mm: v, tension: elasticClosure.tension } })}
+        />
+      )}
+
+      {snapClosure && (
+        <NumericField
+          id="snap-count"
+          label="Snap Count"
+          value={snapClosure.count}
+          min={1}
+          placeholder="2"
+          onChange={v =>
+            onChange({ closure: { kind: 'snap', count: Math.max(1, Math.round(v)) } })
+          }
+        />
+      )}
+
+      {flapBuckleClosure && (
+        <div className="space-y-3">
+          <NumericField
+            id="strap-width"
+            label="Strap Width (mm)"
+            value={flapBuckleClosure.strap_width}
+            placeholder="25 mm"
+            onChange={v =>
+              onChange({ closure: { kind: 'flap-buckle', strap_width: v, buckle_size: flapBuckleClosure.buckle_size } })
+            }
+          />
+          <NumericField
+            id="buckle-size"
+            label="Buckle Size (mm)"
+            value={flapBuckleClosure.buckle_size}
+            placeholder="25 mm"
+            onChange={v =>
+              onChange({ closure: { kind: 'flap-buckle', strap_width: flapBuckleClosure.strap_width, buckle_size: v } })
+            }
+          />
         </div>
       )}
     </div>
@@ -305,6 +468,8 @@ export function BookCoverSettingsPanel({
           />
         </div>
       </div>
+
+      <ClosureSection inputs={inputs} onChange={onChange} />
 
       <div className="space-y-2">
         <p className="text-xs font-semibold px-0.5">Accessories</p>
