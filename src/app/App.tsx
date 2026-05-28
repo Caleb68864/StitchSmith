@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { AppHeader } from '../components/layout/AppHeader.js';
 import { PageShell } from '../components/layout/PageShell.js';
 import { ToolRollPage } from '../components/tool-roll/ToolRollPage.js';
@@ -13,7 +13,18 @@ import { useRollTopSackProject } from '../state/useRollTopSackProject.js';
 import { useMagPouchProject } from '../state/useMagPouchProject.js';
 import { useBookCoverProject } from '../state/useBookCoverProject.js';
 import { Toaster } from '../components/shared/Toaster.js';
+import { ErrorBoundary } from '../components/shared/ErrorBoundary.js';
 import type { PatternEntry } from './patternRegistry.js';
+
+// Tab title per view so users with multiple tabs can tell them apart.
+const VIEW_TITLES: Record<View, string> = {
+  landing: 'StitchSmith',
+  'tool-roll': 'StitchSmith — Tool Roll',
+  'tri-zip': 'StitchSmith — Tri-Zip Backpack',
+  'roll-top': 'StitchSmith — Roll-Top Stuff Sack',
+  'mag-pouch': 'StitchSmith — Mag Pouch',
+  'book-cover': 'StitchSmith — Book Cover',
+};
 
 type View = 'landing' | PatternEntry['route'];
 
@@ -24,6 +35,10 @@ export function App() {
   const rollTopState = useRollTopSackProject();
   const magPouchState = useMagPouchProject();
   const bookCoverState = useBookCoverProject();
+
+  useEffect(() => {
+    document.title = VIEW_TITLES[view] ?? 'StitchSmith';
+  }, [view]);
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
@@ -85,6 +100,10 @@ export function App() {
         </header>
       )}
       <PageShell>
+        {/* Keying on `view` resets the boundary's error state when the user
+            navigates away from a crashed page — otherwise the error sticks
+            until full reload. */}
+        <ErrorBoundary key={view}>
         {view === 'landing' && (
           <LandingPage onSelectPattern={(route: PatternEntry['route']) => setView(route)} />
         )}
@@ -143,6 +162,7 @@ export function App() {
             toggleTactical={bookCoverState.toggleTactical}
           />
         )}
+        </ErrorBoundary>
       </PageShell>
       <Toaster />
     </div>
