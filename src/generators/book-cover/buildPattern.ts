@@ -2,7 +2,7 @@ import type { Piece, PieceAnnotation } from '../../lib/pattern-engine/graph/Piec
 import type { Path } from '../../lib/pattern-engine/graph/Path.js';
 import type { Edge } from '../../lib/pattern-engine/graph/Edge.js';
 import type { Point } from '../../lib/pattern-engine/graph/Point.js';
-import type { BookCoverInputs, ResolvedInputs, BookCoverBuildResult, BuildPatternError, Result, PocketConfig, PenHolderConfig, ClosureConfig } from './types.js';
+import type { BookCoverInputs, ResolvedInputs, BookCoverBuildResult, BuildPatternError, Result, PocketConfig, PenHolderConfig, ClosureConfig, ResolvedTacticalConfig } from './types.js';
 import { validateInputs, resolveInputs } from './inputs.js';
 import { buildBom } from './bom.js';
 import { DEFAULT_PEN_HOLDER_HEIGHT_MM, CLOSURE_DEFAULTS } from './defaults.js';
@@ -332,6 +332,247 @@ function addNotchAnnotations(piece: Piece, closure: ClosureConfig, r: ResolvedIn
   }
 }
 
+function buildLiningPiece(r: ResolvedInputs): Piece {
+  const { book_width, spine_width, book_height, seam_allowance: SA, top_bottom_hem } = r;
+  const effectiveClosure = r.closure?.kind === 'none' ? undefined : r.closure;
+
+  const cutWidth = 2 * book_width + spine_width + 2 * SA;
+  const cutHeight = book_height + 2 * top_bottom_hem;
+
+  let outline: Path;
+  const extraPaths: Path[] = [];
+
+  if (effectiveClosure?.kind === 'zipper') {
+    const cornerR = effectiveClosure.corner_radius!;
+    outline = makeRoundedRectOutline('lining-outline', cutWidth, cutHeight, cornerR, 'cut');
+    if (SA > 0) {
+      const saPath = makeRoundedRectSaPath('lining-sa-seam', cutWidth, cutHeight, cornerR, SA);
+      if (saPath) extraPaths.push(saPath);
+    }
+  } else {
+    outline = makeRectOutline('lining-outline', cutWidth, cutHeight, 'cut');
+    if (SA > 0) {
+      const outlineVerts: Point[] = [
+        pt(0, 0), pt(cutWidth, 0), pt(cutWidth, cutHeight), pt(0, cutHeight),
+      ];
+      const saResult = offsetPolygon(outlineVerts, -SA);
+      if (saResult.ok && saResult.value) {
+        extraPaths.push(makePathFromPoints('lining-sa-seam', saResult.value, 'seam'));
+      }
+    }
+  }
+
+  const paths: Path[] = [outline, ...extraPaths];
+
+  // Spine boundary fold lines (same as body) — no top/bottom hem folds (lining captured at perimeter)
+  const foldXs = [SA + book_width, SA + book_width + spine_width];
+  const foldLabels = ['Front cover / spine', 'Spine / back cover'];
+  foldXs.forEach((x, i) => {
+    paths.push(makeVertLine(`lining-fold-v${i}`, x, cutHeight, 'fold', foldLabels[i]));
+  });
+
+  const seamAllowances: Record<string, number> = {};
+  for (const edge of outline.edges) {
+    seamAllowances[edge.id] = 0;
+  }
+
+  return {
+    id: 'lining',
+    name: 'Lining Panel',
+    mirror: false,
+    quantity: 1,
+    paths,
+    annotations: [
+      { kind: 'grain', label: 'Grain', point: pt(cutWidth / 2, cutHeight / 2), angle: 90 },
+      { kind: 'label', label: `Lining Panel\nCut 1\n${Math.round(cutWidth)} × ${Math.round(cutHeight)} mm` },
+    ],
+    seamAllowances,
+  };
+}
+
+function buildCardSlotStackPiece(r: ResolvedInputs): Piece {
+  const { book_width, card_slots } = r;
+  const count = card_slots!.count;
+  const slotH = card_slots!.slot_height!;
+  const pieceW = book_width;
+
+  // N cut-role rectangular paths (one per slot row) + N-1 fold-role topstitch dividers
+  const paths: Path[] = [];
+
+  for (let i = 0; i < count; i++) {
+    const y0 = i * slotH;
+    const y1 = (i + 1) * slotH;
+    paths.push({
+      id: `card-slot-stack-slot-${i}`,
+      closed: true,
+      edges: [
+        { kind: 'straight', id: `card-slot-stack-slot-${i}:e0`, role: 'cut', start: pt(0, y0), end: pt(pieceW, y0) },
+        { kind: 'straight', id: `card-slot-stack-slot-${i}:e1`, role: 'cut', start: pt(pieceW, y0), end: pt(pieceW, y1) },
+        { kind: 'straight', id: `card-slot-stack-slot-${i}:e2`, role: 'cut', start: pt(pieceW, y1), end: pt(0, y1) },
+        { kind: 'straight', id: `card-slot-stack-slot-${i}:e3`, role: 'cut', start: pt(0, y1), end: pt(0, y0) },
+      ],
+    });
+  }
+
+  for (let i = 1; i < count; i++) {
+    const y = i * slotH;
+    paths.push(makeHorizLine(`card-slot-stack-topstitch-${i - 1}`, y, pieceW, 'fold', `Card slot divider ${i}`));
+  }
+
+  const cutHeight = count * slotH;
+
+  return {
+    id: 'card-slot-stack',
+    name: `Card Slot Stack (${count} slots)`,
+    mirror: false,
+    quantity: 1,
+    paths,
+    annotations: [
+      { kind: 'label', label: `Card Slot Stack\nCut 1\n${Math.round(pieceW)} × ${Math.round(cutHeight)} mm` },
+    ],
+    seamAllowances: {},
+  };
+}
+
+function buildBookmarkRibbonPiece(r: ResolvedInputs): Piece {
+  const { book_height, bookmark_ribbon } = r;
+  const count = bookmark_ribbon!.count;
+  const widthMm = bookmark_ribbon!.width_mm!;
+  const cutHeight = book_height + 50;
+
+  const outline = makeRectOutline('bookmark-ribbon-outline', widthMm, cutHeight, 'cut');
+
+  return {
+    id: 'bookmark-ribbon',
+    name: 'Bookmark Ribbon',
+    mirror: false,
+    quantity: count,
+    paths: [outline],
+    annotations: [
+      { kind: 'label', label: `Bookmark Ribbon\nCut ${count}\n${Math.round(widthMm)} × ${Math.round(cutHeight)} mm` },
+    ],
+    seamAllowances: {},
+  };
+}
+
+function buildInternalZipPocketPiece(r: ResolvedInputs): Piece {
+  const { book_width, book_height, seam_allowance: SA, internal_zip_pocket } = r;
+  const cutWidth = (internal_zip_pocket!.width ?? book_width) + 2 * SA;
+  const cutHeight = (internal_zip_pocket!.height ?? Math.round(book_height * 0.4)) + 2 * SA;
+
+  const outline = makeRectOutline('internal-zip-pocket-outline', cutWidth, cutHeight, 'cut');
+
+  return {
+    id: 'internal-zip-pocket',
+    name: 'Internal Zip Pocket',
+    mirror: false,
+    quantity: 1,
+    paths: [outline],
+    annotations: [
+      { kind: 'label', label: `Internal Zip Pocket\nCut 1\n${Math.round(cutWidth)} × ${Math.round(cutHeight)} mm` },
+      { kind: 'notch', label: 'Zipper install center (top)', point: pt(cutWidth / 2, SA) } as PieceAnnotation,
+    ],
+    seamAllowances: {
+      'internal-zip-pocket-outline:e0': 0,
+      'internal-zip-pocket-outline:e1': 0,
+      'internal-zip-pocket-outline:e2': 0,
+      'internal-zip-pocket-outline:e3': 0,
+    },
+  };
+}
+
+function buildMeshPocketPiece(r: ResolvedInputs): Piece {
+  const { book_width, book_height, seam_allowance: SA, mesh_pocket } = r;
+  const cutWidth = (mesh_pocket!.width ?? book_width) + 2 * SA;
+  const cutHeight = (mesh_pocket!.height ?? Math.round(book_height * 0.5)) + 2 * SA;
+
+  const outline = makeRectOutline('mesh-pocket-outline', cutWidth, cutHeight, 'cut');
+  const paths: Path[] = [outline];
+
+  if (mesh_pocket!.elastic_top) {
+    paths.push(makeHorizLine('mesh-pocket-fold-elastic-top', SA, cutWidth, 'fold', 'Elastic top — fold and stitch channel'));
+  }
+
+  return {
+    id: 'mesh-pocket',
+    name: 'Mesh Pocket',
+    mirror: false,
+    quantity: 1,
+    paths,
+    annotations: [
+      { kind: 'label', label: `Mesh Pocket\nCut 1\n${Math.round(cutWidth)} × ${Math.round(cutHeight)} mm` },
+    ],
+    seamAllowances: {
+      'mesh-pocket-outline:e0': 0,
+      'mesh-pocket-outline:e1': 0,
+      'mesh-pocket-outline:e2': 0,
+      'mesh-pocket-outline:e3': 0,
+    },
+  };
+}
+
+function buildVelcroPanelPiece(tactical: ResolvedTacticalConfig, SA: number): Piece {
+  const cutWidth = tactical.velcro_panel_width + 2 * SA;
+  const cutHeight = tactical.velcro_panel_height + 2 * SA;
+
+  const outline = makeRectOutline('velcro-panel-outline', cutWidth, cutHeight, 'cut');
+
+  return {
+    id: 'velcro-panel',
+    name: 'Velcro Panel',
+    mirror: false,
+    quantity: 1,
+    paths: [outline],
+    annotations: [
+      { kind: 'label', label: `Velcro Panel\nCut 1\n${Math.round(cutWidth)} × ${Math.round(cutHeight)} mm` },
+    ],
+    seamAllowances: {},
+  };
+}
+
+function buildRetentionStrapPiece(r: ResolvedInputs): Piece {
+  const { book_height, seam_allowance: SA } = r;
+  const strapWidth = 25.4;
+  const cutWidth = strapWidth + 2 * SA;
+  const cutHeight = book_height + 50 + 2 * SA;
+
+  const outline = makeRectOutline('retention-strap-outline', cutWidth, cutHeight, 'cut');
+
+  return {
+    id: 'retention-strap',
+    name: 'Retention Strap',
+    mirror: false,
+    quantity: 1,
+    paths: [outline],
+    annotations: [
+      { kind: 'label', label: `Retention Strap\nCut 1\n${Math.round(cutWidth)} × ${Math.round(cutHeight)} mm` },
+    ],
+    seamAllowances: {},
+  };
+}
+
+function buildSpareMagPocketPiece(r: ResolvedInputs): Piece {
+  const { book_width, book_height, seam_allowance: SA } = r;
+  const pocketW = Math.round(book_width * 0.4);
+  const pocketH = Math.round(book_height * 0.5);
+  const cutWidth = pocketW + 2 * SA;
+  const cutHeight = pocketH + 2 * SA;
+
+  const outline = makeRectOutline('spare-mag-pocket-outline', cutWidth, cutHeight, 'cut');
+
+  return {
+    id: 'spare-mag-pocket',
+    name: 'Spare Magazine Pocket',
+    mirror: false,
+    quantity: 1,
+    paths: [outline],
+    annotations: [
+      { kind: 'label', label: `Spare Magazine Pocket\nCut 1\n${Math.round(cutWidth)} × ${Math.round(cutHeight)} mm` },
+    ],
+    seamAllowances: {},
+  };
+}
+
 export function buildPattern(inputs: BookCoverInputs): Result<BookCoverBuildResult, BuildPatternError> {
   const validation = validateInputs(inputs);
   if (!validation.ok) return validation;
@@ -354,6 +595,32 @@ export function buildPattern(inputs: BookCoverInputs): Result<BookCoverBuildResu
 
   if (effectiveClosure?.kind === 'flap-buckle') {
     pieces.push(buildFlapBuckleStrapPiece(effectiveClosure, r));
+  }
+
+  if (r.lining?.enabled) {
+    pieces.push(buildLiningPiece(r));
+    if (r.card_slots) {
+      pieces.push(buildCardSlotStackPiece(r));
+    }
+    if (r.bookmark_ribbon) {
+      pieces.push(buildBookmarkRibbonPiece(r));
+    }
+    if (r.internal_zip_pocket) {
+      pieces.push(buildInternalZipPocketPiece(r));
+    }
+    if (r.mesh_pocket) {
+      pieces.push(buildMeshPocketPiece(r));
+    }
+  }
+
+  if (r.tactical?.enabled) {
+    pieces.push(buildVelcroPanelPiece(r.tactical, SA));
+    if (r.tactical.retention_strap) {
+      pieces.push(buildRetentionStrapPiece(r));
+    }
+    if (r.tactical.spare_mag_pocket) {
+      pieces.push(buildSpareMagPocketPiece(r));
+    }
   }
 
   if (r.outer_pocket) {

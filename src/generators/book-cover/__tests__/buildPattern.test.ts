@@ -387,6 +387,67 @@ describe('buildPattern — closure modes', () => {
   });
 });
 
+describe('buildPattern — lining and internal features (acceptance criteria)', () => {
+  it('lining enabled → 4 pieces (body + flap×2 + lining)', () => {
+    const result = buildPattern({ ...BASE, lining: { enabled: true } });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.pieces).toHaveLength(4);
+    expect(result.value.pieces.map(p => p.id)).toContain('lining');
+  });
+
+  it('lining + card_slots count=3 → card-slot-stack with 3 cut rects and 2 fold topstitch lines', () => {
+    const result = buildPattern({ ...BASE, lining: { enabled: true }, card_slots: { count: 3 } });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const stack = result.value.pieces.find(p => p.id === 'card-slot-stack');
+    expect(stack).toBeDefined();
+    const cutRects = stack!.paths.filter(p => p.closed && p.edges.every(e => e.role === 'cut'));
+    const foldLines = stack!.paths.filter(p => !p.closed && p.edges.some(e => e.role === 'fold'));
+    expect(cutRects).toHaveLength(3);
+    expect(foldLines).toHaveLength(2);
+  });
+
+  it('lining + tactical retention_strap + spare_mag_pocket → pieces include all 3 tactical pieces', () => {
+    const result = buildPattern({
+      ...BASE,
+      lining: { enabled: true },
+      tactical: { enabled: true, retention_strap: true, spare_mag_pocket: true },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const ids = result.value.pieces.map(p => p.id);
+    expect(ids).toContain('velcro-panel');
+    expect(ids).toContain('retention-strap');
+    expect(ids).toContain('spare-mag-pocket');
+  });
+
+  it('lining piece does NOT carry cover-panel-fold-top or cover-panel-fold-bottom paths', () => {
+    const result = buildPattern({ ...BASE, lining: { enabled: true } });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const lining = result.value.pieces.find(p => p.id === 'lining')!;
+    expect(lining.paths.some(p => p.id === 'cover-panel-fold-top')).toBe(false);
+    expect(lining.paths.some(p => p.id === 'cover-panel-fold-bottom')).toBe(false);
+  });
+
+  it('lining cutWidth and cutHeight match body panel', () => {
+    const result = buildPattern({ ...BASE, lining: { enabled: true } });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const body = result.value.pieces.find(p => p.id === 'cover-panel')!;
+    const lining = result.value.pieces.find(p => p.id === 'lining')!;
+    const bodyOutline = body.paths.find(p => p.id === 'cover-panel-outline')!;
+    const liningOutline = lining.paths.find(p => p.id === 'lining-outline')!;
+    const bW = Math.max(...bodyOutline.edges.flatMap(e => [e.start.x, e.end.x]));
+    const lW = Math.max(...liningOutline.edges.flatMap(e => [e.start.x, e.end.x]));
+    const bH = Math.max(...bodyOutline.edges.flatMap(e => [e.start.y, e.end.y]));
+    const lH = Math.max(...liningOutline.edges.flatMap(e => [e.start.y, e.end.y]));
+    expect(lW).toBeCloseTo(bW, 5);
+    expect(lH).toBeCloseTo(bH, 5);
+  });
+});
+
 describe('buildPattern — construction steps', () => {
   it('bare cover has at least 5 steps', () => {
     const result = buildPattern(BASE);
