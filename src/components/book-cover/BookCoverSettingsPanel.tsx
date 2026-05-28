@@ -331,7 +331,8 @@ export function BookCoverSettingsPanel({
   const spineBulgeAuto = isHardcover ? 6.35 : 0;
 
   function handleBookPreset(presetId: string) {
-    if (!presetId) {
+    // Radix Select reserves '' for clear-selection; use a sentinel for the "Custom" item.
+    if (!presetId || presetId === '__custom') {
       onChange({ book_preset: undefined });
       return;
     }
@@ -348,7 +349,7 @@ export function BookCoverSettingsPanel({
   }
 
   function handleFoldoverPreset(presetId: string) {
-    if (!presetId) {
+    if (!presetId || presetId === '__custom') {
       onChange({ foldover_preset: undefined });
       return;
     }
@@ -367,12 +368,12 @@ export function BookCoverSettingsPanel({
 
         <div className="space-y-1">
           <Label htmlFor="book-preset" className="text-xs">Book preset</Label>
-          <Select value={inputs.book_preset ?? ''} onValueChange={handleBookPreset}>
+          <Select value={inputs.book_preset ?? '__custom'} onValueChange={handleBookPreset}>
             <SelectTrigger id="book-preset" className="h-8 text-xs">
               <SelectValue placeholder="Custom" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Custom</SelectItem>
+              <SelectItem value="__custom">Custom</SelectItem>
               {BOOK_PRESETS.map(p => (
                 <SelectItem key={p.id} value={p.id}>{p.label}</SelectItem>
               ))}
@@ -415,12 +416,12 @@ export function BookCoverSettingsPanel({
 
         <div className="space-y-1">
           <Label htmlFor="foldover-preset" className="text-xs">Foldover preset</Label>
-          <Select value={inputs.foldover_preset ?? ''} onValueChange={handleFoldoverPreset}>
+          <Select value={inputs.foldover_preset ?? '__custom'} onValueChange={handleFoldoverPreset}>
             <SelectTrigger id="foldover-preset" className="h-8 text-xs">
               <SelectValue placeholder="Custom" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Custom</SelectItem>
+              <SelectItem value="__custom">Custom</SelectItem>
               {FOLDOVER_PRESETS.map(p => (
                 <SelectItem key={p.id} value={p.id}>{p.label}</SelectItem>
               ))}

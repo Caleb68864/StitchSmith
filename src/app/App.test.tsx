@@ -73,4 +73,16 @@ describe('App integration', () => {
     fireEvent.click(openBtn);
     expect(screen.getAllByText(/Tri-Zip Backpack Generator/i).length).toBeGreaterThan(0);
   });
+
+  it('navigates to book cover page when clicking Open Book Cover', () => {
+    render(<App />);
+    const openBtn = screen.getByRole('button', { name: /Open Book Cover/i });
+    fireEvent.click(openBtn);
+    expect(screen.getAllByText(/Book Cover Generator/i).length).toBeGreaterThan(0);
+  });
+
+  it('landing page lists Book Cover among the patterns', () => {
+    render(<App />);
+    expect(screen.getAllByText(/Book Cover/i).length).toBeGreaterThan(0);
+  });
 });
