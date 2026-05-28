@@ -85,4 +85,31 @@ describe('App integration', () => {
     render(<App />);
     expect(screen.getAllByText(/Book Cover/i).length).toBeGreaterThan(0);
   });
+
+  // Cross-page smoke: open each generator from the landing page and assert
+  // (a) navigation succeeded, (b) the page mounted without throwing,
+  // (c) the standard Import/Export/Reset buttons are visible (parity check).
+  // Catches the next book-cover-style "blank page on mount" regression before
+  // it ships, because such a crash also tears down the page header buttons.
+  const SMOKE_TARGETS = [
+    { open: /Open Tool Roll/i, subtitle: /Tool Roll/i },
+    { open: /Open Tri-Zip Backpack/i, subtitle: /Tri-Zip Backpack Generator/i },
+    { open: /Open Roll-Top Stuff Sack/i, subtitle: /Roll-Top Stuff Sack Generator/i },
+    { open: /Open Mag Pouch/i, subtitle: /Mag Pouch Generator/i },
+    { open: /Open Book Cover/i, subtitle: /Book Cover Generator/i },
+  ] as const;
+
+  for (const { open, subtitle } of SMOKE_TARGETS) {
+    it(`smoke: ${String(open).replace(/[/\\^$*+?.()|[\]{}]/g, '')} mounts cleanly with header chrome`, () => {
+      render(<App />);
+      fireEvent.click(screen.getByRole('button', { name: open }));
+      // Page rendered without throwing — subtitle is the cheapest signal.
+      expect(screen.getAllByText(subtitle).length).toBeGreaterThan(0);
+      // Import + Export + Reset buttons visible. Tool Roll uses AppHeader, the
+      // other four use PatternPageShell — both should expose all three.
+      expect(screen.getAllByRole('button', { name: /import/i }).length).toBeGreaterThan(0);
+      expect(screen.getAllByRole('button', { name: /export/i }).length).toBeGreaterThan(0);
+      expect(screen.getAllByRole('button', { name: /reset/i }).length).toBeGreaterThan(0);
+    });
+  }
 });
