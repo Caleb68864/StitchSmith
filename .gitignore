@@ -62,7 +62,7 @@ launch.bat
 wrenches.json
 
 # Audit / preview screenshots (local only)
-audit-pass*.png
+audit-*.png
 mag-pouch-*.png
 viewport-*.png
 final-*.png
