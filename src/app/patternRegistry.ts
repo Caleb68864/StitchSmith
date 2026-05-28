@@ -55,7 +55,7 @@ registerPattern({
 registerPattern({
   id: 'book-cover',
   title: 'Book Cover',
-  description: 'Parametric fabric book cover with adjustable spine width, optional flaps, and seam allowance.',
+  description: 'Parametric fabric book cover. Pick a preset (Moleskine, Bible, Field Notes, …) or enter custom dimensions. Optional zipper / elastic / snap / buckle closure, lining + interfacing, card slots, bookmark ribbon, internal zip pocket, mesh pocket, and a tactical Velcro-mount variant.',
   available: true,
   route: 'book-cover',
 });
