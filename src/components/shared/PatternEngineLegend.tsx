@@ -33,6 +33,12 @@ const ITEMS: LegendItem[] = [
     strokeWidth: 2,
     description: 'Where the needle sews. The label names the seam (side, bottom, etc.).',
   },
+  {
+    label: 'Notch / placement mark',
+    stroke: '#7c3aed',
+    strokeWidth: 3,
+    description: 'Small mark on the pattern locating hardware or matching points (snap centers, elastic attach points, boxed-corner ticks). Transfer with chalk before sewing.',
+  },
 ];
 
 /**
