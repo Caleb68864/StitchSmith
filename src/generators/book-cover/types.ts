@@ -136,6 +136,13 @@ export interface BookCoverBuildResult {
 export interface BuildPatternError {
   kind: 'invalid-inputs';
   message: string;
+  /**
+   * Optional input-field key the message refers to (e.g. `'book_width'`,
+   * `'outer_pocket.height'`, `'card_slots.count'`). UI can use this to
+   * highlight the offending input directly. Populated by every validator
+   * we own.
+   */
+  field?: string;
 }
 
 export type Result<T, E> = { ok: true; value: T } | { ok: false; error: E };

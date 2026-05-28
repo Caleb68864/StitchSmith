@@ -30,14 +30,14 @@ export function validateInputs(inputs: BookCoverInputs): Result<true, BuildPatte
   // Validate width_ease
   if (inputs.width_ease !== undefined) {
     if (!isFinite(inputs.width_ease) || inputs.width_ease < 0) {
-      return { ok: false, error: { kind: 'invalid-inputs', message: 'width_ease must be a non-negative finite number' } };
+      return { ok: false, error: { kind: 'invalid-inputs', message: 'width_ease must be a non-negative finite number', field: 'width_ease' } };
     }
   }
 
   // Validate spine_bulge
   if (inputs.spine_bulge !== undefined) {
     if (!isFinite(inputs.spine_bulge) || inputs.spine_bulge < 0) {
-      return { ok: false, error: { kind: 'invalid-inputs', message: 'spine_bulge must be a non-negative finite number' } };
+      return { ok: false, error: { kind: 'invalid-inputs', message: 'spine_bulge must be a non-negative finite number', field: 'spine_bulge' } };
     }
   }
 
@@ -48,21 +48,21 @@ export function validateInputs(inputs: BookCoverInputs): Result<true, BuildPatte
   const flapD = inputs.flap_depth !== undefined ? toMm(inputs.flap_depth, units) : (preset?.flap_depth_mm ?? NaN);
 
   if (!isPositiveFinite(bookH)) {
-    return { ok: false, error: { kind: 'invalid-inputs', message: 'book_height must be a positive finite number' } };
+    return { ok: false, error: { kind: 'invalid-inputs', message: 'book_height must be a positive finite number', field: 'book_height' } };
   }
   if (!isPositiveFinite(bookW)) {
-    return { ok: false, error: { kind: 'invalid-inputs', message: 'book_width must be a positive finite number' } };
+    return { ok: false, error: { kind: 'invalid-inputs', message: 'book_width must be a positive finite number', field: 'book_width' } };
   }
   if (!isPositiveFinite(spineW)) {
-    return { ok: false, error: { kind: 'invalid-inputs', message: 'spine_width must be a positive finite number' } };
+    return { ok: false, error: { kind: 'invalid-inputs', message: 'spine_width must be a positive finite number', field: 'spine_width' } };
   }
   if (!isPositiveFinite(flapD)) {
-    return { ok: false, error: { kind: 'invalid-inputs', message: 'flap_depth must be a positive finite number' } };
+    return { ok: false, error: { kind: 'invalid-inputs', message: 'flap_depth must be a positive finite number', field: 'flap_depth' } };
   }
 
   if (inputs.seam_allowance !== undefined) {
     if (!isFinite(inputs.seam_allowance) || inputs.seam_allowance < 0) {
-      return { ok: false, error: { kind: 'invalid-inputs', message: 'seam_allowance must be a non-negative finite number' } };
+      return { ok: false, error: { kind: 'invalid-inputs', message: 'seam_allowance must be a non-negative finite number', field: 'seam_allowance' } };
     }
   }
 
@@ -71,30 +71,30 @@ export function validateInputs(inputs: BookCoverInputs): Result<true, BuildPatte
   if (inputs.outer_pocket !== undefined) {
     const p = inputs.outer_pocket;
     if (!isPositiveFinite(p.width) || p.width >= bookW) {
-      return { ok: false, error: { kind: 'invalid-inputs', message: 'outer_pocket width must be positive and less than book_width' } };
+      return { ok: false, error: { kind: 'invalid-inputs', message: 'outer_pocket width must be positive and less than book_width', field: 'outer_pocket.width' } };
     }
     if (!isPositiveFinite(p.height) || p.height >= bookH) {
-      return { ok: false, error: { kind: 'invalid-inputs', message: 'outer_pocket height must be positive and less than book_height' } };
+      return { ok: false, error: { kind: 'invalid-inputs', message: 'outer_pocket height must be positive and less than book_height', field: 'outer_pocket.height' } };
     }
   }
 
   if (inputs.inner_pocket !== undefined) {
     const p = inputs.inner_pocket;
     if (!isPositiveFinite(p.width) || p.width >= bookW) {
-      return { ok: false, error: { kind: 'invalid-inputs', message: 'inner_pocket width must be positive and less than book_width' } };
+      return { ok: false, error: { kind: 'invalid-inputs', message: 'inner_pocket width must be positive and less than book_width', field: 'inner_pocket.width' } };
     }
     if (!isPositiveFinite(p.height) || p.height >= bookH) {
-      return { ok: false, error: { kind: 'invalid-inputs', message: 'inner_pocket height must be positive and less than book_height' } };
+      return { ok: false, error: { kind: 'invalid-inputs', message: 'inner_pocket height must be positive and less than book_height', field: 'inner_pocket.height' } };
     }
   }
 
   if (inputs.pen_holder !== undefined) {
     const ph = inputs.pen_holder;
     if (!Number.isInteger(ph.count) || ph.count < 1) {
-      return { ok: false, error: { kind: 'invalid-inputs', message: 'pen_holder count must be an integer >= 1' } };
+      return { ok: false, error: { kind: 'invalid-inputs', message: 'pen_holder count must be an integer >= 1', field: 'pen_holder.count' } };
     }
     if (!isFinite(ph.slot_width) || ph.slot_width <= 0) {
-      return { ok: false, error: { kind: 'invalid-inputs', message: 'pen_holder slot_width must be a positive finite number' } };
+      return { ok: false, error: { kind: 'invalid-inputs', message: 'pen_holder slot_width must be a positive finite number', field: 'pen_holder.slot_width' } };
     }
     const totalStripWidth = ph.count * ph.slot_width;
     if (totalStripWidth > bookH - 2 * hem) {
