@@ -21,12 +21,32 @@ type BookCoverPageProps = Pick<
 >;
 
 const FIELD_LABELS: Record<string, string> = {
+  // Base dimensions
   book_height: 'Book Height',
   book_width: 'Book Width',
   spine_width: 'Spine Width',
   flap_depth: 'Flap Depth',
   seam_allowance: 'Seam Allowance',
   top_bottom_hem: 'Top/Bottom Hem',
+  // Geometry knobs
+  book_preset: 'Book Preset',
+  foldover_preset: 'Foldover Preset',
+  width_ease: 'Width Ease',
+  spine_bulge: 'Spine Bulge',
+  is_hardcover: 'Hardcover',
+  // Accessories
+  outer_pocket: 'Outer Pocket',
+  inner_pocket: 'Inner Pocket',
+  pen_holder: 'Pen Holder',
+  // Closure
+  closure: 'Closure',
+  // Lining + features + tactical
+  lining: 'Lining',
+  card_slots: 'Card Slots',
+  bookmark_ribbon: 'Bookmark Ribbon',
+  internal_zip_pocket: 'Internal Zip Pocket',
+  mesh_pocket: 'Mesh Pocket',
+  tactical: 'Tactical Mode',
 };
 
 function deriveErrors(inputs: UseBookCoverProjectReturn['project']['inputs']): Record<string, string> {

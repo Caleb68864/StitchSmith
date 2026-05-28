@@ -1,117 +1,21 @@
 import type { Step } from '../../lib/pattern-engine/instructions/Step.js';
 import type { Piece, PieceAnnotation } from '../../lib/pattern-engine/graph/Piece.js';
 import type { Path } from '../../lib/pattern-engine/graph/Path.js';
-import type { Edge } from '../../lib/pattern-engine/graph/Edge.js';
 import type { Point } from '../../lib/pattern-engine/graph/Point.js';
 import type { BookCoverInputs, ResolvedInputs, BookCoverBuildResult, BuildPatternError, Result, PocketConfig, PenHolderConfig, ClosureConfig, ResolvedTacticalConfig } from './types.js';
 import { validateInputs, resolveInputs } from './inputs.js';
 import { buildBom } from './bom.js';
 import { DEFAULT_PEN_HOLDER_HEIGHT_MM, CLOSURE_DEFAULTS } from './defaults.js';
 import { offsetPolygon } from '../../lib/pattern-engine/geometry/offset.js';
-
-function pt(x: number, y: number): Point { return { x, y }; }
-
-function makeRectOutline(id: string, w: number, h: number, role: Edge['role'] = 'cut'): Path {
-  return {
-    id,
-    closed: true,
-    edges: [
-      { kind: 'straight', id: `${id}:e0`, role, start: pt(0, 0), end: pt(w, 0) },
-      { kind: 'straight', id: `${id}:e1`, role, start: pt(w, 0), end: pt(w, h) },
-      { kind: 'straight', id: `${id}:e2`, role, start: pt(w, h), end: pt(0, h) },
-      { kind: 'straight', id: `${id}:e3`, role, start: pt(0, h), end: pt(0, 0) },
-    ],
-  };
-}
-
-function makeRoundedRectOutline(id: string, w: number, h: number, r: number, role: Edge['role'] = 'cut'): Path {
-  return {
-    id,
-    closed: true,
-    edges: [
-      // Bottom: left-corner tangent to right-corner tangent
-      { kind: 'straight', id: `${id}:e0`, role, start: pt(r, 0), end: pt(w - r, 0) },
-      // Bottom-right arc: center (w-r, r)
-      { kind: 'arc', id: `${id}:e1`, role, start: pt(w - r, 0), end: pt(w, r), center: pt(w - r, r), radius: r, clockwise: true },
-      // Right edge
-      { kind: 'straight', id: `${id}:e2`, role, start: pt(w, r), end: pt(w, h - r) },
-      // Top-right arc: center (w-r, h-r)
-      { kind: 'arc', id: `${id}:e3`, role, start: pt(w, h - r), end: pt(w - r, h), center: pt(w - r, h - r), radius: r, clockwise: true },
-      // Top: right to left
-      { kind: 'straight', id: `${id}:e4`, role, start: pt(w - r, h), end: pt(r, h) },
-      // Top-left arc: center (r, h-r)
-      { kind: 'arc', id: `${id}:e5`, role, start: pt(r, h), end: pt(0, h - r), center: pt(r, h - r), radius: r, clockwise: true },
-      // Left edge
-      { kind: 'straight', id: `${id}:e6`, role, start: pt(0, h - r), end: pt(0, r) },
-      // Bottom-left arc: center (r, r)
-      { kind: 'arc', id: `${id}:e7`, role, start: pt(0, r), end: pt(r, 0), center: pt(r, r), radius: r, clockwise: true },
-    ],
-  };
-}
-
-function makeRoundedRectSaPath(id: string, w: number, h: number, r: number, SA: number): Path | null {
-  const innerR = r - SA;
-  if (innerR <= 0) return null;
-  return {
-    id,
-    closed: true,
-    edges: [
-      // Inner bottom
-      { kind: 'straight', id: `${id}:e0`, role: 'seam', start: pt(r, SA), end: pt(w - r, SA) },
-      // Inner bottom-right arc
-      { kind: 'arc', id: `${id}:e1`, role: 'seam', start: pt(w - r, SA), end: pt(w - SA, r), center: pt(w - r, r), radius: innerR, clockwise: true },
-      // Inner right
-      { kind: 'straight', id: `${id}:e2`, role: 'seam', start: pt(w - SA, r), end: pt(w - SA, h - r) },
-      // Inner top-right arc
-      { kind: 'arc', id: `${id}:e3`, role: 'seam', start: pt(w - SA, h - r), end: pt(w - r, h - SA), center: pt(w - r, h - r), radius: innerR, clockwise: true },
-      // Inner top
-      { kind: 'straight', id: `${id}:e4`, role: 'seam', start: pt(w - r, h - SA), end: pt(r, h - SA) },
-      // Inner top-left arc
-      { kind: 'arc', id: `${id}:e5`, role: 'seam', start: pt(r, h - SA), end: pt(SA, h - r), center: pt(r, h - r), radius: innerR, clockwise: true },
-      // Inner left
-      { kind: 'straight', id: `${id}:e6`, role: 'seam', start: pt(SA, h - r), end: pt(SA, r) },
-      // Inner bottom-left arc
-      { kind: 'arc', id: `${id}:e7`, role: 'seam', start: pt(SA, r), end: pt(r, SA), center: pt(r, r), radius: innerR, clockwise: true },
-    ],
-  };
-}
-
-function makeVertLine(id: string, x: number, h: number, role: Edge['role'], label?: string): Path {
-  return {
-    id,
-    closed: false,
-    edges: [
-      { kind: 'straight', id: `${id}:e0`, role, start: pt(x, 0), end: pt(x, h) },
-    ],
-    label,
-  };
-}
-
-function makeHorizLine(id: string, y: number, w: number, role: Edge['role'], label?: string): Path {
-  return {
-    id,
-    closed: false,
-    edges: [
-      { kind: 'straight', id: `${id}:e0`, role, start: pt(0, y), end: pt(w, y) },
-    ],
-    label,
-  };
-}
-
-function makePathFromPoints(id: string, pts: Point[], role: Edge['role']): Path {
-  const edges: Edge[] = [];
-  const n = pts.length;
-  for (let i = 0; i < n; i++) {
-    edges.push({
-      kind: 'straight',
-      id: `${id}:e${i}`,
-      role,
-      start: pts[i],
-      end: pts[(i + 1) % n],
-    });
-  }
-  return { id, closed: true, edges };
-}
+import {
+  point as pt,
+  makeRectOutline,
+  makeRoundedRectOutline,
+  makeRoundedRectSaPath,
+  makeVertLine,
+  makeHorizLine,
+  makePathFromPoints,
+} from '../../lib/pattern-engine/geometry/paths.js';
 
 function buildCoverPanel(r: ResolvedInputs): Piece {
   const { book_width, spine_width, book_height, seam_allowance: SA, top_bottom_hem } = r;

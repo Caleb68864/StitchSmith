@@ -13,7 +13,6 @@
 
 import type { Piece } from '../../lib/pattern-engine/graph/Piece.js';
 import type { Path } from '../../lib/pattern-engine/graph/Path.js';
-import type { Edge } from '../../lib/pattern-engine/graph/Edge.js';
 import type { Step } from '../../lib/pattern-engine/instructions/Step.js';
 import type { RollTopSackInputs, ResolvedInputs, RollTopSackBuildResult, BuildPatternError, Result } from './types.js';
 import { validateInputs, resolveInputs } from './inputs.js';
@@ -22,32 +21,7 @@ import { DEFAULT_TOP_HEM_MM, DEFAULT_BOTTOM_SEAM_MM, DEFAULT_WEBBING_WIDTH_MM, D
 import { frenchSeamAllowance } from '../../lib/pattern-engine/geometry/frenchSeam.js';
 import { boxedCornerStitchLine } from '../../lib/pattern-engine/geometry/boxedCorner.js';
 import { rollTopClosure } from '../../lib/pattern-engine/geometry/rollTopClosure.js';
-
-function pt(x: number, y: number) { return { x, y }; }
-
-function makeRectOutline(id: string, w: number, h: number, role: Edge['role'] = 'cut'): Path {
-  return {
-    id,
-    closed: true,
-    edges: [
-      { kind: 'straight', id: `${id}:e0`, role, start: pt(0, 0), end: pt(w, 0) },
-      { kind: 'straight', id: `${id}:e1`, role, start: pt(w, 0), end: pt(w, h) },
-      { kind: 'straight', id: `${id}:e2`, role, start: pt(w, h), end: pt(0, h) },
-      { kind: 'straight', id: `${id}:e3`, role, start: pt(0, h), end: pt(0, 0) },
-    ],
-  };
-}
-
-function makeHorizLine(id: string, y: number, w: number, role: Edge['role'], label?: string): Path {
-  return {
-    id,
-    closed: false,
-    edges: [
-      { kind: 'straight', id: `${id}:e0`, role, start: pt(0, y), end: pt(w, y) },
-    ],
-    label,
-  };
-}
+import { makeRectOutline, makeHorizLine, point as pt } from '../../lib/pattern-engine/geometry/paths.js';
 
 export function buildPattern(inputs: RollTopSackInputs): Result<RollTopSackBuildResult, BuildPatternError> {
   const validation = validateInputs(inputs);

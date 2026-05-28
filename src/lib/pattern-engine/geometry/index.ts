@@ -32,3 +32,13 @@ export { boxedCornerStitchLine } from './boxedCorner.js';
 export { FRENCH_SEAM_TOTAL_MM, frenchSeamAllowance } from './frenchSeam.js';
 export type { RollTopClosureResult } from './rollTopClosure.js';
 export { rollTopClosure } from './rollTopClosure.js';
+// `point` is already exported from graph/index.js as a helper of the Point type.
+// Path-construction helpers live here.
+export {
+  makeRectOutline,
+  makeRoundedRectOutline,
+  makeRoundedRectSaPath,
+  makeVertLine,
+  makeHorizLine,
+  makePathFromPoints,
+} from './paths.js';
