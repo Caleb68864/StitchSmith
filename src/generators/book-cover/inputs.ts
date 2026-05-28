@@ -262,6 +262,7 @@ export function resolveInputs(inputs: BookCoverInputs): ResolvedInputs {
         kind: 'elastic',
         width_mm: closure.width_mm ?? elasticDefs.width_mm,
         tension: closure.tension ?? elasticDefs.tension,
+        attach_offset: closure.attach_offset,
       };
     } else if (closure.kind === 'snap') {
       closure = { kind: 'snap', count: closure.count ?? CLOSURE_DEFAULTS.snap.count };
@@ -282,6 +283,8 @@ export function resolveInputs(inputs: BookCoverInputs): ResolvedInputs {
       enabled: true,
       velcro_panel_width: inputs.tactical.velcro_panel_width ?? TACTICAL_DEFAULTS.velcro_panel_width,
       velcro_panel_height: inputs.tactical.velcro_panel_height ?? TACTICAL_DEFAULTS.velcro_panel_height,
+      retention_strap: inputs.tactical.retention_strap ?? false,
+      spare_mag_pocket: inputs.tactical.spare_mag_pocket ?? false,
     };
   }
 

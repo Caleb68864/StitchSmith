@@ -52,18 +52,23 @@ export interface InternalZipPocketConfig {
 export interface MeshPocketConfig {
   width?: number;
   height?: number;
+  elastic_top?: boolean;
 }
 
 export interface TacticalConfig {
   enabled: boolean;
   velcro_panel_width?: number;
   velcro_panel_height?: number;
+  retention_strap?: boolean;
+  spare_mag_pocket?: boolean;
 }
 
 export interface ResolvedTacticalConfig {
   enabled: boolean;
   velcro_panel_width: number;
   velcro_panel_height: number;
+  retention_strap: boolean;
+  spare_mag_pocket: boolean;
 }
 
 export interface BookCoverInputs {
