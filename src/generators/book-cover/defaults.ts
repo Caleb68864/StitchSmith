@@ -54,3 +54,28 @@ export const FOLDOVER_PRESETS: FoldoverPreset[] = [
   { id: 'tactical', label: 'Tactical', flap_depth_mm: 100 },
   { id: 'civilian', label: 'Civilian', flap_depth_mm: 70 },
 ];
+
+export interface ZipperGaugeDefaults {
+  corner_radius_mm: number;
+  min_corner_radius_mm: number;
+}
+
+export const ZIPPER_GAUGE_DEFAULTS: Record<'#3' | '#5' | '#10', ZipperGaugeDefaults> = {
+  '#3': { corner_radius_mm: 19.05, min_corner_radius_mm: 12.7 },
+  '#5': { corner_radius_mm: 31.75, min_corner_radius_mm: 25.4 },
+  '#10': { corner_radius_mm: 50.8, min_corner_radius_mm: 38.1 },
+};
+
+export const CLOSURE_DEFAULTS = {
+  elastic: {
+    width_mm: 25.4,
+    tension: 'standard' as const,
+  },
+  snap: {
+    count: 2,
+  },
+  'flap-buckle': {
+    strap_width: 25.4,
+    buckle_size: 25.4,
+  },
+} as const;

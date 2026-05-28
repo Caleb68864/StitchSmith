@@ -15,6 +15,16 @@ export interface PenHolderConfig {
   height?: number;
 }
 
+export type ZipperGauge = '#3' | '#5' | '#10';
+export type ElasticTension = 'light' | 'standard' | 'firm';
+
+export type ClosureConfig =
+  | { kind: 'none' }
+  | { kind: 'zipper'; gauge: ZipperGauge; corner_radius?: number }
+  | { kind: 'elastic'; width_mm?: number; tension?: ElasticTension }
+  | { kind: 'snap'; count?: number }
+  | { kind: 'flap-buckle'; strap_width?: number; buckle_size?: number };
+
 export interface BookCoverInputs {
   book_height?: number;
   book_width?: number;
@@ -30,6 +40,7 @@ export interface BookCoverInputs {
   outer_pocket?: PocketConfig;
   inner_pocket?: PocketConfig;
   pen_holder?: PenHolderConfig;
+  closure?: ClosureConfig;
 }
 
 export interface ResolvedInputs {
@@ -48,6 +59,7 @@ export interface ResolvedInputs {
   outer_pocket?: PocketConfig;
   inner_pocket?: PocketConfig;
   pen_holder?: PenHolderConfig;
+  closure?: ClosureConfig;
 }
 
 export interface Bom {

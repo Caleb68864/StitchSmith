@@ -1,5 +1,5 @@
-import type { BookCoverInputs, ResolvedInputs, Result, BuildPatternError } from './types.js';
-import { DEFAULT_SEAM_ALLOWANCE_MM, DEFAULT_TOP_BOTTOM_HEM_MM, BOOK_PRESETS, FOLDOVER_PRESETS } from './defaults.js';
+import type { BookCoverInputs, ResolvedInputs, Result, BuildPatternError, ZipperGauge, ElasticTension, ClosureConfig } from './types.js';
+import { DEFAULT_SEAM_ALLOWANCE_MM, DEFAULT_TOP_BOTTOM_HEM_MM, BOOK_PRESETS, FOLDOVER_PRESETS, ZIPPER_GAUGE_DEFAULTS, CLOSURE_DEFAULTS } from './defaults.js';
 
 const IN_TO_MM = 25.4;
 
@@ -102,6 +102,46 @@ export function validateInputs(inputs: BookCoverInputs): Result<true, BuildPatte
     }
   }
 
+  if (inputs.closure !== undefined) {
+    const c = inputs.closure;
+    if (c.kind === 'zipper') {
+      const validGauges: ZipperGauge[] = ['#3', '#5', '#10'];
+      if (!validGauges.includes(c.gauge)) {
+        return { ok: false, error: { kind: 'invalid-inputs', message: `zipper gauge must be one of #3, #5, #10; got "${c.gauge}"` } };
+      }
+      const gaugeDefaults = ZIPPER_GAUGE_DEFAULTS[c.gauge];
+      if (c.corner_radius !== undefined) {
+        if (!isPositiveFinite(c.corner_radius)) {
+          return { ok: false, error: { kind: 'invalid-inputs', message: 'zipper corner_radius must be a positive finite number' } };
+        }
+        if (c.corner_radius < gaugeDefaults.min_corner_radius_mm) {
+          return { ok: false, error: { kind: 'invalid-inputs', message: `zipper corner_radius ${c.corner_radius} mm is below minimum ${gaugeDefaults.min_corner_radius_mm} mm for gauge ${c.gauge}` } };
+        }
+      }
+    } else if (c.kind === 'elastic') {
+      if (c.width_mm !== undefined && (!isPositiveFinite(c.width_mm))) {
+        return { ok: false, error: { kind: 'invalid-inputs', message: 'elastic width_mm must be a positive finite number' } };
+      }
+      const validTensions: ElasticTension[] = ['light', 'standard', 'firm'];
+      if (c.tension !== undefined && !validTensions.includes(c.tension)) {
+        return { ok: false, error: { kind: 'invalid-inputs', message: `elastic tension must be one of light, standard, firm; got "${c.tension}"` } };
+      }
+    } else if (c.kind === 'snap') {
+      if (c.count !== undefined) {
+        if (!Number.isInteger(c.count) || c.count < 1 || c.count > 2) {
+          return { ok: false, error: { kind: 'invalid-inputs', message: 'snap count must be 1 or 2' } };
+        }
+      }
+    } else if (c.kind === 'flap-buckle') {
+      if (c.strap_width !== undefined && !isPositiveFinite(c.strap_width)) {
+        return { ok: false, error: { kind: 'invalid-inputs', message: 'flap-buckle strap_width must be a positive finite number' } };
+      }
+      if (c.buckle_size !== undefined && !isPositiveFinite(c.buckle_size)) {
+        return { ok: false, error: { kind: 'invalid-inputs', message: 'flap-buckle buckle_size must be a positive finite number' } };
+      }
+    }
+  }
+
   return { ok: true, value: true };
 }
 
@@ -119,6 +159,32 @@ export function resolveInputs(inputs: BookCoverInputs): ResolvedInputs {
   const width_ease = inputs.width_ease ?? Math.max(6.35, spine_width * 0.5);
   const spine_bulge = inputs.spine_bulge ?? (is_hardcover ? 6.35 : 0);
 
+  let closure: ClosureConfig | undefined = inputs.closure;
+  if (closure !== undefined) {
+    if (closure.kind === 'zipper') {
+      const gaugeDefaults = ZIPPER_GAUGE_DEFAULTS[closure.gauge];
+      if (closure.corner_radius === undefined) {
+        closure = { ...closure, corner_radius: gaugeDefaults.corner_radius_mm };
+      }
+    } else if (closure.kind === 'elastic') {
+      const elasticDefs = CLOSURE_DEFAULTS.elastic;
+      closure = {
+        kind: 'elastic',
+        width_mm: closure.width_mm ?? elasticDefs.width_mm,
+        tension: closure.tension ?? elasticDefs.tension,
+      };
+    } else if (closure.kind === 'snap') {
+      closure = { kind: 'snap', count: closure.count ?? CLOSURE_DEFAULTS.snap.count };
+    } else if (closure.kind === 'flap-buckle') {
+      const fbDefs = CLOSURE_DEFAULTS['flap-buckle'];
+      closure = {
+        kind: 'flap-buckle',
+        strap_width: closure.strap_width ?? fbDefs.strap_width,
+        buckle_size: closure.buckle_size ?? fbDefs.buckle_size,
+      };
+    }
+  }
+
   return {
     book_height,
     book_width,
@@ -135,5 +201,6 @@ export function resolveInputs(inputs: BookCoverInputs): ResolvedInputs {
     outer_pocket: inputs.outer_pocket,
     inner_pocket: inputs.inner_pocket,
     pen_holder: inputs.pen_holder,
+    closure,
   };
 }
