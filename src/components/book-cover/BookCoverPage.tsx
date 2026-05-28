@@ -18,6 +18,12 @@ type BookCoverPageProps = Pick<
   | 'toggleOuterPocket'
   | 'toggleInnerPocket'
   | 'togglePenHolder'
+  | 'toggleLining'
+  | 'toggleCardSlots'
+  | 'toggleBookmarkRibbon'
+  | 'toggleInternalZipPocket'
+  | 'toggleMeshPocket'
+  | 'toggleTactical'
 >;
 
 const FIELD_LABELS: Record<string, string> = {
@@ -83,6 +89,12 @@ export function BookCoverPage({
   toggleOuterPocket,
   toggleInnerPocket,
   togglePenHolder,
+  toggleLining,
+  toggleCardSlots,
+  toggleBookmarkRibbon,
+  toggleInternalZipPocket,
+  toggleMeshPocket,
+  toggleTactical,
 }: BookCoverPageProps) {
   const errors = useMemo(() => deriveErrors(project.inputs), [project.inputs]);
   const hasErrors = Object.keys(errors).length > 0;
@@ -130,6 +142,12 @@ export function BookCoverPage({
           onToggleOuterPocket={toggleOuterPocket}
           onToggleInnerPocket={toggleInnerPocket}
           onTogglePenHolder={togglePenHolder}
+          onToggleLining={toggleLining}
+          onToggleCardSlots={toggleCardSlots}
+          onToggleBookmarkRibbon={toggleBookmarkRibbon}
+          onToggleInternalZipPocket={toggleInternalZipPocket}
+          onToggleMeshPocket={toggleMeshPocket}
+          onToggleTactical={toggleTactical}
         />
       }
       preview={

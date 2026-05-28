@@ -12,6 +12,7 @@ import { useTriZipProject } from '../state/useTriZipProject.js';
 import { useRollTopSackProject } from '../state/useRollTopSackProject.js';
 import { useMagPouchProject } from '../state/useMagPouchProject.js';
 import { useBookCoverProject } from '../state/useBookCoverProject.js';
+import { Toaster } from '../components/shared/Toaster.js';
 import type { PatternEntry } from './patternRegistry.js';
 
 type View = 'landing' | PatternEntry['route'];
@@ -134,9 +135,16 @@ export function App() {
             toggleOuterPocket={bookCoverState.toggleOuterPocket}
             toggleInnerPocket={bookCoverState.toggleInnerPocket}
             togglePenHolder={bookCoverState.togglePenHolder}
+            toggleLining={bookCoverState.toggleLining}
+            toggleCardSlots={bookCoverState.toggleCardSlots}
+            toggleBookmarkRibbon={bookCoverState.toggleBookmarkRibbon}
+            toggleInternalZipPocket={bookCoverState.toggleInternalZipPocket}
+            toggleMeshPocket={bookCoverState.toggleMeshPocket}
+            toggleTactical={bookCoverState.toggleTactical}
           />
         )}
       </PageShell>
+      <Toaster />
     </div>
   );
 }

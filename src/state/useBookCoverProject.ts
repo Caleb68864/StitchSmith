@@ -1,6 +1,17 @@
 import { useState, useCallback } from 'react';
-import type { BookCoverInputs, PocketConfig, PenHolderConfig } from '../generators/book-cover/types.js';
+import type {
+  BookCoverInputs,
+  PocketConfig,
+  PenHolderConfig,
+  LiningConfig,
+  CardSlotsConfig,
+  BookmarkRibbonConfig,
+  InternalZipPocketConfig,
+  MeshPocketConfig,
+  TacticalConfig,
+} from '../generators/book-cover/types.js';
 import { DEFAULT_SEAM_ALLOWANCE_MM, DEFAULT_TOP_BOTTOM_HEM_MM, DEFAULT_PEN_HOLDER_HEIGHT_MM } from '../generators/book-cover/defaults.js';
+import { toast } from '../lib/toast/toast.js';
 
 export interface BookCoverProjectInputs extends BookCoverInputs {
   top_bottom_hem?: number;
@@ -51,11 +62,36 @@ export type UseBookCoverProjectReturn = {
   toggleOuterPocket: (enabled: boolean) => void;
   toggleInnerPocket: (enabled: boolean) => void;
   togglePenHolder: (enabled: boolean) => void;
+  toggleLining: (enabled: boolean) => void;
+  toggleCardSlots: (enabled: boolean) => void;
+  toggleBookmarkRibbon: (enabled: boolean) => void;
+  toggleInternalZipPocket: (enabled: boolean) => void;
+  toggleMeshPocket: (enabled: boolean) => void;
+  toggleTactical: (enabled: boolean) => void;
 };
 
 const DEFAULT_OUTER_POCKET: PocketConfig = { width: 120, height: 100, position: 'front' };
 const DEFAULT_INNER_POCKET: PocketConfig = { width: 120, height: 80, position: 'back' };
 const DEFAULT_PEN_HOLDER: PenHolderConfig = { count: 3, slot_width: 15, height: DEFAULT_PEN_HOLDER_HEIGHT_MM };
+const DEFAULT_LINING: LiningConfig = { enabled: true, interfacing: 'fusible' };
+const DEFAULT_CARD_SLOTS: CardSlotsConfig = { count: 3, slot_height: 57 };
+const DEFAULT_BOOKMARK_RIBBON: BookmarkRibbonConfig = { count: 1, width_mm: 9.5 };
+const DEFAULT_INTERNAL_ZIP_POCKET: InternalZipPocketConfig = { gauge: '#5' };
+const DEFAULT_MESH_POCKET: MeshPocketConfig = { elastic_top: true };
+const DEFAULT_TACTICAL: TacticalConfig = {
+  enabled: true,
+  velcro_panel_width: 101.6,
+  velcro_panel_height: 152.4,
+  retention_strap: false,
+  spare_mag_pocket: false,
+};
+
+const FEATURE_LABEL: Record<string, string> = {
+  card_slots: 'Card slots',
+  bookmark_ribbon: 'Bookmark ribbon',
+  internal_zip_pocket: 'Internal zip pocket',
+  mesh_pocket: 'Mesh pocket',
+};
 
 export function useBookCoverProject(): UseBookCoverProjectReturn {
   const [project, setProjectState] = useState<BookCoverProject>(makeDefaultBookCoverProject);
@@ -99,6 +135,95 @@ export function useBookCoverProject(): UseBookCoverProjectReturn {
     );
   }, []);
 
+  // Internal-feature toggles auto-enable lining when needed and surface a toast.
+  // Lining-disable warns when features that need lining are on.
+
+  const enableLiningIfNeeded = useCallback((next: BookCoverProjectInputs, featureKey: keyof typeof FEATURE_LABEL): BookCoverProjectInputs => {
+    if (next.lining?.enabled) return next;
+    toast.info(
+      'Lining auto-enabled',
+      `${FEATURE_LABEL[featureKey]} attaches to the lining, so lining was switched on automatically.`,
+    );
+    return { ...next, lining: DEFAULT_LINING };
+  }, []);
+
+  const toggleLining = useCallback((enabled: boolean) => {
+    setProjectState(prev => {
+      const inputs = prev.inputs;
+      if (!enabled) {
+        // Warn if internal features that depend on lining are on.
+        const dependents: string[] = [];
+        if (inputs.card_slots) dependents.push(FEATURE_LABEL.card_slots);
+        if (inputs.bookmark_ribbon) dependents.push(FEATURE_LABEL.bookmark_ribbon);
+        if (inputs.internal_zip_pocket) dependents.push(FEATURE_LABEL.internal_zip_pocket);
+        if (inputs.mesh_pocket) dependents.push(FEATURE_LABEL.mesh_pocket);
+        if (inputs.tactical?.enabled) dependents.push('Tactical mode');
+        if (dependents.length > 0) {
+          toast.warning(
+            'Lining cannot be disabled yet',
+            `${dependents.join(', ')} attach${dependents.length === 1 ? 'es' : ''} to the lining. Disable ${dependents.length === 1 ? 'it' : 'them'} first.`,
+          );
+          return prev;
+        }
+      }
+      return touch({
+        ...prev,
+        inputs: { ...inputs, lining: enabled ? DEFAULT_LINING : undefined },
+      });
+    });
+  }, []);
+
+  const toggleCardSlots = useCallback((enabled: boolean) => {
+    setProjectState(prev => {
+      let next: BookCoverProjectInputs = { ...prev.inputs, card_slots: enabled ? DEFAULT_CARD_SLOTS : undefined };
+      if (enabled) next = enableLiningIfNeeded(next, 'card_slots');
+      return touch({ ...prev, inputs: next });
+    });
+  }, [enableLiningIfNeeded]);
+
+  const toggleBookmarkRibbon = useCallback((enabled: boolean) => {
+    setProjectState(prev => {
+      let next: BookCoverProjectInputs = { ...prev.inputs, bookmark_ribbon: enabled ? DEFAULT_BOOKMARK_RIBBON : undefined };
+      if (enabled) next = enableLiningIfNeeded(next, 'bookmark_ribbon');
+      return touch({ ...prev, inputs: next });
+    });
+  }, [enableLiningIfNeeded]);
+
+  const toggleInternalZipPocket = useCallback((enabled: boolean) => {
+    setProjectState(prev => {
+      let next: BookCoverProjectInputs = { ...prev.inputs, internal_zip_pocket: enabled ? DEFAULT_INTERNAL_ZIP_POCKET : undefined };
+      if (enabled) next = enableLiningIfNeeded(next, 'internal_zip_pocket');
+      return touch({ ...prev, inputs: next });
+    });
+  }, [enableLiningIfNeeded]);
+
+  const toggleMeshPocket = useCallback((enabled: boolean) => {
+    setProjectState(prev => {
+      let next: BookCoverProjectInputs = { ...prev.inputs, mesh_pocket: enabled ? DEFAULT_MESH_POCKET : undefined };
+      if (enabled) next = enableLiningIfNeeded(next, 'mesh_pocket');
+      return touch({ ...prev, inputs: next });
+    });
+  }, [enableLiningIfNeeded]);
+
+  const toggleTactical = useCallback((enabled: boolean) => {
+    setProjectState(prev => {
+      const next: BookCoverProjectInputs = { ...prev.inputs };
+      if (enabled) {
+        next.tactical = DEFAULT_TACTICAL;
+        if (!next.lining?.enabled) {
+          toast.info(
+            'Lining auto-enabled',
+            'Tactical mode mounts on the lining, so lining was switched on with HDPE interfacing.',
+          );
+          next.lining = { enabled: true, interfacing: 'hdpe' };
+        }
+      } else {
+        next.tactical = undefined;
+      }
+      return touch({ ...prev, inputs: next });
+    });
+  }, []);
+
   return {
     project,
     setProject,
@@ -108,5 +233,11 @@ export function useBookCoverProject(): UseBookCoverProjectReturn {
     toggleOuterPocket,
     toggleInnerPocket,
     togglePenHolder,
+    toggleLining,
+    toggleCardSlots,
+    toggleBookmarkRibbon,
+    toggleInternalZipPocket,
+    toggleMeshPocket,
+    toggleTactical,
   };
 }
