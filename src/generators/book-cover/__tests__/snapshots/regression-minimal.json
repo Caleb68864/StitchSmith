@@ -1,0 +1,510 @@
+{
+  "pieces": [
+    {
+      "id": "cover-panel",
+      "name": "Book Cover Panel",
+      "mirror": false,
+      "quantity": 1,
+      "paths": [
+        {
+          "id": "cover-panel-outline",
+          "closed": true,
+          "edges": [
+            {
+              "kind": "straight",
+              "id": "cover-panel-outline:e0",
+              "role": "cut",
+              "start": {
+                "x": 0,
+                "y": 0
+              },
+              "end": {
+                "x": 344,
+                "y": 0
+              }
+            },
+            {
+              "kind": "straight",
+              "id": "cover-panel-outline:e1",
+              "role": "cut",
+              "start": {
+                "x": 344,
+                "y": 0
+              },
+              "end": {
+                "x": 344,
+                "y": 224
+              }
+            },
+            {
+              "kind": "straight",
+              "id": "cover-panel-outline:e2",
+              "role": "cut",
+              "start": {
+                "x": 344,
+                "y": 224
+              },
+              "end": {
+                "x": 0,
+                "y": 224
+              }
+            },
+            {
+              "kind": "straight",
+              "id": "cover-panel-outline:e3",
+              "role": "cut",
+              "start": {
+                "x": 0,
+                "y": 224
+              },
+              "end": {
+                "x": 0,
+                "y": 0
+              }
+            }
+          ]
+        },
+        {
+          "id": "cover-panel-sa-seam",
+          "closed": true,
+          "edges": [
+            {
+              "kind": "straight",
+              "id": "cover-panel-sa-seam:e0",
+              "role": "seam",
+              "start": {
+                "x": 334.5,
+                "y": 9.5
+              },
+              "end": {
+                "x": 334.5,
+                "y": 214.5
+              }
+            },
+            {
+              "kind": "straight",
+              "id": "cover-panel-sa-seam:e1",
+              "role": "seam",
+              "start": {
+                "x": 334.5,
+                "y": 214.5
+              },
+              "end": {
+                "x": 9.5,
+                "y": 214.5
+              }
+            },
+            {
+              "kind": "straight",
+              "id": "cover-panel-sa-seam:e2",
+              "role": "seam",
+              "start": {
+                "x": 9.5,
+                "y": 214.5
+              },
+              "end": {
+                "x": 9.5,
+                "y": 9.5
+              }
+            },
+            {
+              "kind": "straight",
+              "id": "cover-panel-sa-seam:e3",
+              "role": "seam",
+              "start": {
+                "x": 9.5,
+                "y": 9.5
+              },
+              "end": {
+                "x": 334.5,
+                "y": 9.5
+              }
+            }
+          ]
+        },
+        {
+          "id": "cover-panel-fold-v0",
+          "closed": false,
+          "edges": [
+            {
+              "kind": "straight",
+              "id": "cover-panel-fold-v0:e0",
+              "role": "fold",
+              "start": {
+                "x": 159.5,
+                "y": 0
+              },
+              "end": {
+                "x": 159.5,
+                "y": 224
+              }
+            }
+          ],
+          "label": "Front cover / spine"
+        },
+        {
+          "id": "cover-panel-fold-v1",
+          "closed": false,
+          "edges": [
+            {
+              "kind": "straight",
+              "id": "cover-panel-fold-v1:e0",
+              "role": "fold",
+              "start": {
+                "x": 184.5,
+                "y": 0
+              },
+              "end": {
+                "x": 184.5,
+                "y": 224
+              }
+            }
+          ],
+          "label": "Spine / back cover"
+        },
+        {
+          "id": "cover-panel-fold-top",
+          "closed": false,
+          "edges": [
+            {
+              "kind": "straight",
+              "id": "cover-panel-fold-top:e0",
+              "role": "fold",
+              "start": {
+                "x": 0,
+                "y": 12
+              },
+              "end": {
+                "x": 344,
+                "y": 12
+              }
+            }
+          ],
+          "label": "Top hem — fold to wrong side"
+        },
+        {
+          "id": "cover-panel-fold-bottom",
+          "closed": false,
+          "edges": [
+            {
+              "kind": "straight",
+              "id": "cover-panel-fold-bottom:e0",
+              "role": "fold",
+              "start": {
+                "x": 0,
+                "y": 212
+              },
+              "end": {
+                "x": 344,
+                "y": 212
+              }
+            }
+          ],
+          "label": "Bottom hem — fold to wrong side"
+        }
+      ],
+      "annotations": [
+        {
+          "kind": "grain",
+          "label": "Grain",
+          "point": {
+            "x": 172,
+            "y": 112
+          },
+          "angle": 90
+        },
+        {
+          "kind": "label",
+          "label": "Book Cover Panel\nCut 1\n344 × 224 mm"
+        }
+      ],
+      "seamAllowances": {
+        "cover-panel-outline:e0": 0,
+        "cover-panel-outline:e1": 0,
+        "cover-panel-outline:e2": 0,
+        "cover-panel-outline:e3": 0
+      }
+    },
+    {
+      "id": "inner-flap-left",
+      "name": "Inner Flap (Left)",
+      "mirror": false,
+      "quantity": 1,
+      "paths": [
+        {
+          "id": "inner-flap-left-outline",
+          "closed": true,
+          "edges": [
+            {
+              "kind": "straight",
+              "id": "inner-flap-left-outline:e0",
+              "role": "cut",
+              "start": {
+                "x": 0,
+                "y": 0
+              },
+              "end": {
+                "x": 91.5,
+                "y": 0
+              }
+            },
+            {
+              "kind": "straight",
+              "id": "inner-flap-left-outline:e1",
+              "role": "cut",
+              "start": {
+                "x": 91.5,
+                "y": 0
+              },
+              "end": {
+                "x": 91.5,
+                "y": 224
+              }
+            },
+            {
+              "kind": "straight",
+              "id": "inner-flap-left-outline:e2",
+              "role": "cut",
+              "start": {
+                "x": 91.5,
+                "y": 224
+              },
+              "end": {
+                "x": 0,
+                "y": 224
+              }
+            },
+            {
+              "kind": "straight",
+              "id": "inner-flap-left-outline:e3",
+              "role": "cut",
+              "start": {
+                "x": 0,
+                "y": 224
+              },
+              "end": {
+                "x": 0,
+                "y": 0
+              }
+            }
+          ]
+        },
+        {
+          "id": "inner-flap-left-fold-mouth",
+          "closed": false,
+          "edges": [
+            {
+              "kind": "straight",
+              "id": "inner-flap-left-fold-mouth:e0",
+              "role": "fold",
+              "start": {
+                "x": 79.5,
+                "y": 0
+              },
+              "end": {
+                "x": 79.5,
+                "y": 224
+              }
+            }
+          ],
+          "label": "Sleeve mouth — hem"
+        }
+      ],
+      "annotations": [
+        {
+          "kind": "label",
+          "label": "Inner Flap (Left)\nCut 1\n92 × 224 mm"
+        }
+      ],
+      "seamAllowances": {
+        "inner-flap-left-outline:e0": 0,
+        "inner-flap-left-outline:e1": 0,
+        "inner-flap-left-outline:e2": 0,
+        "inner-flap-left-outline:e3": 0
+      }
+    },
+    {
+      "id": "inner-flap-right",
+      "name": "Inner Flap (Right)",
+      "mirror": false,
+      "quantity": 1,
+      "paths": [
+        {
+          "id": "inner-flap-right-outline",
+          "closed": true,
+          "edges": [
+            {
+              "kind": "straight",
+              "id": "inner-flap-right-outline:e0",
+              "role": "cut",
+              "start": {
+                "x": 0,
+                "y": 0
+              },
+              "end": {
+                "x": 91.5,
+                "y": 0
+              }
+            },
+            {
+              "kind": "straight",
+              "id": "inner-flap-right-outline:e1",
+              "role": "cut",
+              "start": {
+                "x": 91.5,
+                "y": 0
+              },
+              "end": {
+                "x": 91.5,
+                "y": 224
+              }
+            },
+            {
+              "kind": "straight",
+              "id": "inner-flap-right-outline:e2",
+              "role": "cut",
+              "start": {
+                "x": 91.5,
+                "y": 224
+              },
+              "end": {
+                "x": 0,
+                "y": 224
+              }
+            },
+            {
+              "kind": "straight",
+              "id": "inner-flap-right-outline:e3",
+              "role": "cut",
+              "start": {
+                "x": 0,
+                "y": 224
+              },
+              "end": {
+                "x": 0,
+                "y": 0
+              }
+            }
+          ]
+        },
+        {
+          "id": "inner-flap-right-fold-mouth",
+          "closed": false,
+          "edges": [
+            {
+              "kind": "straight",
+              "id": "inner-flap-right-fold-mouth:e0",
+              "role": "fold",
+              "start": {
+                "x": 79.5,
+                "y": 0
+              },
+              "end": {
+                "x": 79.5,
+                "y": 224
+              }
+            }
+          ],
+          "label": "Sleeve mouth — hem"
+        }
+      ],
+      "annotations": [
+        {
+          "kind": "label",
+          "label": "Inner Flap (Right)\nCut 1\n92 × 224 mm"
+        }
+      ],
+      "seamAllowances": {
+        "inner-flap-right-outline:e0": 0,
+        "inner-flap-right-outline:e1": 0,
+        "inner-flap-right-outline:e2": 0,
+        "inner-flap-right-outline:e3": 0
+      }
+    }
+  ],
+  "steps": [
+    {
+      "id": "book-cover.materials",
+      "title": "Gather materials",
+      "body": "Main fabric: one body panel at 344 × 224 mm plus two inner flap pieces at 92 × 224 mm each. Interfacing recommended for the body panel. Thread to match.",
+      "dependsOn": [],
+      "refsPieces": [
+        "cover-panel",
+        "inner-flap-left",
+        "inner-flap-right"
+      ],
+      "group": "Preparation"
+    },
+    {
+      "id": "book-cover.cut-panel",
+      "title": "Cut the body and inner flap pieces",
+      "body": "Cut the body panel at 344 × 224 mm and two inner flap pieces at 92 × 224 mm. The 9.5 mm seam allowances are already included. Mark the two vertical spine fold lines and the top/bottom hem fold lines on the body's wrong side, and the sleeve-mouth hem fold on each flap.",
+      "dependsOn": [
+        "book-cover.materials"
+      ],
+      "refsPieces": [
+        "cover-panel",
+        "inner-flap-left",
+        "inner-flap-right"
+      ],
+      "group": "Cutting"
+    },
+    {
+      "id": "book-cover.flap-mouth-hems",
+      "title": "Hem the inner flap sleeve mouths",
+      "body": "On each inner flap piece, fold the inward-facing vertical edge to the wrong side by 12 mm. Press and stitch 2 mm from the fold. This finished edge becomes the open mouth of each sleeve that the book cover slides into.",
+      "dependsOn": [
+        "book-cover.cut-panel"
+      ],
+      "refsPieces": [
+        "inner-flap-left",
+        "inner-flap-right"
+      ],
+      "group": "Construction"
+    },
+    {
+      "id": "book-cover.attach-flaps",
+      "title": "Attach inner flaps to body",
+      "body": "Lay the body panel right-side up. Place each inner flap right-side DOWN on top of the body, aligning the flap's outer (un-hemmed) vertical edge with the body's left and right short edges. The flap's hemmed mouth points inward toward the spine. Pin and stitch the outer vertical edge through both layers at 9.5 mm. Press the flap open so it folds back onto the body's wrong side, forming the inner sleeve. Baste the top and bottom edges of the flap to the body so they hold during the next step.",
+      "dependsOn": [
+        "book-cover.flap-mouth-hems"
+      ],
+      "refsPieces": [
+        "cover-panel",
+        "inner-flap-left",
+        "inner-flap-right"
+      ],
+      "group": "Construction"
+    },
+    {
+      "id": "book-cover.hems",
+      "title": "Press and stitch top and bottom hems",
+      "body": "Fold the top and bottom edges of the body to the wrong side by 12 mm (catching the basted flap edges in the fold). Press firmly. Stitch 2 mm from the folded edge on both top and bottom. This locks the flaps in place and finishes the top and bottom edges.",
+      "dependsOn": [
+        "book-cover.attach-flaps"
+      ],
+      "refsPieces": [
+        "cover-panel",
+        "inner-flap-left",
+        "inner-flap-right"
+      ],
+      "group": "Construction"
+    }
+  ],
+  "bom": {
+    "materials": [
+      {
+        "id": "cover-fabric",
+        "name": "Main Cover Fabric",
+        "type": "fabric",
+        "notes": "Cut 1 panel at 484 × 224 mm"
+      }
+    ],
+    "hardware": [],
+    "notes": [
+      "Cover wraps book: 150 mm front + 25 mm spine + 150 mm back + 70 mm flaps on each side.",
+      "Top and bottom hems are 12 mm each."
+    ]
+  },
+  "warnings": []
+}
