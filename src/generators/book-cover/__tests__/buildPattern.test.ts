@@ -11,25 +11,29 @@ const BASE: BookCoverInputs = {
   units: 'mm',
 };
 
-describe('buildPattern — cut dimensions', () => {
+// Body cut width = 2*book_width + spine_width + 2*SA = 2*150 + 25 + 2*9.5 = 344
+// Body cut height = book_height + 2*top_bottom_hem = 200 + 2*12 = 224
+// Inner flap cut width = flap_depth + SA + top_bottom_hem = 70 + 9.5 + 12 = 91.5
+// Inner flap cut height = body cut height = 224
+
+describe('buildPattern — body panel cut dimensions', () => {
   it('returns ok: true for valid base inputs', () => {
     expect(buildPattern(BASE).ok).toBe(true);
   });
 
-  it('outline cut path width = 2*150 + 25 + 2*70 + 2*9.5 = 484 mm', () => {
+  it('body outline width = 2*150 + 25 + 2*9.5 = 344 mm (no flap_depth)', () => {
     const result = buildPattern(BASE);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     const panel = result.value.pieces.find(p => p.id === 'cover-panel');
     expect(panel).toBeDefined();
     const outline = panel!.paths.find(p => p.id === 'cover-panel-outline');
-    expect(outline).toBeDefined();
     const maxX = Math.max(...outline!.edges.flatMap(e => [e.start.x, e.end.x]));
     const minX = Math.min(...outline!.edges.flatMap(e => [e.start.x, e.end.x]));
-    expect(maxX - minX).toBeCloseTo(484, 5);
+    expect(maxX - minX).toBeCloseTo(344, 5);
   });
 
-  it('outline cut path height = 200 + 2*12 = 224 mm', () => {
+  it('body outline height = 200 + 2*12 = 224 mm', () => {
     const result = buildPattern(BASE);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -40,18 +44,17 @@ describe('buildPattern — cut dimensions', () => {
     expect(maxY - minY).toBeCloseTo(224, 5);
   });
 
-  it('SA=0: returns ok and outline is same size (no SA added)', () => {
+  it('SA=0: body outline width = 2*150 + 25 = 325 mm', () => {
     const result = buildPattern({ ...BASE, seam_allowance: 0 });
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     const panel = result.value.pieces.find(p => p.id === 'cover-panel');
     const outline = panel!.paths.find(p => p.id === 'cover-panel-outline');
     const maxX = Math.max(...outline!.edges.flatMap(e => [e.start.x, e.end.x]));
-    // No SA: width = 2*70 + 2*150 + 25 = 465
-    expect(maxX).toBeCloseTo(465, 5);
+    expect(maxX).toBeCloseTo(325, 5);
   });
 
-  it('SA=0: SA-offset seam path is omitted or absent', () => {
+  it('SA=0: SA-offset seam path is omitted', () => {
     const result = buildPattern({ ...BASE, seam_allowance: 0 });
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -61,20 +64,20 @@ describe('buildPattern — cut dimensions', () => {
   });
 });
 
-describe('buildPattern — fold lines', () => {
-  it('has 4 vertical fold-role paths', () => {
+describe('buildPattern — body panel fold lines', () => {
+  it('body has exactly 2 vertical fold-role paths (spine boundaries)', () => {
     const result = buildPattern(BASE);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     const panel = result.value.pieces.find(p => p.id === 'cover-panel');
     const vertFolds = panel!.paths.filter(p => p.id.startsWith('cover-panel-fold-v'));
-    expect(vertFolds).toHaveLength(4);
+    expect(vertFolds).toHaveLength(2);
     vertFolds.forEach(p => {
       expect(p.edges[0].role).toBe('fold');
     });
   });
 
-  it('vertical fold x-coords match spec: SA+flap, SA+flap+bw, SA+flap+bw+sw, SA+flap+2bw+sw', () => {
+  it('vertical fold x-coords: SA+book_width, SA+book_width+spine_width', () => {
     const SA = 9.5;
     const result = buildPattern(BASE);
     expect(result.ok).toBe(true);
@@ -84,11 +87,8 @@ describe('buildPattern — fold lines', () => {
       .filter(p => p.id.startsWith('cover-panel-fold-v'))
       .sort((a, b) => a.edges[0].start.x - b.edges[0].start.x)
       .map(p => p.edges[0].start.x);
-
-    expect(foldXs[0]).toBeCloseTo(SA + 70, 5);
-    expect(foldXs[1]).toBeCloseTo(SA + 70 + 150, 5);
-    expect(foldXs[2]).toBeCloseTo(SA + 70 + 150 + 25, 5);
-    expect(foldXs[3]).toBeCloseTo(SA + 70 + 150 + 25 + 150, 5);
+    expect(foldXs[0]).toBeCloseTo(SA + 150, 5);
+    expect(foldXs[1]).toBeCloseTo(SA + 150 + 25, 5);
   });
 
   it('top hem fold at y = 12', () => {
@@ -97,37 +97,86 @@ describe('buildPattern — fold lines', () => {
     if (!result.ok) return;
     const panel = result.value.pieces.find(p => p.id === 'cover-panel');
     const topFold = panel!.paths.find(p => p.id === 'cover-panel-fold-top');
-    expect(topFold).toBeDefined();
     expect(topFold!.edges[0].start.y).toBeCloseTo(12, 5);
   });
 
-  it('bottom hem fold at y = cutHeight - 12 = 212', () => {
+  it('bottom hem fold at y = 212', () => {
     const result = buildPattern(BASE);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     const panel = result.value.pieces.find(p => p.id === 'cover-panel');
     const bottomFold = panel!.paths.find(p => p.id === 'cover-panel-fold-bottom');
-    expect(bottomFold).toBeDefined();
     expect(bottomFold!.edges[0].start.y).toBeCloseTo(212, 5);
   });
 });
 
-describe('buildPattern — accessory piece counts', () => {
-  it('bare inputs produce exactly 1 piece', () => {
+describe('buildPattern — inner flap pieces', () => {
+  it('bare cover emits 3 pieces: body + left flap + right flap', () => {
     const result = buildPattern(BASE);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.value.pieces).toHaveLength(1);
+    const ids = result.value.pieces.map(p => p.id).sort();
+    expect(ids).toEqual(['cover-panel', 'inner-flap-left', 'inner-flap-right']);
   });
 
-  it('outer_pocket only → 2 pieces', () => {
+  it('each flap width = flap_depth + SA + top_bottom_hem = 70 + 9.5 + 12 = 91.5 mm', () => {
+    const result = buildPattern(BASE);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    for (const id of ['inner-flap-left', 'inner-flap-right']) {
+      const flap = result.value.pieces.find(p => p.id === id);
+      expect(flap).toBeDefined();
+      const outline = flap!.paths.find(p => p.id === `${id}-outline`);
+      const maxX = Math.max(...outline!.edges.flatMap(e => [e.start.x, e.end.x]));
+      const minX = Math.min(...outline!.edges.flatMap(e => [e.start.x, e.end.x]));
+      expect(maxX - minX).toBeCloseTo(91.5, 5);
+    }
+  });
+
+  it('each flap height matches body height (224 mm)', () => {
+    const result = buildPattern(BASE);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    for (const id of ['inner-flap-left', 'inner-flap-right']) {
+      const flap = result.value.pieces.find(p => p.id === id);
+      const outline = flap!.paths.find(p => p.id === `${id}-outline`);
+      const maxY = Math.max(...outline!.edges.flatMap(e => [e.start.y, e.end.y]));
+      const minY = Math.min(...outline!.edges.flatMap(e => [e.start.y, e.end.y]));
+      expect(maxY - minY).toBeCloseTo(224, 5);
+    }
+  });
+
+  it('each flap has a sleeve-mouth hem fold at cutWidth - top_bottom_hem', () => {
+    const result = buildPattern(BASE);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    for (const id of ['inner-flap-left', 'inner-flap-right']) {
+      const flap = result.value.pieces.find(p => p.id === id);
+      const mouth = flap!.paths.find(p => p.id === `${id}-fold-mouth`);
+      expect(mouth).toBeDefined();
+      expect(mouth!.edges[0].role).toBe('fold');
+      // Mouth hem sits at cutWidth - top_bottom_hem = 91.5 - 12 = 79.5
+      expect(mouth!.edges[0].start.x).toBeCloseTo(79.5, 5);
+    }
+  });
+});
+
+describe('buildPattern — accessory piece counts (additive to the 3 base pieces)', () => {
+  it('bare → 3 pieces', () => {
+    const result = buildPattern(BASE);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.pieces).toHaveLength(3);
+  });
+
+  it('outer_pocket only → 4 pieces', () => {
     const result = buildPattern({ ...BASE, outer_pocket: { width: 80, height: 100, position: 'front' } });
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.value.pieces).toHaveLength(2);
+    expect(result.value.pieces).toHaveLength(4);
   });
 
-  it('both outer_pocket and inner_pocket → 3 pieces', () => {
+  it('both pockets → 5 pieces', () => {
     const result = buildPattern({
       ...BASE,
       outer_pocket: { width: 80, height: 100, position: 'front' },
@@ -135,17 +184,17 @@ describe('buildPattern — accessory piece counts', () => {
     });
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.value.pieces).toHaveLength(3);
+    expect(result.value.pieces).toHaveLength(5);
   });
 
-  it('pen_holder only → 2 pieces', () => {
+  it('pen_holder only → 4 pieces', () => {
     const result = buildPattern({ ...BASE, pen_holder: { count: 4, slot_width: 22 } });
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.value.pieces).toHaveLength(2);
+    expect(result.value.pieces).toHaveLength(4);
   });
 
-  it('both pockets + pen_holder → 4 pieces', () => {
+  it('both pockets + pen_holder → 6 pieces', () => {
     const result = buildPattern({
       ...BASE,
       outer_pocket: { width: 80, height: 100 },
@@ -154,7 +203,7 @@ describe('buildPattern — accessory piece counts', () => {
     });
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.value.pieces).toHaveLength(4);
+    expect(result.value.pieces).toHaveLength(6);
   });
 });
 
@@ -164,9 +213,7 @@ describe('buildPattern — pocket piece dimensions', () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     const pocket = result.value.pieces.find(p => p.id === 'outer-pocket');
-    expect(pocket).toBeDefined();
     const outline = pocket!.paths.find(p => p.id === 'outer-pocket-outline');
-    expect(outline).toBeDefined();
     const maxX = Math.max(...outline!.edges.flatMap(e => [e.start.x, e.end.x]));
     expect(maxX).toBeCloseTo(99, 5);
   });
@@ -188,9 +235,7 @@ describe('buildPattern — pen holder piece', () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     const ph = result.value.pieces.find(p => p.id === 'pen-holder');
-    expect(ph).toBeDefined();
     const outline = ph!.paths.find(p => p.id === 'pen-holder-outline');
-    expect(outline).toBeDefined();
     const maxX = Math.max(...outline!.edges.flatMap(e => [e.start.x, e.end.x]));
     expect(maxX).toBeCloseTo(107, 5);
   });
@@ -204,7 +249,7 @@ describe('buildPattern — pen holder piece', () => {
     expect(folds).toHaveLength(3);
   });
 
-  it('pen_holder fold lines are spaced at slot_width intervals', () => {
+  it('pen_holder fold lines spaced at slot_width intervals', () => {
     const SA = 9.5;
     const slotW = 22;
     const result = buildPattern({ ...BASE, pen_holder: { count: 4, slot_width: slotW } });
@@ -246,11 +291,11 @@ describe('buildPattern — SVG smoke tests', () => {
 });
 
 describe('buildPattern — construction steps', () => {
-  it('bare cover has at least 4 steps', () => {
+  it('bare cover has at least 5 steps', () => {
     const result = buildPattern(BASE);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.value.steps.length).toBeGreaterThanOrEqual(4);
+    expect(result.value.steps.length).toBeGreaterThanOrEqual(5);
   });
 
   it('each configured accessory adds at least one more step', () => {
