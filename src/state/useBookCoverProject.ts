@@ -17,15 +17,18 @@ export interface BookCoverProject {
 
 export function makeDefaultBookCoverProject(): BookCoverProject {
   const now = new Date().toISOString();
+  // Seed with the Moleskine Classic Large preset — recognizable, hardcover,
+  // realistic spine and flap, so the preview is meaningful on first load.
   return {
     schemaVersion: 4,
     generatorId: 'book-cover',
     projectName: 'My Book Cover',
     inputs: {
-      book_height: 240,
-      book_width: 165,
-      spine_width: 20,
-      flap_depth: 30,
+      book_preset: 'moleskine-classic-large',
+      book_height: 210,
+      book_width: 130,
+      spine_width: 18,
+      flap_depth: 65,
       seam_allowance: DEFAULT_SEAM_ALLOWANCE_MM,
       top_bottom_hem: DEFAULT_TOP_BOTTOM_HEM_MM,
       units: 'mm',

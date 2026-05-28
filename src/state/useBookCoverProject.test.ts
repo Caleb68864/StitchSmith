@@ -15,10 +15,10 @@ describe('makeDefaultBookCoverProject', () => {
 
   it('has expected default dimensions', () => {
     const p = makeDefaultBookCoverProject();
-    expect(p.inputs.book_height).toBe(240);
-    expect(p.inputs.book_width).toBe(165);
-    expect(p.inputs.spine_width).toBe(20);
-    expect(p.inputs.flap_depth).toBe(30);
+    expect(p.inputs.book_height).toBe(210);
+    expect(p.inputs.book_width).toBe(130);
+    expect(p.inputs.spine_width).toBe(18);
+    expect(p.inputs.flap_depth).toBe(65);
     expect(p.inputs.units).toBe('mm');
   });
 
@@ -60,7 +60,7 @@ describe('useBookCoverProject', () => {
     });
 
     expect(result.current.project.inputs.book_height).toBe(300);
-    expect(result.current.project.inputs.book_width).toBe(165);
+    expect(result.current.project.inputs.book_width).toBe(130);
     expect(result.current.project.inputs.units).toBe('mm');
     expect(typeof result.current.project.updatedAt).toBe('string');
     expect(new Date(result.current.project.updatedAt).getTime()).toBeGreaterThanOrEqual(
@@ -73,7 +73,7 @@ describe('useBookCoverProject', () => {
     act(() => {
       result.current.updateInputs({ spine_width: 30 });
     });
-    expect(result.current.project.inputs.book_height).toBe(240);
+    expect(result.current.project.inputs.book_height).toBe(210);
     expect(result.current.project.inputs.seam_allowance).toBe(9.5);
   });
 
@@ -85,7 +85,7 @@ describe('useBookCoverProject', () => {
     act(() => {
       result.current.resetProject();
     });
-    expect(result.current.project.inputs.book_height).toBe(240);
+    expect(result.current.project.inputs.book_height).toBe(210);
     expect(result.current.project.projectName).toBe('My Book Cover');
   });
 
