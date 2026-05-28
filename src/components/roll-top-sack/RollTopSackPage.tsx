@@ -8,6 +8,7 @@ import { ExportPanel } from './ExportPanel.js';
 import { PatternEngineLegend } from '../shared/PatternEngineLegend.js';
 import { ConstructionSteps } from '../shared/ConstructionSteps.js';
 import { PatternPageShell } from '../shared/PatternPageShell.js';
+import { parseProjectJson, downloadProjectJson } from '../../export/projectEnvelopeIO.js';
 import { ValidationBanner } from '../shared/ValidationBanner.js';
 
 type RollTopSackPageProps = Pick<
@@ -42,7 +43,7 @@ function deriveErrors(inputs: UseRollTopSackProjectReturn['project']['inputs']):
   return errors;
 }
 
-export function RollTopSackPage({ project, updateInputs, resetProject }: RollTopSackPageProps) {
+export function RollTopSackPage({ project, updateInputs, resetProject, importProject }: RollTopSackPageProps) {
   const errors = useMemo(() => deriveErrors(project.inputs), [project.inputs]);
   const hasErrors = Object.keys(errors).length > 0;
 
@@ -64,12 +65,25 @@ export function RollTopSackPage({ project, updateInputs, resetProject }: RollTop
     }
   }
 
+  function handleImport(jsonText: string) {
+    const parsed = parseProjectJson<typeof project>(jsonText, 'roll-top-sack');
+    importProject(parsed);
+  }
+
+  function handleExport() {
+    downloadProjectJson(project);
+  }
+
   return (
     <PatternPageShell
       title={project.projectName}
       subtitle="Roll-Top Stuff Sack Generator"
       onReset={handleReset}
       resetLabel="Reset"
+      onImport={handleImport}
+      onExport={handleExport}
+      importTooltip="Load a previously-exported Roll-Top Sack project (.json)"
+      exportTooltip="Download this project as JSON"
       banner={<ValidationBanner errors={errors} fieldLabels={FIELD_LABELS} title="Fix these before exporting" />}
       settings={
         <RollTopSackSettingsPanel

@@ -11,6 +11,7 @@ import { ConstructionSteps } from '../shared/ConstructionSteps.js';
 import { PatternEngineLegend } from '../shared/PatternEngineLegend.js';
 import { PatternPageShell } from '../shared/PatternPageShell.js';
 import { ValidationBanner } from '../shared/ValidationBanner.js';
+import { parseProjectJson, downloadProjectJson } from '../../export/projectEnvelopeIO.js';
 import { WarningsPanel, type UiWarning } from '../shared/WarningsPanel.js';
 
 interface Props {
@@ -59,12 +60,25 @@ export function MagPouchPage({ project, updateInputs, resetProject, importProjec
     </>
   );
 
+  function handleImport(jsonText: string) {
+    const parsed = parseProjectJson<MagPouchProject>(jsonText, 'mag-pouch');
+    importProject(parsed);
+  }
+
+  function handleExport() {
+    downloadProjectJson(project);
+  }
+
   return (
     <PatternPageShell
       title={project.projectName}
       subtitle="Mag Pouch Generator"
       onReset={resetProject}
       resetLabel="Reset"
+      onImport={handleImport}
+      onExport={handleExport}
+      importTooltip="Load a previously-exported Mag Pouch project (.json)"
+      exportTooltip="Download this project as JSON"
       banner={banner}
       settings={<MagPouchSettingsPanel inputs={inputs} errors={errors} onChange={updateInputs} />}
       preview={<PatternPreview result={result} errors={errors} />}

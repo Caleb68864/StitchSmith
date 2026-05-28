@@ -6,6 +6,7 @@ import { PatternPreview } from './PatternPreview.js';
 import { ExportPanel } from './ExportPanel.js';
 import { TriZipLegend } from './Legend.js';
 import { PatternPageShell } from '../shared/PatternPageShell.js';
+import { parseProjectJson, downloadProjectJson } from '../../export/projectEnvelopeIO.js';
 import { ValidationBanner } from '../shared/ValidationBanner.js';
 
 type TriZipPageProps = Pick<
@@ -62,12 +63,25 @@ export function TriZipPage({ project, updateInputs, resetProject, importProject 
     }
   }
 
+  function handleImport(jsonText: string) {
+    const parsed = parseProjectJson<typeof project>(jsonText, 'tri-zip-backpack');
+    importProject(parsed);
+  }
+
+  function handleExport() {
+    downloadProjectJson(project);
+  }
+
   return (
     <PatternPageShell
       title={project.projectName}
       subtitle="Tri-Zip Backpack Generator"
       onReset={handleReset}
       resetLabel="Reset"
+      onImport={handleImport}
+      onExport={handleExport}
+      importTooltip="Load a previously-exported Tri-Zip project (.json)"
+      exportTooltip="Download this project as JSON"
       banner={<ValidationBanner errors={errors} fieldLabels={FIELD_LABELS} title="Fix these before exporting" />}
       settings={
         <TriZipSettingsPanel

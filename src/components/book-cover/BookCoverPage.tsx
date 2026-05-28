@@ -3,6 +3,7 @@ import type { UseBookCoverProjectReturn } from '../../state/useBookCoverProject.
 import { validateInputs } from '../../generators/book-cover/inputs.js';
 import { buildPattern } from '../../generators/book-cover/index.js';
 import { PatternPageShell } from '../shared/PatternPageShell.js';
+import { parseProjectJson, downloadProjectJson } from '../../export/projectEnvelopeIO.js';
 import { PatternEngineLegend } from '../shared/PatternEngineLegend.js';
 import { ConstructionSteps } from '../shared/ConstructionSteps.js';
 import { BookCoverSettingsPanel } from './BookCoverSettingsPanel.js';
@@ -86,6 +87,7 @@ export function BookCoverPage({
   project,
   updateInputs,
   resetProject,
+  importProject,
   toggleOuterPocket,
   toggleInnerPocket,
   togglePenHolder,
@@ -117,11 +119,24 @@ export function BookCoverPage({
     }
   }
 
+  function handleImport(jsonText: string) {
+    const parsed = parseProjectJson<typeof project>(jsonText, 'book-cover');
+    importProject(parsed);
+  }
+
+  function handleExport() {
+    downloadProjectJson(project);
+  }
+
   return (
     <PatternPageShell
       title={project.projectName}
       subtitle="Book Cover Generator"
       onReset={handleReset}
+      onImport={handleImport}
+      onExport={handleExport}
+      importTooltip="Load a previously-exported Book Cover project (.json)"
+      exportTooltip="Download this project as JSON"
       banner={
         hasErrors ? (
           <div className="rounded border border-destructive/50 bg-destructive/5 p-3 space-y-1">
