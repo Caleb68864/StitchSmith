@@ -1,10 +1,12 @@
 import type { BookCoverInputs, ResolvedInputs, Result, BuildPatternError, ZipperGauge, ElasticTension, ClosureConfig, InterfacingKind, LiningConfig } from './types.js';
 import { DEFAULT_SEAM_ALLOWANCE_MM, DEFAULT_TOP_BOTTOM_HEM_MM, BOOK_PRESETS, FOLDOVER_PRESETS, ZIPPER_GAUGE_DEFAULTS, CLOSURE_DEFAULTS, LINING_DEFAULTS, CARD_SLOTS_DEFAULTS, BOOKMARK_RIBBON_DEFAULTS, INTERNAL_ZIP_POCKET_DEFAULTS, TACTICAL_DEFAULTS } from './defaults.js';
+import { toMm as engineToMm } from '../../lib/pattern-engine/geometry/units.js';
 
-const IN_TO_MM = 25.4;
-
+// Re-export the engine's toMm narrowed to ('mm' | 'in') — the two units
+// BookCoverInputs accepts. The conversion math lives in pattern-engine
+// so generators don't redeclare it.
 export function toMm(value: number, units: 'mm' | 'in'): number {
-  return units === 'in' ? value * IN_TO_MM : value;
+  return engineToMm(value, units);
 }
 
 function isPositiveFinite(n: number): boolean {
