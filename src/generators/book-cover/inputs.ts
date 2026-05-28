@@ -1,5 +1,5 @@
 import type { BookCoverInputs, ResolvedInputs, Result, BuildPatternError } from './types.js';
-import { DEFAULT_SEAM_ALLOWANCE_MM, DEFAULT_TOP_BOTTOM_HEM_MM } from './defaults.js';
+import { DEFAULT_SEAM_ALLOWANCE_MM, DEFAULT_TOP_BOTTOM_HEM_MM, BOOK_PRESETS, FOLDOVER_PRESETS } from './defaults.js';
 
 const IN_TO_MM = 25.4;
 
@@ -14,10 +14,38 @@ function isPositiveFinite(n: number): boolean {
 export function validateInputs(inputs: BookCoverInputs): Result<true, BuildPatternError> {
   const { units } = inputs;
 
-  const bookH = toMm(inputs.book_height, units);
-  const bookW = toMm(inputs.book_width, units);
-  const spineW = toMm(inputs.spine_width, units);
-  const flapD = toMm(inputs.flap_depth, units);
+  // Validate book_preset
+  let preset = BOOK_PRESETS.find(p => p.id === inputs.book_preset);
+  if (inputs.book_preset !== undefined && !preset) {
+    return { ok: false, error: { kind: 'invalid-inputs', message: `Unknown book preset: "${inputs.book_preset}"` } };
+  }
+
+  // Validate foldover_preset
+  if (inputs.foldover_preset !== undefined) {
+    if (!FOLDOVER_PRESETS.find(p => p.id === inputs.foldover_preset)) {
+      return { ok: false, error: { kind: 'invalid-inputs', message: `Unknown foldover preset: "${inputs.foldover_preset}"` } };
+    }
+  }
+
+  // Validate width_ease
+  if (inputs.width_ease !== undefined) {
+    if (!isFinite(inputs.width_ease) || inputs.width_ease < 0) {
+      return { ok: false, error: { kind: 'invalid-inputs', message: 'width_ease must be a non-negative finite number' } };
+    }
+  }
+
+  // Validate spine_bulge
+  if (inputs.spine_bulge !== undefined) {
+    if (!isFinite(inputs.spine_bulge) || inputs.spine_bulge < 0) {
+      return { ok: false, error: { kind: 'invalid-inputs', message: 'spine_bulge must be a non-negative finite number' } };
+    }
+  }
+
+  // Resolve effective dimensions (user input overrides preset)
+  const bookH = inputs.book_height !== undefined ? toMm(inputs.book_height, units) : (preset?.book_height_mm ?? NaN);
+  const bookW = inputs.book_width !== undefined ? toMm(inputs.book_width, units) : (preset?.book_width_mm ?? NaN);
+  const spineW = inputs.spine_width !== undefined ? toMm(inputs.spine_width, units) : (preset?.spine_width_mm ?? NaN);
+  const flapD = inputs.flap_depth !== undefined ? toMm(inputs.flap_depth, units) : (preset?.flap_depth_mm ?? NaN);
 
   if (!isPositiveFinite(bookH)) {
     return { ok: false, error: { kind: 'invalid-inputs', message: 'book_height must be a positive finite number' } };
@@ -79,14 +107,31 @@ export function validateInputs(inputs: BookCoverInputs): Result<true, BuildPatte
 
 export function resolveInputs(inputs: BookCoverInputs): ResolvedInputs {
   const { units } = inputs;
+
+  const preset = inputs.book_preset ? BOOK_PRESETS.find(p => p.id === inputs.book_preset) : undefined;
+
+  const book_height = inputs.book_height !== undefined ? toMm(inputs.book_height, units) : (preset?.book_height_mm ?? NaN);
+  const book_width = inputs.book_width !== undefined ? toMm(inputs.book_width, units) : (preset?.book_width_mm ?? NaN);
+  const spine_width = inputs.spine_width !== undefined ? toMm(inputs.spine_width, units) : (preset?.spine_width_mm ?? NaN);
+  const flap_depth = inputs.flap_depth !== undefined ? toMm(inputs.flap_depth, units) : (preset?.flap_depth_mm ?? NaN);
+
+  const is_hardcover = inputs.is_hardcover ?? preset?.is_hardcover ?? false;
+  const width_ease = inputs.width_ease ?? Math.max(6.35, spine_width * 0.5);
+  const spine_bulge = inputs.spine_bulge ?? (is_hardcover ? 6.35 : 0);
+
   return {
-    book_height: toMm(inputs.book_height, units),
-    book_width: toMm(inputs.book_width, units),
-    spine_width: toMm(inputs.spine_width, units),
-    flap_depth: toMm(inputs.flap_depth, units),
+    book_height,
+    book_width,
+    spine_width,
+    flap_depth,
     seam_allowance: inputs.seam_allowance ?? DEFAULT_SEAM_ALLOWANCE_MM,
     top_bottom_hem: DEFAULT_TOP_BOTTOM_HEM_MM,
     units,
+    book_preset: inputs.book_preset,
+    foldover_preset: inputs.foldover_preset,
+    width_ease,
+    spine_bulge,
+    is_hardcover,
     outer_pocket: inputs.outer_pocket,
     inner_pocket: inputs.inner_pocket,
     pen_holder: inputs.pen_holder,

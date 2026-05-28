@@ -16,12 +16,17 @@ export interface PenHolderConfig {
 }
 
 export interface BookCoverInputs {
-  book_height: number;
-  book_width: number;
-  spine_width: number;
-  flap_depth: number;
+  book_height?: number;
+  book_width?: number;
+  spine_width?: number;
+  flap_depth?: number;
   seam_allowance?: number;
   units: 'mm' | 'in';
+  book_preset?: string;
+  foldover_preset?: 'tactical' | 'civilian';
+  width_ease?: number;
+  spine_bulge?: number;
+  is_hardcover?: boolean;
   outer_pocket?: PocketConfig;
   inner_pocket?: PocketConfig;
   pen_holder?: PenHolderConfig;
@@ -35,6 +40,11 @@ export interface ResolvedInputs {
   seam_allowance: number;
   top_bottom_hem: number;
   units: 'mm' | 'in';
+  book_preset?: string;
+  foldover_preset?: 'tactical' | 'civilian';
+  width_ease: number;
+  spine_bulge: number;
+  is_hardcover: boolean;
   outer_pocket?: PocketConfig;
   inner_pocket?: PocketConfig;
   pen_holder?: PenHolderConfig;
