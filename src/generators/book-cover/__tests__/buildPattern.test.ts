@@ -365,7 +365,7 @@ describe('buildPattern — closure modes', () => {
   });
 
   it('elastic with attach_offset returns body with 2 notch annotations', () => {
-    const result = buildPattern({ ...BASE, closure: { kind: 'elastic', strap_width: 12.7, attach_offset: 30 } });
+    const result = buildPattern({ ...BASE, closure: { kind: 'elastic', attach_offset: 30 } });
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     const panel = result.value.pieces.find(p => p.id === 'cover-panel')!;
@@ -376,7 +376,7 @@ describe('buildPattern — closure modes', () => {
   it('elastic notches placed at y = cutHeight/2 ± attach_offset', () => {
     const attachOffset = 30;
     const cutHeight = BASE.book_height! + 2 * 12; // book_height + 2*top_bottom_hem = 200 + 24 = 224
-    const result = buildPattern({ ...BASE, closure: { kind: 'elastic', strap_width: 12.7, attach_offset: attachOffset } });
+    const result = buildPattern({ ...BASE, closure: { kind: 'elastic', attach_offset: attachOffset } });
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     const panel = result.value.pieces.find(p => p.id === 'cover-panel')!;

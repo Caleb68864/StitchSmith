@@ -21,7 +21,7 @@ export type ElasticTension = 'light' | 'standard' | 'firm';
 export type ClosureConfig =
   | { kind: 'none' }
   | { kind: 'zipper'; gauge: ZipperGauge; corner_radius?: number }
-  | { kind: 'elastic'; width_mm?: number; tension?: ElasticTension }
+  | { kind: 'elastic'; width_mm?: number; tension?: ElasticTension; attach_offset?: number }
   | { kind: 'snap'; count?: number }
   | { kind: 'flap-buckle'; strap_width?: number; buckle_size?: number };
 

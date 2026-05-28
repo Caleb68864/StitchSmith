@@ -197,7 +197,7 @@ describe('closure: snap — notch annotations', () => {
 
 describe('closure: elastic — notch annotations', () => {
   it('elastic with attach_offset=30 adds 2 notch annotations to body', () => {
-    const result = buildPattern({ ...BASE, closure: { kind: 'elastic', strap_width: 12.7, attach_offset: 30 } });
+    const result = buildPattern({ ...BASE, closure: { kind: 'elastic', attach_offset: 30 } });
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     const panel = result.value.pieces.find(p => p.id === 'cover-panel')!;
@@ -227,7 +227,7 @@ describe('closure: elastic — notch annotations', () => {
   });
 
   it('elastic yields 3 pieces (no extra strap piece)', () => {
-    const result = buildPattern({ ...BASE, closure: { kind: 'elastic', strap_width: 12.7, attach_offset: 30 } });
+    const result = buildPattern({ ...BASE, closure: { kind: 'elastic', attach_offset: 30 } });
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.value.pieces).toHaveLength(3);
