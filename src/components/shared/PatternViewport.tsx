@@ -122,22 +122,63 @@ export function PatternViewport({
   const zoomIn = () => setScale((s) => Math.min(MAX_SCALE, s * ZOOM_FACTOR));
   const zoomOut = () => setScale((s) => Math.max(MIN_SCALE, s / ZOOM_FACTOR));
 
+  // Keyboard control: arrow keys pan, +/-/= zoom, 0 fit-to-screen.
+  function handleKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
+    const PAN_STEP = 32;
+    switch (e.key) {
+      case 'ArrowUp':    e.preventDefault(); setTranslate((t) => ({ x: t.x, y: t.y + PAN_STEP })); return;
+      case 'ArrowDown':  e.preventDefault(); setTranslate((t) => ({ x: t.x, y: t.y - PAN_STEP })); return;
+      case 'ArrowLeft':  e.preventDefault(); setTranslate((t) => ({ x: t.x + PAN_STEP, y: t.y })); return;
+      case 'ArrowRight': e.preventDefault(); setTranslate((t) => ({ x: t.x - PAN_STEP, y: t.y })); return;
+      case '+':
+      case '=': e.preventDefault(); zoomIn(); return;
+      case '-':
+      case '_': e.preventDefault(); zoomOut(); return;
+      case '0': e.preventDefault(); fitToScreen(); return;
+    }
+  }
+
   return (
     <div className="rounded border border-border bg-white dark:bg-gray-900 relative overflow-hidden">
       <div className="absolute top-2 right-2 z-10 flex gap-1 bg-white/90 dark:bg-gray-900/90 backdrop-blur rounded border border-border p-1 shadow-sm">
         {toolbarExtras}
         {toolbarExtras && <span className="w-px bg-border self-stretch mx-0.5" aria-hidden />}
-        <Button variant="ghost" size="sm" onClick={zoomOut} className="h-7 w-7 p-0" title="Zoom out (or scroll down)">
-          <ZoomOut className="h-3.5 w-3.5" />
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={zoomOut}
+          className="h-7 w-7 p-0"
+          title="Zoom out (or scroll down)"
+          aria-label="Zoom out"
+        >
+          <ZoomOut className="h-3.5 w-3.5" aria-hidden="true" />
         </Button>
-        <span className="text-xs text-muted-foreground self-center w-12 text-center tabular-nums">
+        <span
+          className="text-xs text-muted-foreground self-center w-12 text-center tabular-nums"
+          aria-live="polite"
+          aria-label={`Zoom level: ${Math.round(scale * 100)} percent`}
+        >
           {Math.round(scale * 100)}%
         </span>
-        <Button variant="ghost" size="sm" onClick={zoomIn} className="h-7 w-7 p-0" title="Zoom in (or scroll up)">
-          <ZoomIn className="h-3.5 w-3.5" />
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={zoomIn}
+          className="h-7 w-7 p-0"
+          title="Zoom in (or scroll up)"
+          aria-label="Zoom in"
+        >
+          <ZoomIn className="h-3.5 w-3.5" aria-hidden="true" />
         </Button>
-        <Button variant="ghost" size="sm" onClick={fitToScreen} className="h-7 w-7 p-0" title="Fit to screen">
-          <Maximize2 className="h-3.5 w-3.5" />
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={fitToScreen}
+          className="h-7 w-7 p-0"
+          title="Fit to screen (or press 0)"
+          aria-label="Fit pattern to screen"
+        >
+          <Maximize2 className="h-3.5 w-3.5" aria-hidden="true" />
         </Button>
       </div>
 
@@ -149,12 +190,16 @@ export function PatternViewport({
 
       <div
         ref={viewportRef}
-        className="overflow-hidden relative"
+        role="img"
+        aria-label="Pattern preview. Drag to pan, scroll to zoom. Keyboard: arrow keys pan, plus or minus zoom, zero fits to screen."
+        tabIndex={0}
+        className="overflow-hidden relative outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         style={{ height, cursor: dragRef.current ? 'grabbing' : 'grab', touchAction: 'none' }}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
+        onKeyDown={handleKeyDown}
       >
         <div
           ref={contentRef}
