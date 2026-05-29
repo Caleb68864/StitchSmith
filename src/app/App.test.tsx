@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { App } from './App.js';
 import { _resetStorage } from '../state/useToolRollProject.js';
 
@@ -22,63 +22,59 @@ describe('App integration', () => {
     expect(screen.getAllByText(/Tri-Zip Backpack/i).length).toBeGreaterThan(0);
   });
 
-  it('navigates to tool roll page when clicking Open Tool Roll', () => {
-    render(<App />);
-    const openBtn = screen.getByRole('button', { name: /Open Tool Roll/i });
-    fireEvent.click(openBtn);
-    // Tool Roll page shows wrench inputs
-    expect(screen.getAllByDisplayValue(/wrench/i).length).toBe(4);
-  });
-
-  it('loads the 4 starter tools when navigating to tool roll', () => {
-    render(<App />);
-    const openBtn = screen.getByRole('button', { name: /Open Tool Roll/i });
-    fireEvent.click(openBtn);
-    expect(screen.getAllByDisplayValue(/wrench/i).length).toBe(4);
-  });
-
-  it('adds a tool so the tool count increments from 4 to 5', () => {
+  it('navigates to tool roll page when clicking Open Tool Roll', async () => {
     render(<App />);
     fireEvent.click(screen.getByRole('button', { name: /Open Tool Roll/i }));
-
-    const addButton = screen.getByRole('button', { name: /add tool/i });
-    fireEvent.click(addButton);
-
-    const newToolInputs = screen.queryAllByDisplayValue(/new tool/i);
-    expect(newToolInputs.length).toBeGreaterThan(0);
-
-    const allToolNameInputs = screen.getAllByDisplayValue(/wrench|new tool/i);
-    expect(allToolNameInputs.length).toBe(5);
+    // Lazy-loaded — wait for wrench inputs to appear
+    await waitFor(() => expect(screen.getAllByDisplayValue(/wrench/i).length).toBe(4), { timeout: 5000 });
   });
 
-  it('Reset button restores the 4 starter tools (sampleTools)', () => {
+  it('loads the 4 starter tools when navigating to tool roll', async () => {
     render(<App />);
     fireEvent.click(screen.getByRole('button', { name: /Open Tool Roll/i }));
+    await waitFor(() => expect(screen.getAllByDisplayValue(/wrench/i).length).toBe(4), { timeout: 5000 });
+  });
 
-    const addButton = screen.getByRole('button', { name: /add tool/i });
-    fireEvent.click(addButton);
+  it('adds a tool so the tool count increments from 4 to 5', async () => {
+    render(<App />);
+    fireEvent.click(screen.getByRole('button', { name: /Open Tool Roll/i }));
+    await waitFor(() => screen.getByRole('button', { name: /add tool/i }), { timeout: 5000 });
 
-    expect(screen.queryAllByDisplayValue(/new tool/i).length).toBeGreaterThan(0);
+    fireEvent.click(screen.getByRole('button', { name: /add tool/i }));
 
-    const resetButton = screen.getByRole('button', { name: /reset/i });
-    fireEvent.click(resetButton);
+    await waitFor(() => expect(screen.queryAllByDisplayValue(/new tool/i).length).toBeGreaterThan(0));
+    expect(screen.getAllByDisplayValue(/wrench|new tool/i).length).toBe(5);
+  });
 
-    expect(screen.queryAllByDisplayValue(/new tool/i).length).toBe(0);
+  it('Reset button restores the 4 starter tools (sampleTools)', async () => {
+    render(<App />);
+    fireEvent.click(screen.getByRole('button', { name: /Open Tool Roll/i }));
+    await waitFor(() => screen.getByRole('button', { name: /add tool/i }), { timeout: 5000 });
+
+    fireEvent.click(screen.getByRole('button', { name: /add tool/i }));
+    await waitFor(() => expect(screen.queryAllByDisplayValue(/new tool/i).length).toBeGreaterThan(0));
+
+    fireEvent.click(screen.getByRole('button', { name: /reset/i }));
+    await waitFor(() => expect(screen.queryAllByDisplayValue(/new tool/i).length).toBe(0));
     expect(screen.getAllByDisplayValue(/wrench/i).length).toBe(4);
   });
 
-  it('navigates to tri-zip page when clicking Open Tri-Zip Backpack', () => {
+  it('navigates to tri-zip page when clicking Open Tri-Zip Backpack', async () => {
     render(<App />);
-    const openBtn = screen.getByRole('button', { name: /Open Tri-Zip Backpack/i });
-    fireEvent.click(openBtn);
-    expect(screen.getAllByText(/Tri-Zip Backpack Generator/i).length).toBeGreaterThan(0);
+    fireEvent.click(screen.getByRole('button', { name: /Open Tri-Zip Backpack/i }));
+    await waitFor(() =>
+      expect(screen.getAllByText(/Tri-Zip Backpack Generator/i).length).toBeGreaterThan(0),
+      { timeout: 5000 }
+    );
   });
 
-  it('navigates to book cover page when clicking Open Book Cover', () => {
+  it('navigates to book cover page when clicking Open Book Cover', async () => {
     render(<App />);
-    const openBtn = screen.getByRole('button', { name: /Open Book Cover/i });
-    fireEvent.click(openBtn);
-    expect(screen.getAllByText(/Book Cover Generator/i).length).toBeGreaterThan(0);
+    fireEvent.click(screen.getByRole('button', { name: /Open Book Cover/i }));
+    await waitFor(() =>
+      expect(screen.getAllByText(/Book Cover Generator/i).length).toBeGreaterThan(0),
+      { timeout: 5000 }
+    );
   });
 
   it('landing page lists Book Cover among the patterns', () => {
@@ -100,16 +96,21 @@ describe('App integration', () => {
   ] as const;
 
   for (const { open, subtitle } of SMOKE_TARGETS) {
-    it(`smoke: ${String(open).replace(/[/\\^$*+?.()|[\]{}]/g, '')} mounts cleanly with header chrome`, () => {
+    it(`smoke: ${String(open).replace(/[/\\^$*+?.()|[\]{}]/g, '')} mounts cleanly with header chrome`, async () => {
       render(<App />);
       fireEvent.click(screen.getByRole('button', { name: open }));
+      // Lazy-loaded page — wait for the Reset button (inside the lazy component,
+      // not the header) to confirm the page is fully mounted before asserting.
+      await waitFor(() =>
+        expect(screen.getAllByRole('button', { name: /reset/i }).length).toBeGreaterThan(0),
+        { timeout: 5000 }
+      );
       // Page rendered without throwing — subtitle is the cheapest signal.
       expect(screen.getAllByText(subtitle).length).toBeGreaterThan(0);
       // Import + Export + Reset buttons visible. Tool Roll uses AppHeader, the
       // other four use PatternPageShell — both should expose all three.
       expect(screen.getAllByRole('button', { name: /import/i }).length).toBeGreaterThan(0);
       expect(screen.getAllByRole('button', { name: /export/i }).length).toBeGreaterThan(0);
-      expect(screen.getAllByRole('button', { name: /reset/i }).length).toBeGreaterThan(0);
     });
   }
 });

@@ -1,11 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { AppHeader } from '../components/layout/AppHeader.js';
 import { PageShell } from '../components/layout/PageShell.js';
-import { ToolRollPage } from '../components/tool-roll/ToolRollPage.js';
-import { TriZipPage } from '../components/tri-zip-backpack/TriZipPage.js';
-import { RollTopSackPage } from '../components/roll-top-sack/RollTopSackPage.js';
-import { MagPouchPage } from '../components/mag-pouch/MagPouchPage.js';
-import { BookCoverPage } from '../components/book-cover/BookCoverPage.js';
 import { LandingPage } from '../components/landing/LandingPage.js';
 import { useToolRollProject } from '../state/useToolRollProject.js';
 import { useTriZipProject } from '../state/useTriZipProject.js';
@@ -15,6 +10,25 @@ import { useBookCoverProject } from '../state/useBookCoverProject.js';
 import { Toaster } from '../components/shared/Toaster.js';
 import { ErrorBoundary } from '../components/shared/ErrorBoundary.js';
 import type { PatternEntry } from './patternRegistry.js';
+
+// Lazy-load each generator page so its heavy deps (buildPattern, SettingsPanel,
+// ExportPanel, PatternPreview) are split into separate chunks and not parsed on
+// initial load for users who never visit that generator.
+const ToolRollPage = lazy(() =>
+  import('../components/tool-roll/ToolRollPage.js').then(m => ({ default: m.ToolRollPage }))
+);
+const TriZipPage = lazy(() =>
+  import('../components/tri-zip-backpack/TriZipPage.js').then(m => ({ default: m.TriZipPage }))
+);
+const RollTopSackPage = lazy(() =>
+  import('../components/roll-top-sack/RollTopSackPage.js').then(m => ({ default: m.RollTopSackPage }))
+);
+const MagPouchPage = lazy(() =>
+  import('../components/mag-pouch/MagPouchPage.js').then(m => ({ default: m.MagPouchPage }))
+);
+const BookCoverPage = lazy(() =>
+  import('../components/book-cover/BookCoverPage.js').then(m => ({ default: m.BookCoverPage }))
+);
 
 // Tab title per view so users with multiple tabs can tell them apart.
 const VIEW_TITLES: Record<View, string> = {
@@ -104,6 +118,11 @@ export function App() {
             navigates away from a crashed page — otherwise the error sticks
             until full reload. */}
         <ErrorBoundary key={view}>
+        <Suspense fallback={
+          <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground">
+            Loading…
+          </div>
+        }>
         {view === 'landing' && (
           <LandingPage onSelectPattern={(route: PatternEntry['route']) => setView(route)} />
         )}
@@ -162,6 +181,7 @@ export function App() {
             toggleTactical={bookCoverState.toggleTactical}
           />
         )}
+        </Suspense>
         </ErrorBoundary>
       </PageShell>
       <Toaster />

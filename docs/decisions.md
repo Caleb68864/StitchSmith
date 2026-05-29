@@ -64,3 +64,10 @@
 - Surfaces: vite.config.ts, public/icon.svg, package.json (new devDep), dist/sw.js + dist/manifest.webmanifest (generated).
 - Watch: precache totals 1060 KB raw (well under any reasonable cache budget). autoUpdate mode silently updates the SW on next navigation — no user prompt needed for a tool like this. If generators grow significantly, revisit runtime caching vs precaching split.
 - Commit: feat(P24)
+
+## 2026-05-28 — Main bundle 619 KB raw, Vite chunk warning, no route-level splitting
+- Symptom: All five generator pages were eagerly imported in App.tsx. Every user loaded ToolRollPage, TriZipPage, RollTopSackPage, MagPouchPage, and BookCoverPage code on first paint regardless of which generator they use. Vite warned "(!) Some chunks are larger than 500 kB after minification."
+- Fix: Converted the five eager page imports to React.lazy() + Suspense. Rollup now splits each generator into its own chunk (20–63 KB each). App tests updated to await lazy-mounted elements using waitFor with explicit 5-second timeouts to avoid flakiness in the full suite.
+- Surfaces: src/app/App.tsx (lazy imports + Suspense wrapper), src/app/App.test.tsx (async waitFor upgrades).
+- Watch: main chunk is now 278 KB raw / 89 KB gzip (was 619 KB / 184 KB). Vite chunk warning gone. PWA precache still picks up all chunks; no cache budget changes needed. If a generator grows past ~100 KB gzip, consider splitting its SettingsPanel separately.
+- Commit: perf(P27)
