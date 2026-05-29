@@ -19,6 +19,7 @@ import {
   DEFAULT_UNITS,
   DEFAULT_PRESET,
   DEFAULT_CONSTRUCTION_STYLE,
+  DEFAULT_ZIPPER_POSITION,
   getPresetDimensions,
 } from './defaults.js';
 
@@ -51,6 +52,8 @@ export function resolveInputs(inputs: ZipPouchInputs): ResolvedInputs {
     grosgrain_width: inputs.grosgrain_width ?? DEFAULT_GROSGRAIN_WIDTH_MM,
     pull_loops: inputs.pull_loops ?? DEFAULT_PULL_LOOPS,
     construction_style: inputs.construction_style ?? DEFAULT_CONSTRUCTION_STYLE,
+    zipper_position: inputs.zipper_position ?? DEFAULT_ZIPPER_POSITION,
+    zip_from_top: inputs.zip_from_top ?? Math.round(finished_width / 2),
   };
 }
 
@@ -162,6 +165,29 @@ export function validateInputs(inputs: ZipPouchInputs): ValidationResult {
         field: 'grosgrain_width',
         message: `grosgrain_width must be a positive finite number when pull_loops is true (got ${resolved.grosgrain_width}).`,
       });
+    }
+  }
+
+  // ── Zipper placement from top (front-zip gusset-strip construction) ─────────────
+
+  if (dimensionsValid) {
+    const zipFromTop = resolved.zip_from_top;
+    if (
+      !Number.isFinite(zipFromTop) ||
+      zipFromTop <= 0 ||
+      zipFromTop >= resolved.finished_width
+    ) {
+      errors.push({
+        field: 'zip_from_top',
+        message:
+          `zip_from_top must be greater than 0 and less than finished_width ` +
+          `(got ${zipFromTop} mm; finished_width=${resolved.finished_width} mm).`,
+      });
+    } else if (resolved.zipper_position === 'front' && zipFromTop < 20) {
+      warnings.push(
+        `The front-top strip is narrower than 2 cm (zip_from_top=${zipFromTop} mm); ` +
+          `consider increasing the zipper placement for an easier-to-sew strip.`,
+      );
     }
   }
 
