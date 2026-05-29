@@ -13,6 +13,10 @@ export type ZipPouchPreset = 'pencil' | 'edc' | 'toiletry' | 'custom';
 
 export type ConstructionStyle = 'boxed' | 'cross-bottom' | 'gusset-strip' | 'multi-panel';
 
+// ─── Zipper position ────────────────────────────────────────────────────────────
+
+export type ZipperPosition = 'top' | 'front';
+
 // ─── Generator inputs ───────────────────────────────────────────────────────────
 
 export interface ZipPouchInputs {
@@ -36,6 +40,10 @@ export interface ZipPouchInputs {
   preset?: ZipPouchPreset;
   /** Construction method. Default 'boxed'. */
   construction_style?: ConstructionStyle;
+  /** Zipper position (gusset-strip only). Default 'top'. */
+  zipper_position?: ZipperPosition;
+  /** Zipper placement from top in mm (front-zip only). */
+  zip_from_top?: number;
 }
 
 // ─── Resolved (fully defaulted) inputs ─────────────────────────────────────────
@@ -51,6 +59,8 @@ export interface ResolvedInputs {
   pull_loops: boolean;
   preset: ZipPouchPreset;
   construction_style: ConstructionStyle;
+  zipper_position: ZipperPosition;
+  zip_from_top: number;
 }
 
 // ─── BOM ────────────────────────────────────────────────────────────────────────
