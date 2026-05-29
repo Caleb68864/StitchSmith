@@ -57,3 +57,10 @@
 - Surfaces: src/generators/tri-zip-backpack/buildPattern.ts, src/components/tri-zip-backpack/TriZipPage.tsx, src/storage/genericProjectStorage.test.ts.
 - Watch: buildPattern return type is now Pattern & { steps } — callers that destructure only Pattern fields (ExportPanel, PatternPreview) remain valid via structural typing; tests confirm no regression across 1175 cases.
 - Commit: polish(P25-P28)
+
+## 2026-05-28 — No PWA manifest, service worker, or offline capability
+- Symptom: StitchSmith had no web app manifest, install prompt, or service worker. Reloading without a network connection showed a browser error page even though all generators work entirely client-side.
+- Fix: Added vite-plugin-pwa (v1.3.0) with generateSW mode. Workbox precaches all JS/CSS/HTML/SVG assets. Manifest declares name, theme_color (#18181b), display: standalone, start_url /, and an SVG icon. Plugin auto-injects the manifest link and SW registration script into index.html at build time.
+- Surfaces: vite.config.ts, public/icon.svg, package.json (new devDep), dist/sw.js + dist/manifest.webmanifest (generated).
+- Watch: precache totals 1060 KB raw (well under any reasonable cache budget). autoUpdate mode silently updates the SW on next navigation — no user prompt needed for a tool like this. If generators grow significantly, revisit runtime caching vs precaching split.
+- Commit: feat(P24)
