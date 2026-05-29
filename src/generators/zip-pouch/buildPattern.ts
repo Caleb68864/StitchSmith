@@ -13,27 +13,9 @@ import { boxedCornerStitchLine } from '../../lib/pattern-engine/geometry/boxedCo
 import type { Step } from '../../lib/pattern-engine/instructions/Step.js';
 import type { ZipPouchInputs, BomRow, BuildPatternError, Result, ResolvedInputs } from './types.js';
 import { resolveInputs, validateInputs } from './inputs.js';
+import { buildBom, computeCutDimensions } from './bom.js';
 
 // ─── Geometry helpers ────────────────────────────────────────────────────────
-
-/**
- * Panel geometry formula:
- *   cut_width  = finished_length + 2 × seam_allowance
- *   cut_height = finished_width  + (finished_depth / 2) + seam_allowance
- *
- * The bottom boxing adds half-depth; the SA covers top zipper seam only
- * (the boxed-corner method folds the bottom, not a separate seam).
- */
-function computePanelDimensions(
-  finishedLength: number,
-  finishedWidth: number,
-  finishedDepth: number,
-  seamAllowance: number,
-): { cutWidth: number; cutHeight: number } {
-  const cutWidth = finishedLength + 2 * seamAllowance;
-  const cutHeight = finishedWidth + finishedDepth / 2 + seamAllowance;
-  return { cutWidth, cutHeight };
-}
 
 function makeStraightEdge(
   id: string,
@@ -142,7 +124,7 @@ function buildSteps(
         `Finished interior dimensions: ${finished_length} × ${finished_width} mm with ${finished_depth} mm depth.`,
       dependsOn: [],
       refsPieces: ['front', 'back'],
-      group: 'preparation',
+      group: 'Preparation',
     },
     {
       id: 'step-2',
@@ -156,7 +138,7 @@ function buildSteps(
         `Sew the zipper tape to both panels using a zipper foot, stitching along the notch/stitch line ${seam_allowance} mm from the top edge.`,
       dependsOn: ['step-1'],
       refsPieces: ['front', 'back'],
-      group: 'assembly',
+      group: 'Assembly',
     },
     {
       id: 'step-3',
@@ -167,7 +149,7 @@ function buildSteps(
         `following the stitch lines. Leave a turning gap if not using a lining.`,
       dependsOn: ['step-2'],
       refsPieces: ['front', 'back'],
-      group: 'assembly',
+      group: 'Assembly',
     },
     {
       id: 'step-4',
@@ -178,7 +160,7 @@ function buildSteps(
         `Trim seam allowance to 9.5 mm. Repeat for all 4 corners to create a ${finished_depth} mm gusset depth.`,
       dependsOn: ['step-3'],
       refsPieces: ['front', 'back'],
-      group: 'assembly',
+      group: 'Assembly',
     },
     {
       id: 'step-5',
@@ -192,7 +174,7 @@ function buildSteps(
             `Trim excess zipper tape and finish the raw ends with a bar tack or binding.`,
       dependsOn: ['step-4'],
       refsPieces: ['front', 'back'],
-      group: 'finishing',
+      group: 'Finishing',
     },
   ];
 }
@@ -361,68 +343,6 @@ function buildMultiPanelPieces(r: ResolvedInputs): Piece[] {
   return [front, back, bottom, endLeft, endRight];
 }
 
-// ─── BOM builders for each style ─────────────────────────────────────────────
-
-function buildBomForStyle(
-  resolved: ReturnType<typeof resolveInputs>,
-): BomRow[] {
-  const { finished_length, finished_width, finished_depth, seam_allowance, zip_gauge, pull_loops, grosgrain_width, construction_style } = resolved;
-  const sa = seam_allowance;
-
-  const rows: BomRow[] = [];
-
-  if (construction_style === 'cross-bottom') {
-    const panelCutWidth = finished_length + finished_depth + 2 * sa;
-    const panelCutHeight = finished_width + finished_depth + 2 * sa;
-    const cornerCutout = finished_depth / 2;
-    const zipperStripH = cornerCutout + sa;
-    const zipperLength = Math.ceil((panelCutWidth + 25) / 50) * 50;
-
-    rows.push({ id: 'shell-fabric', description: 'shell fabric (cross panels)', quantity: 2, unit: 'panels', notes: `cross-bottom ${panelCutWidth} × ${panelCutHeight} mm` });
-    rows.push({ id: 'zipper-strip-fabric', description: 'zipper strip fabric', quantity: 2, unit: 'strips', notes: `${panelCutWidth} × ${zipperStripH} mm each` });
-    rows.push({ id: 'zipper', description: `YKK coil zipper ${zip_gauge}`, quantity: zipperLength, unit: 'mm' });
-  } else if (construction_style === 'gusset-strip') {
-    const panelCutWidth = finished_length + 2 * sa;
-    const panelCutHeight = finished_width + 2 * sa;
-    const gussetW = 2 * finished_width + finished_length + 2 * sa;
-    const gussetH = finished_depth + 2 * sa;
-    const zipperLength = Math.ceil((panelCutWidth + 25) / 50) * 50;
-
-    rows.push({ id: 'shell-fabric', description: 'shell fabric (panels)', quantity: 2, unit: 'panels', notes: `${panelCutWidth} × ${panelCutHeight} mm each` });
-    rows.push({ id: 'gusset-fabric', description: 'gusset strip fabric', quantity: 1, unit: 'strip', notes: `${gussetW} × ${gussetH} mm` });
-    rows.push({ id: 'zipper', description: `YKK coil zipper ${zip_gauge}`, quantity: zipperLength, unit: 'mm' });
-  } else if (construction_style === 'multi-panel') {
-    const frontBackW = finished_length + 2 * sa;
-    const frontBackH = finished_width + 2 * sa;
-    const bottomW = finished_length + 2 * sa;
-    const bottomH = finished_depth + 2 * sa;
-    const endW = finished_width + 2 * sa;
-    const endH = finished_depth + 2 * sa;
-    const zipperLength = Math.ceil((frontBackW + 4 * sa) / 50) * 50;
-
-    rows.push({ id: 'shell-fabric-front-back', description: 'shell fabric (front/back)', quantity: 2, unit: 'panels', notes: `${frontBackW} × ${frontBackH} mm each` });
-    rows.push({ id: 'shell-fabric-bottom', description: 'shell fabric (bottom)', quantity: 1, unit: 'panel', notes: `${bottomW} × ${bottomH} mm` });
-    rows.push({ id: 'shell-fabric-ends', description: 'shell fabric (end panels)', quantity: 2, unit: 'panels', notes: `${endW} × ${endH} mm each` });
-    rows.push({ id: 'zipper', description: `YKK coil zipper ${zip_gauge}`, quantity: zipperLength, unit: 'mm' });
-  } else {
-    // 'boxed' — original BOM
-    const cutWidth = finished_length + 2 * sa;
-    const cutHeight = finished_width + finished_depth / 2 + sa;
-    const zipperLength = Math.ceil((cutWidth + 25) / 50) * 50;
-    const boundSeamPerimeter = 2 * cutHeight + cutWidth - 2 * finished_depth;
-    const grosgrainLength = Math.ceil(boundSeamPerimeter * 1.1 / 100) * 100;
-
-    rows.push({ id: 'shell-fabric', description: 'shell fabric', quantity: 2, unit: 'panels', notes: `${cutWidth} × ${cutHeight} mm per panel` });
-    rows.push({ id: 'zipper', description: `YKK coil zipper ${zip_gauge}`, quantity: zipperLength, unit: 'mm' });
-    rows.push({ id: 'grosgrain-binding', description: `grosgrain ribbon binding (${grosgrain_width} mm wide)`, quantity: grosgrainLength, unit: 'mm' });
-    if (pull_loops) {
-      rows.push({ id: 'pull-loops', description: 'grosgrain pull loops', quantity: 2, unit: 'strips', notes: `75 mm × ${grosgrain_width} mm each` });
-    }
-  }
-
-  return rows;
-}
-
 // ─── Main entry point ────────────────────────────────────────────────────────
 
 /**
@@ -431,7 +351,7 @@ function buildBomForStyle(
  * Returns the two panel Pieces (front + back), the 5-step instruction sequence,
  * and a bill of materials. On invalid inputs, returns an error result.
  */
-export default function buildPattern(
+export function buildPattern(
   inputs: ZipPouchInputs,
 ): Result<{ pieces: Piece[]; steps: Step[]; bom: BomRow[] }> {
   const validationResult = validateInputs(inputs);
@@ -452,12 +372,7 @@ export default function buildPattern(
     pieces = buildMultiPanelPieces(resolved);
   } else {
     // 'boxed' (default)
-    const { cutWidth, cutHeight } = computePanelDimensions(
-      finished_length,
-      finished_width,
-      finished_depth,
-      seam_allowance,
-    );
+    const { cutWidth, cutHeight } = computeCutDimensions(resolved);
     const boxResult = boxedCornerStitchLine({
       panelWidth: cutWidth,
       panelHeight: cutHeight,
@@ -472,7 +387,7 @@ export default function buildPattern(
   const cutWidth = finished_length + 2 * seam_allowance;
   const cutHeight = finished_width + finished_depth / 2 + seam_allowance;
   const steps = buildSteps(resolved, cutWidth, cutHeight);
-  const bom = buildBomForStyle(resolved);
+  const bom = buildBom(resolved);
 
   return {
     ok: true,
@@ -480,3 +395,7 @@ export default function buildPattern(
     warnings: validationResult.warnings,
   };
 }
+
+// Back-compat default export — `index.ts` and existing tests import the default.
+// (Those files are outside this change's edit scope; keep both bindings in sync.)
+export default buildPattern;
