@@ -50,3 +50,10 @@
 - Surfaces: src/lib/pattern-engine/exports/migrators/mag-pouch-v3.ts, src/lib/pattern-engine/exports/migrators/index.ts, src/lib/pouch-engine/__tests__/end-to-end.test.ts, src/components/mag-pouch/MagPouchPage.tsx, README.md.
 - Watch: bundle still under the 350 KB gzipped target (165 KB main, 178 KB lazy pdf chunk). Pouch-engine spec is now end-to-end complete: SS-01..SS-05 all on the canonical branch.
 - Commit: <pending>
+
+## 2026-05-28 — Tri-Zip steps never rendered; genericProjectStorage untested
+- Symptom: Tri-Zip buildPattern collected assembly steps into allSteps but returned only the Pattern object, so the steps were silently discarded. TriZipPage had no ConstructionSteps component in its sidebar, unlike every other generator. genericProjectStorage had zero tests despite containing toast-firing code paths.
+- Fix: Changed buildPattern return type to Pattern & { steps: Step[] } by spreading the pattern and appending allSteps. Wired steps into TriZipPage sidebar via ConstructionSteps. Added genericProjectStorage.test.ts covering jsdom baseline (P28), probe-failure toast, write-failure toast, one-shot deduplication, in-memory fallback, migrate(), and isValid rejection (P26).
+- Surfaces: src/generators/tri-zip-backpack/buildPattern.ts, src/components/tri-zip-backpack/TriZipPage.tsx, src/storage/genericProjectStorage.test.ts.
+- Watch: buildPattern return type is now Pattern & { steps } — callers that destructure only Pattern fields (ExportPanel, PatternPreview) remain valid via structural typing; tests confirm no regression across 1175 cases.
+- Commit: polish(P25-P28)

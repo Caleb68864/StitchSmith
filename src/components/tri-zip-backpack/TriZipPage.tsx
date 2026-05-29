@@ -1,10 +1,13 @@
 import { useMemo, useState } from 'react';
 import type { UseTriZipProjectReturn } from '../../state/useTriZipProject.js';
 import { validateInputs } from '../../generators/tri-zip-backpack/inputs.js';
+import { buildPattern } from '../../generators/tri-zip-backpack/buildPattern.js';
+import { getPreset } from '../../generators/tri-zip-backpack/stylePresets.js';
 import { TriZipSettingsPanel } from './TriZipSettingsPanel.js';
 import { PatternPreview } from './PatternPreview.js';
 import { ExportPanel } from './ExportPanel.js';
 import { TriZipLegend } from './Legend.js';
+import { ConstructionSteps } from '../shared/ConstructionSteps.js';
 import { PatternPageShell } from '../shared/PatternPageShell.js';
 import { parseProjectJson, downloadProjectJson } from '../../export/projectEnvelopeIO.js';
 import { ValidationBanner } from '../shared/ValidationBanner.js';
@@ -56,6 +59,13 @@ export function TriZipPage({ project, updateInputs, resetProject, importProject 
     const r = validateInputs(project.inputs);
     return r.ok;
   }, [project.inputs, hasErrors]);
+
+  const steps = useMemo(() => {
+    if (!engineValid) return [];
+    const preset = getPreset(project.inputs.stylePreset);
+    const r = buildPattern(project.inputs, preset);
+    return r.ok ? r.value.steps : [];
+  }, [project.inputs, engineValid]);
 
   function handleReset() {
     if (window.confirm('Reset will discard all changes and restore default Tri-Zip settings. This cannot be undone — continue?')) {
@@ -110,6 +120,7 @@ export function TriZipPage({ project, updateInputs, resetProject, importProject 
             showLabels={showLabels}
             onImportProject={importProject}
           />
+          {steps.length > 0 && <ConstructionSteps steps={steps} title="Assembly Instructions" />}
         </>
       }
     />

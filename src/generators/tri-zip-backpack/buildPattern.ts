@@ -1,5 +1,6 @@
 import type { Pattern } from '../../lib/pattern-engine/graph/Pattern.js';
 import type { Piece } from '../../lib/pattern-engine/graph/Piece.js';
+import type { Step } from '../../lib/pattern-engine/instructions/Step.js';
 import type {
   TriZipInputs, StylePreset, ResolvedInputs, Result, BuildPatternError, SeamRef,
 } from './types.js';
@@ -104,17 +105,17 @@ export function verifySharedSeams(pieces: Piece[]): Result<true, BuildPatternErr
   return { ok: true, value: true };
 }
 
-export function buildPattern(inputs: TriZipInputs, preset: StylePreset): Result<Pattern, BuildPatternError> {
+export function buildPattern(inputs: TriZipInputs, preset: StylePreset): Result<Pattern & { steps: Step[] }, BuildPatternError> {
   const validation = validateInputs(inputs);
   if (!validation.ok) return validation;
 
   const r: ResolvedInputs = resolveInputs(inputs, preset);
 
   const allPieces: Piece[] = [];
-  const allSteps: import('../../lib/pattern-engine/instructions/Step.js').Step[] = [];
+  const allSteps: Step[] = [];
   const seamRefs: SeamRef[] = [];
 
-  function collect(result: { pieces: Piece[]; steps: import('../../lib/pattern-engine/instructions/Step.js').Step[] }) {
+  function collect(result: { pieces: Piece[]; steps: Step[] }) {
     allPieces.push(...result.pieces);
     allSteps.push(...result.steps);
   }
@@ -161,5 +162,5 @@ export function buildPattern(inputs: TriZipInputs, preset: StylePreset): Result<
     units: r.units,
   };
 
-  return { ok: true, value: pattern };
+  return { ok: true, value: { ...pattern, steps: allSteps } };
 }
