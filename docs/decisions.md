@@ -71,3 +71,10 @@
 - Surfaces: src/app/App.tsx (lazy imports + Suspense wrapper), src/app/App.test.tsx (async waitFor upgrades).
 - Watch: main chunk is now 278 KB raw / 89 KB gzip (was 619 KB / 184 KB). Vite chunk warning gone. PWA precache still picks up all chunks; no cache budget changes needed. If a generator grows past ~100 KB gzip, consider splitting its SettingsPanel separately.
 - Commit: perf(P27)
+
+## 2026-05-29 — Zip pouch boxing stitch lines drawn as full-height verticals; baked-in SA convention violated
+- Symptom: Factory worker drew boxing corner marks as vertical lines spanning the full panel height, and set `Piece.seamAllowances` to `seam_allowance` (outward offset) on top of already-baked-in SA cut dimensions — double-counting SA. Boxing lines appeared at the top of the panel rather than as short horizontal marks at the bottom corners, and the outer cut line appeared offset outward from the correct cut boundary.
+- Fix: Changed boxing fold paths to short horizontal lines at `y = cutHeight - stitchOffset` (bottom corners only), spanning `2×stitchOffset` wide. Zeroed all `seamAllowances` (baked-in SA convention — same as Roll-Top). Added left and right side seam stitch lines which were also missing. Updated 2 test assertions to match correct horizontal-mark geometry.
+- Surfaces: src/generators/zip-pouch/buildPattern.ts, src/generators/zip-pouch/__tests__/buildPattern.test.ts.
+- Watch: The baked-in SA convention (cut dims include SA, `seamAllowances` = 0) must be consistent across the generator. Any future modification that adds `Piece.seamAllowances` to zip-pouch pieces will double-count SA.
+- Commit: fix(zip-pouch)

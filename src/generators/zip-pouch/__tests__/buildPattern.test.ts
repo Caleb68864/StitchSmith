@@ -159,21 +159,34 @@ describe('buildPattern — path roles', () => {
 // ─── Boxing stitch line tests ─────────────────────────────────────────────────
 
 describe('buildPattern — boxing stitch lines', () => {
-  it('stitchLineOffsetFromCorner = finished_depth / 2 = 20', () => {
-    // bottomWidth=40 → offset = 40/2 = 20
+  // Boxing lines are SHORT HORIZONTAL marks at the bottom corners.
+  // For EDC: stitchOffset=20, cutHeight=130, cutWidth=200.
+  // Left:  y=110 (130-20), x from 0 to 40
+  // Right: y=110,          x from 160 (200-40) to 200
+
+  it('fold-left is a horizontal line at y = cutHeight - stitchOffset = 110', () => {
     const { pieces } = getCanonicalResult();
     const front = pieces.find((p) => p.id === 'front')!;
-    // The fold-left path starts at x = stitchOffset
     const foldLeft = front.paths.find((p) => p.id === 'front:fold-left')!;
-    expect(foldLeft.edges[0].start.x).toBeCloseTo(20, 0);
+    expect(foldLeft.edges[0].start.y).toBeCloseTo(110, 0);
+    expect(foldLeft.edges[0].end.y).toBeCloseTo(110, 0);
   });
 
-  it('fold-right path is at cutWidth - stitchOffset = 180', () => {
-    // cutWidth=200, offset=20 → right fold at x=180
+  it('fold-left spans x from 0 to 2×stitchOffset = 40', () => {
+    const { pieces } = getCanonicalResult();
+    const front = pieces.find((p) => p.id === 'front')!;
+    const foldLeft = front.paths.find((p) => p.id === 'front:fold-left')!;
+    expect(foldLeft.edges[0].start.x).toBeCloseTo(0, 0);
+    expect(foldLeft.edges[0].end.x).toBeCloseTo(40, 0);
+  });
+
+  it('fold-right spans x from cutWidth-2×stitchOffset=160 to cutWidth=200', () => {
     const { pieces } = getCanonicalResult();
     const front = pieces.find((p) => p.id === 'front')!;
     const foldRight = front.paths.find((p) => p.id === 'front:fold-right')!;
-    expect(foldRight.edges[0].start.x).toBeCloseTo(180, 0);
+    expect(foldRight.edges[0].start.x).toBeCloseTo(160, 0);
+    expect(foldRight.edges[0].end.x).toBeCloseTo(200, 0);
+    expect(foldRight.edges[0].start.y).toBeCloseTo(110, 0);
   });
 });
 

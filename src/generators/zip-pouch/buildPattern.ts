@@ -67,13 +67,17 @@ function buildPanelPiece(
   ];
   const cutPath: Path = { id: `${pieceId}:cut`, edges: cutEdges, closed: true };
 
-  // ── stitch lines — inward SA offset, horizontal lines at top and bottom ──
-  const stitchEdges: Edge[] = [
-    // top stitch line (zipper seam inset by SA)
-    makeStraightEdge(edgeId(), 'stitch', 0, seamAllowance, cutWidth, seamAllowance),
-    // bottom stitch line (boxing depth inset)
+  // ── stitch lines — inward SA offset on all 3 sewn edges ─────────────────
+  // Top edge uses the zipper SA; left, right, bottom use the seam SA.
+  // Only drawn when SA > 0 (with SA=0, finished dims = cut dims, no offset).
+  const stitchEdges: Edge[] = seamAllowance > 0 ? [
+    // left side seam
+    makeStraightEdge(edgeId(), 'stitch', seamAllowance, 0, seamAllowance, cutHeight),
+    // right side seam
+    makeStraightEdge(edgeId(), 'stitch', cutWidth - seamAllowance, 0, cutWidth - seamAllowance, cutHeight),
+    // bottom seam
     makeStraightEdge(edgeId(), 'stitch', 0, cutHeight - seamAllowance, cutWidth, cutHeight - seamAllowance),
-  ];
+  ] : [];
   const stitchPath: Path = { id: `${pieceId}:stitch`, edges: stitchEdges, closed: false };
 
   // ── notch — zipper seam registration across the top ───────────────────────
@@ -84,25 +88,22 @@ function buildPanelPiece(
   ];
   const notchPath: Path = { id: `${pieceId}:notch`, edges: notchEdges, closed: false };
 
-  // ── boxing stitch lines — fold paths at left/right for corner boxes ────────
-  // The stitch line is a vertical fold marker at stitchOffset from each edge.
-  const foldLeftEdges: Edge[] = [
-    makeStraightEdge(edgeId(), 'fold', stitchOffset, 0, stitchOffset, cutHeight),
-  ];
-  const foldRightEdges: Edge[] = [
-    makeStraightEdge(edgeId(), 'fold', cutWidth - stitchOffset, 0, cutWidth - stitchOffset, cutHeight),
-  ];
+  // ── boxing stitch lines — short horizontal marks at bottom corners ──────────
+  // Each line shows where to stitch across the folded corner triangle.
+  // Positioned at y = cutHeight - stitchOffset (the fold line), spanning
+  // 2×stitchOffset wide so the full triangle base is visible.
+  const boxStitchY = cutHeight - stitchOffset;
   const foldLeftPath: Path = {
     id: `${pieceId}:fold-left`,
-    edges: foldLeftEdges,
+    edges: [makeStraightEdge(edgeId(), 'fold', 0, boxStitchY, stitchOffset * 2, boxStitchY)],
     closed: false,
-    label: 'boxing stitch line',
+    label: `Box corner — stitch here, trim 3/8"`,
   };
   const foldRightPath: Path = {
     id: `${pieceId}:fold-right`,
-    edges: foldRightEdges,
+    edges: [makeStraightEdge(edgeId(), 'fold', cutWidth - stitchOffset * 2, boxStitchY, cutWidth, boxStitchY)],
     closed: false,
-    label: 'boxing stitch line',
+    label: `Box corner — stitch here, trim 3/8"`,
   };
 
   return {
@@ -111,11 +112,12 @@ function buildPanelPiece(
     mirror: false,
     quantity: 1,
     paths: [cutPath, stitchPath, notchPath, foldLeftPath, foldRightPath],
+    // Baked-in SA convention: cut dims already include SA — zero outward offsets.
     seamAllowances: {
-      [`${pieceId}:e0`]: seamAllowance, // top
-      [`${pieceId}:e1`]: seamAllowance, // right
-      [`${pieceId}:e2`]: seamAllowance, // bottom
-      [`${pieceId}:e3`]: seamAllowance, // left
+      [`${pieceId}:e0`]: 0,
+      [`${pieceId}:e1`]: 0,
+      [`${pieceId}:e2`]: 0,
+      [`${pieceId}:e3`]: 0,
     },
   };
 }
