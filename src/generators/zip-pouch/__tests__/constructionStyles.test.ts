@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import buildPattern from '../buildPattern.js';
+import { buildPattern } from '../buildPattern.js';
 import { validateInputs } from '../inputs.js';
 import type { ZipPouchInputs } from '../types.js';
 
@@ -38,8 +38,8 @@ describe("constructionStyles — 'boxed' backwards compat", () => {
     expect(withoutStyle.ok).toBe(true);
     if (withBoxed.ok && withoutStyle.ok) {
       expect(withBoxed.value.pieces.length).toBe(withoutStyle.value.pieces.length);
-      expect(withBoxed.value.pieces.map((p) => p.id)).toEqual(
-        withoutStyle.value.pieces.map((p) => p.id),
+      expect(withBoxed.value.pieces.map((p: { id: string }) => p.id)).toEqual(
+        withoutStyle.value.pieces.map((p: { id: string }) => p.id),
       );
     }
   });
@@ -62,7 +62,7 @@ describe("constructionStyles — 'cross-bottom'", () => {
     const result = buildPattern({ ...EDC, construction_style: 'cross-bottom' });
     expect(result.ok).toBe(true);
     if (result.ok) {
-      const crossPanel = result.value.pieces.find((p) => p.id.includes('cross-panel'))!;
+      const crossPanel = result.value.pieces.find((p: { id: string }) => p.id.includes('cross-panel'))!;
       expect(crossPanel).toBeDefined();
       const { w } = getBBox(crossPanel as AnyPiece);
       expect(w).toBeCloseTo(240, 0);
@@ -104,7 +104,7 @@ describe("constructionStyles — 'gusset-strip'", () => {
     const result = buildPattern({ ...EDC, construction_style: 'gusset-strip' });
     expect(result.ok).toBe(true);
     if (result.ok) {
-      const gusset = result.value.pieces.find((p) => p.id === 'gusset-strip')!;
+      const gusset = result.value.pieces.find((p: { id: string }) => p.id === 'gusset-strip')!;
       expect(gusset).toBeDefined();
       const { w } = getBBox(gusset as AnyPiece);
       expect(w).toBeCloseTo(400, 0);
@@ -129,7 +129,7 @@ describe("constructionStyles — 'multi-panel'", () => {
     const result = buildPattern({ ...EDC, construction_style: 'multi-panel' });
     expect(result.ok).toBe(true);
     if (result.ok) {
-      const endPanel = result.value.pieces.find((p) => p.id.includes('end-panel'))!;
+      const endPanel = result.value.pieces.find((p: { id: string }) => p.id.includes('end-panel'))!;
       expect(endPanel).toBeDefined();
       const { h } = getBBox(endPanel as AnyPiece);
       expect(h).toBeCloseTo(60, 0);
