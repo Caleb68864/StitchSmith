@@ -8,6 +8,7 @@ import { useRollTopSackProject } from '../state/useRollTopSackProject.js';
 import { useMagPouchProject } from '../state/useMagPouchProject.js';
 import { useBookCoverProject } from '../state/useBookCoverProject.js';
 import { useZipPouchProject } from '../state/useZipPouchProject.js';
+import { useCircleSkirtProject } from '../state/useCircleSkirtProject.js';
 import { Toaster } from '../components/shared/Toaster.js';
 import { ErrorBoundary } from '../components/shared/ErrorBoundary.js';
 import type { PatternEntry } from './patternRegistry.js';
@@ -33,6 +34,9 @@ const BookCoverPage = lazy(() =>
 const ZipPouchPage = lazy(() =>
   import('../components/zip-pouch/ZipPouchPage.js').then(m => ({ default: m.ZipPouchPage }))
 );
+const CircleSkirtPage = lazy(() =>
+  import('../components/circle-skirt/CircleSkirtPage.js').then(m => ({ default: m.CircleSkirtPage }))
+);
 
 // Tab title per view so users with multiple tabs can tell them apart.
 const VIEW_TITLES: Record<View, string> = {
@@ -43,6 +47,7 @@ const VIEW_TITLES: Record<View, string> = {
   'mag-pouch': 'StitchSmith — Mag Pouch',
   'book-cover': 'StitchSmith — Book Cover',
   'zip-pouch': 'StitchSmith — Zip Pouch',
+  'circle-skirt': 'StitchSmith — Circle Skirt',
 };
 
 type View = 'landing' | PatternEntry['route'];
@@ -55,6 +60,7 @@ export function App() {
   const magPouchState = useMagPouchProject();
   const bookCoverState = useBookCoverProject();
   const zipPouchState = useZipPouchProject();
+  const circleSkirtState = useCircleSkirtProject();
 
   useEffect(() => {
     document.title = VIEW_TITLES[view] ?? 'StitchSmith';
@@ -118,7 +124,7 @@ export function App() {
           </button>
           <span className="text-xs text-muted-foreground">Book Cover Generator</span>
         </header>
-      ) : (
+      ) : view === 'zip-pouch' ? (
         <header className="border-b bg-background px-4 py-3 flex items-center justify-between">
           <button
             className="text-lg font-semibold tracking-tight hover:opacity-75 transition-opacity"
@@ -128,6 +134,17 @@ export function App() {
             StitchSmith
           </button>
           <span className="text-xs text-muted-foreground">Zip Pouch Generator</span>
+        </header>
+      ) : (
+        <header className="border-b bg-background px-4 py-3 flex items-center justify-between">
+          <button
+            className="text-lg font-semibold tracking-tight hover:opacity-75 transition-opacity"
+            onClick={() => setView('landing')}
+            aria-label="Back to home"
+          >
+            StitchSmith
+          </button>
+          <span className="text-xs text-muted-foreground">Circle Skirt Generator</span>
         </header>
       )}
       <PageShell>
@@ -204,6 +221,14 @@ export function App() {
             updateInputs={zipPouchState.updateInputs}
             resetProject={zipPouchState.resetProject}
             importProject={zipPouchState.importProject}
+          />
+        )}
+        {view === 'circle-skirt' && (
+          <CircleSkirtPage
+            project={circleSkirtState.project}
+            updateInputs={circleSkirtState.updateInputs}
+            resetProject={circleSkirtState.resetProject}
+            importProject={circleSkirtState.importProject}
           />
         )}
         </Suspense>

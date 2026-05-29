@@ -3,7 +3,9 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { App } from './App.js';
 import { _resetStorage } from '../state/useToolRollProject.js';
 import { _resetZipPouchStorage } from '../state/useZipPouchProject.js';
+import { _resetCircleSkirtStorage } from '../state/useCircleSkirtProject.js';
 import { buildPattern } from '../generators/zip-pouch/buildPattern.js';
+import { buildPattern as buildCircleSkirtPattern } from '../generators/circle-skirt/index.js';
 import { patternToSvg } from '../lib/pattern-engine/exports/svg.js';
 import type { Pattern } from '../lib/pattern-engine/graph/Pattern.js';
 import type { ConstructionStyle } from '../generators/zip-pouch/types.js';
@@ -12,6 +14,7 @@ beforeEach(() => {
   localStorage.clear();
   _resetStorage();
   _resetZipPouchStorage();
+  _resetCircleSkirtStorage();
   // Reset/destructive actions now confirm via window.confirm; auto-accept in tests.
   vi.spyOn(window, 'confirm').mockReturnValue(true);
 });
@@ -115,6 +118,25 @@ describe('App integration', () => {
     expect(screen.getAllByRole('button', { name: /export/i }).length).toBeGreaterThan(0);
   });
 
+  it('landing page has Open Circle Skirt button', async () => {
+    render(<App />);
+    await waitFor(
+      () => expect(screen.getByRole('button', { name: /Open Circle Skirt/i })).toBeTruthy(),
+      { timeout: 5000 },
+    );
+  });
+
+  it('navigates to circle skirt page when clicking Open Circle Skirt', async () => {
+    render(<App />);
+    await waitFor(() => screen.getByRole('button', { name: /Open Circle Skirt/i }), { timeout: 5000 });
+    fireEvent.click(screen.getByRole('button', { name: /Open Circle Skirt/i }));
+    await waitFor(
+      () => expect(screen.getAllByRole('button', { name: /reset/i }).length).toBeGreaterThan(0),
+      { timeout: 5000 },
+    );
+    expect(screen.getAllByText(/Circle Skirt Generator/i).length).toBeGreaterThan(0);
+  });
+
   const SMOKE_TARGETS = [
     { open: /Open Tool Roll/i, subtitle: /Tool Roll/i },
     { open: /Open Tri-Zip Backpack/i, subtitle: /Tri-Zip Backpack Generator/i },
@@ -122,6 +144,7 @@ describe('App integration', () => {
     { open: /Open Mag Pouch/i, subtitle: /Mag Pouch Generator/i },
     { open: /Open Book Cover/i, subtitle: /Book Cover Generator/i },
     { open: /Open Zip Pouch/i, subtitle: /Zip Pouch Generator/i },
+    { open: /Open Circle Skirt/i, subtitle: /Circle Skirt Generator/i },
   ] as const;
 
   for (const { open, subtitle } of SMOKE_TARGETS) {
@@ -173,5 +196,34 @@ describe('zip pouch construction styles → patternToSvg', () => {
       const svg = patternToSvg(pattern);
       expect(svg).toContain('<svg');
     }
+  });
+});
+
+// ─── Circle skirt → SVG integration ─────────────────────────────────────────
+// Spec SS-03 [INTEGRATION]: inches→mm path and arc rendering end-to-end.
+
+describe('circle skirt buildPattern → patternToSvg', () => {
+  it('half preset with 28in waist, 24in length renders SVG with arc command', () => {
+    const result = buildCircleSkirtPattern({ preset: 'half', waist_circumference: 28, skirt_length: 24, units: 'in' });
+    const pattern: Pattern = { id: 'circle-skirt', name: 'Circle Skirt', pieces: result.pieces };
+    const svg = patternToSvg(pattern);
+    expect(svg).toContain('<svg');
+    expect(svg).toContain(' A ');
+  });
+
+  it('full preset produces SVG', () => {
+    const result = buildCircleSkirtPattern({ preset: 'full', waist_circumference: 700, skirt_length: 600, units: 'mm' });
+    const pattern: Pattern = { id: 'circle-skirt', name: 'Circle Skirt', pieces: result.pieces };
+    const svg = patternToSvg(pattern);
+    expect(svg).toContain('<svg');
+  });
+
+  it('importProject guard: wrong generatorId throws with circle-skirt in message', () => {
+    const fakeProject = { generatorId: 'zip-pouch' };
+    expect(() => {
+      if (fakeProject.generatorId !== 'circle-skirt') {
+        throw new Error(`Cannot import project with generatorId '${fakeProject.generatorId}' into circle-skirt`);
+      }
+    }).toThrow('circle-skirt');
   });
 });

@@ -3,7 +3,7 @@ export interface PatternEntry {
   title: string;
   description: string;
   available: boolean;
-  route: 'tool-roll' | 'tri-zip' | 'roll-top' | 'mag-pouch' | 'book-cover' | 'zip-pouch';
+  route: 'tool-roll' | 'tri-zip' | 'roll-top' | 'mag-pouch' | 'book-cover' | 'zip-pouch' | 'circle-skirt';
 }
 
 export const PATTERNS: PatternEntry[] = [
@@ -67,4 +67,13 @@ registerPattern({
   description: 'Parametric zip pouch with boxed corners, preset sizes (pencil, EDC, toiletry), and grosgrain pull loops. Exports SVG/PDF/DXF with cut dimensions and assembly instructions.',
   available: true,
   route: 'zip-pouch',
+});
+
+// Register the circle-skirt entry (idempotent — safe to call multiple times)
+registerPattern({
+  id: 'circle-skirt',
+  title: 'Circle Skirt',
+  description: 'Parametric circle skirt generator. Choose a fullness preset (quarter/half/full/double circle), enter your waist measurement and skirt length, and get sector-shaped panels with true arc edges. Supports side-zip, back-zip, and elastic closures.',
+  available: true,
+  route: 'circle-skirt',
 });
