@@ -3,6 +3,10 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { App } from './App.js';
 import { _resetStorage } from '../state/useToolRollProject.js';
 import { _resetZipPouchStorage } from '../state/useZipPouchProject.js';
+import { buildPattern } from '../generators/zip-pouch/buildPattern.js';
+import { patternToSvg } from '../lib/pattern-engine/exports/svg.js';
+import type { Pattern } from '../lib/pattern-engine/graph/Pattern.js';
+import type { ConstructionStyle } from '../generators/zip-pouch/types.js';
 
 beforeEach(() => {
   localStorage.clear();
@@ -138,4 +142,36 @@ describe('App integration', () => {
       expect(screen.getAllByRole('button', { name: /export/i }).length).toBeGreaterThan(0);
     });
   }
+});
+
+// ─── Construction styles → SVG integration ──────────────────────────────────
+// Spec SS-05: every construction style must flow through buildPattern →
+// patternToSvg and yield real SVG markup. Catches a piece builder that emits
+// geometry the SVG renderer cannot serialize (e.g. a cross-shaped piece).
+
+describe('zip pouch construction styles → patternToSvg', () => {
+  const NEW_STYLES: ConstructionStyle[] = ['cross-bottom', 'gusset-strip', 'multi-panel'];
+
+  for (const style of NEW_STYLES) {
+    it(`buildPattern with construction_style='${style}' renders to SVG`, () => {
+      const result = buildPattern({ preset: 'toiletry', units: 'mm', construction_style: style });
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      const pattern: Pattern = { id: 'zip-pouch', name: 'Zip Pouch', pieces: result.value.pieces };
+      const svg = patternToSvg(pattern);
+      expect(svg).toContain('<svg');
+    });
+  }
+
+  it('all 4 construction styles produce SVG without throwing', () => {
+    const allStyles: ConstructionStyle[] = ['boxed', 'cross-bottom', 'gusset-strip', 'multi-panel'];
+    for (const construction_style of allStyles) {
+      const result = buildPattern({ preset: 'toiletry', units: 'mm', construction_style });
+      expect(result.ok).toBe(true);
+      if (!result.ok) continue;
+      const pattern: Pattern = { id: 'zip-pouch', name: 'Zip Pouch', pieces: result.value.pieces };
+      const svg = patternToSvg(pattern);
+      expect(svg).toContain('<svg');
+    }
+  });
 });
