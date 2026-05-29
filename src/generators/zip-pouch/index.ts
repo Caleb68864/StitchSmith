@@ -6,7 +6,7 @@
 
 export type { ZipPouchInputs, ZipPouchBuildResult, BomRow, ValidationResult } from './types.js';
 export { validateInputs, resolveInputs } from './inputs.js';
-export { default as buildPattern } from './buildPattern.js';
+export { buildPattern } from './buildPattern.js';
 export { buildBom } from './bom.js';
 export {
   DEFAULT_SEAM_ALLOWANCE_MM,
