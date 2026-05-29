@@ -3,7 +3,7 @@ import { Download, FileJson, List } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { ZipPouchInputs } from '../../generators/zip-pouch/types.js';
 import type { ZipPouchProject } from '../../state/useZipPouchProject.js';
-import buildPattern from '../../generators/zip-pouch/buildPattern.js';
+import { buildPattern } from '../../generators/zip-pouch/buildPattern.js';
 import { patternToSvg } from '../../lib/pattern-engine/exports/svg.js';
 import type { Pattern } from '../../lib/pattern-engine/graph/Pattern.js';
 import { downloadTextFile } from '../../utils/download.js';
