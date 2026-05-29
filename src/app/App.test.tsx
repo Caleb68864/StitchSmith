@@ -2,10 +2,12 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { App } from './App.js';
 import { _resetStorage } from '../state/useToolRollProject.js';
+import { _resetZipPouchStorage } from '../state/useZipPouchProject.js';
 
 beforeEach(() => {
   localStorage.clear();
   _resetStorage();
+  _resetZipPouchStorage();
   // Reset/destructive actions now confirm via window.confirm; auto-accept in tests.
   vi.spyOn(window, 'confirm').mockReturnValue(true);
 });
@@ -87,12 +89,35 @@ describe('App integration', () => {
   // (c) the standard Import/Export/Reset buttons are visible (parity check).
   // Catches the next book-cover-style "blank page on mount" regression before
   // it ships, because such a crash also tears down the page header buttons.
+  it('landing page renders a Zip Pouch card', () => {
+    render(<App />);
+    expect(screen.getAllByText(/Zip Pouch/i).length).toBeGreaterThan(0);
+  });
+
+  it('landing page has Open Zip Pouch button', () => {
+    render(<App />);
+    expect(screen.getByRole('button', { name: /Open Zip Pouch/i })).toBeTruthy();
+  });
+
+  it('smoke: Zip Pouch page mounts cleanly with settings panel and preview', async () => {
+    render(<App />);
+    fireEvent.click(screen.getByRole('button', { name: /Open Zip Pouch/i }));
+    await waitFor(() =>
+      expect(screen.getAllByRole('button', { name: /reset/i }).length).toBeGreaterThan(0),
+      { timeout: 5000 }
+    );
+    expect(screen.getAllByText(/Zip Pouch Generator/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('button', { name: /import/i }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('button', { name: /export/i }).length).toBeGreaterThan(0);
+  });
+
   const SMOKE_TARGETS = [
     { open: /Open Tool Roll/i, subtitle: /Tool Roll/i },
     { open: /Open Tri-Zip Backpack/i, subtitle: /Tri-Zip Backpack Generator/i },
     { open: /Open Roll-Top Stuff Sack/i, subtitle: /Roll-Top Stuff Sack Generator/i },
     { open: /Open Mag Pouch/i, subtitle: /Mag Pouch Generator/i },
     { open: /Open Book Cover/i, subtitle: /Book Cover Generator/i },
+    { open: /Open Zip Pouch/i, subtitle: /Zip Pouch Generator/i },
   ] as const;
 
   for (const { open, subtitle } of SMOKE_TARGETS) {
