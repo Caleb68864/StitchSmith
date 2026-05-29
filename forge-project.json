@@ -79,6 +79,7 @@
     "model": "haiku",
     "parallel_files": false,
     "max_iteration_usd": 2.00,
-    "fix_worker_timeout_seconds": 300
+    "fix_worker_timeout_seconds": 300,
+    "scope": "declared"
   }
 }
