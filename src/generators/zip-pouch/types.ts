@@ -9,6 +9,10 @@ import type { Step } from '../../lib/pattern-engine/instructions/Step.js';
 
 export type ZipPouchPreset = 'pencil' | 'edc' | 'toiletry' | 'custom';
 
+// ─── Construction styles ────────────────────────────────────────────────────────
+
+export type ConstructionStyle = 'boxed' | 'cross-bottom' | 'gusset-strip' | 'multi-panel';
+
 // ─── Generator inputs ───────────────────────────────────────────────────────────
 
 export interface ZipPouchInputs {
@@ -30,6 +34,8 @@ export interface ZipPouchInputs {
   pull_loops?: boolean;
   /** Size preset. Default 'pencil'. */
   preset?: ZipPouchPreset;
+  /** Construction method. Default 'boxed'. */
+  construction_style?: ConstructionStyle;
 }
 
 // ─── Resolved (fully defaulted) inputs ─────────────────────────────────────────
@@ -44,6 +50,7 @@ export interface ResolvedInputs {
   grosgrain_width: number;
   pull_loops: boolean;
   preset: ZipPouchPreset;
+  construction_style: ConstructionStyle;
 }
 
 // ─── BOM ────────────────────────────────────────────────────────────────────────

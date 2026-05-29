@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import type { ZipPouchInputs, ZipPouchPreset } from '../../generators/zip-pouch/types.js';
+import type { ZipPouchInputs, ZipPouchPreset, ConstructionStyle } from '../../generators/zip-pouch/types.js';
 import { PRESET_DEFAULTS } from '../../generators/zip-pouch/defaults.js';
 
 // ─── Unit conversion helpers ─────────────────────────────────────────────────
@@ -113,6 +113,13 @@ function NumericField({
   );
 }
 
+const CONSTRUCTION_STYLE_LABELS: Record<ConstructionStyle, string> = {
+  boxed: 'Boxed corners (classic)',
+  'cross-bottom': 'Cross-bottom (one-piece)',
+  'gusset-strip': 'Gusset strip',
+  'multi-panel': 'Multi-panel (5-piece)',
+};
+
 const PRESET_LABELS: Record<ZipPouchPreset, string> = {
   pencil: 'Pencil Pouch (220 × 120 × 30 mm)',
   edc: 'EDC Pouch (180 × 100 × 40 mm)',
@@ -146,7 +153,7 @@ export function ZipPouchSettingsPanel({ inputs, errors, onChange }: Props) {
 
   return (
     <div className="space-y-2">
-      <Accordion type="multiple" defaultValue={['preset', 'dimensions', 'options']} className="rounded border border-border px-3">
+      <Accordion type="multiple" defaultValue={['preset', 'dimensions', 'construction', 'options']} className="rounded border border-border px-3">
         <AccordionItem value="preset">
           <AccordionTrigger className="text-xs font-semibold py-3">
             Preset
@@ -229,6 +236,33 @@ export function ZipPouchSettingsPanel({ inputs, errors, onChange }: Props) {
                 step={0.5}
                 onChange={v => onChange({ seam_allowance: v })}
               />
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+
+        <AccordionItem value="construction">
+          <AccordionTrigger className="text-xs font-semibold py-3">
+            Construction
+          </AccordionTrigger>
+          <AccordionContent>
+            <div className="space-y-3 pb-2">
+              <div className="space-y-1">
+                <Label className="text-xs">Construction Style</Label>
+                <Select
+                  value={inputs.construction_style ?? 'boxed'}
+                  onValueChange={(v) => onChange({ construction_style: v as ConstructionStyle })}
+                >
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="boxed" className="text-xs">{CONSTRUCTION_STYLE_LABELS.boxed}</SelectItem>
+                    <SelectItem value="cross-bottom" className="text-xs">{CONSTRUCTION_STYLE_LABELS['cross-bottom']}</SelectItem>
+                    <SelectItem value="gusset-strip" className="text-xs">{CONSTRUCTION_STYLE_LABELS['gusset-strip']}</SelectItem>
+                    <SelectItem value="multi-panel" className="text-xs">{CONSTRUCTION_STYLE_LABELS['multi-panel']}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </AccordionContent>
         </AccordionItem>

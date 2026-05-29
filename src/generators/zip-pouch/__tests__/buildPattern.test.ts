@@ -241,6 +241,22 @@ describe('buildPattern — SVG export', () => {
   });
 });
 
+// ─── Backwards-compat regression guard ───────────────────────────────────────
+// Explicit 'boxed' style must produce identical piece count/ids to the implicit default.
+
+describe('buildPattern — construction style backwards compat', () => {
+  it("explicit construction_style='boxed' matches no-style output", () => {
+    const withBoxed = buildPattern({ ...CANONICAL, construction_style: 'boxed' });
+    const withoutStyle = buildPattern(CANONICAL);
+    expect(withBoxed.ok).toBe(true);
+    expect(withoutStyle.ok).toBe(true);
+    if (withBoxed.ok && withoutStyle.ok) {
+      const ids = (r: typeof withBoxed) => r.ok ? r.value.pieces.map((p) => p.id) : [];
+      expect(ids(withBoxed)).toEqual(ids(withoutStyle));
+    }
+  });
+});
+
 // ─── Edge cases ───────────────────────────────────────────────────────────────
 
 describe('buildPattern — edge cases', () => {

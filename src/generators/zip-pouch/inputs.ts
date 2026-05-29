@@ -18,6 +18,7 @@ import {
   DEFAULT_PULL_LOOPS,
   DEFAULT_UNITS,
   DEFAULT_PRESET,
+  DEFAULT_CONSTRUCTION_STYLE,
   getPresetDimensions,
 } from './defaults.js';
 
@@ -49,6 +50,7 @@ export function resolveInputs(inputs: ZipPouchInputs): ResolvedInputs {
     zip_gauge: inputs.zip_gauge ?? DEFAULT_ZIP_GAUGE,
     grosgrain_width: inputs.grosgrain_width ?? DEFAULT_GROSGRAIN_WIDTH_MM,
     pull_loops: inputs.pull_loops ?? DEFAULT_PULL_LOOPS,
+    construction_style: inputs.construction_style ?? DEFAULT_CONSTRUCTION_STYLE,
   };
 }
 
@@ -117,7 +119,10 @@ export function validateInputs(inputs: ZipPouchInputs): ValidationResult {
     Number.isFinite(resolved.finished_depth) &&
     resolved.finished_depth > 0;
 
-  if (dimensionsValid) {
+  // Boxing constraint only applies to styles that use folded corner construction.
+  const styleUsesBoxing =
+    resolved.construction_style === 'boxed' || resolved.construction_style === 'cross-bottom';
+  if (dimensionsValid && styleUsesBoxing) {
     const boxingOffset = resolved.finished_depth / 2;
     if (boxingOffset >= resolved.finished_width) {
       errors.push({

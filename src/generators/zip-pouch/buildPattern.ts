@@ -11,7 +11,7 @@ import type { Edge, StraightEdge } from '../../lib/pattern-engine/graph/Edge.js'
 import { makeEdgeIdGen } from '../../lib/pattern-engine/graph/Edge.js';
 import { boxedCornerStitchLine } from '../../lib/pattern-engine/geometry/boxedCorner.js';
 import type { Step } from '../../lib/pattern-engine/instructions/Step.js';
-import type { ZipPouchInputs, BomRow, BuildPatternError, Result } from './types.js';
+import type { ZipPouchInputs, BomRow, BuildPatternError, Result, ResolvedInputs } from './types.js';
 import { resolveInputs, validateInputs } from './inputs.js';
 
 // ─── Geometry helpers ────────────────────────────────────────────────────────
@@ -238,6 +238,230 @@ function buildBom(
   return bom;
 }
 
+// ─── Simple rectangle piece builder ─────────────────────────────────────────
+
+function buildRectPiece(
+  pieceId: string,
+  pieceName: string,
+  cutWidth: number,
+  cutHeight: number,
+  seamAllowance: number,
+  quantity = 1,
+): Piece {
+  const edgeId = makeEdgeIdGen(pieceId);
+  const cutEdges: Edge[] = [
+    makeStraightEdge(edgeId(), 'cut', 0, 0, cutWidth, 0),
+    makeStraightEdge(edgeId(), 'cut', cutWidth, 0, cutWidth, cutHeight),
+    makeStraightEdge(edgeId(), 'cut', cutWidth, cutHeight, 0, cutHeight),
+    makeStraightEdge(edgeId(), 'cut', 0, cutHeight, 0, 0),
+  ];
+  const cutPath: Path = { id: `${pieceId}:cut`, edges: cutEdges, closed: true };
+  const stitchEdges: Edge[] = seamAllowance > 0 ? [
+    makeStraightEdge(edgeId(), 'stitch', seamAllowance, seamAllowance, cutWidth - seamAllowance, seamAllowance),
+    makeStraightEdge(edgeId(), 'stitch', seamAllowance, seamAllowance, seamAllowance, cutHeight - seamAllowance),
+    makeStraightEdge(edgeId(), 'stitch', cutWidth - seamAllowance, seamAllowance, cutWidth - seamAllowance, cutHeight - seamAllowance),
+    makeStraightEdge(edgeId(), 'stitch', seamAllowance, cutHeight - seamAllowance, cutWidth - seamAllowance, cutHeight - seamAllowance),
+  ] : [];
+  const stitchPath: Path = { id: `${pieceId}:stitch`, edges: stitchEdges, closed: false };
+  return {
+    id: pieceId,
+    name: pieceName,
+    mirror: false,
+    quantity,
+    paths: [cutPath, stitchPath],
+    seamAllowances: {
+      [`${pieceId}:e0`]: 0,
+      [`${pieceId}:e1`]: 0,
+      [`${pieceId}:e2`]: 0,
+      [`${pieceId}:e3`]: 0,
+    },
+  };
+}
+
+// ─── Cross-bottom style builders ─────────────────────────────────────────────
+
+function buildCrossBottomPieces(r: ResolvedInputs): Piece[] {
+  const { finished_length, finished_width, finished_depth, seam_allowance } = r;
+  const sa = seam_allowance;
+  const cornerCutout = finished_depth / 2;
+  const panelCutWidth = finished_length + finished_depth + 2 * sa;
+  const panelCutHeight = finished_width + finished_depth + 2 * sa;
+
+  // Cross panel: rectangle W×H with 4 corners cut out (represented as polygon)
+  function makeCrossPanel(id: string, name: string): Piece {
+    const edgeId = makeEdgeIdGen(id);
+    const W = panelCutWidth;
+    const H = panelCutHeight;
+    const C = cornerCutout;
+    // 12-edge cross polygon (clockwise)
+    const cutEdges: Edge[] = [
+      makeStraightEdge(edgeId(), 'cut', C, 0, W - C, 0),
+      makeStraightEdge(edgeId(), 'cut', W - C, 0, W - C, C),
+      makeStraightEdge(edgeId(), 'cut', W - C, C, W, C),
+      makeStraightEdge(edgeId(), 'cut', W, C, W, H - C),
+      makeStraightEdge(edgeId(), 'cut', W, H - C, W - C, H - C),
+      makeStraightEdge(edgeId(), 'cut', W - C, H - C, W - C, H),
+      makeStraightEdge(edgeId(), 'cut', W - C, H, C, H),
+      makeStraightEdge(edgeId(), 'cut', C, H, C, H - C),
+      makeStraightEdge(edgeId(), 'cut', C, H - C, 0, H - C),
+      makeStraightEdge(edgeId(), 'cut', 0, H - C, 0, C),
+      makeStraightEdge(edgeId(), 'cut', 0, C, C, C),
+      makeStraightEdge(edgeId(), 'cut', C, C, C, 0),
+    ];
+    const cutPath: Path = { id: `${id}:cut`, edges: cutEdges, closed: true };
+    return {
+      id,
+      name,
+      mirror: false,
+      quantity: 1,
+      paths: [cutPath],
+      seamAllowances: {},
+    };
+  }
+
+  const zipperStripHeight = cornerCutout + sa;
+  const zipperStripA = buildRectPiece('zipper-strip-a', 'Zipper Strip A', panelCutWidth, zipperStripHeight, sa);
+  const zipperStripB = buildRectPiece('zipper-strip-b', 'Zipper Strip B', panelCutWidth, zipperStripHeight, sa);
+
+  return [
+    makeCrossPanel('cross-panel-front', 'Cross Panel (Outer)'),
+    makeCrossPanel('cross-panel-back', 'Cross Panel (Lining)'),
+    zipperStripA,
+    zipperStripB,
+  ];
+}
+
+// ─── Gusset-strip style builders ─────────────────────────────────────────────
+
+function buildGussetStripPieces(r: ResolvedInputs): Piece[] {
+  const { finished_length, finished_width, finished_depth, seam_allowance } = r;
+  const sa = seam_allowance;
+
+  const panelCutWidth = finished_length + 2 * sa;
+  const panelCutHeight = finished_width + 2 * sa;
+  const gussetCutWidth = 2 * finished_width + finished_length + 2 * sa;
+  const gussetCutHeight = finished_depth + 2 * sa;
+
+  function makeGussetStrip(): Piece {
+    const id = 'gusset-strip';
+    const edgeId = makeEdgeIdGen(id);
+    const W = gussetCutWidth;
+    const H = gussetCutHeight;
+    const cutEdges: Edge[] = [
+      makeStraightEdge(edgeId(), 'cut', 0, 0, W, 0),
+      makeStraightEdge(edgeId(), 'cut', W, 0, W, H),
+      makeStraightEdge(edgeId(), 'cut', W, H, 0, H),
+      makeStraightEdge(edgeId(), 'cut', 0, H, 0, 0),
+    ];
+    const cutPath: Path = { id: `${id}:cut`, edges: cutEdges, closed: true };
+    // Notches at finished_length + sa from each end to mark panel attachment points
+    const notchX1 = finished_length + sa;
+    const notchX2 = W - (finished_length + sa);
+    const notchEdges: Edge[] = [
+      makeStraightEdge(edgeId(), 'notch', notchX1, 0, notchX1, H * 0.25),
+      makeStraightEdge(edgeId(), 'notch', notchX2, 0, notchX2, H * 0.25),
+    ];
+    const notchPath: Path = { id: `${id}:notch`, edges: notchEdges, closed: false };
+    return {
+      id,
+      name: 'Gusset Strip',
+      mirror: false,
+      quantity: 1,
+      paths: [cutPath, notchPath],
+      seamAllowances: {},
+    };
+  }
+
+  const front = buildRectPiece('front-panel', 'Front Panel', panelCutWidth, panelCutHeight, sa);
+  const back = buildRectPiece('back-panel', 'Back Panel', panelCutWidth, panelCutHeight, sa);
+
+  return [front, back, makeGussetStrip()];
+}
+
+// ─── Multi-panel style builders ───────────────────────────────────────────────
+
+function buildMultiPanelPieces(r: ResolvedInputs): Piece[] {
+  const { finished_length, finished_width, finished_depth, seam_allowance } = r;
+  const sa = seam_allowance;
+
+  const frontBackW = finished_length + 2 * sa;
+  const frontBackH = finished_width + 2 * sa;
+  const bottomW = finished_length + 2 * sa;
+  const bottomH = finished_depth + 2 * sa;
+  const endW = finished_width + 2 * sa;
+  const endH = finished_depth + 2 * sa;
+
+  const front = buildRectPiece('front-panel', 'Front Panel', frontBackW, frontBackH, sa);
+  const back = buildRectPiece('back-panel', 'Back Panel', frontBackW, frontBackH, sa);
+  const bottom = buildRectPiece('bottom-panel', 'Bottom Panel', bottomW, bottomH, sa);
+  const endLeft = buildRectPiece('end-panel-left', 'End Panel (Left)', endW, endH, sa);
+  const endRight = buildRectPiece('end-panel-right', 'End Panel (Right)', endW, endH, sa);
+
+  return [front, back, bottom, endLeft, endRight];
+}
+
+// ─── BOM builders for each style ─────────────────────────────────────────────
+
+function buildBomForStyle(
+  resolved: ReturnType<typeof resolveInputs>,
+): BomRow[] {
+  const { finished_length, finished_width, finished_depth, seam_allowance, zip_gauge, pull_loops, grosgrain_width, construction_style } = resolved;
+  const sa = seam_allowance;
+
+  const rows: BomRow[] = [];
+
+  if (construction_style === 'cross-bottom') {
+    const panelCutWidth = finished_length + finished_depth + 2 * sa;
+    const panelCutHeight = finished_width + finished_depth + 2 * sa;
+    const cornerCutout = finished_depth / 2;
+    const zipperStripH = cornerCutout + sa;
+    const zipperLength = Math.ceil((panelCutWidth + 25) / 50) * 50;
+
+    rows.push({ id: 'shell-fabric', description: 'shell fabric (cross panels)', quantity: 2, unit: 'panels', notes: `cross-bottom ${panelCutWidth} × ${panelCutHeight} mm` });
+    rows.push({ id: 'zipper-strip-fabric', description: 'zipper strip fabric', quantity: 2, unit: 'strips', notes: `${panelCutWidth} × ${zipperStripH} mm each` });
+    rows.push({ id: 'zipper', description: `YKK coil zipper ${zip_gauge}`, quantity: zipperLength, unit: 'mm' });
+  } else if (construction_style === 'gusset-strip') {
+    const panelCutWidth = finished_length + 2 * sa;
+    const panelCutHeight = finished_width + 2 * sa;
+    const gussetW = 2 * finished_width + finished_length + 2 * sa;
+    const gussetH = finished_depth + 2 * sa;
+    const zipperLength = Math.ceil((panelCutWidth + 25) / 50) * 50;
+
+    rows.push({ id: 'shell-fabric', description: 'shell fabric (panels)', quantity: 2, unit: 'panels', notes: `${panelCutWidth} × ${panelCutHeight} mm each` });
+    rows.push({ id: 'gusset-fabric', description: 'gusset strip fabric', quantity: 1, unit: 'strip', notes: `${gussetW} × ${gussetH} mm` });
+    rows.push({ id: 'zipper', description: `YKK coil zipper ${zip_gauge}`, quantity: zipperLength, unit: 'mm' });
+  } else if (construction_style === 'multi-panel') {
+    const frontBackW = finished_length + 2 * sa;
+    const frontBackH = finished_width + 2 * sa;
+    const bottomW = finished_length + 2 * sa;
+    const bottomH = finished_depth + 2 * sa;
+    const endW = finished_width + 2 * sa;
+    const endH = finished_depth + 2 * sa;
+    const zipperLength = Math.ceil((frontBackW + 4 * sa) / 50) * 50;
+
+    rows.push({ id: 'shell-fabric-front-back', description: 'shell fabric (front/back)', quantity: 2, unit: 'panels', notes: `${frontBackW} × ${frontBackH} mm each` });
+    rows.push({ id: 'shell-fabric-bottom', description: 'shell fabric (bottom)', quantity: 1, unit: 'panel', notes: `${bottomW} × ${bottomH} mm` });
+    rows.push({ id: 'shell-fabric-ends', description: 'shell fabric (end panels)', quantity: 2, unit: 'panels', notes: `${endW} × ${endH} mm each` });
+    rows.push({ id: 'zipper', description: `YKK coil zipper ${zip_gauge}`, quantity: zipperLength, unit: 'mm' });
+  } else {
+    // 'boxed' — original BOM
+    const cutWidth = finished_length + 2 * sa;
+    const cutHeight = finished_width + finished_depth / 2 + sa;
+    const zipperLength = Math.ceil((cutWidth + 25) / 50) * 50;
+    const boundSeamPerimeter = 2 * cutHeight + cutWidth - 2 * finished_depth;
+    const grosgrainLength = Math.ceil(boundSeamPerimeter * 1.1 / 100) * 100;
+
+    rows.push({ id: 'shell-fabric', description: 'shell fabric', quantity: 2, unit: 'panels', notes: `${cutWidth} × ${cutHeight} mm per panel` });
+    rows.push({ id: 'zipper', description: `YKK coil zipper ${zip_gauge}`, quantity: zipperLength, unit: 'mm' });
+    rows.push({ id: 'grosgrain-binding', description: `grosgrain ribbon binding (${grosgrain_width} mm wide)`, quantity: grosgrainLength, unit: 'mm' });
+    if (pull_loops) {
+      rows.push({ id: 'pull-loops', description: 'grosgrain pull loops', quantity: 2, unit: 'strips', notes: `75 mm × ${grosgrain_width} mm each` });
+    }
+  }
+
+  return rows;
+}
+
 // ─── Main entry point ────────────────────────────────────────────────────────
 
 /**
@@ -255,31 +479,43 @@ export default function buildPattern(
   }
 
   const resolved = resolveInputs(inputs);
-  const { finished_length, finished_width, finished_depth, seam_allowance } = resolved;
-  const { cutWidth, cutHeight } = computePanelDimensions(
-    finished_length,
-    finished_width,
-    finished_depth,
-    seam_allowance,
-  );
+  const { finished_length, finished_width, finished_depth, seam_allowance, construction_style } = resolved;
 
-  // Compute boxing stitch line offset
-  const boxResult = boxedCornerStitchLine({
-    panelWidth: cutWidth,
-    panelHeight: cutHeight,
-    bottomWidth: finished_depth,
-  });
-  const stitchOffset = boxResult.stitchLineOffsetFromCorner;
+  let pieces: Piece[];
 
-  const front = buildPanelPiece('front', 'Front Panel', cutWidth, cutHeight, seam_allowance, stitchOffset);
-  const back = buildPanelPiece('back', 'Back Panel', cutWidth, cutHeight, seam_allowance, stitchOffset);
+  if (construction_style === 'cross-bottom') {
+    pieces = buildCrossBottomPieces(resolved);
+  } else if (construction_style === 'gusset-strip') {
+    pieces = buildGussetStripPieces(resolved);
+  } else if (construction_style === 'multi-panel') {
+    pieces = buildMultiPanelPieces(resolved);
+  } else {
+    // 'boxed' (default)
+    const { cutWidth, cutHeight } = computePanelDimensions(
+      finished_length,
+      finished_width,
+      finished_depth,
+      seam_allowance,
+    );
+    const boxResult = boxedCornerStitchLine({
+      panelWidth: cutWidth,
+      panelHeight: cutHeight,
+      bottomWidth: finished_depth,
+    });
+    const stitchOffset = boxResult.stitchLineOffsetFromCorner;
+    const front = buildPanelPiece('front', 'Front Panel', cutWidth, cutHeight, seam_allowance, stitchOffset);
+    const back = buildPanelPiece('back', 'Back Panel', cutWidth, cutHeight, seam_allowance, stitchOffset);
+    pieces = [front, back];
+  }
 
+  const cutWidth = finished_length + 2 * seam_allowance;
+  const cutHeight = finished_width + finished_depth / 2 + seam_allowance;
   const steps = buildSteps(resolved, cutWidth, cutHeight);
-  const bom = buildBom(resolved, cutWidth, cutHeight);
+  const bom = buildBomForStyle(resolved);
 
   return {
     ok: true,
-    value: { pieces: [front, back], steps, bom },
+    value: { pieces, steps, bom },
     warnings: validationResult.warnings,
   };
 }
