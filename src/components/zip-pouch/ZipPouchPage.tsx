@@ -24,6 +24,7 @@ const FIELD_LABELS: Record<string, string> = {
   seam_allowance: 'Seam Allowance',
   zip_gauge: 'Zipper Gauge',
   grosgrain_width: 'Grosgrain Width',
+  zip_from_top: 'Zipper Placement from Top',
 };
 
 function deriveErrors(errors: BuildPatternError[]): Record<string, string> {
