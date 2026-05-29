@@ -12,6 +12,7 @@ const REF: ResolvedInputs = {
   pull_loops: true,
   units: 'mm',
   preset: 'custom',
+  construction_style: 'boxed',
 };
 
 // ─── computeCutDimensions ─────────────────────────────────────────────────────

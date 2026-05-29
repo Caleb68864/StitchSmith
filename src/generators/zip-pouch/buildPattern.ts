@@ -197,48 +197,9 @@ function buildSteps(
   ];
 }
 
-// ─── BOM builder ─────────────────────────────────────────────────────────────
-
-function buildBom(
-  resolved: ReturnType<typeof resolveInputs>,
-  cutWidth: number,
-  cutHeight: number,
-): BomRow[] {
-  const { zip_gauge, pull_loops, grosgrain_width } = resolved;
-  const zipperLength = Math.ceil((cutWidth + 25) / 50) * 50;
-  const panelAreaCm2 = (cutWidth / 10) * (cutHeight / 10);
-
-  const bom: BomRow[] = [
-    {
-      id: 'main-fabric',
-      description: 'Main fabric (both panels)',
-      quantity: Math.ceil(panelAreaCm2 * 2),
-      unit: 'cm²',
-      notes: `Two panels at ${cutWidth} mm × ${cutHeight} mm each`,
-    },
-    {
-      id: 'zipper',
-      description: `${zip_gauge} coil zipper`,
-      quantity: zipperLength,
-      unit: 'mm',
-      notes: `Cut to fit; allow for pull loops if used`,
-    },
-  ];
-
-  if (pull_loops) {
-    bom.push({
-      id: 'grosgrain',
-      description: `Grosgrain ribbon (${grosgrain_width} mm wide)`,
-      quantity: grosgrain_width * 4 + 50,
-      unit: 'mm',
-      notes: 'For pull loops at zipper ends',
-    });
-  }
-
-  return bom;
-}
-
 // ─── Simple rectangle piece builder ─────────────────────────────────────────
+// (Internal buildBom removed by SS-01 of 2026-05-29 polish spec — BOM now
+// consolidated into bom.ts which exports buildBom + computeCutDimensions.)
 
 function buildRectPiece(
   pieceId: string,
