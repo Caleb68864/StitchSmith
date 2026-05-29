@@ -44,7 +44,14 @@ function edgeToSvgCommands(edge: Edge, isFirst: boolean): string {
 function pathToSvgPath(path: Path, role?: string): string {
   if (path.edges.length === 0) return '';
   const d = path.edges
-    .map((edge, i) => edgeToSvgCommands(edge, i === 0))
+    .map((edge, i) => {
+      const prevEdge = path.edges[i - 1];
+      const needsMove =
+        i === 0 ||
+        prevEdge.end.x !== edge.start.x ||
+        prevEdge.end.y !== edge.start.y;
+      return edgeToSvgCommands(edge, needsMove);
+    })
     .join(' ');
   const close = path.closed ? ' Z' : '';
   // Visual convention:
