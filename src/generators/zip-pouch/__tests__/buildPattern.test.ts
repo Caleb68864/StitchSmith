@@ -265,6 +265,51 @@ describe('buildPattern — SVG export', () => {
   });
 });
 
+// ─── SVG path continuity (SS-01) ─────────────────────────────────────────────
+// Disconnected edges within a single Path must each begin with an SVG `M` move
+// command, otherwise the exporter draws a spurious diagonal connecting them.
+
+describe('SVG path continuity', () => {
+  it('emits a separate M command for each disconnected edge in a path', () => {
+    const pattern: Pattern = {
+      id: 'continuity',
+      name: 'Continuity',
+      pieces: [
+        {
+          id: 'p',
+          name: 'Piece',
+          mirror: false,
+          quantity: 1,
+          paths: [
+            {
+              id: 'p:stitch',
+              closed: false,
+              edges: [
+                {
+                  kind: 'straight',
+                  id: 'p:e0',
+                  role: 'stitch',
+                  start: { x: 0, y: 0 },
+                  end: { x: 10, y: 0 },
+                },
+                {
+                  kind: 'straight',
+                  id: 'p:e1',
+                  role: 'stitch',
+                  start: { x: 0, y: 5 },
+                  end: { x: 10, y: 5 },
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+    const svg = patternToSvg(pattern, { defaultSeamAllowance: 0 });
+    expect((svg.match(/M /g) ?? []).length).toBeGreaterThanOrEqual(2);
+  });
+});
+
 // ─── Backwards-compat regression guard ───────────────────────────────────────
 // Explicit 'boxed' style must produce identical piece count/ids to the implicit default.
 
