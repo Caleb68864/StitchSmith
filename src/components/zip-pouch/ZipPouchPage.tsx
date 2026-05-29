@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import type { UseZipPouchProjectReturn } from '../../state/useZipPouchProject.js';
 import { validateInputs } from '../../generators/zip-pouch/inputs.js';
-import buildPattern from '../../generators/zip-pouch/buildPattern.js';
+import { buildPattern } from '../../generators/zip-pouch/buildPattern.js';
 import { ZipPouchSettingsPanel } from './ZipPouchSettingsPanel.js';
 import { PatternPreview } from './PatternPreview.js';
 import { ExportPanel } from './ExportPanel.js';
