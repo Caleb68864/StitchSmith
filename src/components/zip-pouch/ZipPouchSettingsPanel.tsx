@@ -17,6 +17,55 @@ import {
 import type { ZipPouchInputs, ZipPouchPreset } from '../../generators/zip-pouch/types.js';
 import { PRESET_DEFAULTS } from '../../generators/zip-pouch/defaults.js';
 
+// ─── Unit conversion helpers ─────────────────────────────────────────────────
+
+const NUMERIC_FIELDS = [
+  'finished_length',
+  'finished_width',
+  'finished_depth',
+  'seam_allowance',
+  'grosgrain_width',
+] as const;
+
+/**
+ * Convert all numeric dimension fields to `newUnits`.
+ * mm→in: divide by 25.4, round to 2 dp. in→mm: multiply by 25.4, round to integer.
+ * Sets preset='custom' in the returned partial.
+ */
+export function convertInputsUnits(
+  inputs: ZipPouchInputs,
+  newUnits: 'mm' | 'in',
+): Partial<ZipPouchInputs> {
+  const changes: Partial<ZipPouchInputs> = { units: newUnits, preset: 'custom' };
+  for (const field of NUMERIC_FIELDS) {
+    const v = inputs[field];
+    if (typeof v === 'number' && Number.isFinite(v)) {
+      if (newUnits === 'in') {
+        (changes as Record<string, unknown>)[field] = Math.round((v / 25.4) * 100) / 100;
+      } else {
+        (changes as Record<string, unknown>)[field] = Math.round(v * 25.4);
+      }
+    }
+  }
+  return changes;
+}
+
+/**
+ * Convert preset dimension values (always in mm) to the display units.
+ * Returns the original object unchanged when `units === 'mm'`.
+ */
+export function convertPresetDimsToUnits(
+  dims: { finished_length: number; finished_width: number; finished_depth: number },
+  units: 'mm' | 'in',
+): { finished_length: number; finished_width: number; finished_depth: number } {
+  if (units !== 'in') return dims;
+  return {
+    finished_length: Math.round((dims.finished_length / 25.4) * 100) / 100,
+    finished_width: Math.round((dims.finished_width / 25.4) * 100) / 100,
+    finished_depth: Math.round((dims.finished_depth / 25.4) * 100) / 100,
+  };
+}
+
 interface Props {
   inputs: ZipPouchInputs;
   errors: Record<string, string>;
@@ -80,7 +129,7 @@ export function ZipPouchSettingsPanel({ inputs, errors, onChange }: Props) {
     if (p === 'custom') {
       onChange({ preset: 'custom' });
     } else {
-      const dims = PRESET_DEFAULTS[p];
+      const dims = convertPresetDimsToUnits(PRESET_DEFAULTS[p], units);
       onChange({
         preset: p,
         finished_length: dims.finished_length,
@@ -88,6 +137,11 @@ export function ZipPouchSettingsPanel({ inputs, errors, onChange }: Props) {
         finished_depth: dims.finished_depth,
       });
     }
+  }
+
+  function handleUnitsChange(newUnits: 'mm' | 'in') {
+    if (newUnits === units) return;
+    onChange(convertInputsUnits(inputs, newUnits));
   }
 
   return (
@@ -121,7 +175,7 @@ export function ZipPouchSettingsPanel({ inputs, errors, onChange }: Props) {
                     variant={units === 'mm' ? 'default' : 'outline'}
                     size="sm"
                     className="h-7 text-xs px-3"
-                    onClick={() => onChange({ units: 'mm' })}
+                    onClick={() => handleUnitsChange('mm')}
                   >
                     mm
                   </Button>
@@ -129,7 +183,7 @@ export function ZipPouchSettingsPanel({ inputs, errors, onChange }: Props) {
                     variant={units === 'in' ? 'default' : 'outline'}
                     size="sm"
                     className="h-7 text-xs px-3"
-                    onClick={() => onChange({ units: 'in' })}
+                    onClick={() => handleUnitsChange('in')}
                   >
                     in
                   </Button>
