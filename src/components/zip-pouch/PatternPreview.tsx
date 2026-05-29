@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import type { ZipPouchInputs } from '../../generators/zip-pouch/types.js';
-import buildPattern from '../../generators/zip-pouch/buildPattern.js';
+import { buildPattern } from '../../generators/zip-pouch/buildPattern.js';
 import { patternToSvg } from '../../lib/pattern-engine/exports/svg.js';
 import type { Pattern } from '../../lib/pattern-engine/graph/Pattern.js';
 import { PatternViewport } from '../shared/PatternViewport.js';
