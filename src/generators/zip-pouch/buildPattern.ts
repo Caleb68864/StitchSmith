@@ -231,7 +231,7 @@ function buildCrossBottomPieces(r: ResolvedInputs): Piece[] {
   const panelCutHeight = finished_width + finished_depth + 2 * sa;
 
   // Cross panel: rectangle W×H with 4 corners cut out (represented as polygon)
-  function makeCrossPanel(id: string, name: string): Piece {
+  function makeCrossPanel(id: string, name: string, quantity: number): Piece {
     const edgeId = makeEdgeIdGen(id);
     const W = panelCutWidth;
     const H = panelCutHeight;
@@ -256,21 +256,18 @@ function buildCrossBottomPieces(r: ResolvedInputs): Piece[] {
       id,
       name,
       mirror: false,
-      quantity: 1,
+      quantity,
       paths: [cutPath],
       seamAllowances: {},
     };
   }
 
   const zipperStripHeight = cornerCutout + sa;
-  const zipperStripA = buildRectPiece('zipper-strip-a', 'Zipper Strip A', panelCutWidth, zipperStripHeight, sa);
-  const zipperStripB = buildRectPiece('zipper-strip-b', 'Zipper Strip B', panelCutWidth, zipperStripHeight, sa);
+  const zipperStrip = buildRectPiece('zipper-strip', 'Zipper Strip', panelCutWidth, zipperStripHeight, sa, 2);
 
   return [
-    makeCrossPanel('cross-panel-front', 'Cross Panel (Outer)'),
-    makeCrossPanel('cross-panel-back', 'Cross Panel (Lining)'),
-    zipperStripA,
-    zipperStripB,
+    makeCrossPanel('cross-panel', 'Cross Panel', 2),
+    zipperStrip,
   ];
 }
 
@@ -337,10 +334,9 @@ function buildMultiPanelPieces(r: ResolvedInputs): Piece[] {
   const front = buildRectPiece('front-panel', 'Front Panel', frontBackW, frontBackH, sa);
   const back = buildRectPiece('back-panel', 'Back Panel', frontBackW, frontBackH, sa);
   const bottom = buildRectPiece('bottom-panel', 'Bottom Panel', bottomW, bottomH, sa);
-  const endLeft = buildRectPiece('end-panel-left', 'End Panel (Left)', endW, endH, sa);
-  const endRight = buildRectPiece('end-panel-right', 'End Panel (Right)', endW, endH, sa);
+  const end = buildRectPiece('end-panel', 'End Panel', endW, endH, sa, 2);
 
-  return [front, back, bottom, endLeft, endRight];
+  return [front, back, bottom, end];
 }
 
 // ─── Main entry point ────────────────────────────────────────────────────────
