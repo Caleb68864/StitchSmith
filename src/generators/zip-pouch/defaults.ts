@@ -2,11 +2,12 @@
  * Zip Pouch Generator — Preset defaults and global defaults
  */
 
-import type { ZipPouchPreset, ResolvedInputs } from './types.js';
+import type { ZipPouchPreset, ResolvedInputs, ConstructionStyle } from './types.js';
 
 // ─── Global defaults (applied when no preset or custom preset) ──────────────────
 
 export const DEFAULT_SEAM_ALLOWANCE_MM = 10;
+export const DEFAULT_CONSTRUCTION_STYLE: ConstructionStyle = 'boxed';
 export const DEFAULT_ZIP_GAUGE = '#3' as const;
 export const DEFAULT_GROSGRAIN_WIDTH_MM = 15.875; // 5/8"
 export const DEFAULT_PULL_LOOPS = true;
