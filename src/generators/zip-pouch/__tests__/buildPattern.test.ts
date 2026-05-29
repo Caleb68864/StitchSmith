@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import buildPattern from '../buildPattern.js';
+import { buildPattern } from '../buildPattern.js';
+import { buildBom } from '../bom.js';
+import { resolveInputs } from '../inputs.js';
 import { patternToSvg } from '../../../lib/pattern-engine/exports/svg.js';
 import type { Pattern } from '../../../lib/pattern-engine/graph/Pattern.js';
 import type { ZipPouchInputs } from '../types.js';
@@ -226,6 +228,28 @@ describe('buildPattern — step sequence', () => {
       expect(step.body).toBeTruthy();
       expect(Array.isArray(step.dependsOn)).toBe(true);
       expect(Array.isArray(step.refsPieces)).toBe(true);
+    }
+  });
+});
+
+// ─── BOM consolidation spec coverage (SS-01) ─────────────────────────────────
+// buildPattern must delegate to the canonical buildBom in ./bom.js, and the
+// step group / preparation labelling must be title-case.
+
+describe('buildPattern — BOM consolidation (pencil preset)', () => {
+  it('BOM rows from buildPattern match buildBom(resolveInputs(...)) for pencil preset', () => {
+    const result = buildPattern({ preset: 'pencil', units: 'mm' });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.bom).toEqual(buildBom(resolveInputs({ preset: 'pencil', units: 'mm' })));
+    }
+  });
+
+  it("steps[0].group === 'Preparation'", () => {
+    const result = buildPattern({ preset: 'pencil', units: 'mm' });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.steps[0].group).toBe('Preparation');
     }
   });
 });
