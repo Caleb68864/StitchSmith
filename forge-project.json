@@ -78,7 +78,7 @@
     "severity_threshold": "minor",
     "model": "haiku",
     "parallel_files": false,
-    "max_iteration_usd": 5.00,
+    "max_iteration_usd": 10.00,
     "fix_worker_timeout_seconds": 600,
     "scope": "declared"
   }
