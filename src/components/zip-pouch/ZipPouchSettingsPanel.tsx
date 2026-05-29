@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import type { ZipPouchInputs, ZipPouchPreset, ConstructionStyle } from '../../generators/zip-pouch/types.js';
+import type { ZipPouchInputs, ZipPouchPreset, ConstructionStyle, ZipperPosition } from '../../generators/zip-pouch/types.js';
 import { PRESET_DEFAULTS } from '../../generators/zip-pouch/defaults.js';
 
 // ─── Unit conversion helpers ─────────────────────────────────────────────────
@@ -25,6 +25,7 @@ const NUMERIC_FIELDS = [
   'finished_depth',
   'seam_allowance',
   'grosgrain_width',
+  'zip_from_top',
 ] as const;
 
 /**
@@ -263,6 +264,36 @@ export function ZipPouchSettingsPanel({ inputs, errors, onChange }: Props) {
                   </SelectContent>
                 </Select>
               </div>
+
+              {inputs.construction_style === 'gusset-strip' && (
+                <div className="space-y-1">
+                  <Label className="text-xs">Zipper Position</Label>
+                  <Select
+                    value={inputs.zipper_position ?? 'top'}
+                    onValueChange={(v) => onChange({ zipper_position: v as ZipperPosition })}
+                  >
+                    <SelectTrigger className="h-8 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="top" className="text-xs">Top</SelectItem>
+                      <SelectItem value="front" className="text-xs">Front</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {inputs.construction_style === 'gusset-strip' && inputs.zipper_position === 'front' && (
+                <NumericField
+                  id="zip-from-top"
+                  label="Zipper Placement from Top (mm)"
+                  value={inputs.zip_from_top}
+                  error={errors['zip_from_top']}
+                  min={0}
+                  step={1}
+                  onChange={v => onChange({ zip_from_top: v })}
+                />
+              )}
             </div>
           </AccordionContent>
         </AccordionItem>
