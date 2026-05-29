@@ -3,7 +3,7 @@ export interface PatternEntry {
   title: string;
   description: string;
   available: boolean;
-  route: 'tool-roll' | 'tri-zip' | 'roll-top' | 'mag-pouch' | 'book-cover';
+  route: 'tool-roll' | 'tri-zip' | 'roll-top' | 'mag-pouch' | 'book-cover' | 'zip-pouch';
 }
 
 export const PATTERNS: PatternEntry[] = [
@@ -58,4 +58,13 @@ registerPattern({
   description: 'Parametric fabric book cover. Pick a preset (Moleskine, Bible, Field Notes, …) or enter custom dimensions. Optional zipper / elastic / snap / buckle closure, lining + interfacing, card slots, bookmark ribbon, internal zip pocket, mesh pocket, and a tactical Velcro-mount variant.',
   available: true,
   route: 'book-cover',
+});
+
+// Register the zip-pouch entry (idempotent — safe to call multiple times)
+registerPattern({
+  id: 'zip-pouch',
+  title: 'Zip Pouch',
+  description: 'Parametric zip pouch with boxed corners, preset sizes (pencil, EDC, toiletry), and grosgrain pull loops. Exports SVG/PDF/DXF with cut dimensions and assembly instructions.',
+  available: true,
+  route: 'zip-pouch',
 });

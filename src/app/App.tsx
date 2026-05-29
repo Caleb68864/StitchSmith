@@ -7,6 +7,7 @@ import { useTriZipProject } from '../state/useTriZipProject.js';
 import { useRollTopSackProject } from '../state/useRollTopSackProject.js';
 import { useMagPouchProject } from '../state/useMagPouchProject.js';
 import { useBookCoverProject } from '../state/useBookCoverProject.js';
+import { useZipPouchProject } from '../state/useZipPouchProject.js';
 import { Toaster } from '../components/shared/Toaster.js';
 import { ErrorBoundary } from '../components/shared/ErrorBoundary.js';
 import type { PatternEntry } from './patternRegistry.js';
@@ -29,6 +30,9 @@ const MagPouchPage = lazy(() =>
 const BookCoverPage = lazy(() =>
   import('../components/book-cover/BookCoverPage.js').then(m => ({ default: m.BookCoverPage }))
 );
+const ZipPouchPage = lazy(() =>
+  import('../components/zip-pouch/ZipPouchPage.js').then(m => ({ default: m.ZipPouchPage }))
+);
 
 // Tab title per view so users with multiple tabs can tell them apart.
 const VIEW_TITLES: Record<View, string> = {
@@ -38,6 +42,7 @@ const VIEW_TITLES: Record<View, string> = {
   'roll-top': 'StitchSmith — Roll-Top Stuff Sack',
   'mag-pouch': 'StitchSmith — Mag Pouch',
   'book-cover': 'StitchSmith — Book Cover',
+  'zip-pouch': 'StitchSmith — Zip Pouch',
 };
 
 type View = 'landing' | PatternEntry['route'];
@@ -49,6 +54,7 @@ export function App() {
   const rollTopState = useRollTopSackProject();
   const magPouchState = useMagPouchProject();
   const bookCoverState = useBookCoverProject();
+  const zipPouchState = useZipPouchProject();
 
   useEffect(() => {
     document.title = VIEW_TITLES[view] ?? 'StitchSmith';
@@ -101,7 +107,7 @@ export function App() {
           </button>
           <span className="text-xs text-muted-foreground">Mag Pouch Generator</span>
         </header>
-      ) : (
+      ) : view === 'book-cover' ? (
         <header className="border-b bg-background px-4 py-3 flex items-center justify-between">
           <button
             className="text-lg font-semibold tracking-tight hover:opacity-75 transition-opacity"
@@ -111,6 +117,17 @@ export function App() {
             StitchSmith
           </button>
           <span className="text-xs text-muted-foreground">Book Cover Generator</span>
+        </header>
+      ) : (
+        <header className="border-b bg-background px-4 py-3 flex items-center justify-between">
+          <button
+            className="text-lg font-semibold tracking-tight hover:opacity-75 transition-opacity"
+            onClick={() => setView('landing')}
+            aria-label="Back to home"
+          >
+            StitchSmith
+          </button>
+          <span className="text-xs text-muted-foreground">Zip Pouch Generator</span>
         </header>
       )}
       <PageShell>
@@ -179,6 +196,14 @@ export function App() {
             toggleInternalZipPocket={bookCoverState.toggleInternalZipPocket}
             toggleMeshPocket={bookCoverState.toggleMeshPocket}
             toggleTactical={bookCoverState.toggleTactical}
+          />
+        )}
+        {view === 'zip-pouch' && (
+          <ZipPouchPage
+            project={zipPouchState.project}
+            updateInputs={zipPouchState.updateInputs}
+            resetProject={zipPouchState.resetProject}
+            importProject={zipPouchState.importProject}
           />
         )}
         </Suspense>
