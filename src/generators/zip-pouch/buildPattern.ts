@@ -395,7 +395,3 @@ export function buildPattern(
     warnings: validationResult.warnings,
   };
 }
-
-// Back-compat default export — `index.ts` and existing tests import the default.
-// (Those files are outside this change's edit scope; keep both bindings in sync.)
-export default buildPattern;
