@@ -74,12 +74,12 @@
 
   "verify_integrated": {
     "enabled": true,
-    "max_iterations": 3,
+    "max_iterations": 10,
     "severity_threshold": "minor",
     "model": "haiku",
     "parallel_files": false,
-    "max_iteration_usd": 2.00,
-    "fix_worker_timeout_seconds": 300,
+    "max_iteration_usd": 5.00,
+    "fix_worker_timeout_seconds": 600,
     "scope": "declared"
   }
 }
