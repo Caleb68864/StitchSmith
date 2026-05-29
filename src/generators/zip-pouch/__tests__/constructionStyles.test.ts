@@ -45,14 +45,14 @@ describe("constructionStyles — 'boxed' backwards compat", () => {
   });
 });
 
-// ─── (b) cross-bottom pieces.length === 4 ────────────────────────────────────
+// ─── (b) cross-bottom pieces.length === 2 ────────────────────────────────────
 
 describe("constructionStyles — 'cross-bottom'", () => {
-  it('produces 4 pieces', () => {
+  it('produces 2 pieces', () => {
     const result = buildPattern({ ...EDC, construction_style: 'cross-bottom' });
     expect(result.ok).toBe(true);
     if (result.ok) {
-      expect(result.value.pieces.length).toBe(4);
+      expect(result.value.pieces.length).toBe(2);
     }
   });
 
@@ -112,14 +112,14 @@ describe("constructionStyles — 'gusset-strip'", () => {
   });
 });
 
-// ─── (d) multi-panel pieces.length === 5 ─────────────────────────────────────
+// ─── (d) multi-panel pieces.length === 4 (interim; → 5 in SS-05 after end tabs) ─
 
 describe("constructionStyles — 'multi-panel'", () => {
-  it('produces 5 pieces', () => {
+  it('produces 4 pieces', () => {
     const result = buildPattern({ ...EDC, construction_style: 'multi-panel' });
     expect(result.ok).toBe(true);
     if (result.ok) {
-      expect(result.value.pieces.length).toBe(5);
+      expect(result.value.pieces.length).toBe(4);
     }
   });
 
