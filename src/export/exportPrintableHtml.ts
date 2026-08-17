@@ -5,6 +5,7 @@ import type { ToolRollLayout, ToolRollProject } from '../generators/tool-roll/ty
 import { TileSvg } from '../components/svg/TileSvg.js';
 import { downloadTextFile } from '../utils/download.js';
 import { getPaperSize } from '../utils/units.js';
+import { escapeHtml } from '../utils/escapeHtml.js';
 
 function buildCss(_layout: ToolRollLayout, project: ToolRollProject): string {
   const { printPaperSize, printOrientation } = project.settings;
@@ -59,7 +60,7 @@ export function exportPrintableHtml(layout: ToolRollLayout, project: ToolRollPro
 
   const notesHtml =
     layout.constructionNotes.length > 0
-      ? `<div class="construction-notes" style="font-family:sans-serif;padding:16px;margin:16px"><h2>Construction Notes</h2><ol>${layout.constructionNotes.map(n => `<li>${n}</li>`).join('')}</ol></div>`
+      ? `<div class="construction-notes" style="font-family:sans-serif;padding:16px;margin:16px"><h2>Construction Notes</h2><ol>${layout.constructionNotes.map(n => `<li>${escapeHtml(n)}</li>`).join('')}</ol></div>`
       : '';
 
   const html = `<!DOCTYPE html>
@@ -67,7 +68,7 @@ export function exportPrintableHtml(layout: ToolRollLayout, project: ToolRollPro
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Tool Roll Pattern — ${project.projectName}</title>
+<title>Tool Roll Pattern — ${escapeHtml(project.projectName)}</title>
 <style>
 ${css}
 </style>

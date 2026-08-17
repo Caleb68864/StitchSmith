@@ -17,6 +17,7 @@ import {
 import { downloadTextFile } from '../../utils/download.js';
 import { CutListTable } from './CutListTable.js';
 import type { ExportCutList } from '../../lib/pattern-engine/exports/cutList.js';
+import { escapeHtml } from '../../utils/escapeHtml.js';
 
 interface Props {
   inputs: TriZipInputs;
@@ -118,7 +119,7 @@ export function ExportPanel({ inputs, project, hasErrors, showLabels = true }: P
   function handleInstructions() {
     const result = renderHtml(finalAssemblySteps());
     if (!result.ok) return;
-    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${project.projectName} — Assembly Instructions</title></head><body>${result.value}</body></html>`;
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${escapeHtml(project.projectName)} — Assembly Instructions</title></head><body>${result.value}</body></html>`;
     downloadTextFile(`${project.projectName}-instructions.html`, html, 'text/html');
   }
 

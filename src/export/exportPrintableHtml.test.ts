@@ -132,6 +132,15 @@ describe('exportPrintableHtml', () => {
     expect(matches.length).toBe(layout.printLayout.pages.length);
   });
 
+  it('escapes user-controlled project name and construction notes in the HTML', () => {
+    const layout = { ...makeLayout(), constructionNotes: ['Use <b>bold</b> & "quotes"'] };
+    exportPrintableHtml(layout, { ...makeProject(), projectName: '</title><script>x</script>' });
+    const html = getLastHtml();
+    expect(html).not.toContain('<script>');
+    expect(html).toContain('&lt;/title&gt;&lt;script&gt;x&lt;/script&gt;');
+    expect(html).toContain('<li>Use &lt;b&gt;bold&lt;/b&gt; &amp; &quot;quotes&quot;</li>');
+  });
+
   it('CSS contains @page { size: letter portrait; margin: 0; }', () => {
     exportPrintableHtml(makeLayout(), makeProject());
     const html = getLastHtml();

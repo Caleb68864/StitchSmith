@@ -120,3 +120,10 @@
 - Surfaces: src/export/projectEnvelopeIO.ts, src/export/projectEnvelopeIO.test.ts, src/components/shared/PatternPageShell.tsx, src/components/layout/AppHeader.tsx.
 - Watch: per-generator schemaVersion is still not checked at import (each hook's `isValid` guard only runs on load). If a page ever needs it, pass the expected version to `parseProjectJson` rather than adding a second parser.
 - Commit: improve(import)
+
+## 2026-08-16 — Unescaped project name / notes in exported HTML
+- Symptom: `exportPrintableHtml` interpolated `project.projectName` into `<title>` and each construction note into `<li>` raw; the Tri-Zip instructions export did the same for the title. A name containing `</title><script>` (e.g. from a shared project file) produced a script-bearing HTML file, and benign `&`/`<` corrupted output. `tiledHtml.ts` and `renderHtml` already escaped — this was an inconsistency.
+- Fix: new `src/utils/escapeHtml.ts`; applied at the three interpolation sites; test asserts the script payload is neutralised and notes are entity-encoded.
+- Surfaces: src/utils/escapeHtml.ts, src/export/exportPrintableHtml.ts, src/components/tri-zip-backpack/ExportPanel.tsx, src/export/exportPrintableHtml.test.ts.
+- Watch: any new template-literal HTML builder must route user text through `escapeHtml` (or the engine's `renderHtml`).
+- Commit: improve(export)
