@@ -3,8 +3,24 @@ import { generateId } from '../../utils/ids.js';
 
 // ── Tool validation ────────────────────────────────────────────────────────
 
+const TOOL_NUMERIC_FIELDS = ['width', 'height', 'thickness', 'visibleAmount'] as const;
+
 export function validateTool(tool: ToolItem): PatternWarning[] {
   const warnings: PatternWarning[] = [];
+
+  // Comparison guards below are all false for NaN (and for strings from a
+  // hand-edited project file), so check finiteness explicitly first.
+  for (const field of TOOL_NUMERIC_FIELDS) {
+    if (!Number.isFinite(tool[field])) {
+      warnings.push({
+        id: generateId('warn'),
+        severity: 'error',
+        message: `Tool ${field} must be a finite number`,
+        field,
+        toolId: tool.id,
+      });
+    }
+  }
 
   if (tool.visibleAmount >= tool.height) {
     warnings.push({
@@ -71,8 +87,27 @@ export function validateTool(tool: ToolItem): PatternWarning[] {
 
 // ── Settings validation ────────────────────────────────────────────────────
 
+const SETTINGS_NUMERIC_FIELDS = [
+  'seamAllowance',
+  'minimumPocketWidth',
+  'pocketHeightIncrement',
+  'pocketHeightPercentage',
+  'tileOverlap',
+] as const;
+
 export function validateSettings(settings: ToolRollSettings): PatternWarning[] {
   const warnings: PatternWarning[] = [];
+
+  for (const field of SETTINGS_NUMERIC_FIELDS) {
+    if (!Number.isFinite(settings[field])) {
+      warnings.push({
+        id: generateId('warn'),
+        severity: 'error',
+        message: `${field} must be a finite number`,
+        field,
+      });
+    }
+  }
 
   if (settings.seamAllowance <= 0) {
     warnings.push({

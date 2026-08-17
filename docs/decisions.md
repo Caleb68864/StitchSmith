@@ -106,3 +106,10 @@
 - Surfaces: src/lib/pattern-engine/exports/projectJson.ts, src/lib/pattern-engine/__tests__/exports-projectJson.test.ts.
 - Watch: migrators run before schema validation for older versions; a migrator that fabricates numeric fields is still covered because validation runs on the migrated result.
 - Commit: improve(project-json)
+
+## 2026-08-16 — Tool Roll validation let NaN / non-numeric fields through
+- Symptom: `validateTool` / `validateSettings` used only `<= 0`-style comparisons, which are false for NaN and for strings from a hand-edited project file (`importProjectJson` does not type-check tool fields). Such values reached `calculateToolRollLayout` and produced `NaN` in SVG path data with no user-facing error.
+- Fix: explicit `Number.isFinite` checks over the numeric tool fields (`width`, `height`, `thickness`, `visibleAmount`) and numeric settings (`seamAllowance`, `minimumPocketWidth`, `pocketHeightIncrement`, `pocketHeightPercentage`, `tileOverlap`) emit `severity: 'error'` warnings before the range checks.
+- Surfaces: src/generators/tool-roll/validation.ts, src/generators/tool-roll/validation.test.ts.
+- Watch: the UI already filters NaN on blur, so this only changes behavior for imported/corrupt data; new numeric settings should be added to `SETTINGS_NUMERIC_FIELDS`.
+- Commit: improve(tool-roll)

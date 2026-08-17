@@ -57,6 +57,13 @@ describe('validateTool', () => {
     expect(warnings.some(w => w.field === 'name')).toBe(true);
   });
 
+  it('returns an error for NaN and non-numeric dimensions (comparison guards miss these)', () => {
+    const nan = validateTool({ ...sampleTools[0], width: NaN });
+    expect(nan.some(w => w.field === 'width' && w.severity === 'error')).toBe(true);
+    const str = validateTool({ ...sampleTools[0], height: '120' as unknown as number });
+    expect(str.some(w => w.field === 'height' && w.severity === 'error')).toBe(true);
+  });
+
   it('attaches toolId to warnings', () => {
     const tool: ToolItem = { id: 'my-id', name: 'X', width: 0, height: 100, thickness: 3, visibleAmount: 20 };
     const warnings = validateTool(tool);
@@ -67,6 +74,11 @@ describe('validateTool', () => {
 // ── validateSettings ───────────────────────────────────────────────────────
 
 describe('validateSettings', () => {
+  it('returns an error for a NaN setting', () => {
+    const w = validateSettings({ ...defaultToolRollSettings, minimumPocketWidth: NaN });
+    expect(w.some(x => x.field === 'minimumPocketWidth' && x.severity === 'error')).toBe(true);
+  });
+
   it('returns no warnings for default settings', () => {
     expect(validateSettings(defaultToolRollSettings)).toHaveLength(0);
   });
