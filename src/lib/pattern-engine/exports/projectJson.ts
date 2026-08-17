@@ -52,6 +52,11 @@ function validateAgainstSchema(
       if (actualType !== fieldSchema.type) {
         return `Field "${key}" expected type ${fieldSchema.type}, got ${actualType}`;
       }
+      // JSON.parse('1e999') yields Infinity, which is typeof 'number' — reject it
+      // here so non-finite dimensions never reach geometry.
+      if (fieldSchema.type === 'number' && !Number.isFinite(value)) {
+        return `Field "${key}" must be a finite number, got ${String(value)}`;
+      }
       if (fieldSchema.enum && !fieldSchema.enum.includes(value)) {
         return `Field "${key}" must be one of [${fieldSchema.enum.join(', ')}], got ${JSON.stringify(value)}`;
       }
@@ -89,7 +94,7 @@ export function importProjectJson<TInputs = Record<string, unknown>>(
   if (typeof obj['generatorId'] !== 'string') {
     return { ok: false, error: 'Missing or invalid generatorId field.', errorCode: 'schema-error' };
   }
-  if (typeof obj['inputs'] !== 'object' || obj['inputs'] === null) {
+  if (typeof obj['inputs'] !== 'object' || obj['inputs'] === null || Array.isArray(obj['inputs'])) {
     return { ok: false, error: 'Missing or invalid inputs field.', errorCode: 'schema-error' };
   }
 

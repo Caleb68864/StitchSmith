@@ -99,3 +99,10 @@
 - Surfaces: src/lib/pattern-engine/exports/cutList.ts, src/lib/pattern-engine/__tests__/exports-cutList.test.ts.
 - Watch: header row is a fixed literal and stays unquoted; if headers ever become dynamic, pass them through `csvField` too.
 - Commit: improve(cut-list)
+
+## 2026-08-16 — Project-JSON import accepted Infinity and array inputs
+- Symptom: `JSON.parse('1e999')` yields `Infinity`, which is `typeof 'number'` and passed `validateAgainstSchema`; generators without their own finiteness guard then produced Infinity-sized geometry (blank pattern, no friendly error). `inputs: []` also slipped past the top-level `typeof === 'object'` gate before the plain-object check.
+- Fix: `validateAgainstSchema` rejects non-finite values for `type: 'number'` fields with a field-named message; the envelope gate now also rejects arrays for `inputs`.
+- Surfaces: src/lib/pattern-engine/exports/projectJson.ts, src/lib/pattern-engine/__tests__/exports-projectJson.test.ts.
+- Watch: migrators run before schema validation for older versions; a migrator that fabricates numeric fields is still covered because validation runs on the migrated result.
+- Commit: improve(project-json)

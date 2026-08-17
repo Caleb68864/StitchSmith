@@ -112,6 +112,25 @@ describe('importProjectJson — validation errors', () => {
     expect(result.errorCode).toBe('validation-error');
   });
 
+  it('returns error for non-finite numeric field (JSON 1e999 parses to Infinity)', () => {
+    const json =
+      '{"schemaVersion":2,"generatorId":"tri-zip-backpack","inputs":{"mainBodyWidthMm":1e999,' +
+      '"mainBodyHeightMm":450,"mainBodyDepthMm":150,"stylePreset":"classic"}}';
+    const result = importProjectJson(json, triZipV2Config);
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.errorCode).toBe('validation-error');
+    expect(result.error).toContain('mainBodyWidthMm');
+  });
+
+  it('returns schema-error when inputs is an array', () => {
+    const json = JSON.stringify({ schemaVersion: 2, generatorId: 'tri-zip-backpack', inputs: [] });
+    const result = importProjectJson(json, triZipV2Config);
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.errorCode).toBe('schema-error');
+  });
+
   it('returns error for invalid enum value', () => {
     const json = JSON.stringify({
       schemaVersion: 2,
