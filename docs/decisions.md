@@ -127,3 +127,10 @@
 - Surfaces: src/utils/escapeHtml.ts, src/export/exportPrintableHtml.ts, src/components/tri-zip-backpack/ExportPanel.tsx, src/export/exportPrintableHtml.test.ts.
 - Watch: any new template-literal HTML builder must route user text through `escapeHtml` (or the engine's `renderHtml`).
 - Commit: improve(export)
+
+## 2026-08-16 — Book Cover PDF download used a detached anchor
+- Symptom: `book-cover/ExportPanel.tsx` created an `<a download>` and called `click()` without appending it to the document, then revoked the object URL on the next statement. Every other download path (`utils/download.ts`, tri-zip/mag-pouch panels, `projectEnvelopeIO`) appends first. Detached-anchor clicks are not reliably honoured by Firefox, so the PDF could silently no-op.
+- Fix: extracted `downloadBlob(filename, blob)` in `src/utils/download.ts` (the existing `downloadTextFile` now delegates to it) and used it for the Book Cover PDF.
+- Surfaces: src/utils/download.ts, src/components/book-cover/ExportPanel.tsx.
+- Watch: new binary export paths should call `downloadBlob` rather than hand-rolling the anchor dance.
+- Commit: improve(book-cover)

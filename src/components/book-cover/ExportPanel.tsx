@@ -5,7 +5,7 @@ import type { BookCoverProjectInputs } from '../../state/useBookCoverProject.js'
 import type { BookCoverProject } from '../../state/useBookCoverProject.js';
 import { buildPattern } from '../../generators/book-cover/index.js';
 import { patternToSvg } from '../../lib/pattern-engine/exports/svg.js';
-import { downloadTextFile } from '../../utils/download.js';
+import { downloadTextFile, downloadBlob } from '../../utils/download.js';
 import { loadPdfExporter, loadDxfExporter, loadTiledHtmlExporter } from '../../lib/pattern-engine/exports/lazy.js';
 import type { Pattern } from '../../lib/pattern-engine/graph/Pattern.js';
 import type { Bom } from '../../generators/book-cover/types.js';
@@ -93,12 +93,7 @@ export function ExportPanel({ inputs, project, hasErrors }: Props) {
     try {
       const { exportPatternToPdf } = await loadPdfExporter();
       const blob = await exportPatternToPdf(makePattern(r));
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${project.projectName}.pdf`;
-      a.click();
-      URL.revokeObjectURL(url);
+      downloadBlob(`${project.projectName}.pdf`, blob);
     } finally {
       setPdfBusy(false);
     }
