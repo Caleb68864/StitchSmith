@@ -92,3 +92,10 @@
 - Surfaces: src/generators/book-cover/inputs.ts, src/generators/book-cover/__tests__/validateInputs.test.ts.
 - Watch: any new numeric guard in a generator must use `Number.isFinite`, never the global.
 - Commit: improve(book-cover)
+
+## 2026-08-16 — Cut-list CSV did not quote fields
+- Symptom: `exportCutListCsv` interpolated material names raw; a name like `Cordura 500D, coated` shifted every following column in Excel/Sheets, silently corrupting the cut list.
+- Fix: added an RFC 4180 `csvField()` helper (quote when the value contains `,` `"` CR or LF; double embedded quotes) and mapped every data cell through it.
+- Surfaces: src/lib/pattern-engine/exports/cutList.ts, src/lib/pattern-engine/__tests__/exports-cutList.test.ts.
+- Watch: header row is a fixed literal and stays unquoted; if headers ever become dynamic, pass them through `csvField` too.
+- Commit: improve(cut-list)

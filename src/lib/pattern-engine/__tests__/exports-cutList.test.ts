@@ -190,4 +190,19 @@ describe('exportCutListCsv', () => {
     expect(csv).toContain('500D Cordura');
     expect(csv).toContain('Air Mesh');
   });
+
+  it('quotes material names containing commas or quotes (RFC 4180)', () => {
+    const tricky: Material[] = [
+      { ...materials[0], name: 'Cordura 500D, coated "PU"' },
+      ...materials.slice(1),
+    ];
+    const result = exportCutList(makePattern(), tricky, hardware);
+    const csv = exportCutListCsv(result, tricky);
+    const row = csv.split('\n').find((l) => l.startsWith(materials[0].id));
+    expect(row).toBeDefined();
+    expect(row).toContain('"Cordura 500D, coated ""PU"""');
+    // Splitting on unquoted commas must still yield exactly 4 columns.
+    const cols = row!.split(/,(?=(?:[^"]*"[^"]*")*[^"]*$)/);
+    expect(cols.length).toBe(4);
+  });
 });

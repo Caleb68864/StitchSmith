@@ -56,6 +56,12 @@ export function exportCutList(
   return { byMaterial, byHardware };
 }
 
+/** RFC 4180 field quoting: wrap in quotes when the value contains , " or newlines. */
+function csvField(value: string | number): string {
+  const s = String(value);
+  return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
+
 export function exportCutListCsv(
   cutList: ExportCutList,
   materials: Material[],
@@ -65,13 +71,15 @@ export function exportCutListCsv(
   for (const entry of cutList.byMaterial) {
     const name = matMap.get(entry.materialId)?.name ?? entry.materialId;
     lines.push(
-      `${entry.materialId},${name},${entry.totalAreaMm2.toFixed(2)},${entry.pieces.join('; ')}`,
+      [entry.materialId, name, entry.totalAreaMm2.toFixed(2), entry.pieces.join('; ')]
+        .map(csvField)
+        .join(','),
     );
   }
   lines.push('');
   lines.push('Hardware ID,Count');
   for (const entry of cutList.byHardware) {
-    lines.push(`${entry.hardwareId},${entry.count}`);
+    lines.push([entry.hardwareId, entry.count].map(csvField).join(','));
   }
   return lines.join('\n');
 }
