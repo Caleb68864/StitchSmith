@@ -13,6 +13,8 @@ const REF: ResolvedInputs = {
   units: 'mm',
   preset: 'custom',
   construction_style: 'boxed',
+  zipper_position: 'top',
+  zip_from_top: 50,
 };
 
 // ─── computeCutDimensions ─────────────────────────────────────────────────────
