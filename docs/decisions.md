@@ -113,3 +113,10 @@
 - Surfaces: src/generators/tool-roll/validation.ts, src/generators/tool-roll/validation.test.ts.
 - Watch: the UI already filters NaN on blur, so this only changes behavior for imported/corrupt data; new numeric settings should be added to `SETTINGS_NUMERIC_FIELDS`.
 - Commit: improve(tool-roll)
+
+## 2026-08-16 — Shared project import accepted envelopes without inputs; file-read errors were silent
+- Symptom: `parseProjectJson` (src/export/projectEnvelopeIO.ts, used by 6 generator pages) checked only `generatorId`. A file with the right id but missing/null/array `inputs` was pushed into React state, crashed on `buildPattern(project.inputs)`, and the autosave effect persisted it (though the storage `isValid` guard restores defaults on reload). Separately, both `FileReader` import handlers wired only `onload`, so a read failure did nothing at all.
+- Fix: `parseProjectJson` now wraps `JSON.parse` with a friendly error, rejects non-object roots, and requires a plain-object `inputs`; `PatternPageShell` and `AppHeader` add `reader.onerror` → `alert(...)`. New `projectEnvelopeIO.test.ts`.
+- Surfaces: src/export/projectEnvelopeIO.ts, src/export/projectEnvelopeIO.test.ts, src/components/shared/PatternPageShell.tsx, src/components/layout/AppHeader.tsx.
+- Watch: per-generator schemaVersion is still not checked at import (each hook's `isValid` guard only runs on load). If a page ever needs it, pass the expected version to `parseProjectJson` rather than adding a second parser.
+- Commit: improve(import)

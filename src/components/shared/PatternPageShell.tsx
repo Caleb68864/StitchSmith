@@ -70,6 +70,9 @@ export function PatternPageShell({
         alert(`Failed to import project: ${(err as Error).message}`);
       }
     };
+    reader.onerror = () => {
+      alert(`Failed to read file: ${reader.error?.message ?? 'unknown error'}`);
+    };
     reader.readAsText(file);
     e.target.value = ''; // allow re-import of the same file
   }

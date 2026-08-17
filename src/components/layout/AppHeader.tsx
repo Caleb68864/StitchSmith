@@ -33,6 +33,9 @@ export function AppHeader({ project, layout, onImport, onReset, onHome }: AppHea
         alert(`Failed to import project: ${(err as Error).message}`)
       }
     }
+    reader.onerror = () => {
+      alert(`Failed to read file: ${reader.error?.message ?? 'unknown error'}`)
+    }
     reader.readAsText(file)
     // Reset so the same file can be re-imported
     e.target.value = ''

@@ -18,13 +18,29 @@ export function parseProjectJson<T extends ProjectEnvelope>(
   jsonText: string,
   expectedGeneratorId: T['generatorId'],
 ): T {
-  const parsed = JSON.parse(jsonText) as Partial<ProjectEnvelope>;
-  if (parsed?.generatorId !== expectedGeneratorId) {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(jsonText);
+  } catch {
+    throw new Error('Invalid JSON: could not parse project file.');
+  }
+  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+    throw new Error('Invalid project file: expected a JSON object.');
+  }
+  const obj = parsed as Partial<ProjectEnvelope> & { inputs?: unknown };
+  if (obj.generatorId !== expectedGeneratorId) {
     throw new Error(
-      `This file is a "${parsed?.generatorId ?? 'unknown'}" project, not a ${expectedGeneratorId} project.`,
+      `This file is a "${obj.generatorId ?? 'unknown'}" project, not a ${expectedGeneratorId} project.`,
     );
   }
-  return parsed as T;
+  // Every generator page does `buildPattern(project.inputs)` straight after
+  // import and the autosave effect persists whatever is in state, so a file
+  // with the right generatorId but no inputs would crash and then survive
+  // reload. Reject it here instead.
+  if (typeof obj.inputs !== 'object' || obj.inputs === null || Array.isArray(obj.inputs)) {
+    throw new Error('Invalid project file: missing or invalid "inputs" object.');
+  }
+  return obj as T;
 }
 
 /**
