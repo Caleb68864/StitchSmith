@@ -78,3 +78,10 @@
 - Surfaces: src/generators/zip-pouch/buildPattern.ts, src/generators/zip-pouch/__tests__/buildPattern.test.ts.
 - Watch: The baked-in SA convention (cut dims include SA, `seamAllowances` = 0) must be consistent across the generator. Any future modification that adds `Piece.seamAllowances` to zip-pouch pieces will double-count SA.
 - Commit: fix(zip-pouch)
+
+## 2026-08-16 — vitest swept agent worktrees into the test run
+- Symptom: `npm test -- --run` reported 165 test files / 133 failures; the extra 80 files were full repo copies under `.claude/worktrees/**` (harness-created agent worktrees) whose React tests fail when resolved against the outer `node_modules`.
+- Fix: `vite.config.ts` `test.exclude` now lists `.claude/**` alongside the vitest defaults (`**/node_modules/**`, `**/dist/**`); `.gitignore` ignores `.claude/worktrees/`.
+- Surfaces: vite.config.ts, .gitignore.
+- Watch: if vitest's default exclude list changes, keep the two default globs in sync — setting `exclude` replaces the defaults rather than extending them.
+- Commit: improve(dx)

@@ -47,5 +47,8 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: [],
     passWithNoTests: true,
+    // Agent worktrees under .claude/ contain full repo copies; keep them out of
+    // the test run so their tests don't inflate/pollute results.
+    exclude: ['**/node_modules/**', '**/dist/**', '.claude/**'],
   },
 })

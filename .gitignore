@@ -52,6 +52,7 @@ coverage/
 *.tsbuildinfo
 
 # Claude Code / agent tooling
+.claude/worktrees/
 .claude/scheduled_tasks.lock
 .claude-terminal/
 task-evidence/
