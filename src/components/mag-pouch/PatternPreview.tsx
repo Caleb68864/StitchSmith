@@ -1,20 +1,27 @@
 import { useMemo } from 'react';
-import type { MagPouchBuildResult } from '../../generators/mag-pouch/types.js';
+import type { MagPouchBuildResult, MagPouchInputs } from '../../generators/mag-pouch/types.js';
 import { patternToSvg } from '../../lib/pattern-engine/exports/svg.js';
 import { PatternViewport } from '../shared/PatternViewport.js';
 
 interface Props {
+  inputs: MagPouchInputs;
   result: MagPouchBuildResult | null;
   errors: Record<string, string>;
 }
 
-export function PatternPreview({ result, errors }: Props) {
+export function PatternPreview({ inputs, result, errors }: Props) {
   const hasErrors = Object.keys(errors).length > 0;
 
   const svg = useMemo(() => {
     if (!result) return '';
-    return patternToSvg(result.pattern, { margin: 8, pieceGap: 8, showLabels: true });
-  }, [result]);
+    return patternToSvg(result.pattern, {
+      margin: 8,
+      pieceGap: 8,
+      showLabels: true,
+      // Inputs are stored in inches; the engine renders in mm.
+      defaultSeamAllowance: inputs.seamAllowance * 25.4,
+    });
+  }, [result, inputs.seamAllowance]);
 
   if (hasErrors) {
     return (

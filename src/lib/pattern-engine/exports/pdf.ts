@@ -1,12 +1,66 @@
 import type { Pattern } from '../graph/Pattern.js';
 import type { Edge } from '../graph/Edge.js';
 import { PDFDocument, rgb } from 'pdf-lib';
-import { bboxFromPiece } from '../geometry/bbox.js';
+import type { Piece } from '../graph/Piece.js';
+import { bboxFromPiece, bboxFromPoints, unionBbox } from '../geometry/bbox.js';
+import type { BoundingBox } from '../geometry/bbox.js';
+import { computeSeamAllowancePolygon } from '../geometry/offset.js';
 
 const MM_TO_PT = 72 / 25.4;
 
 function mm(v: number): number {
   return v * MM_TO_PT;
+}
+
+/**
+ * Bbox that includes the SA outer cut polygon so the piece (with its SA
+ * offset) is positioned fully inside the page margin.
+ */
+function bboxFromPieceWithSa(piece: Piece, defaultSa: number): BoundingBox {
+  let box = bboxFromPiece(piece);
+  if (!piece.seamAllowances && defaultSa <= 0) return box;
+  for (const path of piece.paths) {
+    if (!path.closed) continue;
+    const sa = computeSeamAllowancePolygon(piece, path, defaultSa);
+    if (sa.ok && sa.value) {
+      box = unionBbox(box, bboxFromPoints(sa.value));
+    }
+  }
+  return box;
+}
+
+/**
+ * Draws the SA-offset cut line for every closed path of a piece as a thin,
+ * dashed, green polygon — visually distinct from the solid black body line
+ * (mirrors the SVG exporter's styling).
+ */
+function drawSeamAllowance(
+  page: ReturnType<PDFDocument['addPage']>,
+  piece: Piece,
+  defaultSa: number,
+  layerOffsetX: number,
+  layerOffsetY: number,
+  pageHeight: number,
+): void {
+  if (!piece.seamAllowances && defaultSa <= 0) return;
+  const green = rgb(0.18, 0.49, 0.2);
+  for (const path of piece.paths) {
+    if (!path.closed) continue;
+    const saResult = computeSeamAllowancePolygon(piece, path, defaultSa);
+    if (!saResult.ok || !saResult.value) continue;
+    const verts = saResult.value;
+    for (let i = 0; i < verts.length; i++) {
+      const a = verts[i];
+      const b = verts[(i + 1) % verts.length];
+      page.drawLine({
+        start: { x: mm(layerOffsetX + a.x), y: pageHeight - mm(layerOffsetY + a.y) },
+        end: { x: mm(layerOffsetX + b.x), y: pageHeight - mm(layerOffsetY + b.y) },
+        color: green,
+        thickness: 0.4,
+        dashArray: [mm(3), mm(2)],
+      });
+    }
+  }
 }
 
 function edgeToPdfCommands(
@@ -167,6 +221,11 @@ function drawScaleCheckSquare(
 export interface PdfOptions {
   pageSizeMm?: { width: number; height: number };
   marginMm?: number;
+  /**
+   * Default seam allowance (mm) applied to closed paths whose Piece has no
+   * `seamAllowances` entry. 0 disables SA rendering unless per-edge SA is set.
+   */
+  defaultSeamAllowance?: number;
 }
 
 export async function exportPatternToPdf(
@@ -175,6 +234,7 @@ export async function exportPatternToPdf(
 ): Promise<Blob> {
   const pageSize = options.pageSizeMm ?? { width: 210, height: 297 };
   const margin = options.marginMm ?? 15;
+  const defaultSa = options.defaultSeamAllowance ?? 0;
 
   const pdfDoc = await PDFDocument.create();
   const pageWidthPt = mm(pageSize.width);
@@ -191,9 +251,12 @@ export async function exportPatternToPdf(
     drawCropMarks(page, pageWidthPt, pageHeightPt);
     drawScaleCheckSquare(page, pageHeightPt);
 
-    const bbox = bboxFromPiece(piece);
+    const bbox = bboxFromPieceWithSa(piece, defaultSa);
     const ox = margin - bbox.minX;
     const oy = margin - bbox.minY;
+
+    // SA outer cut line drawn first so the body cut line strokes on top.
+    drawSeamAllowance(page, piece, defaultSa, ox, oy, pageHeightPt);
 
     for (const path of piece.paths) {
       for (const edge of path.edges) {

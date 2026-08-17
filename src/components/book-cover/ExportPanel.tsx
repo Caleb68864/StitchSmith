@@ -92,7 +92,9 @@ export function ExportPanel({ inputs, project, hasErrors }: Props) {
     setPdfBusy(true);
     try {
       const { exportPatternToPdf } = await loadPdfExporter();
-      const blob = await exportPatternToPdf(makePattern(r));
+      const blob = await exportPatternToPdf(makePattern(r), {
+        defaultSeamAllowance: inputs.seam_allowance ?? 9.5,
+      });
       downloadBlob(`${project.projectName}.pdf`, blob);
     } finally {
       setPdfBusy(false);

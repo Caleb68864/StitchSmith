@@ -81,7 +81,7 @@ export function MagPouchPage({ project, updateInputs, resetProject, importProjec
       exportTooltip="Download this project as JSON"
       banner={banner}
       settings={<MagPouchSettingsPanel inputs={inputs} errors={errors} onChange={updateInputs} />}
-      preview={<PatternPreview result={result} errors={errors} />}
+      preview={<PatternPreview inputs={inputs} result={result} errors={errors} />}
       sidebar={
         <>
           <PatternEngineLegend />

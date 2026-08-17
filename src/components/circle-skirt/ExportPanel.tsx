@@ -73,7 +73,9 @@ export function ExportPanel({ inputs, project, hasErrors }: Props) {
     setPdfLoading(true);
     try {
       const mod = await loadPdfExporter();
-      const pdf = await mod.exportPatternToPdf(pattern);
+      const pdf = await mod.exportPatternToPdf(pattern, {
+        defaultSeamAllowance: inputs.seam_allowance ?? 15,
+      });
       const blob = new Blob([pdf], { type: 'application/pdf' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');

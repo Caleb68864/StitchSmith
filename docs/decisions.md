@@ -134,3 +134,10 @@
 - Surfaces: src/utils/download.ts, src/components/book-cover/ExportPanel.tsx.
 - Watch: new binary export paths should call `downloadBlob` rather than hand-rolling the anchor dance.
 - Commit: improve(book-cover)
+
+## 2026-08-16 — PDF export now draws the SA-offset cut line; mag-pouch preview shows SA
+- Symptom: CLAUDE.md requires SVG *and* PDF exports to render the seam-allowance cut line distinctly, but `exports/pdf.ts` only drew body edges (solid black, no SA option). Users printing the PDF got the finished-size outline with no cut line. Separately, mag-pouch's on-screen `PatternPreview` omitted `defaultSeamAllowance` while every other generator's preview passed it, so the preview and the SVG export disagreed.
+- Fix: `PdfOptions.defaultSeamAllowance` added; PDF draws the SA polygon (thin, dashed, green — same styling as SVG) beneath the body line and positions the piece using the SA-inclusive bbox so the outer line stays inside the page margin. book-cover / mag-pouch / tri-zip / circle-skirt ExportPanels pass the same SA they already pass to SVG. mag-pouch `PatternPreview` now takes `inputs` and passes `seamAllowance * 25.4`.
+- Surfaces: src/lib/pattern-engine/exports/pdf.ts, src/components/{book-cover,mag-pouch,tri-zip-backpack}/ExportPanel.tsx, src/components/mag-pouch/{PatternPreview,MagPouchPage}.tsx, tests in src/lib/pattern-engine/__tests__/exports-pdf*.test.ts.
+- Watch: roll-top-sack and zip-pouch ExportPanels don't use `exportPatternToPdf` (they use tiled HTML), so nothing to wire there. PDF fold/stitch edges are still solid black (SVG dashes them) — a follow-up if print fidelity matters. mag-pouch stores SA in inches; the `* 25.4` conversion lives in three places now (SVG export, PDF export, preview) — a small helper would consolidate it.
+- Commit: feat(pdf-export)
