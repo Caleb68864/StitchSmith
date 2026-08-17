@@ -1,7 +1,7 @@
 import type { Pattern } from '../graph/Pattern.js';
 import type { Material } from '../materials/Material.js';
 import type { Hardware } from '../materials/Hardware.js';
-import { bboxFromPiece } from '../geometry/bbox.js';
+import { bboxFromPieceWithSa } from '../geometry/saBbox.js';
 
 export interface MaterialCutEntry {
   materialId: string;
@@ -19,16 +19,27 @@ export interface ExportCutList {
   byHardware: HardwareBomEntry[];
 }
 
+export interface CutListOptions {
+  /**
+   * Default seam allowance (mm) for pieces without per-edge `seamAllowances`.
+   * Yardage is computed on the SA-inclusive cut outline — the fabric a piece
+   * actually consumes — so pass the same value the SVG/PDF exporters receive.
+   */
+  defaultSeamAllowance?: number;
+}
+
 export function exportCutList(
   pattern: Pattern,
   _materials: Material[],
   hardware: Hardware[],
+  options: CutListOptions = {},
 ): ExportCutList {
   const byMaterialMap = new Map<string, { totalAreaMm2: number; pieces: string[] }>();
+  const defaultSa = options.defaultSeamAllowance ?? 0;
 
   for (const piece of pattern.pieces) {
     const matId = piece.materialId ?? 'unspecified';
-    const bbox = bboxFromPiece(piece);
+    const bbox = bboxFromPieceWithSa(piece, defaultSa);
     const areaMm2 = bbox.width * bbox.height * piece.quantity;
 
     const existing = byMaterialMap.get(matId);

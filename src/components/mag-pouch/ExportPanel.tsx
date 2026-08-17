@@ -95,14 +95,14 @@ export function ExportPanel({ inputs, project, result, hasErrors }: Props) {
 
   function handleCutList() {
     if (!result) return;
-    const cl = exportCutList(result.pattern, [], []);
+    const cl = exportCutList(result.pattern, [], [], { defaultSeamAllowance: inputs.seamAllowance * 25.4 });
     setEngineCutList(cl);
     setShowCutList(v => !v);
   }
 
   function handleCutListCsv() {
     if (!result) return;
-    const cl = exportCutList(result.pattern, [], []);
+    const cl = exportCutList(result.pattern, [], [], { defaultSeamAllowance: inputs.seamAllowance * 25.4 });
     const csv = exportCutListCsv(cl, []);
     downloadTextFile(`${project.projectName}-cut-list.csv`, csv, 'text/csv');
   }

@@ -105,7 +105,7 @@ export function ExportPanel({ inputs, project, hasErrors, showLabels = true }: P
   function handleCutList() {
     const r = getPattern();
     if (!r) return;
-    const cl = exportCutList(r, [], []);
+    const cl = exportCutList(r, [], [], { defaultSeamAllowance: inputs.seam_allowance ?? 10 });
     setCutListData(cl);
     setShowCutList(v => !v);
   }
@@ -113,7 +113,7 @@ export function ExportPanel({ inputs, project, hasErrors, showLabels = true }: P
   function handleCutListCsv() {
     const r = getPattern();
     if (!r) return;
-    const cl = exportCutList(r, [], []);
+    const cl = exportCutList(r, [], [], { defaultSeamAllowance: inputs.seam_allowance ?? 10 });
     const csv = exportCutListCsv(cl, []);
     downloadTextFile(`${project.projectName}-cut-list.csv`, csv, 'text/csv');
   }

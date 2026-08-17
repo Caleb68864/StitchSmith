@@ -2,31 +2,13 @@ import type { Pattern } from '../graph/Pattern.js';
 import type { Edge } from '../graph/Edge.js';
 import { PDFDocument, rgb } from 'pdf-lib';
 import type { Piece } from '../graph/Piece.js';
-import { bboxFromPiece, bboxFromPoints, unionBbox } from '../geometry/bbox.js';
-import type { BoundingBox } from '../geometry/bbox.js';
+import { bboxFromPieceWithSa } from '../geometry/saBbox.js';
 import { computeSeamAllowancePolygon } from '../geometry/offset.js';
 
 const MM_TO_PT = 72 / 25.4;
 
 function mm(v: number): number {
   return v * MM_TO_PT;
-}
-
-/**
- * Bbox that includes the SA outer cut polygon so the piece (with its SA
- * offset) is positioned fully inside the page margin.
- */
-function bboxFromPieceWithSa(piece: Piece, defaultSa: number): BoundingBox {
-  let box = bboxFromPiece(piece);
-  if (!piece.seamAllowances && defaultSa <= 0) return box;
-  for (const path of piece.paths) {
-    if (!path.closed) continue;
-    const sa = computeSeamAllowancePolygon(piece, path, defaultSa);
-    if (sa.ok && sa.value) {
-      box = unionBbox(box, bboxFromPoints(sa.value));
-    }
-  }
-  return box;
 }
 
 /**

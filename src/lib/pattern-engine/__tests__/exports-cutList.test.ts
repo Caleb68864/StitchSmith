@@ -112,6 +112,20 @@ describe('exportCutList', () => {
     }
   });
 
+  it('yardage includes seam allowance when defaultSeamAllowance is given', () => {
+    // Front panel is 300×400 body; with 10 mm SA the cut outline is 320×420.
+    const noSa = exportCutList(makePattern(), materials, hardware);
+    const withSa = exportCutList(makePattern(), materials, hardware, { defaultSeamAllowance: 10 });
+    const bodyMesh = noSa.byMaterial.find((e) => e.materialId === 'mat-mesh')!;
+    const saMesh = withSa.byMaterial.find((e) => e.materialId === 'mat-mesh')!;
+    expect(saMesh.totalAreaMm2).toBeGreaterThan(bodyMesh.totalAreaMm2);
+    const cordNoSa = noSa.byMaterial.find((e) => e.materialId === 'mat-cordura')!;
+    const cordSa = withSa.byMaterial.find((e) => e.materialId === 'mat-cordura')!;
+    expect(cordSa.totalAreaMm2).toBeGreaterThan(cordNoSa.totalAreaMm2);
+    // Omitting the option preserves the previous body-only behaviour.
+    expect(exportCutList(makePattern(), materials, hardware).byMaterial).toEqual(noSa.byMaterial);
+  });
+
   it('includes both piece ids in cordura entry', () => {
     const result = exportCutList(makePattern(), materials, hardware);
     const cordura = result.byMaterial.find((e) => e.materialId === 'mat-cordura');

@@ -141,3 +141,10 @@
 - Surfaces: src/lib/pattern-engine/exports/pdf.ts, src/components/{book-cover,mag-pouch,tri-zip-backpack}/ExportPanel.tsx, src/components/mag-pouch/{PatternPreview,MagPouchPage}.tsx, tests in src/lib/pattern-engine/__tests__/exports-pdf*.test.ts.
 - Watch: roll-top-sack and zip-pouch ExportPanels don't use `exportPatternToPdf` (they use tiled HTML), so nothing to wire there. PDF fold/stitch edges are still solid black (SVG dashes them) — a follow-up if print fidelity matters. mag-pouch stores SA in inches; the `* 25.4` conversion lives in three places now (SVG export, PDF export, preview) — a small helper would consolidate it.
 - Commit: feat(pdf-export)
+
+## 2026-08-16 — Cut-list yardage ignored seam allowance; SA bbox helper triplicated
+- Symptom: `exportCutList` computed area from the finished-body bbox, so reported yardage was short by the SA band (e.g. 150×100 @10 mm SA: 15000 vs 20400 mm², −26%). Meanwhile `bboxFromPieceWithSa` existed as private copies in `svg.ts` and (after the PDF SA change) `pdf.ts`.
+- Fix: moved the helper to `src/lib/pattern-engine/geometry/saBbox.ts`; SVG/PDF exporters import it; `exportCutList` gains an optional `{ defaultSeamAllowance }` and uses the SA-inclusive bbox. Tri-Zip and Mag Pouch ExportPanels pass the same SA they already pass to SVG/PDF. Omitting the option keeps the previous body-only result.
+- Surfaces: src/lib/pattern-engine/geometry/saBbox.ts, src/lib/pattern-engine/exports/{svg,pdf,cutList}.ts, src/components/{tri-zip-backpack,mag-pouch}/ExportPanel.tsx, src/lib/pattern-engine/__tests__/exports-cutList.test.ts.
+- Watch: generators with baked-in SA (zip-pouch, roll-top) have `seamAllowances = 0`/none and pass SA=0 to exporters, so they're unaffected; keep that convention when wiring new cut lists.
+- Commit: improve(cut-list)
