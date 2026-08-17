@@ -59,7 +59,7 @@ npm install
 npm run dev
 ```
 
-The dev server prints a local URL (typically `http://localhost:5173`). Open it in Chrome, Edge, Firefox, or Safari.
+The dev server runs on `http://localhost:5273` (pinned via `strictPort` in `vite.config.ts`). Open it in Chrome, Edge, Firefox, or Safari.
 
 ### Production build
 
@@ -218,11 +218,12 @@ Open an issue if you'd like to weigh in or contribute.
 PRs welcome. Before opening one:
 
 ```bash
+npm run typecheck
 npm test -- --run
 npm run build
 ```
 
-Both should pass. Add tests next to any new module under `src/generators/`, `src/export/`, `src/state/`, or `src/storage/`.
+All three should pass. Add tests next to any new module under `src/generators/`, `src/export/`, `src/state/`, or `src/storage/`.
 
 ---
 

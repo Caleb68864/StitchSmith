@@ -14,11 +14,16 @@
 
 ## Engine usage
 
-Both Tool Roll and Tri-Zip generators consume `src/lib/pattern-engine/` for graph types (`Point`, `Edge`, `Path`, `Piece`, `Pattern`), geometry helpers (offset, arc, bbox), and exporters (SVG, PDF, DXF, project JSON). New generators must use the engine — do not fork geometry or export code into the generator directory.
+All generators (Tool Roll, Tri-Zip, Roll-Top Sack, Mag Pouch, Book Cover, Zip Pouch, Circle Skirt) consume `src/lib/pattern-engine/` for graph types (`Point`, `Edge`, `Path`, `Piece`, `Pattern`), geometry helpers (offset, arc, bbox), and exporters (SVG, PDF, DXF, project JSON). New generators must use the engine — do not fork geometry or export code into the generator directory.
 
 ## Project JSON envelope
 
-- `schemaVersion: 1` → Tool Roll
+- `schemaVersion: 1` → Tool Roll, Roll-Top Sack
 - `schemaVersion: 2` → Tri-Zip
-- These are sibling schemas, not an upgrade chain. Distinguish by `generatorId`.
+- `schemaVersion: 3` → Mag Pouch
+- `schemaVersion: 4` → Book Cover
+- `schemaVersion: 5` → Zip Pouch
+- `schemaVersion: 6` → Circle Skirt
+- These are sibling schemas, not an upgrade chain. Distinguish by `generatorId`
+  (the source of truth is each hook's `isValid` guard in `src/state/use*Project.ts`).
 - Unknown future versions return a friendly error, not partial state.

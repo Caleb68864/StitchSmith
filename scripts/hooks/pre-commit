@@ -20,7 +20,7 @@ staged_code=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(ts|j
 staged_decisions=$(git diff --cached --name-only --diff-filter=ACM | grep -c '^docs/decisions\.md$' || true)
 
 if [ -n "$staged_code" ] && [ "$staged_decisions" -eq 0 ] && [ "$_is_factory_commit" -eq 0 ]; then
-  cat >> docs/decisions.md <<'SCAFFOLD'
+  cat >> docs/decisions.md <<SCAFFOLD
 
 ## $(date +%Y-%m-%d) — <FILL-IN>
 - Symptom: <FILL-IN>
