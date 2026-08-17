@@ -10,7 +10,7 @@ export function toMm(value: number, units: 'mm' | 'in'): number {
 }
 
 function isPositiveFinite(n: number): boolean {
-  return isFinite(n) && n > 0;
+  return Number.isFinite(n) && n > 0;
 }
 
 export function validateInputs(inputs: BookCoverInputs): Result<true, BuildPatternError> {
@@ -31,14 +31,14 @@ export function validateInputs(inputs: BookCoverInputs): Result<true, BuildPatte
 
   // Validate width_ease
   if (inputs.width_ease !== undefined) {
-    if (!isFinite(inputs.width_ease) || inputs.width_ease < 0) {
+    if (!Number.isFinite(inputs.width_ease) || inputs.width_ease < 0) {
       return { ok: false, error: { kind: 'invalid-inputs', message: 'width_ease must be a non-negative finite number', field: 'width_ease' } };
     }
   }
 
   // Validate spine_bulge
   if (inputs.spine_bulge !== undefined) {
-    if (!isFinite(inputs.spine_bulge) || inputs.spine_bulge < 0) {
+    if (!Number.isFinite(inputs.spine_bulge) || inputs.spine_bulge < 0) {
       return { ok: false, error: { kind: 'invalid-inputs', message: 'spine_bulge must be a non-negative finite number', field: 'spine_bulge' } };
     }
   }
@@ -63,7 +63,7 @@ export function validateInputs(inputs: BookCoverInputs): Result<true, BuildPatte
   }
 
   if (inputs.seam_allowance !== undefined) {
-    if (!isFinite(inputs.seam_allowance) || inputs.seam_allowance < 0) {
+    if (!Number.isFinite(inputs.seam_allowance) || inputs.seam_allowance < 0) {
       return { ok: false, error: { kind: 'invalid-inputs', message: 'seam_allowance must be a non-negative finite number', field: 'seam_allowance' } };
     }
   }
@@ -95,7 +95,7 @@ export function validateInputs(inputs: BookCoverInputs): Result<true, BuildPatte
     if (!Number.isInteger(ph.count) || ph.count < 1) {
       return { ok: false, error: { kind: 'invalid-inputs', message: 'pen_holder count must be an integer >= 1', field: 'pen_holder.count' } };
     }
-    if (!isFinite(ph.slot_width) || ph.slot_width <= 0) {
+    if (!Number.isFinite(ph.slot_width) || ph.slot_width <= 0) {
       return { ok: false, error: { kind: 'invalid-inputs', message: 'pen_holder slot_width must be a positive finite number', field: 'pen_holder.slot_width' } };
     }
     const totalStripWidth = ph.count * ph.slot_width;

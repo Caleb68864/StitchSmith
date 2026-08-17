@@ -29,6 +29,24 @@ describe('validateInputs — happy path', () => {
   });
 });
 
+describe('validateInputs — non-number values from untrusted JSON', () => {
+  // Global isFinite() coerces: isFinite('10') and isFinite(null) are true.
+  // Imported/hand-edited project files can carry these; they must be rejected.
+  const withHeight = (v: unknown) => ({ ...BASE, book_height: v as number });
+  it('rejects a numeric string', () => {
+    expect(validateInputs(withHeight('200')).ok).toBe(false);
+  });
+  it('rejects null', () => {
+    expect(validateInputs(withHeight(null)).ok).toBe(false);
+  });
+  it('rejects an empty string', () => {
+    expect(validateInputs(withHeight('')).ok).toBe(false);
+  });
+  it('rejects a numeric-string seam_allowance', () => {
+    expect(validateInputs({ ...BASE, seam_allowance: '10' as unknown as number }).ok).toBe(false);
+  });
+});
+
 describe('validateInputs — book_height rejections', () => {
   it('rejects negative book_height', () => {
     expect(validateInputs({ ...BASE, book_height: -1 }).ok).toBe(false);

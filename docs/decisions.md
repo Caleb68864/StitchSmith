@@ -85,3 +85,10 @@
 - Surfaces: vite.config.ts, .gitignore.
 - Watch: if vitest's default exclude list changes, keep the two default globs in sync — setting `exclude` replaces the defaults rather than extending them.
 - Commit: improve(dx)
+
+## 2026-08-16 — book-cover validation used coercing global isFinite()
+- Symptom: `isFinite('200')`, `isFinite(null)` are true, so string/null dimensions from a hand-edited or corrupted project file passed `validateInputs` and reached geometry (string concatenation / NaN coordinates, blank SVG, no error). Every other generator already used `Number.isFinite`.
+- Fix: replaced all 5 `isFinite(` calls in `src/generators/book-cover/inputs.ts` with `Number.isFinite(`; added rejection tests for `'200'`, `null`, `''`, and a string `seam_allowance`.
+- Surfaces: src/generators/book-cover/inputs.ts, src/generators/book-cover/__tests__/validateInputs.test.ts.
+- Watch: any new numeric guard in a generator must use `Number.isFinite`, never the global.
+- Commit: improve(book-cover)
