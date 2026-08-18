@@ -15,6 +15,7 @@ type AnyPiece = {
   paths: Array<{
     id: string;
     edges: Array<{ start: { x: number; y: number }; end: { x: number; y: number } }>;
+    label?: string;
   }>;
 };
 
@@ -69,6 +70,72 @@ describe("constructionStyles — 'cross-bottom'", () => {
     }
   });
 
+  // (g2) half-cross height = finished_width + finished_depth/2 + 2×SA = 140 for EDC.
+  // The panel is one face plus HALF the bag bottom, with SA at the zipper edge
+  // and at the centre-of-bottom seam joining it to the other panel. Halving a
+  // full-cross height here would emit a panel with only half a face.
+  it('cross panel bounding box height = finished_width + finished_depth/2 + 2×SA = 140', () => {
+    const result = buildPattern({ ...EDC, construction_style: 'cross-bottom' });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      const crossPanel = result.value.pieces.find((p: { id: string }) => p.id.includes('cross-panel'))!;
+      expect(crossPanel).toBeDefined();
+      const { h } = getBBox(crossPanel as AnyPiece);
+      expect(h).toBeCloseTo(140, 0); // 100 + 20 + 20 = 140
+    }
+  });
+
+  // (g2b) the face must survive assembly at the requested finished height:
+  // panel height − half-bottom − zipper SA − centre-seam SA = finished_width.
+  it('assembled face height equals finished_width', () => {
+    const result = buildPattern({ ...EDC, construction_style: 'cross-bottom' });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      const crossPanel = result.value.pieces.find((p: { id: string }) => p.id.includes('cross-panel'))!;
+      const { h } = getBBox(crossPanel as AnyPiece);
+      const halfBottom = 40 / 2; // finished_depth / 2
+      const sa = 10;
+      expect(h - halfBottom - 2 * sa).toBeCloseTo(100, 0); // finished_width
+    }
+  });
+
+  // (g3) cross panel has corner dimension annotations
+  it('cross panel has labeled corner annotation paths', () => {
+    const result = buildPattern({ ...EDC, construction_style: 'cross-bottom' });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      const crossPanel = result.value.pieces.find((p: { id: string }) => p.id.includes('cross-panel'))!;
+      expect(crossPanel).toBeDefined();
+      const p = crossPanel as AnyPiece;
+      const labeledPaths = p.paths.filter((path) => path.label?.includes('Corner:'));
+      expect(labeledPaths.length).toBeGreaterThanOrEqual(2);
+    }
+  });
+
+  // (g4) corner annotations must trace the PHANTOM corner, not retrace cut edges.
+  // Drawing the cutout's inner edges would lay an annotation on top of the cut line.
+  it('corner annotation segments do not duplicate cut edges', () => {
+    const result = buildPattern({ ...EDC, construction_style: 'cross-bottom' });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      const crossPanel = result.value.pieces.find((p: { id: string }) => p.id.includes('cross-panel'))!;
+      const p = crossPanel as AnyPiece;
+      const key = (e: { start: { x: number; y: number }; end: { x: number; y: number } }) => {
+        const a = `${e.start.x},${e.start.y}`;
+        const b = `${e.end.x},${e.end.y}`;
+        return a < b ? `${a}|${b}` : `${b}|${a}`; // direction-independent
+      };
+      const cutKeys = new Set(p.paths.find((pa) => pa.id.endsWith(':cut'))!.edges.map(key));
+      const cornerEdges = p.paths
+        .filter((pa) => pa.id.includes(':corner-'))
+        .flatMap((pa) => pa.edges);
+      expect(cornerEdges.length).toBeGreaterThan(0);
+      for (const e of cornerEdges) {
+        expect(cutKeys.has(key(e))).toBe(false);
+      }
+    }
+  });
+
   // Boxing constraint: corner_cutout = depth/2 = 60 >= width = 50 → error
   it('validateInputs returns ok:false with field:finished_depth when corner_cutout >= width', () => {
     const result = validateInputs({
@@ -87,14 +154,27 @@ describe("constructionStyles — 'cross-bottom'", () => {
   });
 });
 
-// ─── (c) gusset-strip pieces.length === 3 ────────────────────────────────────
+// ─── (c) gusset-strip ────────────────────────────────────────────────────────
 
 describe("constructionStyles — 'gusset-strip'", () => {
-  it('produces 3 pieces', () => {
+  it('top zipper produces 4 pieces (front, back, gusset, end-tab×2)', () => {
     const result = buildPattern({ ...EDC, construction_style: 'gusset-strip' });
     expect(result.ok).toBe(true);
     if (result.ok) {
-      expect(result.value.pieces.length).toBe(3);
+      expect(result.value.pieces.length).toBe(4);
+    }
+  });
+
+  it('front zipper produces 4 pieces (back, front-top, front-bottom, full gusset)', () => {
+    const result = buildPattern({ ...EDC, construction_style: 'gusset-strip', zipper_position: 'front' });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.pieces.length).toBe(4);
+      const ids = result.value.pieces.map((p: { id: string }) => p.id);
+      expect(ids).toContain('back-panel');
+      expect(ids).toContain('front-top-strip');
+      expect(ids).toContain('front-bottom-strip');
+      expect(ids).toContain('full-perimeter-gusset');
     }
   });
 
@@ -110,16 +190,63 @@ describe("constructionStyles — 'gusset-strip'", () => {
       expect(w).toBeCloseTo(400, 0);
     }
   });
+
+  // The U-strip runs [SA][width][length][width][SA], so its corners — where the
+  // band turns from bag side onto bag bottom — sit at SA+width and SA+width+length.
+  it('gusset strip notches sit at the two bottom corners (110 and 290)', () => {
+    const result = buildPattern({ ...EDC, construction_style: 'gusset-strip' });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      const gusset = result.value.pieces.find((p: { id: string }) => p.id === 'gusset-strip')!;
+      const p = gusset as AnyPiece;
+      const notchPath = p.paths.find((pa) => pa.id.endsWith(':notch'))!;
+      expect(notchPath).toBeDefined();
+      const xs = [...new Set(notchPath.edges.map((e) => e.start.x))].sort((a, b) => a - b);
+      expect(xs).toEqual([110, 290]); // 10+100 and 10+100+180
+    }
+  });
+
+  // Splitting the front adds a zipper seam, so each strip needs SA on both of
+  // its own long edges. The pair must finish at the same height as the back panel.
+  it('front-zipper strips finish at the same height as the back panel', () => {
+    const result = buildPattern({ ...EDC, construction_style: 'gusset-strip', zipper_position: 'front' });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      const find = (id: string) => result.value.pieces.find((p: { id: string }) => p.id === id)!;
+      const sa = 10;
+      const back = getBBox(find('back-panel') as AnyPiece);
+      const top = getBBox(find('front-top-strip') as AnyPiece);
+      const bottom = getBBox(find('front-bottom-strip') as AnyPiece);
+
+      // Back: SA consumed at top and bottom edges.
+      const backFinished = back.h - 2 * sa;
+      // Front: each strip loses SA at its gusset edge and at the zipper edge.
+      const frontFinished = (top.h - 2 * sa) + (bottom.h - 2 * sa);
+      expect(frontFinished).toBeCloseTo(backFinished, 6);
+      expect(frontFinished).toBeCloseTo(100, 6); // finished_width
+    }
+  });
+
+  it('full-perimeter gusset carries stitch lines and corner notches', () => {
+    const result = buildPattern({ ...EDC, construction_style: 'gusset-strip', zipper_position: 'front' });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      const gusset = result.value.pieces.find((p: { id: string }) => p.id === 'full-perimeter-gusset')!;
+      const p = gusset as AnyPiece;
+      expect(p.paths.find((pa) => pa.id.endsWith(':stitch'))!.edges.length).toBeGreaterThan(0);
+      expect(p.paths.find((pa) => pa.id.endsWith(':notch'))!.edges.length).toBeGreaterThan(0);
+    }
+  });
 });
 
-// ─── (d) multi-panel pieces.length === 4 (interim; → 5 in SS-05 after end tabs) ─
+// ─── (d) multi-panel ─────────────────────────────────────────────────────────
 
 describe("constructionStyles — 'multi-panel'", () => {
-  it('produces 4 pieces', () => {
+  it('produces 5 pieces (front, back, bottom, end-panel×2, end-tab×2)', () => {
     const result = buildPattern({ ...EDC, construction_style: 'multi-panel' });
     expect(result.ok).toBe(true);
     if (result.ok) {
-      expect(result.value.pieces.length).toBe(4);
+      expect(result.value.pieces.length).toBe(5);
     }
   });
 
@@ -133,6 +260,48 @@ describe("constructionStyles — 'multi-panel'", () => {
       expect(endPanel).toBeDefined();
       const { h } = getBBox(endPanel as AnyPiece);
       expect(h).toBeCloseTo(60, 0);
+    }
+  });
+});
+
+// ─── Steps must describe the pieces actually drawn ───────────────────────────
+// CLAUDE.md: step instructions must reflect what is actually drawn. Before this
+// was enforced, every style emitted the boxed 2-panel steps ("Cut 2 panels at
+// 200 × 130 mm") regardless of the five-piece pattern beside them.
+
+describe('constructionStyles — steps match the drawn pieces', () => {
+  const STYLES = ['boxed', 'cross-bottom', 'gusset-strip', 'multi-panel'] as const;
+
+  it.each(STYLES)('%s: every refsPieces id exists in the pattern', (construction_style) => {
+    const result = buildPattern({ ...EDC, construction_style });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const pieceIds = new Set(result.value.pieces.map((p: { id: string }) => p.id));
+    for (const step of result.value.steps) {
+      for (const ref of step.refsPieces) {
+        expect(pieceIds.has(ref)).toBe(true);
+      }
+    }
+  });
+
+  it.each(STYLES)('%s: the cut step names each distinct piece kind', (construction_style) => {
+    const result = buildPattern({ ...EDC, construction_style });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const cutStep = result.value.steps[0];
+    expect(cutStep.title).toMatch(/cut/i);
+    // Piece count named in the cut step should cover every piece in the pattern.
+    expect(cutStep.refsPieces.length).toBe(result.value.pieces.length);
+  });
+
+  it('front-zipper gusset steps reference the split front strips', () => {
+    const result = buildPattern({ ...EDC, construction_style: 'gusset-strip', zipper_position: 'front' });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      const allRefs = result.value.steps.flatMap((s) => s.refsPieces);
+      expect(allRefs).toContain('front-top-strip');
+      expect(allRefs).toContain('front-bottom-strip');
+      expect(allRefs).not.toContain('front-panel');
     }
   });
 });

@@ -14,6 +14,13 @@ import type { Step } from '../../lib/pattern-engine/instructions/Step.js';
 import type { ZipPouchInputs, BomRow, BuildPatternError, Result, ResolvedInputs } from './types.js';
 import { resolveInputs, validateInputs } from './inputs.js';
 import { buildBom, computeCutDimensions } from './bom.js';
+import {
+  crossBottomDims,
+  gussetStripDims,
+  multiPanelDims,
+  zipperEndTabDims,
+  zipperLengthFor,
+} from './dimensions.js';
 
 // ─── Geometry helpers ────────────────────────────────────────────────────────
 
@@ -106,13 +113,13 @@ function buildPanelPiece(
 
 // ─── Steps builder ───────────────────────────────────────────────────────────
 
-function buildSteps(
-  resolved: ReturnType<typeof resolveInputs>,
+function buildBoxedSteps(
+  resolved: ResolvedInputs,
   cutWidth: number,
   cutHeight: number,
 ): Step[] {
   const { finished_length, finished_width, finished_depth, seam_allowance, zip_gauge, pull_loops, grosgrain_width } = resolved;
-  const zipperLength = Math.ceil((cutWidth + 25) / 50) * 50;
+  const zipperLength = zipperLengthFor(cutWidth);
 
   return [
     {
@@ -179,6 +186,262 @@ function buildSteps(
   ];
 }
 
+function buildCrossBottomSteps(r: ResolvedInputs): Step[] {
+  const { finished_length, finished_width, finished_depth, seam_allowance: sa, zip_gauge } = r;
+  const { panelCutWidth: W, halfCrossHeight: H, cornerCutout: C } = crossBottomDims(r);
+  const panels = ['cross-panel', 'cross-panel-back'];
+
+  return [
+    {
+      id: 'step-1',
+      title: 'Cut half-cross panels',
+      body:
+        `Cut 2 half-cross panels, each ${W} × ${H} mm before the corner cutouts, ` +
+        `then remove a ${C} × ${C} mm square from both top corners. ` +
+        `Dimensions include ${sa} mm seam allowance throughout. ` +
+        `The straight bottom edge is the zipper edge; the notched top edge joins the other panel across the bag bottom.`,
+      dependsOn: [],
+      refsPieces: panels,
+      group: 'Preparation',
+    },
+    {
+      id: 'step-2',
+      title: 'Attach zipper',
+      body:
+        `Sew a ${zip_gauge} coil zipper (${zipperLengthFor(W)} mm) between the two straight edges, ` +
+        `stitching ${sa} mm from the edge along the marked zipper line on each panel.`,
+      dependsOn: ['step-1'],
+      refsPieces: panels,
+      group: 'Assembly',
+    },
+    {
+      id: 'step-3',
+      title: 'Join the bag bottom',
+      body:
+        `Open the zipper. With right sides together, sew the two panels' top edges to each other ` +
+        `at ${sa} mm. This seam runs along the centre of the ${finished_depth} mm bag bottom.`,
+      dependsOn: ['step-2'],
+      refsPieces: panels,
+      group: 'Assembly',
+    },
+    {
+      id: 'step-4',
+      title: 'Close the corners',
+      body:
+        `At each cut-out corner, bring the two raw edges together so they meet in a straight line ` +
+        `and sew at ${sa} mm. The four corners form the ${finished_depth} mm depth. ` +
+        `Finished interior: ${finished_length} × ${finished_width} × ${finished_depth} mm.`,
+      dependsOn: ['step-3'],
+      refsPieces: panels,
+      group: 'Assembly',
+    },
+    {
+      id: 'step-5',
+      title: 'Finish seams',
+      body: `Turn right side out through the open zipper. Bind or zigzag the interior seams and bar-tack each zipper end.`,
+      dependsOn: ['step-4'],
+      refsPieces: panels,
+      group: 'Finishing',
+    },
+  ];
+}
+
+function buildGussetStripSteps(r: ResolvedInputs): Step[] {
+  const { finished_length, finished_width, finished_depth, seam_allowance: sa, zip_gauge } = r;
+  const d = gussetStripDims(r);
+  const zipperLength = zipperLengthFor(d.panelCutWidth);
+
+  if (r.zipper_position === 'front') {
+    const pieces = ['back-panel', 'front-top-strip', 'front-bottom-strip', 'full-perimeter-gusset'];
+    return [
+      {
+        id: 'step-1',
+        title: 'Cut panels and gusset',
+        body:
+          `Cut 1 back panel ${d.panelCutWidth} × ${d.panelCutHeight} mm, ` +
+          `1 front top strip ${d.panelCutWidth} × ${d.frontTopHeight} mm, ` +
+          `1 front bottom strip ${d.panelCutWidth} × ${d.frontBottomHeight} mm, ` +
+          `and 1 gusset ${d.fullGussetWidth} × ${d.gussetCutHeight} mm. ` +
+          `All dimensions include ${sa} mm seam allowance.`,
+        dependsOn: [],
+        refsPieces: pieces,
+        group: 'Preparation',
+      },
+      {
+        id: 'step-2',
+        title: 'Set the front zipper',
+        body:
+          `Sew the ${zip_gauge} zipper (${zipperLength} mm) between the two front strips at ${sa} mm, ` +
+          `placing it ${r.zip_from_top} mm down from the finished top edge. ` +
+          `Topstitch both sides. The joined strips now match the back panel at ${d.panelCutHeight} mm.`,
+        dependsOn: ['step-1'],
+        refsPieces: ['front-top-strip', 'front-bottom-strip'],
+        group: 'Assembly',
+      },
+      {
+        id: 'step-3',
+        title: 'Attach gusset to the front',
+        body:
+          `Starting at one corner, sew the gusset around the full perimeter of the assembled front at ${sa} mm, ` +
+          `matching the corner notches. Clip the gusset seam allowance at each corner so it turns cleanly.`,
+        dependsOn: ['step-2'],
+        refsPieces: ['full-perimeter-gusset', 'front-top-strip', 'front-bottom-strip'],
+        group: 'Assembly',
+      },
+      {
+        id: 'step-4',
+        title: 'Attach gusset to the back',
+        body:
+          `Open the zipper. Sew the free edge of the gusset to the back panel at ${sa} mm, matching corners. ` +
+          `Join the gusset's short ends where they meet.`,
+        dependsOn: ['step-3'],
+        refsPieces: ['full-perimeter-gusset', 'back-panel'],
+        group: 'Assembly',
+      },
+      {
+        id: 'step-5',
+        title: 'Finish seams',
+        body:
+          `Turn right side out through the zipper. Bind or zigzag the interior seams. ` +
+          `Finished interior: ${finished_length} × ${finished_width} × ${finished_depth} mm.`,
+        dependsOn: ['step-4'],
+        refsPieces: pieces,
+        group: 'Finishing',
+      },
+    ];
+  }
+
+  const tab = zipperEndTabDims(r);
+  const pieces = ['front-panel', 'back-panel', 'gusset-strip', 'zipper-end-tab'];
+  return [
+    {
+      id: 'step-1',
+      title: 'Cut panels, gusset and tabs',
+      body:
+        `Cut 2 panels ${d.panelCutWidth} × ${d.panelCutHeight} mm, ` +
+        `1 U-shaped gusset strip ${d.gussetCutWidth} × ${d.gussetCutHeight} mm, ` +
+        `and 2 zipper end tabs ${tab.width} × ${tab.height} mm. ` +
+        `All dimensions include ${sa} mm seam allowance.`,
+      dependsOn: [],
+      refsPieces: pieces,
+      group: 'Preparation',
+    },
+    {
+      id: 'step-2',
+      title: 'Attach zipper and end tabs',
+      body:
+        `Fold each end tab in half and sew one over each end of the ${zip_gauge} zipper (${zipperLength} mm) ` +
+        `to square off the tape. Sew the zipper to the top edge of each panel at ${sa} mm and topstitch.`,
+      dependsOn: ['step-1'],
+      refsPieces: ['front-panel', 'back-panel', 'zipper-end-tab'],
+      group: 'Assembly',
+    },
+    {
+      id: 'step-3',
+      title: 'Attach gusset to the front',
+      body:
+        `Sew the gusset strip down one side, across the bottom and up the other side of the front panel at ${sa} mm. ` +
+        `The notches mark the two bottom corners — clip the seam allowance there so the strip turns squarely.`,
+      dependsOn: ['step-2'],
+      refsPieces: ['gusset-strip', 'front-panel'],
+      group: 'Assembly',
+    },
+    {
+      id: 'step-4',
+      title: 'Attach gusset to the back',
+      body:
+        `Open the zipper, then sew the gusset's free edge to the back panel at ${sa} mm, matching the corner notches. ` +
+        `The ${finished_depth} mm gusset width sets the finished depth.`,
+      dependsOn: ['step-3'],
+      refsPieces: ['gusset-strip', 'back-panel'],
+      group: 'Assembly',
+    },
+    {
+      id: 'step-5',
+      title: 'Finish seams',
+      body:
+        `Turn right side out through the open zipper. Bind or zigzag the interior seams. ` +
+        `Finished interior: ${finished_length} × ${finished_width} × ${finished_depth} mm.`,
+      dependsOn: ['step-4'],
+      refsPieces: pieces,
+      group: 'Finishing',
+    },
+  ];
+}
+
+function buildMultiPanelSteps(r: ResolvedInputs): Step[] {
+  const { finished_length, finished_width, finished_depth, seam_allowance: sa, zip_gauge } = r;
+  const d = multiPanelDims(r);
+  const tab = zipperEndTabDims(r);
+  const zipperLength = zipperLengthFor(d.frontBackWidth);
+  const pieces = ['front-panel', 'back-panel', 'bottom-panel', 'end-panel', 'zipper-end-tab'];
+
+  return [
+    {
+      id: 'step-1',
+      title: 'Cut all six panels',
+      body:
+        `Cut 2 front/back panels ${d.frontBackWidth} × ${d.frontBackHeight} mm, ` +
+        `1 bottom panel ${d.bottomWidth} × ${d.bottomHeight} mm, ` +
+        `2 end panels ${d.endWidth} × ${d.endHeight} mm, ` +
+        `and 2 zipper end tabs ${tab.width} × ${tab.height} mm. ` +
+        `All dimensions include ${sa} mm seam allowance.`,
+      dependsOn: [],
+      refsPieces: pieces,
+      group: 'Preparation',
+    },
+    {
+      id: 'step-2',
+      title: 'Attach zipper and end tabs',
+      body:
+        `Fold each end tab in half and sew one over each end of the ${zip_gauge} zipper (${zipperLength} mm). ` +
+        `Sew the zipper to the top edge of the front and back panels at ${sa} mm and topstitch both sides.`,
+      dependsOn: ['step-1'],
+      refsPieces: ['front-panel', 'back-panel', 'zipper-end-tab'],
+      group: 'Assembly',
+    },
+    {
+      id: 'step-3',
+      title: 'Join front and back to the bottom',
+      body:
+        `Sew the long edges of the bottom panel to the lower edges of the front and back panels at ${sa} mm, ` +
+        `forming an open-ended tube.`,
+      dependsOn: ['step-2'],
+      refsPieces: ['bottom-panel', 'front-panel', 'back-panel'],
+      group: 'Assembly',
+    },
+    {
+      id: 'step-4',
+      title: 'Set in the end panels',
+      body:
+        `Open the zipper. Sew an end panel into each open end at ${sa} mm, matching corners and ` +
+        `clipping the seam allowance so each corner turns squarely.`,
+      dependsOn: ['step-3'],
+      refsPieces: ['end-panel'],
+      group: 'Assembly',
+    },
+    {
+      id: 'step-5',
+      title: 'Finish seams',
+      body:
+        `Turn right side out through the open zipper. Bind or zigzag all interior seams. ` +
+        `Finished interior: ${finished_length} × ${finished_width} × ${finished_depth} mm.`,
+      dependsOn: ['step-4'],
+      refsPieces: pieces,
+      group: 'Finishing',
+    },
+  ];
+}
+
+/** Dispatch to the step sequence matching the construction style actually drawn. */
+function buildSteps(r: ResolvedInputs): Step[] {
+  if (r.construction_style === 'cross-bottom') return buildCrossBottomSteps(r);
+  if (r.construction_style === 'gusset-strip') return buildGussetStripSteps(r);
+  if (r.construction_style === 'multi-panel') return buildMultiPanelSteps(r);
+  const { cutWidth, cutHeight } = computeCutDimensions(r);
+  return buildBoxedSteps(r, cutWidth, cutHeight);
+}
+
 // ─── Simple rectangle piece builder ─────────────────────────────────────────
 // (Internal buildBom removed by SS-01 of 2026-05-29 polish spec — BOM now
 // consolidated into bom.ts which exports buildBom + computeCutDimensions.)
@@ -224,11 +487,8 @@ function buildRectPiece(
 // ─── Cross-bottom style builders ─────────────────────────────────────────────
 
 function buildCrossBottomPieces(r: ResolvedInputs): Piece[] {
-  const { finished_length, finished_width, finished_depth, seam_allowance } = r;
-  const sa = seam_allowance;
-  const C = finished_depth / 2;           // corner cutout size = depth / 2
-  const W = finished_length + finished_depth + 2 * sa;  // panelCutWidth
-  const H_half = (finished_width + finished_depth + 2 * sa) / 2; // half-cross height
+  const sa = r.seam_allowance;
+  const { cornerCutout: C, panelCutWidth: W, halfCrossHeight: H_half } = crossBottomDims(r);
 
   // Half-cross panel: 8-edge polygon — top corners notched, straight zipper edge at bottom.
   // Two of these pieces join at the straight (bottom) edge with the zipper between them.
@@ -254,25 +514,28 @@ function buildCrossBottomPieces(r: ResolvedInputs): Piece[] {
       label: 'Align zipper tape here',
     };
 
-    // Corner dimension annotations — show the C×C cutout size at each top corner.
-    // Draws the inner edges of the cutout square so the sewer knows exactly how big to cut.
+    // Corner dimension annotations — trace the PHANTOM corner: the two sides of
+    // the C×C square that were removed by the cutout. Drawing the cutout's inner
+    // edges instead would just retrace cut edges e6/e7 and e2/e1, laying a
+    // "crease here" line on top of a line that is actually cut.
+    // Role 'notch' (purple solid) marks these as registration references.
     const cornerLeftPath: Path = {
       id: `${id}:corner-left`,
       edges: [
-        makeStraightEdge(edgeId(), 'fold', 0, C, C, C),    // horizontal inner edge
-        makeStraightEdge(edgeId(), 'fold', C, 0, C, C),    // vertical inner edge
+        makeStraightEdge(edgeId(), 'notch', 0, 0, C, 0),    // phantom top edge
+        makeStraightEdge(edgeId(), 'notch', 0, 0, 0, C),    // phantom left edge
       ],
       closed: false,
-      label: `Corner: ${C} × ${C} mm`,
+      label: `Corner: ${C} × ${C} mm cutout`,
     };
     const cornerRightPath: Path = {
       id: `${id}:corner-right`,
       edges: [
-        makeStraightEdge(edgeId(), 'fold', W - C, C, W, C),    // horizontal inner edge
-        makeStraightEdge(edgeId(), 'fold', W - C, 0, W - C, C), // vertical inner edge
+        makeStraightEdge(edgeId(), 'notch', W - C, 0, W, 0), // phantom top edge
+        makeStraightEdge(edgeId(), 'notch', W, 0, W, C),     // phantom right edge
       ],
       closed: false,
-      label: `Corner: ${C} × ${C} mm`,
+      label: `Corner: ${C} × ${C} mm cutout`,
     };
 
     return {
@@ -304,19 +567,17 @@ function buildCrossBottomPieces(r: ResolvedInputs): Piece[] {
 // ─── Gusset-strip style builders ─────────────────────────────────────────────
 
 function buildGussetStripPieces(r: ResolvedInputs): Piece[] {
-  const { finished_length, finished_width, finished_depth, seam_allowance } = r;
-  const sa = seam_allowance;
+  const { finished_length, finished_width } = r;
+  const sa = r.seam_allowance;
+  const d = gussetStripDims(r);
 
-  const panelCutWidth = finished_length + 2 * sa;
-  const panelCutHeight = finished_width + 2 * sa;
-  const gussetCutWidth = 2 * finished_width + finished_length + 2 * sa;
-  const gussetCutHeight = finished_depth + 2 * sa;
-
-  function makeGussetStrip(): Piece {
-    const id = 'gusset-strip';
+  /**
+   * A long gusset band with stitch lines on both sewn edges and registration
+   * notches at each corner the band turns. `cornerXs` are the distances along
+   * the band where those corners fall.
+   */
+  function makeGussetBand(id: string, name: string, W: number, H: number, cornerXs: number[]): Piece {
     const edgeId = makeEdgeIdGen(id);
-    const W = gussetCutWidth;
-    const H = gussetCutHeight;
     const cutEdges: Edge[] = [
       makeStraightEdge(edgeId(), 'cut', 0, 0, W, 0),
       makeStraightEdge(edgeId(), 'cut', W, 0, W, H),
@@ -324,20 +585,28 @@ function buildGussetStripPieces(r: ResolvedInputs): Piece[] {
       makeStraightEdge(edgeId(), 'cut', 0, H, 0, 0),
     ];
     const cutPath: Path = { id: `${id}:cut`, edges: cutEdges, closed: true };
-    // Notches at finished_length + sa from each end to mark panel attachment points
-    const notchX1 = finished_length + sa;
-    const notchX2 = W - (finished_length + sa);
-    const notchEdges: Edge[] = [
-      makeStraightEdge(edgeId(), 'notch', notchX1, 0, notchX1, H * 0.25),
-      makeStraightEdge(edgeId(), 'notch', notchX2, 0, notchX2, H * 0.25),
-    ];
+
+    // Both long edges sew to a panel, so both carry a stitch line.
+    const stitchEdges: Edge[] = sa > 0 ? [
+      makeStraightEdge(edgeId(), 'stitch', 0, sa, W, sa),
+      makeStraightEdge(edgeId(), 'stitch', 0, H - sa, W, H - sa),
+    ] : [];
+    const stitchPath: Path = { id: `${id}:stitch`, edges: stitchEdges, closed: false };
+
+    // Corner registration ticks, drawn from both long edges so the mark is
+    // visible whichever way the band is fed under the needle.
+    const notchEdges: Edge[] = cornerXs.flatMap((x) => [
+      makeStraightEdge(edgeId(), 'notch', x, 0, x, H * 0.25),
+      makeStraightEdge(edgeId(), 'notch', x, H, x, H * 0.75),
+    ]);
     const notchPath: Path = { id: `${id}:notch`, edges: notchEdges, closed: false };
+
     return {
       id,
-      name: 'Gusset Strip',
+      name,
       mirror: false,
       quantity: 1,
-      paths: [cutPath, notchPath],
+      paths: [cutPath, stitchPath, notchPath],
       // Baked-in SA convention: cut dims already include SA — zero outward offsets.
       seamAllowances: {
         [`${id}:e0`]: 0,
@@ -348,77 +617,52 @@ function buildGussetStripPieces(r: ResolvedInputs): Piece[] {
     };
   }
 
-  const back = buildRectPiece('back-panel', 'Back Panel', panelCutWidth, panelCutHeight, sa);
+  const back = buildRectPiece('back-panel', 'Back Panel', d.panelCutWidth, d.panelCutHeight, sa);
 
   if (r.zipper_position === 'front') {
     // Front-zipper: back is solid, front is split into top+bottom strips, gusset wraps all 4 sides.
-    const zip_from_top = r.zip_from_top;
-    const frontTopH = zip_from_top + sa;
-    const frontBottomH = finished_width - zip_from_top + sa;
-    const fullGussetW = 2 * finished_length + 2 * finished_width + 2 * sa;
+    const frontTop = buildRectPiece('front-top-strip', 'Front Top Strip', d.panelCutWidth, d.frontTopHeight, sa);
+    const frontBottom = buildRectPiece('front-bottom-strip', 'Front Bottom Strip', d.panelCutWidth, d.frontBottomHeight, sa);
 
-    const frontTop = buildRectPiece('front-top-strip', 'Front Top Strip', panelCutWidth, frontTopH, sa);
-    const frontBottom = buildRectPiece('front-bottom-strip', 'Front Bottom Strip', panelCutWidth, frontBottomH, sa);
-
-    const gId = 'full-perimeter-gusset';
-    const gEdgeId = makeEdgeIdGen(gId);
-    const gW = fullGussetW;
-    const gH = gussetCutHeight;
-    const gCutEdges: Edge[] = [
-      makeStraightEdge(gEdgeId(), 'cut', 0, 0, gW, 0),
-      makeStraightEdge(gEdgeId(), 'cut', gW, 0, gW, gH),
-      makeStraightEdge(gEdgeId(), 'cut', gW, gH, 0, gH),
-      makeStraightEdge(gEdgeId(), 'cut', 0, gH, 0, 0),
-    ];
-    const fullGusset: Piece = {
-      id: gId,
-      name: 'Full Perimeter Gusset',
-      mirror: false,
-      quantity: 1,
-      paths: [{ id: `${gId}:cut`, edges: gCutEdges, closed: true }],
-      // Baked-in SA convention: cut dims already include SA — zero outward offsets.
-      seamAllowances: {
-        [`${gId}:e0`]: 0,
-        [`${gId}:e1`]: 0,
-        [`${gId}:e2`]: 0,
-        [`${gId}:e3`]: 0,
-      },
-    };
+    // The band wraps the full perimeter: length, width, length, width.
+    const fullGusset = makeGussetBand(
+      'full-perimeter-gusset',
+      'Full Perimeter Gusset',
+      d.fullGussetWidth,
+      d.gussetCutHeight,
+      [
+        sa + finished_length,
+        sa + finished_length + finished_width,
+        sa + 2 * finished_length + finished_width,
+      ],
+    );
 
     return [back, frontTop, frontBottom, fullGusset];
   }
 
   // Top-zipper (default): front + back panels + U-shape gusset + two end tabs at zipper corners.
-  const front = buildRectPiece('front-panel', 'Front Panel', panelCutWidth, panelCutHeight, sa);
-  const tabW = finished_depth + 2 * sa;
-  const tabH = 15 + sa;
-  const tab = buildRectPiece('zipper-end-tab', 'Zipper End Tab', tabW, tabH, sa, 2);
+  const front = buildRectPiece('front-panel', 'Front Panel', d.panelCutWidth, d.panelCutHeight, sa);
+  const gusset = makeGussetBand('gusset-strip', 'Gusset Strip', d.gussetCutWidth, d.gussetCutHeight, [d.notchX1, d.notchX2]);
+  const tab = zipperEndTabDims(r);
+  const tabPiece = buildRectPiece('zipper-end-tab', 'Zipper End Tab', tab.width, tab.height, sa, 2);
 
-  return [front, back, makeGussetStrip(), tab];
+  return [front, back, gusset, tabPiece];
 }
 
 // ─── Multi-panel style builders ───────────────────────────────────────────────
 
 function buildMultiPanelPieces(r: ResolvedInputs): Piece[] {
-  const { finished_length, finished_width, finished_depth, seam_allowance } = r;
-  const sa = seam_allowance;
+  const sa = r.seam_allowance;
+  const d = multiPanelDims(r);
+  const tab = zipperEndTabDims(r);
 
-  const frontBackW = finished_length + 2 * sa;
-  const frontBackH = finished_width + 2 * sa;
-  const bottomW = finished_length + 2 * sa;
-  const bottomH = finished_depth + 2 * sa;
-  const endW = finished_width + 2 * sa;
-  const endH = finished_depth + 2 * sa;
+  const front = buildRectPiece('front-panel', 'Front Panel', d.frontBackWidth, d.frontBackHeight, sa);
+  const back = buildRectPiece('back-panel', 'Back Panel', d.frontBackWidth, d.frontBackHeight, sa);
+  const bottom = buildRectPiece('bottom-panel', 'Bottom Panel', d.bottomWidth, d.bottomHeight, sa);
+  const end = buildRectPiece('end-panel', 'End Panel', d.endWidth, d.endHeight, sa, 2);
+  const tabPiece = buildRectPiece('zipper-end-tab', 'Zipper End Tab', tab.width, tab.height, sa, 2);
 
-  const front = buildRectPiece('front-panel', 'Front Panel', frontBackW, frontBackH, sa);
-  const back = buildRectPiece('back-panel', 'Back Panel', frontBackW, frontBackH, sa);
-  const bottom = buildRectPiece('bottom-panel', 'Bottom Panel', bottomW, bottomH, sa);
-  const end = buildRectPiece('end-panel', 'End Panel', endW, endH, sa, 2);
-  const tabW = finished_depth + 2 * sa;
-  const tabH = 15 + sa;
-  const tab = buildRectPiece('zipper-end-tab', 'Zipper End Tab', tabW, tabH, sa, 2);
-
-  return [front, back, bottom, end, tab];
+  return [front, back, bottom, end, tabPiece];
 }
 
 // ─── Main entry point ────────────────────────────────────────────────────────
@@ -438,7 +682,7 @@ export function buildPattern(
   }
 
   const resolved = resolveInputs(inputs);
-  const { finished_length, finished_width, finished_depth, seam_allowance, construction_style } = resolved;
+  const { finished_depth, seam_allowance, construction_style } = resolved;
 
   let pieces: Piece[];
 
@@ -462,9 +706,7 @@ export function buildPattern(
     pieces = [front, back];
   }
 
-  const cutWidth = finished_length + 2 * seam_allowance;
-  const cutHeight = finished_width + finished_depth / 2 + seam_allowance;
-  const steps = buildSteps(resolved, cutWidth, cutHeight);
+  const steps = buildSteps(resolved);
   const bom = buildBom(resolved);
 
   return {
