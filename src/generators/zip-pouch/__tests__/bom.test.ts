@@ -155,3 +155,64 @@ describe('buildBom — shell fabric', () => {
     expect(row!.unit).toBe('panels');
   });
 });
+
+// ─── buildBom — gusset-strip style ────────────────────────────────────────────
+// Matches buildGussetStripPieces' piece list: front, back, gusset-strip,
+// zipper-end-tab×2 (top-zipper); back, front-top-strip, front-bottom-strip,
+// full-perimeter-gusset (front-zipper).
+
+describe('buildBom — gusset-strip style (top-zipper)', () => {
+  const R = { ...REF, construction_style: 'gusset-strip' as const, zipper_position: 'top' as const };
+
+  it('includes a zipper-end-tabs row with quantity 2', () => {
+    const bom = buildBom(R);
+    const row = bom.find((r) => r.id === 'zipper-end-tabs');
+    expect(row).toBeDefined();
+    expect(row!.quantity).toBe(2);
+  });
+
+  it('includes shell-fabric (2 panels) and gusset-fabric rows', () => {
+    const bom = buildBom(R);
+    expect(bom.find((r) => r.id === 'shell-fabric')?.quantity).toBe(2);
+    expect(bom.some((r) => r.id === 'gusset-fabric')).toBe(true);
+  });
+});
+
+describe('buildBom — gusset-strip style (front-zipper)', () => {
+  const R = { ...REF, construction_style: 'gusset-strip' as const, zipper_position: 'front' as const };
+
+  it('splits front into top/bottom strips and uses a full-perimeter gusset', () => {
+    const bom = buildBom(R);
+    expect(bom.some((r) => r.id === 'shell-fabric-back')).toBe(true);
+    expect(bom.some((r) => r.id === 'shell-fabric-front-top')).toBe(true);
+    expect(bom.some((r) => r.id === 'shell-fabric-front-bottom')).toBe(true);
+    expect(bom.some((r) => r.id === 'gusset-fabric')).toBe(true);
+  });
+
+  it('does not include the top-zipper zipper-end-tabs row', () => {
+    const bom = buildBom(R);
+    expect(bom.some((r) => r.id === 'zipper-end-tabs')).toBe(false);
+  });
+});
+
+// ─── buildBom — multi-panel style ─────────────────────────────────────────────
+// Matches buildMultiPanelPieces' piece list: front, back, bottom, end×2,
+// zipper-end-tab×2.
+
+describe('buildBom — multi-panel style', () => {
+  const R = { ...REF, construction_style: 'multi-panel' as const };
+
+  it('includes a zipper-end-tabs row with quantity 2', () => {
+    const bom = buildBom(R);
+    const row = bom.find((r) => r.id === 'zipper-end-tabs');
+    expect(row).toBeDefined();
+    expect(row!.quantity).toBe(2);
+  });
+
+  it('includes front/back, bottom, and end panel rows', () => {
+    const bom = buildBom(R);
+    expect(bom.some((r) => r.id === 'shell-fabric-front-back')).toBe(true);
+    expect(bom.some((r) => r.id === 'shell-fabric-bottom')).toBe(true);
+    expect(bom.some((r) => r.id === 'shell-fabric-ends')).toBe(true);
+  });
+});

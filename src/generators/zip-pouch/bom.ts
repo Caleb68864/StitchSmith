@@ -29,14 +29,18 @@ export function buildBom(r: ResolvedInputs): BomRow[] {
 
   if (construction_style === 'cross-bottom') {
     const panelCutWidth = finished_length + finished_depth + 2 * sa;
-    const panelCutHeight = finished_width + finished_depth + 2 * sa;
+    const halfCrossHeight = (finished_width + finished_depth + 2 * sa) / 2;
     const cornerCutout = finished_depth / 2;
-    const zipperStripH = cornerCutout + sa;
     const zipperLength = roundUpTo(panelCutWidth + 25, 50);
 
     return [
-      { id: 'shell-fabric', description: 'shell fabric (cross panels)', quantity: 2, unit: 'panels', notes: `cross-bottom ${panelCutWidth} × ${panelCutHeight} mm` },
-      { id: 'zipper-strip-fabric', description: 'zipper strip fabric', quantity: 2, unit: 'strips', notes: `${panelCutWidth} × ${zipperStripH} mm each` },
+      {
+        id: 'shell-fabric',
+        description: 'shell fabric (half-cross panels)',
+        quantity: 2,
+        unit: 'panels',
+        notes: `half-cross, bounding box ${panelCutWidth} × ${halfCrossHeight} mm, corner cutouts ${cornerCutout} × ${cornerCutout} mm`,
+      },
       { id: 'zipper', description: `YKK coil zipper ${zip_gauge}`, quantity: zipperLength, unit: 'mm' },
     ];
   }
@@ -44,13 +48,34 @@ export function buildBom(r: ResolvedInputs): BomRow[] {
   if (construction_style === 'gusset-strip') {
     const panelCutWidth = finished_length + 2 * sa;
     const panelCutHeight = finished_width + 2 * sa;
-    const gussetW = 2 * finished_width + finished_length + 2 * sa;
     const gussetH = finished_depth + 2 * sa;
     const zipperLength = roundUpTo(panelCutWidth + 25, 50);
+
+    if (r.zipper_position === 'front') {
+      // Front-zipper: back panel + split front top/bottom strips + full-perimeter gusset.
+      const zipFromTop = r.zip_from_top;
+      const frontTopH = zipFromTop + sa;
+      const frontBottomH = finished_width - zipFromTop + sa;
+      const fullGussetW = 2 * finished_length + 2 * finished_width + 2 * sa;
+
+      return [
+        { id: 'shell-fabric-back', description: 'shell fabric (back panel)', quantity: 1, unit: 'panel', notes: `${panelCutWidth} × ${panelCutHeight} mm` },
+        { id: 'shell-fabric-front-top', description: 'shell fabric (front top strip)', quantity: 1, unit: 'strip', notes: `${panelCutWidth} × ${frontTopH} mm` },
+        { id: 'shell-fabric-front-bottom', description: 'shell fabric (front bottom strip)', quantity: 1, unit: 'strip', notes: `${panelCutWidth} × ${frontBottomH} mm` },
+        { id: 'gusset-fabric', description: 'full-perimeter gusset fabric', quantity: 1, unit: 'strip', notes: `${fullGussetW} × ${gussetH} mm` },
+        { id: 'zipper', description: `YKK coil zipper ${zip_gauge}`, quantity: zipperLength, unit: 'mm' },
+      ];
+    }
+
+    // Top-zipper (default): front + back panels + U-shape gusset strip + two end tabs.
+    const gussetW = 2 * finished_width + finished_length + 2 * sa;
+    const tabW = finished_depth + 2 * sa;
+    const tabH = 15 + sa;
 
     return [
       { id: 'shell-fabric', description: 'shell fabric (panels)', quantity: 2, unit: 'panels', notes: `${panelCutWidth} × ${panelCutHeight} mm each` },
       { id: 'gusset-fabric', description: 'gusset strip fabric', quantity: 1, unit: 'strip', notes: `${gussetW} × ${gussetH} mm` },
+      { id: 'zipper-end-tabs', description: 'shell fabric (zipper end tabs)', quantity: 2, unit: 'tabs', notes: `${tabW} × ${tabH} mm each` },
       { id: 'zipper', description: `YKK coil zipper ${zip_gauge}`, quantity: zipperLength, unit: 'mm' },
     ];
   }
@@ -62,12 +87,15 @@ export function buildBom(r: ResolvedInputs): BomRow[] {
     const bottomH = finished_depth + 2 * sa;
     const endW = finished_width + 2 * sa;
     const endH = finished_depth + 2 * sa;
+    const tabW = finished_depth + 2 * sa;
+    const tabH = 15 + sa;
     const zipperLength = roundUpTo(frontBackW + 4 * sa, 50);
 
     return [
       { id: 'shell-fabric-front-back', description: 'shell fabric (front/back)', quantity: 2, unit: 'panels', notes: `${frontBackW} × ${frontBackH} mm each` },
       { id: 'shell-fabric-bottom', description: 'shell fabric (bottom)', quantity: 1, unit: 'panel', notes: `${bottomW} × ${bottomH} mm` },
       { id: 'shell-fabric-ends', description: 'shell fabric (end panels)', quantity: 2, unit: 'panels', notes: `${endW} × ${endH} mm each` },
+      { id: 'zipper-end-tabs', description: 'shell fabric (zipper end tabs)', quantity: 2, unit: 'tabs', notes: `${tabW} × ${tabH} mm each` },
       { id: 'zipper', description: `YKK coil zipper ${zip_gauge}`, quantity: zipperLength, unit: 'mm' },
     ];
   }

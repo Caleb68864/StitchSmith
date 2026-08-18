@@ -148,3 +148,10 @@
 - Surfaces: src/lib/pattern-engine/geometry/saBbox.ts, src/lib/pattern-engine/exports/{svg,pdf,cutList}.ts, src/components/{tri-zip-backpack,mag-pouch}/ExportPanel.tsx, src/lib/pattern-engine/__tests__/exports-cutList.test.ts.
 - Watch: generators with baked-in SA (zip-pouch, roll-top) have `seamAllowances = 0`/none and pass SA=0 to exporters, so they're unaffected; keep that convention when wiring new cut lists.
 - Commit: improve(cut-list)
+
+## 2026-08-18 — Zip Pouch: doubled SA cut line on baked-in-SA styles; BOM undercounted new pieces
+- Symptom: `makeHalfCrossPanel` (cross-bottom), `makeGussetStrip`, and the front-zipper `fullGusset` set `seamAllowances: {}` instead of explicit per-edge zeros. Since cut geometry already bakes in SA and `{}` is truthy, `computeSeamAllowancePolygon`'s `defaultSeamAllowance` fallback re-offset the polygon, doubling the drawn SA cut line on preview/SVG/PDF for cross-bottom, gusset-strip, and multi-panel styles. Separately, `bom.ts`'s gusset-strip/multi-panel branches predated the zipper-end-tab pieces (and the front-zipper split front-top/front-bottom/full-perimeter-gusset layout) added to `buildPattern.ts`, so the BOM undercounted fabric relative to what's actually drawn.
+- Fix: added explicit `e0..eN: 0` seamAllowances to all three baked-in-SA pieces, matching the `buildRectPiece`/`buildPanelPiece` convention. Updated `buildBom`'s gusset-strip (both zipper positions) and multi-panel branches to emit rows matching the current piece lists (zipper-end-tabs, front-top/bottom strips, full-perimeter gusset).
+- Surfaces: src/generators/zip-pouch/buildPattern.ts, src/generators/zip-pouch/bom.ts, src/generators/zip-pouch/__tests__/buildPattern.test.ts, src/generators/zip-pouch/__tests__/bom.test.ts.
+- Watch: any new piece with baked-in SA must declare explicit per-edge zeros (never `{}`) — `computeSeamAllowancePolygon` treats `{}` and `undefined` differently even though both look "empty". Any new construction-style piece added to `buildPattern.ts` needs a matching `bom.ts` branch update in the same change.
+- Commit: fix(zip-pouch)

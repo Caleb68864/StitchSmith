@@ -226,48 +226,78 @@ function buildRectPiece(
 function buildCrossBottomPieces(r: ResolvedInputs): Piece[] {
   const { finished_length, finished_width, finished_depth, seam_allowance } = r;
   const sa = seam_allowance;
-  const cornerCutout = finished_depth / 2;
-  const panelCutWidth = finished_length + finished_depth + 2 * sa;
-  const panelCutHeight = finished_width + finished_depth + 2 * sa;
+  const C = finished_depth / 2;           // corner cutout size = depth / 2
+  const W = finished_length + finished_depth + 2 * sa;  // panelCutWidth
+  const H_half = (finished_width + finished_depth + 2 * sa) / 2; // half-cross height
 
-  // Cross panel: rectangle W×H with 4 corners cut out (represented as polygon)
-  function makeCrossPanel(id: string, name: string, quantity: number): Piece {
+  // Half-cross panel: 8-edge polygon — top corners notched, straight zipper edge at bottom.
+  // Two of these pieces join at the straight (bottom) edge with the zipper between them.
+  function makeHalfCrossPanel(id: string, name: string): Piece {
     const edgeId = makeEdgeIdGen(id);
-    const W = panelCutWidth;
-    const H = panelCutHeight;
-    const C = cornerCutout;
-    // 12-edge cross polygon (clockwise)
     const cutEdges: Edge[] = [
-      makeStraightEdge(edgeId(), 'cut', C, 0, W - C, 0),
-      makeStraightEdge(edgeId(), 'cut', W - C, 0, W - C, C),
-      makeStraightEdge(edgeId(), 'cut', W - C, C, W, C),
-      makeStraightEdge(edgeId(), 'cut', W, C, W, H - C),
-      makeStraightEdge(edgeId(), 'cut', W, H - C, W - C, H - C),
-      makeStraightEdge(edgeId(), 'cut', W - C, H - C, W - C, H),
-      makeStraightEdge(edgeId(), 'cut', W - C, H, C, H),
-      makeStraightEdge(edgeId(), 'cut', C, H, C, H - C),
-      makeStraightEdge(edgeId(), 'cut', C, H - C, 0, H - C),
-      makeStraightEdge(edgeId(), 'cut', 0, H - C, 0, C),
-      makeStraightEdge(edgeId(), 'cut', 0, C, C, C),
-      makeStraightEdge(edgeId(), 'cut', C, C, C, 0),
+      makeStraightEdge(edgeId(), 'cut', C, 0, W - C, 0),           // top edge
+      makeStraightEdge(edgeId(), 'cut', W - C, 0, W - C, C),       // top-right step
+      makeStraightEdge(edgeId(), 'cut', W - C, C, W, C),           // right arm out
+      makeStraightEdge(edgeId(), 'cut', W, C, W, H_half),          // right side down
+      makeStraightEdge(edgeId(), 'cut', W, H_half, 0, H_half),     // zipper edge (straight)
+      makeStraightEdge(edgeId(), 'cut', 0, H_half, 0, C),          // left side up
+      makeStraightEdge(edgeId(), 'cut', 0, C, C, C),               // left arm in
+      makeStraightEdge(edgeId(), 'cut', C, C, C, 0),               // top-left step
     ];
     const cutPath: Path = { id: `${id}:cut`, edges: cutEdges, closed: true };
+
+    // Zipper stitch line along the bottom (straight) edge
+    const zipperStitchPath: Path = {
+      id: `${id}:zipper-stitch`,
+      edges: [makeStraightEdge(edgeId(), 'stitch', 0, H_half - sa, W, H_half - sa)],
+      closed: false,
+      label: 'Align zipper tape here',
+    };
+
+    // Corner dimension annotations — show the C×C cutout size at each top corner.
+    // Draws the inner edges of the cutout square so the sewer knows exactly how big to cut.
+    const cornerLeftPath: Path = {
+      id: `${id}:corner-left`,
+      edges: [
+        makeStraightEdge(edgeId(), 'fold', 0, C, C, C),    // horizontal inner edge
+        makeStraightEdge(edgeId(), 'fold', C, 0, C, C),    // vertical inner edge
+      ],
+      closed: false,
+      label: `Corner: ${C} × ${C} mm`,
+    };
+    const cornerRightPath: Path = {
+      id: `${id}:corner-right`,
+      edges: [
+        makeStraightEdge(edgeId(), 'fold', W - C, C, W, C),    // horizontal inner edge
+        makeStraightEdge(edgeId(), 'fold', W - C, 0, W - C, C), // vertical inner edge
+      ],
+      closed: false,
+      label: `Corner: ${C} × ${C} mm`,
+    };
+
     return {
       id,
       name,
       mirror: false,
-      quantity,
-      paths: [cutPath],
-      seamAllowances: {},
+      quantity: 1,
+      paths: [cutPath, zipperStitchPath, cornerLeftPath, cornerRightPath],
+      // Baked-in SA convention: cut dims already include SA — zero outward offsets.
+      seamAllowances: {
+        [`${id}:e0`]: 0,
+        [`${id}:e1`]: 0,
+        [`${id}:e2`]: 0,
+        [`${id}:e3`]: 0,
+        [`${id}:e4`]: 0,
+        [`${id}:e5`]: 0,
+        [`${id}:e6`]: 0,
+        [`${id}:e7`]: 0,
+      },
     };
   }
 
-  const zipperStripHeight = cornerCutout + sa;
-  const zipperStrip = buildRectPiece('zipper-strip', 'Zipper Strip', panelCutWidth, zipperStripHeight, sa, 2);
-
   return [
-    makeCrossPanel('cross-panel', 'Cross Panel', 2),
-    zipperStrip,
+    makeHalfCrossPanel('cross-panel', 'Cross Panel (Front)'),
+    makeHalfCrossPanel('cross-panel-back', 'Cross Panel (Back)'),
   ];
 }
 
@@ -308,14 +338,63 @@ function buildGussetStripPieces(r: ResolvedInputs): Piece[] {
       mirror: false,
       quantity: 1,
       paths: [cutPath, notchPath],
-      seamAllowances: {},
+      // Baked-in SA convention: cut dims already include SA — zero outward offsets.
+      seamAllowances: {
+        [`${id}:e0`]: 0,
+        [`${id}:e1`]: 0,
+        [`${id}:e2`]: 0,
+        [`${id}:e3`]: 0,
+      },
     };
   }
 
-  const front = buildRectPiece('front-panel', 'Front Panel', panelCutWidth, panelCutHeight, sa);
   const back = buildRectPiece('back-panel', 'Back Panel', panelCutWidth, panelCutHeight, sa);
 
-  return [front, back, makeGussetStrip()];
+  if (r.zipper_position === 'front') {
+    // Front-zipper: back is solid, front is split into top+bottom strips, gusset wraps all 4 sides.
+    const zip_from_top = r.zip_from_top;
+    const frontTopH = zip_from_top + sa;
+    const frontBottomH = finished_width - zip_from_top + sa;
+    const fullGussetW = 2 * finished_length + 2 * finished_width + 2 * sa;
+
+    const frontTop = buildRectPiece('front-top-strip', 'Front Top Strip', panelCutWidth, frontTopH, sa);
+    const frontBottom = buildRectPiece('front-bottom-strip', 'Front Bottom Strip', panelCutWidth, frontBottomH, sa);
+
+    const gId = 'full-perimeter-gusset';
+    const gEdgeId = makeEdgeIdGen(gId);
+    const gW = fullGussetW;
+    const gH = gussetCutHeight;
+    const gCutEdges: Edge[] = [
+      makeStraightEdge(gEdgeId(), 'cut', 0, 0, gW, 0),
+      makeStraightEdge(gEdgeId(), 'cut', gW, 0, gW, gH),
+      makeStraightEdge(gEdgeId(), 'cut', gW, gH, 0, gH),
+      makeStraightEdge(gEdgeId(), 'cut', 0, gH, 0, 0),
+    ];
+    const fullGusset: Piece = {
+      id: gId,
+      name: 'Full Perimeter Gusset',
+      mirror: false,
+      quantity: 1,
+      paths: [{ id: `${gId}:cut`, edges: gCutEdges, closed: true }],
+      // Baked-in SA convention: cut dims already include SA — zero outward offsets.
+      seamAllowances: {
+        [`${gId}:e0`]: 0,
+        [`${gId}:e1`]: 0,
+        [`${gId}:e2`]: 0,
+        [`${gId}:e3`]: 0,
+      },
+    };
+
+    return [back, frontTop, frontBottom, fullGusset];
+  }
+
+  // Top-zipper (default): front + back panels + U-shape gusset + two end tabs at zipper corners.
+  const front = buildRectPiece('front-panel', 'Front Panel', panelCutWidth, panelCutHeight, sa);
+  const tabW = finished_depth + 2 * sa;
+  const tabH = 15 + sa;
+  const tab = buildRectPiece('zipper-end-tab', 'Zipper End Tab', tabW, tabH, sa, 2);
+
+  return [front, back, makeGussetStrip(), tab];
 }
 
 // ─── Multi-panel style builders ───────────────────────────────────────────────
@@ -335,8 +414,11 @@ function buildMultiPanelPieces(r: ResolvedInputs): Piece[] {
   const back = buildRectPiece('back-panel', 'Back Panel', frontBackW, frontBackH, sa);
   const bottom = buildRectPiece('bottom-panel', 'Bottom Panel', bottomW, bottomH, sa);
   const end = buildRectPiece('end-panel', 'End Panel', endW, endH, sa, 2);
+  const tabW = finished_depth + 2 * sa;
+  const tabH = 15 + sa;
+  const tab = buildRectPiece('zipper-end-tab', 'Zipper End Tab', tabW, tabH, sa, 2);
 
-  return [front, back, bottom, end];
+  return [front, back, bottom, end, tab];
 }
 
 // ─── Main entry point ────────────────────────────────────────────────────────

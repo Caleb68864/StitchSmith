@@ -3,6 +3,7 @@ import { buildPattern } from '../buildPattern.js';
 import { buildBom } from '../bom.js';
 import { resolveInputs } from '../inputs.js';
 import { patternToSvg } from '../../../lib/pattern-engine/exports/svg.js';
+import { computeSeamAllowancePolygon } from '../../../lib/pattern-engine/geometry/offset.js';
 import type { Pattern } from '../../../lib/pattern-engine/graph/Pattern.js';
 import type { ZipPouchInputs } from '../types.js';
 
@@ -324,6 +325,34 @@ describe('buildPattern — construction style backwards compat', () => {
       expect(ids(withBoxed)).toEqual(ids(withoutStyle));
     }
   });
+});
+
+// ─── SA baked-in-geometry regression guard ───────────────────────────────────
+// Non-boxed construction styles bake seam allowance directly into cut-piece
+// dimensions, so every cut-path edge must declare an explicit 0 SA override.
+// A `seamAllowances: {}` (no explicit zeros) lets the exporter's
+// defaultSeamAllowance fall back and re-offset the polygon, doubling the SA
+// cut line drawn in the preview/PDF.
+
+describe('buildPattern — baked-in SA is not re-offset by the exporter', () => {
+  it.each(['cross-bottom', 'gusset-strip', 'multi-panel'] as const)(
+    "%s: cut path SA polygon is null under a non-zero defaultSeamAllowance",
+    (construction_style) => {
+      const result = buildPattern({ ...CANONICAL, construction_style });
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      for (const piece of result.value.pieces) {
+        const cutPath = piece.paths.find((p) => p.id.endsWith(':cut'));
+        expect(cutPath).toBeDefined();
+        if (!cutPath) continue;
+        const polyResult = computeSeamAllowancePolygon(piece, cutPath, CANONICAL.seam_allowance);
+        expect(polyResult.ok).toBe(true);
+        if (polyResult.ok) {
+          expect(polyResult.value).toBeNull();
+        }
+      }
+    },
+  );
 });
 
 // ─── Edge cases ───────────────────────────────────────────────────────────────
