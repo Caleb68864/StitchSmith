@@ -46,7 +46,7 @@ export function PatternPreview({ inputs, hasErrors }: Props) {
   const header = (
     <span>
       <span className="font-medium text-foreground">{result.pieceCount}</span> piece type{result.pieceCount === 1 ? '' : 's'}
-      <span className="ml-2">SA: {inputs.seam_allowance ?? 10} mm</span>
+      <span className="ml-2">SA: {inputs.seam_allowance ?? 10} {inputs.units ?? 'mm'}</span>
     </span>
   );
   return <PatternViewport svg={result.svg} header={header} fitKey={result.svg.length} />;

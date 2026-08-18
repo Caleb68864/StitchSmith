@@ -20,6 +20,7 @@ import {
   multiPanelDims,
   zipperEndTabDims,
   zipperLengthForStyle,
+  fmt,
 } from './dimensions.js';
 
 // ─── Geometry helpers ────────────────────────────────────────────────────────
@@ -126,9 +127,9 @@ function buildBoxedSteps(
       id: 'step-1',
       title: 'Cut panels',
       body:
-        `Cut 2 panels from main fabric at ${cutWidth} mm × ${cutHeight} mm (width × height), ` +
-        `including ${seam_allowance} mm seam allowance on all sides. ` +
-        `Finished interior dimensions: ${finished_length} × ${finished_width} mm with ${finished_depth} mm depth.`,
+        `Cut 2 panels from main fabric at ${fmt(cutWidth)} mm × ${fmt(cutHeight)} mm (width × height), ` +
+        `including ${fmt(seam_allowance)} mm seam allowance on all sides. ` +
+        `Finished interior dimensions: ${fmt(finished_length)} × ${fmt(finished_width)} mm with ${fmt(finished_depth)} mm depth.`,
       dependsOn: [],
       refsPieces: ['front', 'back'],
       group: 'Preparation',
@@ -140,9 +141,9 @@ function buildBoxedSteps(
         `Position a ${zip_gauge} coil zipper (${zipperLength} mm) along the top edge of each panel. ` +
         `Align the zipper tape with the top cut edge. ` +
         (pull_loops
-          ? `Fold ${grosgrain_width} mm grosgrain ribbon into pull loops at each end of the zipper before stitching. `
+          ? `Fold ${fmt(grosgrain_width)} mm grosgrain ribbon into pull loops at each end of the zipper before stitching. `
           : '') +
-        `Sew the zipper tape to both panels using a zipper foot, stitching along the notch/stitch line ${seam_allowance} mm from the top edge.`,
+        `Sew the zipper tape to both panels using a zipper foot, stitching along the notch/stitch line ${fmt(seam_allowance)} mm from the top edge.`,
       dependsOn: ['step-1'],
       refsPieces: ['front', 'back'],
       group: 'Assembly',
@@ -152,7 +153,7 @@ function buildBoxedSteps(
       title: 'Sew side seams',
       body:
         `With right sides together and the zipper open slightly, align the front and back panels. ` +
-        `Sew down both side seams and across the bottom at ${seam_allowance} mm seam allowance, ` +
+        `Sew down both side seams and across the bottom at ${fmt(seam_allowance)} mm seam allowance, ` +
         `following the stitch lines. Leave a turning gap if not using a lining.`,
       dependsOn: ['step-2'],
       refsPieces: ['front', 'back'],
@@ -163,8 +164,8 @@ function buildBoxedSteps(
       title: 'Box corners',
       body:
         `At each bottom corner, fold the corner so that the side seam aligns with the bottom seam. ` +
-        `Stitch perpendicular to the seam along the boxing stitch line at ${finished_depth / 2} mm from the folded tip. ` +
-        `Trim seam allowance to 9.5 mm. Repeat for all 4 corners to create a ${finished_depth} mm gusset depth.`,
+        `Stitch perpendicular to the seam along the boxing stitch line at ${fmt(finished_depth / 2)} mm from the folded tip. ` +
+        `Trim seam allowance to 9.5 mm. Repeat for all 4 corners to create a ${fmt(finished_depth)} mm gusset depth.`,
       dependsOn: ['step-3'],
       refsPieces: ['front', 'back'],
       group: 'Assembly',
@@ -175,7 +176,7 @@ function buildBoxedSteps(
       body:
         pull_loops
           ? `Turn the pouch right side out through the open zipper. ` +
-            `Trim any excess zipper tape and finish the ends with grosgrain ribbon (${grosgrain_width} mm wide). ` +
+            `Trim any excess zipper tape and finish the ends with grosgrain ribbon (${fmt(grosgrain_width)} mm wide). ` +
             `Topstitch the grosgrain over the zipper seam for a clean finish.`
           : `Turn the pouch right side out through the open zipper. ` +
             `Trim excess zipper tape and finish the raw ends with a bar tack or binding.`,
@@ -196,9 +197,9 @@ function buildCrossBottomSteps(r: ResolvedInputs): Step[] {
       id: 'step-1',
       title: 'Cut half-cross panels',
       body:
-        `Cut 2 half-cross panels, each ${W} × ${H} mm before the corner cutouts, ` +
-        `then remove a ${C} × ${C} mm square from both top corners. ` +
-        `Dimensions include ${sa} mm seam allowance throughout. ` +
+        `Cut 2 half-cross panels, each ${fmt(W)} × ${fmt(H)} mm before the corner cutouts, ` +
+        `then remove a ${fmt(C)} × ${fmt(C)} mm square from both top corners. ` +
+        `Dimensions include ${fmt(sa)} mm seam allowance throughout. ` +
         `The straight bottom edge is the zipper edge; the notched top edge joins the other panel across the bag bottom.`,
       dependsOn: [],
       refsPieces: panels,
@@ -209,7 +210,7 @@ function buildCrossBottomSteps(r: ResolvedInputs): Step[] {
       title: 'Attach zipper',
       body:
         `Sew a ${zip_gauge} coil zipper (${zipperLengthForStyle(r)} mm) between the two straight edges, ` +
-        `stitching ${sa} mm from the edge along the marked zipper line on each panel.`,
+        `stitching ${fmt(sa)} mm from the edge along the marked zipper line on each panel.`,
       dependsOn: ['step-1'],
       refsPieces: panels,
       group: 'Assembly',
@@ -219,7 +220,7 @@ function buildCrossBottomSteps(r: ResolvedInputs): Step[] {
       title: 'Join the bag bottom',
       body:
         `Open the zipper. With right sides together, sew the two panels' top edges to each other ` +
-        `at ${sa} mm. This seam runs along the centre of the ${finished_depth} mm bag bottom.`,
+        `at ${fmt(sa)} mm. This seam runs along the centre of the ${fmt(finished_depth)} mm bag bottom.`,
       dependsOn: ['step-2'],
       refsPieces: panels,
       group: 'Assembly',
@@ -229,7 +230,7 @@ function buildCrossBottomSteps(r: ResolvedInputs): Step[] {
       title: 'Sew the side arms',
       body:
         `Still right sides together, sew the full left edge of one panel to the full left edge of the other ` +
-        `at ${sa} mm, and repeat on the right. Each pair of ${C} mm arms forms one ${finished_depth} mm ` +
+        `at ${fmt(sa)} mm, and repeat on the right. Each pair of ${fmt(C)} mm arms forms one ${fmt(finished_depth)} mm ` +
         `end of the pouch. These seams run from the zipper up to the corner cutout.`,
       dependsOn: ['step-3'],
       refsPieces: panels,
@@ -239,10 +240,10 @@ function buildCrossBottomSteps(r: ResolvedInputs): Step[] {
       id: 'step-5',
       title: 'Close the corners',
       body:
-        `At each of the four cut-out corners, bring the two raw edges of the ${C} × ${C} mm notch together ` +
-        `so they meet in a straight line, and sew at ${sa} mm along the marked corner stitch line. ` +
-        `This squares the bag bottom to ${finished_depth} mm deep. ` +
-        `Finished interior: ${finished_length} × ${finished_width} × ${finished_depth} mm.`,
+        `At each of the four cut-out corners, bring the two raw edges of the ${fmt(C)} × ${fmt(C)} mm notch together ` +
+        `so they meet in a straight line, and sew at ${fmt(sa)} mm along the marked corner stitch line. ` +
+        `This squares the bag bottom to ${fmt(finished_depth)} mm deep. ` +
+        `Finished interior: ${fmt(finished_length)} × ${fmt(finished_width)} × ${fmt(finished_depth)} mm.`,
       dependsOn: ['step-4'],
       refsPieces: panels,
       group: 'Assembly',
@@ -270,11 +271,11 @@ function buildGussetStripSteps(r: ResolvedInputs): Step[] {
         id: 'step-1',
         title: 'Cut panels and gusset',
         body:
-          `Cut 1 back panel ${d.panelCutWidth} × ${d.panelCutHeight} mm, ` +
-          `1 front top strip ${d.panelCutWidth} × ${d.frontTopHeight} mm, ` +
-          `1 front bottom strip ${d.panelCutWidth} × ${d.frontBottomHeight} mm, ` +
-          `and 1 gusset ${d.fullGussetWidth} × ${d.gussetCutHeight} mm. ` +
-          `All dimensions include ${sa} mm seam allowance.`,
+          `Cut 1 back panel ${fmt(d.panelCutWidth)} × ${fmt(d.panelCutHeight)} mm, ` +
+          `1 front top strip ${fmt(d.panelCutWidth)} × ${fmt(d.frontTopHeight)} mm, ` +
+          `1 front bottom strip ${fmt(d.panelCutWidth)} × ${fmt(d.frontBottomHeight)} mm, ` +
+          `and 1 gusset ${fmt(d.fullGussetWidth)} × ${fmt(d.gussetCutHeight)} mm. ` +
+          `All dimensions include ${fmt(sa)} mm seam allowance.`,
         dependsOn: [],
         refsPieces: pieces,
         group: 'Preparation',
@@ -283,9 +284,9 @@ function buildGussetStripSteps(r: ResolvedInputs): Step[] {
         id: 'step-2',
         title: 'Set the front zipper',
         body:
-          `Sew the ${zip_gauge} zipper (${zipperLength} mm) between the two front strips at ${sa} mm, ` +
-          `placing it ${r.zip_from_top} mm down from the finished top edge. ` +
-          `Topstitch both sides. The joined strips now match the back panel at ${d.panelCutHeight} mm.`,
+          `Sew the ${zip_gauge} zipper (${zipperLength} mm) between the two front strips at ${fmt(sa)} mm, ` +
+          `placing it ${fmt(r.zip_from_top)} mm down from the finished top edge. ` +
+          `Topstitch both sides. The joined strips now match the back panel at ${fmt(d.panelCutHeight)} mm.`,
         dependsOn: ['step-1'],
         refsPieces: ['front-top-strip', 'front-bottom-strip'],
         group: 'Assembly',
@@ -294,7 +295,7 @@ function buildGussetStripSteps(r: ResolvedInputs): Step[] {
         id: 'step-3',
         title: 'Attach gusset to the front',
         body:
-          `Starting at one corner, sew the gusset around the full perimeter of the assembled front at ${sa} mm, ` +
+          `Starting at one corner, sew the gusset around the full perimeter of the assembled front at ${fmt(sa)} mm, ` +
           `matching the corner notches. Clip the gusset seam allowance at each corner so it turns cleanly.`,
         dependsOn: ['step-2'],
         refsPieces: ['full-perimeter-gusset', 'front-top-strip', 'front-bottom-strip'],
@@ -304,7 +305,7 @@ function buildGussetStripSteps(r: ResolvedInputs): Step[] {
         id: 'step-4',
         title: 'Attach gusset to the back',
         body:
-          `Open the zipper. Sew the free edge of the gusset to the back panel at ${sa} mm, matching corners. ` +
+          `Open the zipper. Sew the free edge of the gusset to the back panel at ${fmt(sa)} mm, matching corners. ` +
           `Join the gusset's short ends where they meet.`,
         dependsOn: ['step-3'],
         refsPieces: ['full-perimeter-gusset', 'back-panel'],
@@ -315,7 +316,7 @@ function buildGussetStripSteps(r: ResolvedInputs): Step[] {
         title: 'Finish seams',
         body:
           `Turn right side out through the zipper. Bind or zigzag the interior seams. ` +
-          `Finished interior: ${finished_length} × ${finished_width} × ${finished_depth} mm.`,
+          `Finished interior: ${fmt(finished_length)} × ${fmt(finished_width)} × ${fmt(finished_depth)} mm.`,
         dependsOn: ['step-4'],
         refsPieces: pieces,
         group: 'Finishing',
@@ -330,10 +331,10 @@ function buildGussetStripSteps(r: ResolvedInputs): Step[] {
       id: 'step-1',
       title: 'Cut panels, gusset and tabs',
       body:
-        `Cut 2 panels ${d.panelCutWidth} × ${d.panelCutHeight} mm, ` +
-        `1 U-shaped gusset strip ${d.gussetCutWidth} × ${d.gussetCutHeight} mm, ` +
-        `and 2 zipper end tabs ${tab.width} × ${tab.height} mm. ` +
-        `All dimensions include ${sa} mm seam allowance.`,
+        `Cut 2 panels ${fmt(d.panelCutWidth)} × ${fmt(d.panelCutHeight)} mm, ` +
+        `1 U-shaped gusset strip ${fmt(d.gussetCutWidth)} × ${fmt(d.gussetCutHeight)} mm, ` +
+        `and 2 zipper end tabs ${fmt(tab.width)} × ${fmt(tab.height)} mm. ` +
+        `All dimensions include ${fmt(sa)} mm seam allowance.`,
       dependsOn: [],
       refsPieces: pieces,
       group: 'Preparation',
@@ -343,7 +344,7 @@ function buildGussetStripSteps(r: ResolvedInputs): Step[] {
       title: 'Attach zipper and end tabs',
       body:
         `Fold each end tab in half and sew one over each end of the ${zip_gauge} zipper (${zipperLength} mm) ` +
-        `to square off the tape. Sew the zipper to the top edge of each panel at ${sa} mm and topstitch.`,
+        `to square off the tape. Sew the zipper to the top edge of each panel at ${fmt(sa)} mm and topstitch.`,
       dependsOn: ['step-1'],
       refsPieces: ['front-panel', 'back-panel', 'zipper-end-tab'],
       group: 'Assembly',
@@ -352,7 +353,7 @@ function buildGussetStripSteps(r: ResolvedInputs): Step[] {
       id: 'step-3',
       title: 'Attach gusset to the front',
       body:
-        `Sew the gusset strip down one side, across the bottom and up the other side of the front panel at ${sa} mm. ` +
+        `Sew the gusset strip down one side, across the bottom and up the other side of the front panel at ${fmt(sa)} mm. ` +
         `The notches mark the two bottom corners — clip the seam allowance there so the strip turns squarely.`,
       dependsOn: ['step-2'],
       refsPieces: ['gusset-strip', 'front-panel'],
@@ -362,8 +363,8 @@ function buildGussetStripSteps(r: ResolvedInputs): Step[] {
       id: 'step-4',
       title: 'Attach gusset to the back',
       body:
-        `Open the zipper, then sew the gusset's free edge to the back panel at ${sa} mm, matching the corner notches. ` +
-        `The ${finished_depth} mm gusset width sets the finished depth.`,
+        `Open the zipper, then sew the gusset's free edge to the back panel at ${fmt(sa)} mm, matching the corner notches. ` +
+        `The ${fmt(finished_depth)} mm gusset width sets the finished depth.`,
       dependsOn: ['step-3'],
       refsPieces: ['gusset-strip', 'back-panel'],
       group: 'Assembly',
@@ -373,7 +374,7 @@ function buildGussetStripSteps(r: ResolvedInputs): Step[] {
       title: 'Finish seams',
       body:
         `Turn right side out through the open zipper. Bind or zigzag the interior seams. ` +
-        `Finished interior: ${finished_length} × ${finished_width} × ${finished_depth} mm.`,
+        `Finished interior: ${fmt(finished_length)} × ${fmt(finished_width)} × ${fmt(finished_depth)} mm.`,
       dependsOn: ['step-4'],
       refsPieces: pieces,
       group: 'Finishing',
@@ -393,11 +394,11 @@ function buildMultiPanelSteps(r: ResolvedInputs): Step[] {
       id: 'step-1',
       title: 'Cut panels and tabs',
       body:
-        `Cut 2 front/back panels ${d.frontBackWidth} × ${d.frontBackHeight} mm, ` +
-        `1 bottom panel ${d.bottomWidth} × ${d.bottomHeight} mm, ` +
-        `2 end panels ${d.endWidth} × ${d.endHeight} mm, ` +
-        `and 2 zipper end tabs ${tab.width} × ${tab.height} mm. ` +
-        `All dimensions include ${sa} mm seam allowance.`,
+        `Cut 2 front/back panels ${fmt(d.frontBackWidth)} × ${fmt(d.frontBackHeight)} mm, ` +
+        `1 bottom panel ${fmt(d.bottomWidth)} × ${fmt(d.bottomHeight)} mm, ` +
+        `2 end panels ${fmt(d.endWidth)} × ${fmt(d.endHeight)} mm, ` +
+        `and 2 zipper end tabs ${fmt(tab.width)} × ${fmt(tab.height)} mm. ` +
+        `All dimensions include ${fmt(sa)} mm seam allowance.`,
       dependsOn: [],
       refsPieces: pieces,
       group: 'Preparation',
@@ -407,7 +408,7 @@ function buildMultiPanelSteps(r: ResolvedInputs): Step[] {
       title: 'Attach zipper and end tabs',
       body:
         `Fold each end tab in half and sew one over each end of the ${zip_gauge} zipper (${zipperLength} mm). ` +
-        `Sew the zipper to the top edge of the front and back panels at ${sa} mm and topstitch both sides.`,
+        `Sew the zipper to the top edge of the front and back panels at ${fmt(sa)} mm and topstitch both sides.`,
       dependsOn: ['step-1'],
       refsPieces: ['front-panel', 'back-panel', 'zipper-end-tab'],
       group: 'Assembly',
@@ -416,7 +417,7 @@ function buildMultiPanelSteps(r: ResolvedInputs): Step[] {
       id: 'step-3',
       title: 'Join front and back to the bottom',
       body:
-        `Sew the long edges of the bottom panel to the lower edges of the front and back panels at ${sa} mm, ` +
+        `Sew the long edges of the bottom panel to the lower edges of the front and back panels at ${fmt(sa)} mm, ` +
         `forming an open-ended tube.`,
       dependsOn: ['step-2'],
       refsPieces: ['bottom-panel', 'front-panel', 'back-panel'],
@@ -426,7 +427,7 @@ function buildMultiPanelSteps(r: ResolvedInputs): Step[] {
       id: 'step-4',
       title: 'Set in the end panels',
       body:
-        `Open the zipper. Sew an end panel into each open end at ${sa} mm, matching corners and ` +
+        `Open the zipper. Sew an end panel into each open end at ${fmt(sa)} mm, matching corners and ` +
         `clipping the seam allowance so each corner turns squarely.`,
       dependsOn: ['step-3'],
       refsPieces: ['end-panel'],
@@ -437,7 +438,7 @@ function buildMultiPanelSteps(r: ResolvedInputs): Step[] {
       title: 'Finish seams',
       body:
         `Turn right side out through the open zipper. Bind or zigzag all interior seams. ` +
-        `Finished interior: ${finished_length} × ${finished_width} × ${finished_depth} mm.`,
+        `Finished interior: ${fmt(finished_length)} × ${fmt(finished_width)} × ${fmt(finished_depth)} mm.`,
       dependsOn: ['step-4'],
       refsPieces: pieces,
       group: 'Finishing',
@@ -556,7 +557,7 @@ function buildCrossBottomPieces(r: ResolvedInputs): Piece[] {
         makeStraightEdge(edgeId(), 'stitch', 0, C + sa, C, C + sa),   // in the arm
       ] : [],
       closed: false,
-      label: `Corner: ${C} × ${C} mm cutout — sew these two edges together`,
+      label: `Corner: ${fmt(C)} × ${fmt(C)} mm cutout — sew these two edges together`,
     };
     const cornerRightPath: Path = {
       id: `${id}:corner-right`,
@@ -565,7 +566,7 @@ function buildCrossBottomPieces(r: ResolvedInputs): Piece[] {
         makeStraightEdge(edgeId(), 'stitch', W - C, C + sa, W, C + sa),
       ] : [],
       closed: false,
-      label: `Corner: ${C} × ${C} mm cutout — sew these two edges together`,
+      label: `Corner: ${fmt(C)} × ${fmt(C)} mm cutout — sew these two edges together`,
     };
 
     return {

@@ -38,8 +38,30 @@ export function convertInputsUnits(
   newUnits: 'mm' | 'in',
 ): Partial<ZipPouchInputs> {
   const changes: Partial<ZipPouchInputs> = { units: newUnits, preset: 'custom' };
+  const oldUnits = inputs.units ?? 'mm';
+
+  // Switching units forces preset='custom'. A preset leaves the dimension
+  // fields blank (they fall back to the preset at resolve time), so without
+  // materialising them here they simply vanish — the form lands on 'Custom'
+  // with three empty boxes and a "finished_length is required" error.
+  // PRESET_DEFAULTS are millimetres, so express them in the CURRENT display
+  // unit first and let the loop below do the conversion.
+  const presetDims =
+    inputs.preset && inputs.preset !== 'custom' ? PRESET_DEFAULTS[inputs.preset] : undefined;
+  const inOldUnits = (valueMm: number): number =>
+    oldUnits === 'in' ? Math.round((valueMm / 25.4) * 100) / 100 : valueMm;
+
+  const effective: Record<string, unknown> = { ...inputs };
+  if (presetDims) {
+    for (const f of ['finished_length', 'finished_width', 'finished_depth'] as const) {
+      if (typeof effective[f] !== 'number' || !Number.isFinite(effective[f] as number)) {
+        effective[f] = inOldUnits(presetDims[f]);
+      }
+    }
+  }
+
   for (const field of NUMERIC_FIELDS) {
-    const v = inputs[field];
+    const v = effective[field];
     if (typeof v === 'number' && Number.isFinite(v)) {
       if (newUnits === 'in') {
         (changes as Record<string, unknown>)[field] = Math.round((v / 25.4) * 100) / 100;
@@ -230,7 +252,7 @@ export function ZipPouchSettingsPanel({ inputs, errors, onChange }: Props) {
               />
               <NumericField
                 id="seam-allowance"
-                label="Seam Allowance (mm)"
+                label={`Seam Allowance (${units})`}
                 value={inputs.seam_allowance}
                 error={errors['seam_allowance']}
                 min={0}
@@ -328,7 +350,7 @@ export function ZipPouchSettingsPanel({ inputs, errors, onChange }: Props) {
 
               <NumericField
                 id="grosgrain-width"
-                label="Grosgrain Width (mm)"
+                label={`Grosgrain Width (${units})`}
                 value={inputs.grosgrain_width}
                 error={errors['grosgrain_width']}
                 min={0}

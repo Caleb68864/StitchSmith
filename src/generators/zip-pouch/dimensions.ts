@@ -20,6 +20,17 @@ export function roundUpTo(value: number, multiple: number): number {
   return Math.ceil(value / multiple) * multiple;
 }
 
+/**
+ * Format a millimetre length for display in a BOM note or a step instruction.
+ * Inch inputs are converted to mm at resolve time, which leaves binary-float
+ * dust (4.72 × 25.4 = 119.88799999999999); a sewer works to 0.1 mm at best, so
+ * round there and drop trailing zeros. Every user-visible number this generator
+ * emits should go through this.
+ */
+export function fmt(value: number): string {
+  return String(Math.round(value * 10) / 10);
+}
+
 // ─── boxed (default) ─────────────────────────────────────────────────────────
 
 export interface BoxedDims {

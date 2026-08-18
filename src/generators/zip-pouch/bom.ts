@@ -15,16 +15,8 @@ import {
   zipperEndTabDims,
   zipperLengthForStyle,
   roundUpTo,
+  fmt as mm,
 } from './dimensions.js';
-
-/**
- * Format a millimetre length for a BOM note. Inch inputs are converted to mm at
- * resolve time, which leaves binary-float dust (4.72 × 25.4 = 119.88799999…);
- * a cut list is read to 0.1 mm at best, so round there and drop trailing zeros.
- */
-function mm(value: number): string {
-  return String(Math.round(value * 10) / 10);
-}
 
 /**
  * Compute cut panel dimensions from resolved inputs (boxed style).
