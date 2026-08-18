@@ -25,35 +25,55 @@ import {
 
 const VALID_ZIP_GAUGES = new Set(['#3', '#5']);
 
+const MM_PER_INCH = 25.4;
+
 /**
  * Merge preset dimension defaults with user-supplied overrides to produce
  * fully-resolved inputs. Does NOT run validation — call `validateInputs`
  * after (or before) as needed.
+ *
+ * **Every length on `ResolvedInputs` is in MILLIMETRES**, whatever unit the
+ * user is working in. `units` is retained only to label output.
+ *
+ * `ZipPouchInputs` carries lengths in the user's display unit — the settings
+ * panel rewrites the numbers when the unit is switched — but the pattern
+ * engine, the `defaults.ts` constants (`DEFAULT_SEAM_ALLOWANCE_MM`,
+ * `DEFAULT_GROSGRAIN_WIDTH_MM`), the zipper stock-length rounding and every
+ * "mm" in the BOM and step text are all millimetre-based. Converting once,
+ * here, is what keeps those true. Without it, inch inputs were drawn as though
+ * they were millimetres: a 7.09 in pouch produced a 15.39-unit zipper end tab
+ * beside 4.72-unit panels, and the BOM labelled inch numbers "mm".
  */
 export function resolveInputs(inputs: ZipPouchInputs): ResolvedInputs {
   const preset = inputs.preset ?? DEFAULT_PRESET;
   const presetDims = getPresetDimensions(preset);
+  const units = inputs.units ?? DEFAULT_UNITS;
+
+  // User-supplied lengths arrive in `units`; preset dimensions and the
+  // DEFAULT_*_MM constants are already millimetres.
+  const toMm = (v: number | undefined): number | undefined =>
+    v === undefined || !Number.isFinite(v) ? v : units === 'in' ? v * MM_PER_INCH : v;
 
   const finished_length =
-    inputs.finished_length ?? presetDims?.finished_length ?? NaN;
+    toMm(inputs.finished_length) ?? presetDims?.finished_length ?? NaN;
   const finished_width =
-    inputs.finished_width ?? presetDims?.finished_width ?? NaN;
+    toMm(inputs.finished_width) ?? presetDims?.finished_width ?? NaN;
   const finished_depth =
-    inputs.finished_depth ?? presetDims?.finished_depth ?? NaN;
+    toMm(inputs.finished_depth) ?? presetDims?.finished_depth ?? NaN;
 
   return {
     preset,
     finished_length,
     finished_width,
     finished_depth,
-    units: inputs.units ?? DEFAULT_UNITS,
-    seam_allowance: inputs.seam_allowance ?? DEFAULT_SEAM_ALLOWANCE_MM,
+    units,
+    seam_allowance: toMm(inputs.seam_allowance) ?? DEFAULT_SEAM_ALLOWANCE_MM,
     zip_gauge: inputs.zip_gauge ?? DEFAULT_ZIP_GAUGE,
-    grosgrain_width: inputs.grosgrain_width ?? DEFAULT_GROSGRAIN_WIDTH_MM,
+    grosgrain_width: toMm(inputs.grosgrain_width) ?? DEFAULT_GROSGRAIN_WIDTH_MM,
     pull_loops: inputs.pull_loops ?? DEFAULT_PULL_LOOPS,
     construction_style: inputs.construction_style ?? DEFAULT_CONSTRUCTION_STYLE,
     zipper_position: inputs.zipper_position ?? DEFAULT_ZIPPER_POSITION,
-    zip_from_top: inputs.zip_from_top ?? Math.round(finished_width / 2),
+    zip_from_top: toMm(inputs.zip_from_top) ?? Math.round(finished_width / 2),
   };
 }
 
@@ -122,9 +142,19 @@ export function validateInputs(inputs: ZipPouchInputs): ValidationResult {
     Number.isFinite(resolved.finished_depth) &&
     resolved.finished_depth > 0;
 
-  // Boxing constraint only applies to styles that use folded corner construction.
-  const styleUsesBoxing =
-    resolved.construction_style === 'boxed' || resolved.construction_style === 'cross-bottom';
+  // Boxing constraint applies only to 'boxed', which folds a corner triangle out
+  // of the panel: the fold eats into the panel height, so depth/2 must stay under
+  // finished_width or the triangle consumes the whole panel.
+  //
+  // 'cross-bottom' used to be listed here, when it drew a full-cross panel. The
+  // half-cross panel has no such degeneracy — the corner is a CUTOUT, not a fold,
+  // and the three regions stay positive for any depth:
+  //   face width  W − 2C = finished_length          > 0 always
+  //   face height H − C − sa = finished_width       > 0 always
+  //   arm         C − sa = finished_depth / 2       > 0 always
+  // Keeping the guard rejected drawable patterns (e.g. 300 × 40 × 100 mm) with a
+  // message about folded-corner construction that no longer described the piece.
+  const styleUsesBoxing = resolved.construction_style === 'boxed';
   if (dimensionsValid && styleUsesBoxing) {
     const boxingOffset = resolved.finished_depth / 2;
     if (boxingOffset >= resolved.finished_width) {

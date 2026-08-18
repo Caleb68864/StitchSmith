@@ -161,21 +161,44 @@ describe("constructionStyles — 'cross-bottom'", () => {
     }
   });
 
-  // Boxing constraint: corner_cutout = depth/2 = 60 >= width = 50 → error
-  it('validateInputs returns ok:false with field:finished_depth when corner_cutout >= width', () => {
-    const result = validateInputs({
-      construction_style: 'cross-bottom',
-      preset: 'custom',
-      finished_length: 100,
-      finished_width: 50,
-      finished_depth: 120,
-      units: 'mm',
-    });
+  // The boxing constraint belongs to 'boxed', which folds a corner triangle out
+  // of the panel. The half-cross panel CUTS its corner instead, so a deep,
+  // shallow pouch is drawable — the guard used to reject it with a message
+  // about folded-corner construction that did not describe the piece.
+  const DEEP = {
+    preset: 'custom' as const,
+    finished_length: 100,
+    finished_width: 50,
+    finished_depth: 120,
+    units: 'mm' as const,
+  };
+
+  it("'boxed' still rejects depth/2 >= finished_width", () => {
+    const result = validateInputs({ ...DEEP, construction_style: 'boxed' });
     expect(result.ok).toBe(false);
     if (!result.ok) {
-      const depthError = result.errors.find((e) => e.field === 'finished_depth');
-      expect(depthError).toBeDefined();
+      expect(result.errors.find((e) => e.field === 'finished_depth')).toBeDefined();
     }
+  });
+
+  it("'cross-bottom' accepts depth/2 >= finished_width and stays drawable", () => {
+    const result = validateInputs({ ...DEEP, construction_style: 'cross-bottom' });
+    expect(result.ok).toBe(true);
+
+    const built = buildPattern({ ...DEEP, construction_style: 'cross-bottom', seam_allowance: 10 });
+    expect(built.ok).toBe(true);
+    if (!built.ok) return;
+    // Every region stays positive: face 100 × 50, arms 60 each.
+    const p = built.value.pieces[0] as AnyPiece;
+    const cut = p.paths.find((pa) => pa.id.endsWith(':cut'))!;
+    const xs = cut.edges.flatMap((e) => [e.start.x, e.end.x]);
+    const ys = cut.edges.flatMap((e) => [e.start.y, e.end.y]);
+    const W = Math.max(...xs);
+    const H = Math.max(...ys);
+    const C = Math.min(...xs.filter((x) => x > 0));
+    expect(W - 2 * C).toBeCloseTo(100, 6);   // finished_length
+    expect(H - C - 10).toBeCloseTo(50, 6);   // finished_width
+    expect(2 * (C - 10)).toBeCloseTo(120, 6); // finished_depth
   });
 });
 

@@ -18,6 +18,15 @@ import {
 } from './dimensions.js';
 
 /**
+ * Format a millimetre length for a BOM note. Inch inputs are converted to mm at
+ * resolve time, which leaves binary-float dust (4.72 × 25.4 = 119.88799999…);
+ * a cut list is read to 0.1 mm at best, so round there and drop trailing zeros.
+ */
+function mm(value: number): string {
+  return String(Math.round(value * 10) / 10);
+}
+
+/**
  * Compute cut panel dimensions from resolved inputs (boxed style).
  *   cut_width  = finished_length + 2 × seam_allowance
  *   cut_height = finished_width + (finished_depth / 2) + seam_allowance
@@ -42,7 +51,7 @@ export function buildBom(r: ResolvedInputs): BomRow[] {
         description: 'shell fabric (half-cross panels)',
         quantity: 2,
         unit: 'panels',
-        notes: `half-cross, bounding box ${panelCutWidth} × ${halfCrossHeight} mm, corner cutouts ${cornerCutout} × ${cornerCutout} mm`,
+        notes: `half-cross, bounding box ${mm(panelCutWidth)} × ${mm(halfCrossHeight)} mm, corner cutouts ${mm(cornerCutout)} × ${mm(cornerCutout)} mm`,
       },
       { id: 'zipper', description: `YKK coil zipper ${zip_gauge}`, quantity: zipperLengthForStyle(r), unit: 'mm' },
     ];
@@ -56,10 +65,10 @@ export function buildBom(r: ResolvedInputs): BomRow[] {
       // Front-zipper: solid back, front split either side of the zipper,
       // gusset wrapping all four sides.
       return [
-        { id: 'shell-fabric-back', description: 'shell fabric (back panel)', quantity: 1, unit: 'panel', notes: `${d.panelCutWidth} × ${d.panelCutHeight} mm` },
-        { id: 'shell-fabric-front-top', description: 'shell fabric (front top strip)', quantity: 1, unit: 'strip', notes: `${d.panelCutWidth} × ${d.frontTopHeight} mm` },
-        { id: 'shell-fabric-front-bottom', description: 'shell fabric (front bottom strip)', quantity: 1, unit: 'strip', notes: `${d.panelCutWidth} × ${d.frontBottomHeight} mm` },
-        { id: 'gusset-fabric', description: 'full-perimeter gusset fabric', quantity: 1, unit: 'strip', notes: `${d.fullGussetWidth} × ${d.gussetCutHeight} mm` },
+        { id: 'shell-fabric-back', description: 'shell fabric (back panel)', quantity: 1, unit: 'panel', notes: `${mm(d.panelCutWidth)} × ${mm(d.panelCutHeight)} mm` },
+        { id: 'shell-fabric-front-top', description: 'shell fabric (front top strip)', quantity: 1, unit: 'strip', notes: `${mm(d.panelCutWidth)} × ${mm(d.frontTopHeight)} mm` },
+        { id: 'shell-fabric-front-bottom', description: 'shell fabric (front bottom strip)', quantity: 1, unit: 'strip', notes: `${mm(d.panelCutWidth)} × ${mm(d.frontBottomHeight)} mm` },
+        { id: 'gusset-fabric', description: 'full-perimeter gusset fabric', quantity: 1, unit: 'strip', notes: `${mm(d.fullGussetWidth)} × ${mm(d.gussetCutHeight)} mm` },
         { id: 'zipper', description: `YKK coil zipper ${zip_gauge}`, quantity: zipperLength, unit: 'mm' },
       ];
     }
@@ -67,9 +76,9 @@ export function buildBom(r: ResolvedInputs): BomRow[] {
     // Top-zipper (default): front + back panels + U-shape gusset + two end tabs.
     const tab = zipperEndTabDims(r);
     return [
-      { id: 'shell-fabric', description: 'shell fabric (panels)', quantity: 2, unit: 'panels', notes: `${d.panelCutWidth} × ${d.panelCutHeight} mm each` },
-      { id: 'gusset-fabric', description: 'gusset strip fabric', quantity: 1, unit: 'strip', notes: `${d.gussetCutWidth} × ${d.gussetCutHeight} mm` },
-      { id: 'zipper-end-tabs', description: 'shell fabric (zipper end tabs)', quantity: 2, unit: 'tabs', notes: `${tab.width} × ${tab.height} mm each` },
+      { id: 'shell-fabric', description: 'shell fabric (panels)', quantity: 2, unit: 'panels', notes: `${mm(d.panelCutWidth)} × ${mm(d.panelCutHeight)} mm each` },
+      { id: 'gusset-fabric', description: 'gusset strip fabric', quantity: 1, unit: 'strip', notes: `${mm(d.gussetCutWidth)} × ${mm(d.gussetCutHeight)} mm` },
+      { id: 'zipper-end-tabs', description: 'shell fabric (zipper end tabs)', quantity: 2, unit: 'tabs', notes: `${mm(tab.width)} × ${mm(tab.height)} mm each` },
       { id: 'zipper', description: `YKK coil zipper ${zip_gauge}`, quantity: zipperLength, unit: 'mm' },
     ];
   }
@@ -80,10 +89,10 @@ export function buildBom(r: ResolvedInputs): BomRow[] {
     const zipperLength = zipperLengthForStyle(r);
 
     return [
-      { id: 'shell-fabric-front-back', description: 'shell fabric (front/back)', quantity: 2, unit: 'panels', notes: `${d.frontBackWidth} × ${d.frontBackHeight} mm each` },
-      { id: 'shell-fabric-bottom', description: 'shell fabric (bottom)', quantity: 1, unit: 'panel', notes: `${d.bottomWidth} × ${d.bottomHeight} mm` },
-      { id: 'shell-fabric-ends', description: 'shell fabric (end panels)', quantity: 2, unit: 'panels', notes: `${d.endWidth} × ${d.endHeight} mm each` },
-      { id: 'zipper-end-tabs', description: 'shell fabric (zipper end tabs)', quantity: 2, unit: 'tabs', notes: `${tab.width} × ${tab.height} mm each` },
+      { id: 'shell-fabric-front-back', description: 'shell fabric (front/back)', quantity: 2, unit: 'panels', notes: `${mm(d.frontBackWidth)} × ${mm(d.frontBackHeight)} mm each` },
+      { id: 'shell-fabric-bottom', description: 'shell fabric (bottom)', quantity: 1, unit: 'panel', notes: `${mm(d.bottomWidth)} × ${mm(d.bottomHeight)} mm` },
+      { id: 'shell-fabric-ends', description: 'shell fabric (end panels)', quantity: 2, unit: 'panels', notes: `${mm(d.endWidth)} × ${mm(d.endHeight)} mm each` },
+      { id: 'zipper-end-tabs', description: 'shell fabric (zipper end tabs)', quantity: 2, unit: 'tabs', notes: `${mm(tab.width)} × ${mm(tab.height)} mm each` },
       { id: 'zipper', description: `YKK coil zipper ${zip_gauge}`, quantity: zipperLength, unit: 'mm' },
     ];
   }
@@ -94,13 +103,13 @@ export function buildBom(r: ResolvedInputs): BomRow[] {
   const grosgrainLength = roundUpTo(boundSeamPerimeter * 1.1, 100);
 
   const rows: BomRow[] = [
-    { id: 'shell-fabric', description: 'shell fabric', quantity: 2, unit: 'panels', notes: `${cutWidth} mm × ${cutHeight} mm per panel` },
+    { id: 'shell-fabric', description: 'shell fabric', quantity: 2, unit: 'panels', notes: `${mm(cutWidth)} mm × ${mm(cutHeight)} mm per panel` },
     { id: 'zipper', description: `YKK coil zipper ${zip_gauge}`, quantity: zipperLengthForStyle(r), unit: 'mm' },
-    { id: 'grosgrain-binding', description: `grosgrain ribbon binding (${grosgrain_width} mm wide)`, quantity: grosgrainLength, unit: 'mm' },
+    { id: 'grosgrain-binding', description: `grosgrain ribbon binding (${mm(grosgrain_width)} mm wide)`, quantity: grosgrainLength, unit: 'mm' },
   ];
 
   if (pull_loops) {
-    rows.push({ id: 'pull-loops', description: 'grosgrain pull loops', quantity: 2, unit: 'strips', notes: `75 mm × ${grosgrain_width} mm each` });
+    rows.push({ id: 'pull-loops', description: 'grosgrain pull loops', quantity: 2, unit: 'strips', notes: `75 mm × ${mm(grosgrain_width)} mm each` });
   }
 
   return rows;

@@ -154,10 +154,18 @@ export interface ZipperEndTabDims {
   height: number;
 }
 
+/**
+ * The steps say to fold each tab in half over the zipper end and sew it down,
+ * so the cut height must survive BOTH operations: halving, then losing `sa` to
+ * the seam. Cutting `finished + sa` left only `(finished − sa) / 2` after the
+ * fold — 2.5 mm at the default 10 mm allowance, and negative at 15.875 mm
+ * (5/8", a value this generator accepts). `2 · (finished + sa)` folds to
+ * `finished + sa` and finishes at exactly `finished`.
+ */
 export function zipperEndTabDims(r: ResolvedInputs): ZipperEndTabDims {
   return {
     width: r.finished_depth + 2 * r.seam_allowance,
-    height: ZIPPER_END_TAB_FINISHED_HEIGHT + r.seam_allowance,
+    height: 2 * (ZIPPER_END_TAB_FINISHED_HEIGHT + r.seam_allowance),
   };
 }
 
