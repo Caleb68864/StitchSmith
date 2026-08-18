@@ -24,9 +24,26 @@ let _saveTimer: ReturnType<typeof setTimeout> | null = null;
 // Cached probe result — null means not yet tested
 let _storageAvailable: boolean | null = null;
 
+/**
+ * schemaVersion 1 is shared by Tool Roll AND Roll-Top Sack — per CLAUDE.md these
+ * are sibling schemas, not an upgrade chain, and are distinguished by
+ * `generatorId`. Checking the version alone accepted a Roll-Top Sack project
+ * stored under this key, and accepted a bare `{ schemaVersion: 1 }` with no
+ * `tools` — which every consumer immediately calls `.map()` on.
+ *
+ * `serialize()` always writes `generatorId`, `tools` and `settings`, so no
+ * project this module has ever persisted is rejected by these extra checks.
+ */
 function isValidProject(value: unknown): value is ToolRollProject {
   if (typeof value !== 'object' || value === null) return false;
-  return (value as Record<string, unknown>).schemaVersion === 1;
+  const v = value as Record<string, unknown>;
+  return (
+    v.schemaVersion === 1 &&
+    v.generatorId === 'tool-roll' &&
+    Array.isArray(v.tools) &&
+    typeof v.settings === 'object' &&
+    v.settings !== null
+  );
 }
 
 // Serialize only the canonical persisted fields — never computed layout or SVG strings

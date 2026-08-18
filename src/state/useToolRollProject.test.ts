@@ -77,6 +77,44 @@ describe('useToolRollProject', () => {
       const { result } = renderHook(() => useToolRollProject());
       expect(result.current.project.tools.length).toBeGreaterThan(0);
     });
+
+    // schemaVersion 1 is shared by Tool Roll AND Roll-Top Sack — CLAUDE.md says
+    // these are sibling schemas distinguished by generatorId. Checking only the
+    // version accepted a foreign generator's project, and accepted a record with
+    // no `tools` at all (every consumer does project.tools.map(...)).
+    it('falls back to starter project when the stored project is another generator', () => {
+      store[STORAGE_KEY] = JSON.stringify({
+        schemaVersion: 1,
+        generatorId: 'roll-top-sack',
+        projectName: 'Not a tool roll',
+        inputs: {},
+      });
+
+      const { result } = renderHook(() => useToolRollProject());
+      expect(result.current.project.generatorId).toBe('tool-roll');
+      expect(result.current.project.tools.length).toBeGreaterThan(0);
+    });
+
+    it('falls back to starter project when tools is missing or not an array', () => {
+      store[STORAGE_KEY] = JSON.stringify({ schemaVersion: 1, generatorId: 'tool-roll' });
+
+      const { result } = renderHook(() => useToolRollProject());
+      expect(Array.isArray(result.current.project.tools)).toBe(true);
+      expect(result.current.project.tools.length).toBeGreaterThan(0);
+    });
+
+    it('falls back to starter project when settings is not an object', () => {
+      store[STORAGE_KEY] = JSON.stringify({
+        schemaVersion: 1,
+        generatorId: 'tool-roll',
+        tools: [],
+        settings: 'nope',
+      });
+
+      const { result } = renderHook(() => useToolRollProject());
+      expect(typeof result.current.project.settings).toBe('object');
+      expect(result.current.project.tools.length).toBeGreaterThan(0);
+    });
   });
 
   describe('return shape', () => {
