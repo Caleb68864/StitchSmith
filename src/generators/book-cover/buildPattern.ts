@@ -17,6 +17,28 @@ import {
   makePathFromPoints,
 } from '../../lib/pattern-engine/geometry/paths.js';
 
+/**
+ * Zero out the seam allowance on every edge of a piece's cut outline.
+ *
+ * Book Cover follows CLAUDE.md's baked-in-SA convention: cut dimensions already
+ * include the allowance (`cutWidth = finished + 2 * SA`) and the piece label
+ * quotes those cut dims. Such pieces must declare an EXPLICIT 0 per cut edge.
+ *
+ * `seamAllowances: {}` is NOT equivalent. `computeSeamAllowancePolygon` reads
+ * `piece.seamAllowances ?? {}`, so an empty object still counts as present,
+ * `svg.ts`'s `piece.seamAllowances || defaultSa > 0` guard passes, and
+ * `flattenPath` falls back to the exporter's `defaultSeamAllowance` for every
+ * edge — drawing a second SA line outside a cut line that already includes it.
+ * PatternPreview and both export paths pass `defaultSeamAllowance` regardless.
+ */
+function zeroSeamAllowances(...outlines: Path[]): Record<string, number> {
+  const sa: Record<string, number> = {};
+  for (const outline of outlines) {
+    for (const edge of outline.edges) sa[edge.id] = 0;
+  }
+  return sa;
+}
+
 function buildCoverPanel(r: ResolvedInputs): Piece {
   const { book_width, spine_width, book_height, seam_allowance: SA, top_bottom_hem } = r;
   const effectiveClosure = r.closure?.kind === 'none' ? undefined : r.closure;
@@ -60,10 +82,7 @@ function buildCoverPanel(r: ResolvedInputs): Piece {
   paths.push(makeHorizLine('cover-panel-fold-top', top_bottom_hem, cutWidth, 'fold', 'Top hem — fold to wrong side'));
   paths.push(makeHorizLine('cover-panel-fold-bottom', cutHeight - top_bottom_hem, cutWidth, 'fold', 'Bottom hem — fold to wrong side'));
 
-  const seamAllowances: Record<string, number> = {};
-  for (const edge of outline.edges) {
-    seamAllowances[edge.id] = 0;
-  }
+  const seamAllowances = zeroSeamAllowances(outline);
 
   return {
     id: 'cover-panel',
@@ -276,10 +295,7 @@ function buildLiningPiece(r: ResolvedInputs): Piece {
     paths.push(makeVertLine(`lining-fold-v${i}`, x, cutHeight, 'fold', foldLabels[i]));
   });
 
-  const seamAllowances: Record<string, number> = {};
-  for (const edge of outline.edges) {
-    seamAllowances[edge.id] = 0;
-  }
+  const seamAllowances = zeroSeamAllowances(outline);
 
   return {
     id: 'lining',
@@ -358,7 +374,7 @@ function buildBookmarkRibbonPiece(r: ResolvedInputs): Piece {
     annotations: [
       { kind: 'label', label: `Bookmark Ribbon\nCut ${count}\n${Math.round(widthMm)} × ${Math.round(cutHeight)} mm` },
     ],
-    seamAllowances: {},
+    seamAllowances: zeroSeamAllowances(outline),
   };
 }
 
@@ -435,7 +451,7 @@ function buildVelcroPanelPiece(tactical: ResolvedTacticalConfig, SA: number): Pi
     annotations: [
       { kind: 'label', label: `Velcro Panel\nCut 1\n${Math.round(cutWidth)} × ${Math.round(cutHeight)} mm` },
     ],
-    seamAllowances: {},
+    seamAllowances: zeroSeamAllowances(outline),
   };
 }
 
@@ -456,7 +472,7 @@ function buildRetentionStrapPiece(r: ResolvedInputs): Piece {
     annotations: [
       { kind: 'label', label: `Retention Strap\nCut 1\n${Math.round(cutWidth)} × ${Math.round(cutHeight)} mm` },
     ],
-    seamAllowances: {},
+    seamAllowances: zeroSeamAllowances(outline),
   };
 }
 
@@ -478,7 +494,7 @@ function buildSpareMagPocketPiece(r: ResolvedInputs): Piece {
     annotations: [
       { kind: 'label', label: `Spare Magazine Pocket\nCut 1\n${Math.round(cutWidth)} × ${Math.round(cutHeight)} mm` },
     ],
-    seamAllowances: {},
+    seamAllowances: zeroSeamAllowances(outline),
   };
 }
 

@@ -260,3 +260,56 @@ describe('buildPattern — fully loaded configuration', () => {
     expect(patternToSvg(pattern)).toContain('<svg');
   });
 });
+
+// ─── Baked-in SA convention (CLAUDE.md Convention B) ─────────────────────────
+// Book Cover bakes the seam allowance into its cut dimensions (cutWidth =
+// X + 2*SA) and labels pieces with those cut dims. Such pieces MUST declare an
+// explicit 0 for every cut edge. `seamAllowances: {}` is NOT equivalent:
+// computeSeamAllowancePolygon reads `piece.seamAllowances ?? {}`, so an empty
+// object is still "present", svg.ts's `piece.seamAllowances || defaultSa > 0`
+// guard passes, and flattenPath falls back to defaultSeamAllowance for every
+// edge — drawing a second SA line outside a cut line that already includes it.
+// PatternPreview and both export paths pass defaultSeamAllowance unconditionally.
+
+describe('buildPattern — baked-in SA pieces are not re-offset', () => {
+  const FULL: BookCoverInputs = {
+    ...BASE,
+    lining: { enabled: true },
+    tactical: { enabled: true, retention_strap: true, spare_mag_pocket: true },
+  };
+
+  // Every one of these computes its cut size as `finished + 2 * SA`.
+  const BAKED_IN = ['velcro-panel', 'retention-strap', 'spare-mag-pocket'];
+
+  it.each(BAKED_IN)('%s declares explicit zero SA on every cut edge', (pieceId) => {
+    const result = buildPattern(FULL);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const piece = result.value.pieces.find(p => p.id === pieceId);
+    expect(piece).toBeDefined();
+    if (!piece) return;
+
+    const cutEdgeIds = piece.paths
+      .filter(path => path.closed)
+      .flatMap(path => path.edges.filter(e => e.role === 'cut').map(e => e.id));
+    expect(cutEdgeIds.length).toBeGreaterThan(0);
+    for (const id of cutEdgeIds) {
+      expect(piece.seamAllowances?.[id]).toBe(0);
+    }
+  });
+
+  it('a bookmark ribbon is cut from ribbon stock and takes no seam allowance', () => {
+    const result = buildPattern({ ...BASE, lining: { enabled: true }, bookmark_ribbon: { count: 1 } });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const piece = result.value.pieces.find(p => p.id === 'bookmark-ribbon');
+    expect(piece).toBeDefined();
+    if (!piece) return;
+    const cutEdgeIds = piece.paths
+      .filter(path => path.closed)
+      .flatMap(path => path.edges.filter(e => e.role === 'cut').map(e => e.id));
+    for (const id of cutEdgeIds) {
+      expect(piece.seamAllowances?.[id]).toBe(0);
+    }
+  });
+});
