@@ -518,6 +518,18 @@ function buildCrossBottomPieces(r: ResolvedInputs): Piece[] {
     ];
     const cutPath: Path = { id: `${id}:cut`, edges: cutEdges, closed: true };
 
+    // Seam stitch lines on the three edges joined to the other panel:
+    // the top (centre-of-bottom) seam and both side arms. Inset sa, on-piece.
+    const seamStitchPath: Path = {
+      id: `${id}:seam-stitch`,
+      edges: sa > 0 ? [
+        makeStraightEdge(edgeId(), 'stitch', C, sa, W - C, sa),         // centre-of-bottom seam
+        makeStraightEdge(edgeId(), 'stitch', sa, C, sa, H_half),        // left arm seam
+        makeStraightEdge(edgeId(), 'stitch', W - sa, C, W - sa, H_half), // right arm seam
+      ] : [],
+      closed: false,
+    };
+
     // Zipper stitch line along the bottom (straight) edge
     const zipperStitchPath: Path = {
       id: `${id}:zipper-stitch`,
@@ -561,7 +573,7 @@ function buildCrossBottomPieces(r: ResolvedInputs): Piece[] {
       name,
       mirror: false,
       quantity: 1,
-      paths: [cutPath, zipperStitchPath, cornerLeftPath, cornerRightPath],
+      paths: [cutPath, seamStitchPath, zipperStitchPath, cornerLeftPath, cornerRightPath],
       // Baked-in SA convention: cut dims already include SA — zero outward offsets.
       seamAllowances: {
         [`${id}:e0`]: 0,

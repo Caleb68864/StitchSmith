@@ -355,6 +355,41 @@ describe('buildPattern — baked-in SA is not re-offset by the exporter', () => 
   );
 });
 
+// ─── CLAUDE.md Convention B contract ─────────────────────────────────────────
+// Zip Pouch is the documented baked-in-SA generator. The convention requires
+// explicit per-edge zeros on every cut edge AND a visible sew line, since no
+// SA-offset cut line is drawn. Without the stitch-line half, a baked-in piece
+// would show the sewer nothing but an outline.
+
+describe('buildPattern — baked-in SA convention emits a sew line', () => {
+  it.each(['boxed', 'cross-bottom', 'gusset-strip', 'multi-panel'] as const)(
+    '%s: every piece has at least one stitch-role edge',
+    (construction_style) => {
+      const result = buildPattern({ ...CANONICAL, construction_style });
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      for (const piece of result.value.pieces) {
+        const stitchEdges = piece.paths.flatMap((p) =>
+          p.edges.filter((e) => e.role === 'stitch'),
+        );
+        expect(stitchEdges.length).toBeGreaterThan(0);
+      }
+    },
+  );
+
+  it('cross-bottom marks the seams its steps tell you to sew', () => {
+    const result = buildPattern({ ...CANONICAL, construction_style: 'cross-bottom' });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const panel = result.value.pieces[0];
+    const pathIds = panel.paths.map((p) => p.id);
+    // zipper edge, the two arm seams + centre-of-bottom seam, and both corners
+    expect(pathIds.some((id) => id.endsWith(':zipper-stitch'))).toBe(true);
+    expect(pathIds.some((id) => id.endsWith(':seam-stitch'))).toBe(true);
+    expect(pathIds.filter((id) => id.includes(':corner-')).length).toBe(2);
+  });
+});
+
 // ─── Edge cases ───────────────────────────────────────────────────────────────
 
 describe('buildPattern — edge cases', () => {

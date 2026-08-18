@@ -172,6 +172,13 @@ export function zipperLengthFor(openingWidth: number): number {
  * Zipper length for the style actually being built. Both the BOM row and the
  * instruction step must quote this same number — they drifted apart once
  * already when each computed its own.
+ *
+ * Every style uses `zipperLengthFor(<the cut width the zipper spans>)`.
+ * Multi-panel previously used `frontBackWidth + 4·sa` instead, which had no
+ * derivation behind it and disagreed with the other three styles; it was
+ * dropped deliberately (reference inputs: 300 mm → 250 mm). Do not reinstate a
+ * per-style term here without a stated reason — the zipper spans the top
+ * opening in all four styles, and end tabs are cut as their own pieces.
  */
 export function zipperLengthForStyle(r: ResolvedInputs): number {
   switch (r.construction_style) {
