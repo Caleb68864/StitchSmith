@@ -46,22 +46,35 @@ export interface CrossBottomDims {
 }
 
 /**
- * Half-cross panel geometry. Two of these join at the straight zipper edge and
- * at the top (centre-of-bottom) seam.
+ * Half-cross panel geometry. Two of these join at the straight zipper edge, at
+ * the top (centre-of-bottom) seam, and down both side arms.
  *
- * Height decomposes as:
- *   face             finished_width
- * + half the bottom  finished_depth / 2   (the band above the corner cutouts)
- * + zipper SA        seam_allowance
- * + centre-seam SA   seam_allowance
+ * The panel has three regions, separated by FOLDS (continuous fabric) at
+ * `x = C`, `x = W − C` and `y = C`:
+ *   - half the bag bottom: the narrow band above the cutouts
+ *   - the face:            the centre of the wide band
+ *   - two end arms:        the wide band either side of the face
  *
- * The two panels are separate pieces joined across the bag bottom, so the top
- * edge is a seam and carries its own allowance — it is not a fold.
+ * Because those boundaries are folds, the cutout `C` must absorb the seam
+ * allowance on the outer edges — every dimension below is fold-to-fold:
+ *
+ *   arm finished width   = C − sa            and two arms make one end,
+ *                                            so 2(C − sa) = finished_depth
+ *                                            → C = finished_depth / 2 + sa
+ *   face finished width  = W − 2C            = finished_length
+ *                                            → W = finished_length + finished_depth + 2·sa
+ *   half-bottom depth    = C − sa            = finished_depth / 2
+ *   face finished height = H − C − sa        = finished_width
+ *                                            → H = finished_width + finished_depth/2 + 2·sa
+ *
+ * `cornerCutout`, `panelCutWidth` and `halfCrossHeight` are therefore a single
+ * coupled system — changing one without the others throws off every finished
+ * dimension. The width formula in particular only balances when C includes sa.
  */
 export function crossBottomDims(r: ResolvedInputs): CrossBottomDims {
   const sa = r.seam_allowance;
   return {
-    cornerCutout: r.finished_depth / 2,
+    cornerCutout: r.finished_depth / 2 + sa,
     panelCutWidth: r.finished_length + r.finished_depth + 2 * sa,
     halfCrossHeight: r.finished_width + r.finished_depth / 2 + 2 * sa,
   };
@@ -153,4 +166,22 @@ export function zipperEndTabDims(r: ResolvedInputs): ZipperEndTabDims {
 /** Zipper tape length for a given opening width, rounded up to a stock length. */
 export function zipperLengthFor(openingWidth: number): number {
   return roundUpTo(openingWidth + 25, 50);
+}
+
+/**
+ * Zipper length for the style actually being built. Both the BOM row and the
+ * instruction step must quote this same number — they drifted apart once
+ * already when each computed its own.
+ */
+export function zipperLengthForStyle(r: ResolvedInputs): number {
+  switch (r.construction_style) {
+    case 'cross-bottom':
+      return zipperLengthFor(crossBottomDims(r).panelCutWidth);
+    case 'gusset-strip':
+      return zipperLengthFor(gussetStripDims(r).panelCutWidth);
+    case 'multi-panel':
+      return zipperLengthFor(multiPanelDims(r).frontBackWidth);
+    default:
+      return zipperLengthFor(boxedDims(r).cutWidth);
+  }
 }

@@ -13,7 +13,7 @@ import {
   gussetStripDims,
   multiPanelDims,
   zipperEndTabDims,
-  zipperLengthFor,
+  zipperLengthForStyle,
   roundUpTo,
 } from './dimensions.js';
 
@@ -44,13 +44,13 @@ export function buildBom(r: ResolvedInputs): BomRow[] {
         unit: 'panels',
         notes: `half-cross, bounding box ${panelCutWidth} × ${halfCrossHeight} mm, corner cutouts ${cornerCutout} × ${cornerCutout} mm`,
       },
-      { id: 'zipper', description: `YKK coil zipper ${zip_gauge}`, quantity: zipperLengthFor(panelCutWidth), unit: 'mm' },
+      { id: 'zipper', description: `YKK coil zipper ${zip_gauge}`, quantity: zipperLengthForStyle(r), unit: 'mm' },
     ];
   }
 
   if (construction_style === 'gusset-strip') {
     const d = gussetStripDims(r);
-    const zipperLength = zipperLengthFor(d.panelCutWidth);
+    const zipperLength = zipperLengthForStyle(r);
 
     if (r.zipper_position === 'front') {
       // Front-zipper: solid back, front split either side of the zipper,
@@ -77,7 +77,7 @@ export function buildBom(r: ResolvedInputs): BomRow[] {
   if (construction_style === 'multi-panel') {
     const d = multiPanelDims(r);
     const tab = zipperEndTabDims(r);
-    const zipperLength = roundUpTo(d.frontBackWidth + 4 * r.seam_allowance, 50);
+    const zipperLength = zipperLengthForStyle(r);
 
     return [
       { id: 'shell-fabric-front-back', description: 'shell fabric (front/back)', quantity: 2, unit: 'panels', notes: `${d.frontBackWidth} × ${d.frontBackHeight} mm each` },
@@ -95,7 +95,7 @@ export function buildBom(r: ResolvedInputs): BomRow[] {
 
   const rows: BomRow[] = [
     { id: 'shell-fabric', description: 'shell fabric', quantity: 2, unit: 'panels', notes: `${cutWidth} mm × ${cutHeight} mm per panel` },
-    { id: 'zipper', description: `YKK coil zipper ${zip_gauge}`, quantity: zipperLengthFor(cutWidth), unit: 'mm' },
+    { id: 'zipper', description: `YKK coil zipper ${zip_gauge}`, quantity: zipperLengthForStyle(r), unit: 'mm' },
     { id: 'grosgrain-binding', description: `grosgrain ribbon binding (${grosgrain_width} mm wide)`, quantity: grosgrainLength, unit: 'mm' },
   ];
 

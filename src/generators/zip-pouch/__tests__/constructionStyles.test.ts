@@ -85,18 +85,35 @@ describe("constructionStyles — 'cross-bottom'", () => {
     }
   });
 
-  // (g2b) the face must survive assembly at the requested finished height:
-  // panel height − half-bottom − zipper SA − centre-seam SA = finished_width.
-  it('assembled face height equals finished_width', () => {
+  // (g2b) Measure the assembled bag against the FOLD positions actually drawn,
+  // not against the formulas. The three regions (half-bottom, face, arms) are
+  // separated by folds at y=C and x=C / x=W-C; seam allowance is only consumed
+  // at the outer edges. Every finished dimension must fall out exactly.
+  //
+  // This is the check that catches cornerCutout drifting away from the width
+  // and height formulas — asserting `h === 140` alone cannot.
+  it('all four finished dimensions fall out of the drawn fold positions', () => {
     const result = buildPattern({ ...EDC, construction_style: 'cross-bottom' });
     expect(result.ok).toBe(true);
-    if (result.ok) {
-      const crossPanel = result.value.pieces.find((p: { id: string }) => p.id.includes('cross-panel'))!;
-      const { h } = getBBox(crossPanel as AnyPiece);
-      const halfBottom = 40 / 2; // finished_depth / 2
-      const sa = 10;
-      expect(h - halfBottom - 2 * sa).toBeCloseTo(100, 0); // finished_width
-    }
+    if (!result.ok) return;
+    const crossPanel = result.value.pieces.find((p: { id: string }) => p.id.includes('cross-panel'))!;
+    const p = crossPanel as AnyPiece;
+    const cut = p.paths.find((pa) => pa.id.endsWith(':cut'))!;
+    const xs = cut.edges.flatMap((e) => [e.start.x, e.end.x]);
+    const ys = cut.edges.flatMap((e) => [e.start.y, e.end.y]);
+    const W = Math.max(...xs);
+    const H = Math.max(...ys);
+    // The cutout size is the smallest non-zero x on the outline (the fold at x=C).
+    const C = Math.min(...xs.filter((x) => x > 0));
+    const sa = 10;
+
+    // face: fold-to-fold horizontally, fold-to-(zipper seam) vertically
+    expect(W - 2 * C).toBeCloseTo(180, 6);        // finished_length
+    expect(H - C - sa).toBeCloseTo(100, 6);       // finished_width
+    // one end = two arms, each fold-to-(side seam)
+    expect(2 * (C - sa)).toBeCloseTo(40, 6);      // finished_depth
+    // half the bag bottom, per panel
+    expect(C - sa).toBeCloseTo(40 / 2, 6);        // finished_depth / 2
   });
 
   // (g3) cross panel has corner dimension annotations
@@ -112,26 +129,34 @@ describe("constructionStyles — 'cross-bottom'", () => {
     }
   });
 
-  // (g4) corner annotations must trace the PHANTOM corner, not retrace cut edges.
-  // Drawing the cutout's inner edges would lay an annotation on top of the cut line.
-  it('corner annotation segments do not duplicate cut edges', () => {
+  // (g4) Corner annotations must be ON the piece and must not retrace cut edges.
+  // Retracing the cutout's inner edges draws an annotation on top of the cut
+  // line; tracing the phantom corner instead puts marks in cut-away space.
+  it('corner annotations lie inside the piece and duplicate no cut edge', () => {
     const result = buildPattern({ ...EDC, construction_style: 'cross-bottom' });
     expect(result.ok).toBe(true);
-    if (result.ok) {
-      const crossPanel = result.value.pieces.find((p: { id: string }) => p.id.includes('cross-panel'))!;
-      const p = crossPanel as AnyPiece;
-      const key = (e: { start: { x: number; y: number }; end: { x: number; y: number } }) => {
-        const a = `${e.start.x},${e.start.y}`;
-        const b = `${e.end.x},${e.end.y}`;
-        return a < b ? `${a}|${b}` : `${b}|${a}`; // direction-independent
-      };
-      const cutKeys = new Set(p.paths.find((pa) => pa.id.endsWith(':cut'))!.edges.map(key));
-      const cornerEdges = p.paths
-        .filter((pa) => pa.id.includes(':corner-'))
-        .flatMap((pa) => pa.edges);
-      expect(cornerEdges.length).toBeGreaterThan(0);
-      for (const e of cornerEdges) {
-        expect(cutKeys.has(key(e))).toBe(false);
+    if (!result.ok) return;
+    const crossPanel = result.value.pieces.find((p: { id: string }) => p.id.includes('cross-panel'))!;
+    const p = crossPanel as AnyPiece;
+    const key = (e: { start: { x: number; y: number }; end: { x: number; y: number } }) => {
+      const a = `${e.start.x},${e.start.y}`;
+      const b = `${e.end.x},${e.end.y}`;
+      return a < b ? `${a}|${b}` : `${b}|${a}`; // direction-independent
+    };
+    const cut = p.paths.find((pa) => pa.id.endsWith(':cut'))!;
+    const cutKeys = new Set(cut.edges.map(key));
+    const xs = cut.edges.flatMap((e) => [e.start.x, e.end.x]);
+    const W = Math.max(...xs);
+    const C = Math.min(...xs.filter((x) => x > 0));
+
+    const cornerEdges = p.paths.filter((pa) => pa.id.includes(':corner-')).flatMap((pa) => pa.edges);
+    expect(cornerEdges.length).toBeGreaterThan(0);
+    for (const e of cornerEdges) {
+      expect(cutKeys.has(key(e))).toBe(false);
+      // Not inside either cut-away square: x<C && y<C (left) or x>W-C && y<C (right).
+      for (const pt of [e.start, e.end]) {
+        expect(pt.x < C && pt.y < C).toBe(false);
+        expect(pt.x > W - C && pt.y < C).toBe(false);
       }
     }
   });
@@ -292,6 +317,20 @@ describe('constructionStyles — steps match the drawn pieces', () => {
     expect(cutStep.title).toMatch(/cut/i);
     // Piece count named in the cut step should cover every piece in the pattern.
     expect(cutStep.refsPieces.length).toBe(result.value.pieces.length);
+  });
+
+  // The BOM row and the instruction text must quote the same zipper length.
+  // They drifted apart once when each computed its own.
+  it.each(STYLES)('%s: BOM zipper length matches the length named in the steps', (construction_style) => {
+    const result = buildPattern({ ...EDC, construction_style });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const bomRow = result.value.bom.find((b) => b.id === 'zipper')!;
+    expect(bomRow).toBeDefined();
+    const allBodies = result.value.steps.map((s) => s.body).join(' ');
+    const quoted = [...allBodies.matchAll(/zipper \((\d+) mm\)/g)].map((m) => Number(m[1]));
+    expect(quoted.length).toBeGreaterThan(0);
+    for (const q of quoted) expect(q).toBe(bomRow.quantity);
   });
 
   it('front-zipper gusset steps reference the split front strips', () => {

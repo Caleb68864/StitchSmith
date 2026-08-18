@@ -19,7 +19,7 @@ import {
   gussetStripDims,
   multiPanelDims,
   zipperEndTabDims,
-  zipperLengthFor,
+  zipperLengthForStyle,
 } from './dimensions.js';
 
 // ─── Geometry helpers ────────────────────────────────────────────────────────
@@ -119,7 +119,7 @@ function buildBoxedSteps(
   cutHeight: number,
 ): Step[] {
   const { finished_length, finished_width, finished_depth, seam_allowance, zip_gauge, pull_loops, grosgrain_width } = resolved;
-  const zipperLength = zipperLengthFor(cutWidth);
+  const zipperLength = zipperLengthForStyle(resolved);
 
   return [
     {
@@ -208,7 +208,7 @@ function buildCrossBottomSteps(r: ResolvedInputs): Step[] {
       id: 'step-2',
       title: 'Attach zipper',
       body:
-        `Sew a ${zip_gauge} coil zipper (${zipperLengthFor(W)} mm) between the two straight edges, ` +
+        `Sew a ${zip_gauge} coil zipper (${zipperLengthForStyle(r)} mm) between the two straight edges, ` +
         `stitching ${sa} mm from the edge along the marked zipper line on each panel.`,
       dependsOn: ['step-1'],
       refsPieces: panels,
@@ -226,20 +226,32 @@ function buildCrossBottomSteps(r: ResolvedInputs): Step[] {
     },
     {
       id: 'step-4',
-      title: 'Close the corners',
+      title: 'Sew the side arms',
       body:
-        `At each cut-out corner, bring the two raw edges together so they meet in a straight line ` +
-        `and sew at ${sa} mm. The four corners form the ${finished_depth} mm depth. ` +
-        `Finished interior: ${finished_length} × ${finished_width} × ${finished_depth} mm.`,
+        `Still right sides together, sew the full left edge of one panel to the full left edge of the other ` +
+        `at ${sa} mm, and repeat on the right. Each pair of ${C} mm arms forms one ${finished_depth} mm ` +
+        `end of the pouch. These seams run from the zipper up to the corner cutout.`,
       dependsOn: ['step-3'],
       refsPieces: panels,
       group: 'Assembly',
     },
     {
       id: 'step-5',
+      title: 'Close the corners',
+      body:
+        `At each of the four cut-out corners, bring the two raw edges of the ${C} × ${C} mm notch together ` +
+        `so they meet in a straight line, and sew at ${sa} mm along the marked corner stitch line. ` +
+        `This squares the bag bottom to ${finished_depth} mm deep. ` +
+        `Finished interior: ${finished_length} × ${finished_width} × ${finished_depth} mm.`,
+      dependsOn: ['step-4'],
+      refsPieces: panels,
+      group: 'Assembly',
+    },
+    {
+      id: 'step-6',
       title: 'Finish seams',
       body: `Turn right side out through the open zipper. Bind or zigzag the interior seams and bar-tack each zipper end.`,
-      dependsOn: ['step-4'],
+      dependsOn: ['step-5'],
       refsPieces: panels,
       group: 'Finishing',
     },
@@ -249,7 +261,7 @@ function buildCrossBottomSteps(r: ResolvedInputs): Step[] {
 function buildGussetStripSteps(r: ResolvedInputs): Step[] {
   const { finished_length, finished_width, finished_depth, seam_allowance: sa, zip_gauge } = r;
   const d = gussetStripDims(r);
-  const zipperLength = zipperLengthFor(d.panelCutWidth);
+  const zipperLength = zipperLengthForStyle(r);
 
   if (r.zipper_position === 'front') {
     const pieces = ['back-panel', 'front-top-strip', 'front-bottom-strip', 'full-perimeter-gusset'];
@@ -373,13 +385,13 @@ function buildMultiPanelSteps(r: ResolvedInputs): Step[] {
   const { finished_length, finished_width, finished_depth, seam_allowance: sa, zip_gauge } = r;
   const d = multiPanelDims(r);
   const tab = zipperEndTabDims(r);
-  const zipperLength = zipperLengthFor(d.frontBackWidth);
+  const zipperLength = zipperLengthForStyle(r);
   const pieces = ['front-panel', 'back-panel', 'bottom-panel', 'end-panel', 'zipper-end-tab'];
 
   return [
     {
       id: 'step-1',
-      title: 'Cut all six panels',
+      title: 'Cut panels and tabs',
       body:
         `Cut 2 front/back panels ${d.frontBackWidth} × ${d.frontBackHeight} mm, ` +
         `1 bottom panel ${d.bottomWidth} × ${d.bottomHeight} mm, ` +
@@ -514,28 +526,34 @@ function buildCrossBottomPieces(r: ResolvedInputs): Piece[] {
       label: 'Align zipper tape here',
     };
 
-    // Corner dimension annotations — trace the PHANTOM corner: the two sides of
-    // the C×C square that were removed by the cutout. Drawing the cutout's inner
-    // edges instead would just retrace cut edges e6/e7 and e2/e1, laying a
-    // "crease here" line on top of a line that is actually cut.
-    // Role 'notch' (purple solid) marks these as registration references.
+    // Corner seam lines. The two edges of each cutout are sewn to each other to
+    // box the corner, so the useful annotation is where that stitch falls —
+    // inset `sa` from each cutout edge, on the piece.
+    //
+    // Two earlier attempts were wrong: tracing the cutout's inner edges just
+    // retraced cut edges e6/e7 and e2/e1 (and as role 'fold' drew "crease here"
+    // on top of a line that is actually cut), while tracing the phantom corner
+    // put registration ticks in the middle of fabric that had been cut away.
+    // The notch's vertical edge belongs to the half-bottom band (which lies at
+    // x > C), and its horizontal edge belongs to the arm (which lies at y > C),
+    // so each stitch line insets AWAY from the notch, into its own region.
     const cornerLeftPath: Path = {
       id: `${id}:corner-left`,
-      edges: [
-        makeStraightEdge(edgeId(), 'notch', 0, 0, C, 0),    // phantom top edge
-        makeStraightEdge(edgeId(), 'notch', 0, 0, 0, C),    // phantom left edge
-      ],
+      edges: sa > 0 ? [
+        makeStraightEdge(edgeId(), 'stitch', C + sa, 0, C + sa, C),   // in the half-bottom band
+        makeStraightEdge(edgeId(), 'stitch', 0, C + sa, C, C + sa),   // in the arm
+      ] : [],
       closed: false,
-      label: `Corner: ${C} × ${C} mm cutout`,
+      label: `Corner: ${C} × ${C} mm cutout — sew these two edges together`,
     };
     const cornerRightPath: Path = {
       id: `${id}:corner-right`,
-      edges: [
-        makeStraightEdge(edgeId(), 'notch', W - C, 0, W, 0), // phantom top edge
-        makeStraightEdge(edgeId(), 'notch', W, 0, W, C),     // phantom right edge
-      ],
+      edges: sa > 0 ? [
+        makeStraightEdge(edgeId(), 'stitch', W - C - sa, 0, W - C - sa, C),
+        makeStraightEdge(edgeId(), 'stitch', W - C, C + sa, W, C + sa),
+      ] : [],
       closed: false,
-      label: `Corner: ${C} × ${C} mm cutout`,
+      label: `Corner: ${C} × ${C} mm cutout — sew these two edges together`,
     };
 
     return {
