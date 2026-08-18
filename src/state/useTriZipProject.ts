@@ -1,13 +1,14 @@
 import { useState, useCallback, useEffect } from 'react';
 import type { TriZipInputs, PresetName } from '../generators/tri-zip-backpack/types.js';
 import { makeProjectStorage } from '../storage/genericProjectStorage.js';
+import { isPlainObject } from '../utils/isPlainObject.js';
 
 const STORAGE_KEY = 'stitchsmith.tri-zip-backpack.project';
 
 function isValidTriZipProject(value: unknown): value is TriZipProject {
   if (typeof value !== 'object' || value === null) return false;
   const v = value as Record<string, unknown>;
-  return v.schemaVersion === 2 && v.generatorId === 'tri-zip-backpack' && typeof v.inputs === 'object';
+  return v.schemaVersion === 2 && v.generatorId === 'tri-zip-backpack' && isPlainObject(v.inputs);
 }
 
 const storage = makeProjectStorage<TriZipProject>({ key: STORAGE_KEY, isValid: isValidTriZipProject });

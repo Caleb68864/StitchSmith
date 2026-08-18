@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import type { CircleSkirtInputs } from '../generators/circle-skirt/types.js';
 import { makeProjectStorage } from '../storage/genericProjectStorage.js';
+import { isPlainObject } from '../utils/isPlainObject.js';
 
 const STORAGE_KEY = 'stitchsmith.circle-skirt.project';
 
@@ -16,7 +17,7 @@ export interface CircleSkirtProject {
 function isValidCircleSkirtProject(value: unknown): value is CircleSkirtProject {
   if (typeof value !== 'object' || value === null) return false;
   const v = value as Record<string, unknown>;
-  return v.schemaVersion === 6 && v.generatorId === 'circle-skirt' && typeof v.inputs === 'object';
+  return v.schemaVersion === 6 && v.generatorId === 'circle-skirt' && isPlainObject(v.inputs);
 }
 
 const storage = makeProjectStorage<CircleSkirtProject>({ key: STORAGE_KEY, isValid: isValidCircleSkirtProject });

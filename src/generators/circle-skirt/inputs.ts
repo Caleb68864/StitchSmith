@@ -3,8 +3,20 @@
  *
  * `validateInputs` enforces all constraints from Requirements 3–4.
  * `resolveInputs` fills in defaults, computes derived fields (r, R, cut radii,
- * panel count). All dimension inputs are treated as mm; unit conversion is
- * the UI layer's responsibility.
+ * panel count).
+ *
+ * UNITS: `resolveInputs` normalises to MILLIMETRES. Body/garment measurements
+ * (waist_circumference, skirt_length, hip_circumference) arrive in the user's
+ * display unit and are converted here; ease, seam/hem allowance, band height,
+ * elastic width and fabric width are always mm and pass through untouched.
+ * Every `ResolvedInputs` length is therefore mm.
+ *
+ * This used to be documented as "the UI layer's responsibility", but no UI file
+ * ever did it: the three buildPattern call sites passed raw inputs straight
+ * through, so the shipped default (units:'in', waist 28, length 24) built a
+ * 51.6 mm panel — a 1/25-scale skirt — while its mm-based seam and hem
+ * allowances stayed full size. Converting once here also covers validateInputs,
+ * which delegates to this function.
  */
 
 import type {
@@ -28,6 +40,8 @@ import {
   getPresetSweepAngle,
 } from './defaults.js';
 
+const MM_PER_INCH = 25.4;
+
 /**
  * Fill all optional fields with defaults, compute the preset's sweep angle,
  * and derive r, R, cut radii, num_panels, panel_sweep_deg, and effective_waist.
@@ -40,8 +54,18 @@ export function resolveInputs(inputs: CircleSkirtInputs): ResolvedInputs {
   const presetSweep = getPresetSweepAngle(preset);
   const sweep_angle_deg = inputs.sweep_angle_deg ?? presetSweep ?? DEFAULT_SWEEP_ANGLE_DEG;
 
-  const waist_circumference = inputs.waist_circumference ?? NaN;
-  const skirt_length = inputs.skirt_length ?? NaN;
+  const units = inputs.units ?? DEFAULT_UNITS;
+
+  // Body/garment measurements are entered in the user's display unit — the
+  // settings panel labels them `(${units})`. Everything else (ease, seam and
+  // hem allowance, band height, elastic width, fabric width) is always mm and
+  // is labelled "(mm)" in the panel regardless of the toggle. Convert only the
+  // former, once, here — see the file header for why this lives in resolve.
+  const toMm = (v: number): number =>
+    units === 'in' && Number.isFinite(v) ? v * MM_PER_INCH : v;
+
+  const waist_circumference = toMm(inputs.waist_circumference ?? NaN);
+  const skirt_length = toMm(inputs.skirt_length ?? NaN);
   const waist_ease = inputs.waist_ease ?? DEFAULT_WAIST_EASE_MM;
   const seam_allowance = inputs.seam_allowance ?? DEFAULT_SEAM_ALLOWANCE_MM;
   const hem_allowance = inputs.hem_allowance ?? DEFAULT_HEM_ALLOWANCE_MM;
@@ -50,8 +74,10 @@ export function resolveInputs(inputs: CircleSkirtInputs): ResolvedInputs {
   const band_height = inputs.band_height ?? DEFAULT_BAND_HEIGHT_MM;
   const elastic_width = inputs.elastic_width ?? DEFAULT_ELASTIC_WIDTH_MM;
   const fabric_width = inputs.fabric_width ?? DEFAULT_FABRIC_WIDTH_MM;
-  const units = inputs.units ?? DEFAULT_UNITS;
-  const hip_circumference = inputs.hip_circumference ?? (waist_circumference + 100);
+  // Same class as waist_circumference; its fallback is waist(mm) + 100 mm.
+  const hip_circumference = inputs.hip_circumference !== undefined
+    ? toMm(inputs.hip_circumference)
+    : waist_circumference + 100;
 
   // Elastic-casing uses hip as base (must pass over hips); zip closures use waist+ease.
   const effective_waist =

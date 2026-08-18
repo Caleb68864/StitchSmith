@@ -1,13 +1,14 @@
 import { useState, useCallback, useEffect } from 'react';
 import type { ZipPouchInputs } from '../generators/zip-pouch/types.js';
 import { makeProjectStorage } from '../storage/genericProjectStorage.js';
+import { isPlainObject } from '../utils/isPlainObject.js';
 
 const STORAGE_KEY = 'stitchsmith.zip-pouch.project';
 
 function isValidZipPouchProject(value: unknown): value is ZipPouchProject {
   if (typeof value !== 'object' || value === null) return false;
   const v = value as Record<string, unknown>;
-  return v.schemaVersion === 5 && v.generatorId === 'zip-pouch' && typeof v.inputs === 'object';
+  return v.schemaVersion === 5 && v.generatorId === 'zip-pouch' && isPlainObject(v.inputs);
 }
 
 const storage = makeProjectStorage<ZipPouchProject>({ key: STORAGE_KEY, isValid: isValidZipPouchProject });

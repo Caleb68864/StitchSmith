@@ -110,17 +110,52 @@ describe('resolveInputs — SA=0', () => {
 // ─── resolveInputs — units field stored ──────────────────────────────────────────
 
 describe('resolveInputs — units handling', () => {
-  it('stores units field as-is (no double conversion in inputs.ts)', () => {
+  // resolveInputs normalises body/garment measurements to mm. This previously
+  // asserted the opposite ("dimensions are passed through unchanged"), which
+  // locked in the bug: no UI file ever performed the conversion the old
+  // contract delegated to it, so the shipped default built a 1/25-scale skirt.
+  it('converts inch body measurements to mm, keeping units for labelling', () => {
     const r = resolveInputs({ preset: 'full', waist_circumference: WAIST, skirt_length: LENGTH, units: 'in', waist_ease: 0 });
-    // inputs.ts does not multiply by 25.4; dimensions are passed through unchanged
     expect(r.units).toBe('in');
-    expect(r.waist_circumference).toBe(WAIST);
-    expect(r.skirt_length).toBe(LENGTH);
+    expect(r.waist_circumference).toBeCloseTo(WAIST * 25.4, 6);
+    expect(r.skirt_length).toBeCloseTo(LENGTH * 25.4, 6);
+  });
+
+  it('leaves always-mm fields untouched under inch units', () => {
+    const r = resolveInputs({
+      preset: 'full', waist_circumference: 28, skirt_length: 24, units: 'in',
+      seam_allowance: 15, hem_allowance: 20, band_height: 25, elastic_width: 25, waist_ease: 20,
+    });
+    // These are labelled "(mm)" in the settings panel regardless of the toggle.
+    expect(r.seam_allowance).toBe(15);
+    expect(r.hem_allowance).toBe(20);
+    expect(r.band_height).toBe(25);
+    expect(r.elastic_width).toBe(25);
+    expect(r.waist_ease).toBe(20);
   });
 
   it('mm units: dimensions passed through unchanged', () => {
     const r = resolveInputs({ preset: 'full', waist_circumference: 600, skirt_length: 500, units: 'mm', waist_ease: 0 });
     expect(r.waist_circumference).toBe(600);
+  });
+
+  it('inch and equivalent mm inputs resolve identically', () => {
+    const asIn = resolveInputs({ preset: 'full', waist_circumference: 28, skirt_length: 24, units: 'in', waist_ease: 20 });
+    const asMm = resolveInputs({ preset: 'full', waist_circumference: 28 * 25.4, skirt_length: 24 * 25.4, units: 'mm', waist_ease: 20 });
+    expect(asIn.effective_waist).toBeCloseTo(asMm.effective_waist, 6);
+    expect(asIn.cut_outer_r).toBeCloseTo(asMm.cut_outer_r, 6);
+    expect(asIn.num_panels).toBe(asMm.num_panels);
+  });
+
+  // Guards the shipped default specifically: it ships units:'in', so a
+  // regression here means every new user gets a doll-sized skirt again.
+  it('the shipped default project resolves to a wearable skirt, not 1/25 scale', () => {
+    const r = resolveInputs({
+      waist_circumference: 28, skirt_length: 24, units: 'in', preset: 'full',
+      seam_allowance: 15, hem_allowance: 20, band_height: 25, elastic_width: 25,
+    });
+    expect(r.effective_waist).toBeCloseTo(28 * 25.4 + 20, 6); // 731.2 mm
+    expect(r.cut_outer_r).toBeGreaterThan(500);               // was 25.8 mm
   });
 });
 

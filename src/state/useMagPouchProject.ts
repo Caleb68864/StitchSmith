@@ -1,3 +1,4 @@
+import { isPlainObject } from '../utils/isPlainObject.js';
 import { useState, useCallback, useEffect } from 'react';
 import type { MagPouchInputs, RetentionStyle, AttachmentStyle, DrainageStyle, SeamAllowance } from '../generators/mag-pouch/types.js';
 import { makeProjectStorage } from '../storage/genericProjectStorage.js';
@@ -7,7 +8,7 @@ const STORAGE_KEY = 'stitchsmith.mag-pouch.project';
 function isValidMagPouchProject(value: unknown): value is MagPouchProject {
   if (typeof value !== 'object' || value === null) return false;
   const v = value as Record<string, unknown>;
-  return v.schemaVersion === 3 && v.generatorId === 'mag-pouch' && typeof v.inputs === 'object';
+  return v.schemaVersion === 3 && v.generatorId === 'mag-pouch' && isPlainObject(v.inputs);
 }
 
 const storage = makeProjectStorage<MagPouchProject>({ key: STORAGE_KEY, isValid: isValidMagPouchProject });

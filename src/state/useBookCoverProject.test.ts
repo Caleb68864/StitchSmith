@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { useBookCoverProject, makeDefaultBookCoverProject } from './useBookCoverProject.js';
+import { useBookCoverProject, makeDefaultBookCoverProject, _resetBookCoverStorage } from './useBookCoverProject.js';
 
 describe('makeDefaultBookCoverProject', () => {
   it('has generatorId book-cover', () => {
@@ -153,5 +153,34 @@ describe('useBookCoverProject', () => {
       result.current.importProject(modified);
     });
     expect(result.current.project.projectName).toBe('Imported Cover');
+  });
+});
+
+// ─── isValid guard rejects null / array inputs ───────────────────────────────
+// `typeof null === 'object'`, so the old `typeof v.inputs === 'object'` guard
+// accepted `"inputs": null` from corrupt or hand-edited localStorage. The hook
+// restored it and then threw on first property access — and because the project
+// hooks run in App ABOVE <ErrorBoundary>, the boundary cannot catch it and the
+// bad value is re-read on every reload. parseProjectJson already rejected this
+// on the import path; the storage-load path had been missed.
+
+describe('useBookCoverProject — corrupt stored project', () => {
+  it.each([
+    ['null inputs', null],
+    ['array inputs', []],
+  ])('falls back to the default project when stored %s', (_label, badInputs) => {
+    _resetBookCoverStorage();
+    localStorage.setItem(
+      'stitchsmith.book-cover.project',
+      JSON.stringify({ schemaVersion: 4, generatorId: 'book-cover', projectName: 'Corrupt', inputs: badInputs }),
+    );
+
+    const { result } = renderHook(() => useBookCoverProject());
+    // Must not throw, and must land on a usable project.
+    expect(result.current.project.generatorId).toBe('book-cover');
+    expect(typeof result.current.project.inputs).toBe('object');
+    expect(result.current.project.inputs).not.toBeNull();
+    expect(Array.isArray(result.current.project.inputs)).toBe(false);
+    expect(result.current.project.inputs.book_height).toBeGreaterThan(0);
   });
 });

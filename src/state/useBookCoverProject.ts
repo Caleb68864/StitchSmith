@@ -13,13 +13,14 @@ import type {
 import { DEFAULT_SEAM_ALLOWANCE_MM, DEFAULT_TOP_BOTTOM_HEM_MM, DEFAULT_PEN_HOLDER_HEIGHT_MM } from '../generators/book-cover/defaults.js';
 import { toast } from '../lib/toast/toast.js';
 import { makeProjectStorage } from '../storage/genericProjectStorage.js';
+import { isPlainObject } from '../utils/isPlainObject.js';
 
 const STORAGE_KEY = 'stitchsmith.book-cover.project';
 
 function isValidBookCoverProject(value: unknown): value is BookCoverProject {
   if (typeof value !== 'object' || value === null) return false;
   const v = value as Record<string, unknown>;
-  return v.schemaVersion === 4 && v.generatorId === 'book-cover' && typeof v.inputs === 'object';
+  return v.schemaVersion === 4 && v.generatorId === 'book-cover' && isPlainObject(v.inputs);
 }
 
 const storage = makeProjectStorage<BookCoverProject>({
