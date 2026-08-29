@@ -1,3 +1,4 @@
+import { Children, cloneElement, isValidElement, useId } from 'react';
 import type { ToolRollSettings } from '../../generators/tool-roll/types.js';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../ui/accordion.js';
 import { Input } from '../ui/input.js';
@@ -43,10 +44,34 @@ function NumInput({
   );
 }
 
-function Row({ label, tip, children }: { label: string; tip?: string; children: React.ReactNode }) {
+function Row({
+  label,
+  tip,
+  htmlFor,
+  children,
+}: {
+  label: string;
+  tip?: string;
+  /** Explicit control id — needed for Radix Select, whose root does not forward `id`. */
+  htmlFor?: string;
+  children: React.ReactNode;
+}) {
+  // Associate the label with its control. Without `htmlFor` the label is
+  // decorative: screen readers announce "edit text" with no name and clicking
+  // the label does not focus the field. If the single child carries no `id`,
+  // give it one so every row is labelled without threading ids by hand.
+  const autoId = useId();
+  const only = Children.count(children) === 1 ? Children.only(children) : null;
+  let control = children;
+  let target = htmlFor;
+  if (!target && isValidElement<{ id?: string }>(only)) {
+    target = only.props.id ?? autoId;
+    if (!only.props.id) control = cloneElement(only, { id: target });
+  }
   return (
     <div className="flex items-center justify-between gap-2 py-1">
       <Label
+        htmlFor={target}
         className={
           'text-xs text-muted-foreground flex-1 ' +
           (tip ? 'cursor-help underline decoration-dotted decoration-muted-foreground/40 underline-offset-2' : '')
@@ -55,7 +80,7 @@ function Row({ label, tip, children }: { label: string; tip?: string; children: 
       >
         {label}
       </Label>
-      {children}
+      {control}
     </div>
   );
 }
@@ -67,9 +92,9 @@ export function ToolRollSettingsPanel({ settings, units, onUpdate, onUnitsChange
       <AccordionItem value="units">
         <AccordionTrigger className="text-xs font-semibold py-2">Units & Sorting</AccordionTrigger>
         <AccordionContent>
-          <Row label="Unit system" tip="Display unit for measurements in the tool table and settings. Internal storage is always millimeters; this just changes how values are shown and entered.">
+          <Row label="Unit system" tip="Display unit for measurements in the tool table and settings. Internal storage is always millimeters; this just changes how values are shown and entered." htmlFor="sel-unit-system">
             <Select value={units} onValueChange={v => onUnitsChange(v as 'mm' | 'in')}>
-              <SelectTrigger className="h-7 text-xs w-24">
+              <SelectTrigger id="sel-unit-system" className="h-7 text-xs w-24">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -78,12 +103,12 @@ export function ToolRollSettingsPanel({ settings, units, onUpdate, onUnitsChange
               </SelectContent>
             </Select>
           </Row>
-          <Row label="Sort mode" tip="How tools are ordered in the pattern. Manual = the order shown in the table. Width / Height / Pocket Depth sort automatically; the table reflects the active order.">
+          <Row label="Sort mode" tip="How tools are ordered in the pattern. Manual = the order shown in the table. Width / Height / Pocket Depth sort automatically; the table reflects the active order." htmlFor="sel-sort-mode">
             <Select
               value={settings.sortMode}
               onValueChange={v => onUpdate({ sortMode: v as ToolRollSettings['sortMode'] })}
             >
-              <SelectTrigger className="h-7 text-xs w-36">
+              <SelectTrigger id="sel-sort-mode" className="h-7 text-xs w-36">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -104,12 +129,12 @@ export function ToolRollSettingsPanel({ settings, units, onUpdate, onUnitsChange
       <AccordionItem value="pocket">
         <AccordionTrigger className="text-xs font-semibold py-2">Pocket Geometry</AccordionTrigger>
         <AccordionContent>
-          <Row label="Pocket top style" tip="Shape of the pocket panel's top edge. Stepped = stair-steps at each pocket boundary. Sloped = straight diagonals. Smooth = S-curve per pocket. Arc = one continuous curve from leftmost to rightmost pocket.">
+          <Row label="Pocket top style" tip="Shape of the pocket panel's top edge. Stepped = stair-steps at each pocket boundary. Sloped = straight diagonals. Smooth = S-curve per pocket. Arc = one continuous curve from leftmost to rightmost pocket." htmlFor="sel-pocket-top-style">
             <Select
               value={settings.pocketTopStyle}
               onValueChange={v => onUpdate({ pocketTopStyle: v as ToolRollSettings['pocketTopStyle'] })}
             >
-              <SelectTrigger className="h-7 text-xs w-28">
+              <SelectTrigger id="sel-pocket-top-style" className="h-7 text-xs w-28">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -120,12 +145,12 @@ export function ToolRollSettingsPanel({ settings, units, onUpdate, onUnitsChange
               </SelectContent>
             </Select>
           </Row>
-          <Row label="Pocket height mode" tip="How depths are normalized across pockets. Individual = each pocket gets its own depth. Stepped = depths rounded up to the next increment for cleaner stair-steps. Same as tallest = every pocket uses the deepest value.">
+          <Row label="Pocket height mode" tip="How depths are normalized across pockets. Individual = each pocket gets its own depth. Stepped = depths rounded up to the next increment for cleaner stair-steps. Same as tallest = every pocket uses the deepest value." htmlFor="sel-pocket-height-mode">
             <Select
               value={settings.pocketHeightMode}
               onValueChange={v => onUpdate({ pocketHeightMode: v as ToolRollSettings['pocketHeightMode'] })}
             >
-              <SelectTrigger className="h-7 text-xs w-40">
+              <SelectTrigger id="sel-pocket-height-mode" className="h-7 text-xs w-40">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -138,12 +163,12 @@ export function ToolRollSettingsPanel({ settings, units, onUpdate, onUnitsChange
           <Row label="Pocket height increment" tip="When pocket height mode is 'Stepped to Increment', round each pocket's depth up to the nearest multiple of this value.">
             <NumInput id="pocketHeightIncrement" value={settings.pocketHeightIncrement} units={units} onChange={v => onUpdate({ pocketHeightIncrement: v })} />
           </Row>
-          <Row label="Pocket depth mode" tip="Where each pocket's depth comes from. 'Visible amount' uses the per-tool field you set in the table (height − visible). '% of tool height' uses a global percentage of each tool's height.">
+          <Row label="Pocket depth mode" tip="Where each pocket's depth comes from. 'Visible amount' uses the per-tool field you set in the table (height − visible). '% of tool height' uses a global percentage of each tool's height." htmlFor="sel-pocket-depth-mode">
             <Select
               value={settings.pocketDepthMode}
               onValueChange={v => onUpdate({ pocketDepthMode: v as ToolRollSettings['pocketDepthMode'] })}
             >
-              <SelectTrigger className="h-7 text-xs w-40">
+              <SelectTrigger id="sel-pocket-depth-mode" className="h-7 text-xs w-40">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -271,12 +296,12 @@ export function ToolRollSettingsPanel({ settings, units, onUpdate, onUnitsChange
           <Row label="Enable flap" tip="Adds a flap piece that folds down over the tools to keep them from falling out when the roll is bundled.">
             <Switch checked={settings.flapEnabled} onCheckedChange={v => onUpdate({ flapEnabled: v })} />
           </Row>
-          <Row label="Flap height mode" tip="How the flap is sized. 'Match pocket profile' = per-tool reach so every tool gets the same overlap past its pocket top (varied edge shape). 'Cover shortest tool' = rectangular, long enough to cover the shortest tool (covers ALL tools — most fabric). 'Cover tallest tool' = rectangular, sized only for the tallest tool's reach (the LEAST fabric — but shorter tools may not be fully covered). 'Based on Pocket Depth' = legacy heuristic. 'Fixed' = hand-set height.">
+          <Row label="Flap height mode" tip="How the flap is sized. 'Match pocket profile' = per-tool reach so every tool gets the same overlap past its pocket top (varied edge shape). 'Cover shortest tool' = rectangular, long enough to cover the shortest tool (covers ALL tools — most fabric). 'Cover tallest tool' = rectangular, sized only for the tallest tool's reach (the LEAST fabric — but shorter tools may not be fully covered). 'Based on Pocket Depth' = legacy heuristic. 'Fixed' = hand-set height." htmlFor="sel-flap-height-mode">
             <Select
               value={settings.flapHeightMode}
               onValueChange={v => onUpdate({ flapHeightMode: v as ToolRollSettings['flapHeightMode'] })}
             >
-              <SelectTrigger className="h-7 text-xs w-44">
+              <SelectTrigger id="sel-flap-height-mode" className="h-7 text-xs w-44">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -325,12 +350,12 @@ export function ToolRollSettingsPanel({ settings, units, onUpdate, onUnitsChange
           <Row label="Enable tie" tip="Show a marker on the pattern for where to attach the tie/strap that holds the rolled-up roll closed.">
             <Switch checked={settings.tieEnabled} onCheckedChange={v => onUpdate({ tieEnabled: v })} />
           </Row>
-          <Row label="Tie placement" tip="How the tie's X position is determined. Centered = middle of the back panel. Based on Roll Diameter = position estimated from rolled-up bundle size (v1: not implemented). Manual = use the Tie position X value below.">
+          <Row label="Tie placement" tip="How the tie's X position is determined. Centered = middle of the back panel. Based on Roll Diameter = position estimated from rolled-up bundle size (v1: not implemented). Manual = use the Tie position X value below." htmlFor="sel-tie-placement">
             <Select
               value={settings.tiePlacementMode}
               onValueChange={v => onUpdate({ tiePlacementMode: v as ToolRollSettings['tiePlacementMode'] })}
             >
-              <SelectTrigger className="h-7 text-xs w-44">
+              <SelectTrigger id="sel-tie-placement" className="h-7 text-xs w-44">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -356,12 +381,12 @@ export function ToolRollSettingsPanel({ settings, units, onUpdate, onUnitsChange
       <AccordionItem value="print">
         <AccordionTrigger className="text-xs font-semibold py-2">Print</AccordionTrigger>
         <AccordionContent>
-          <Row label="Paper size" tip="Paper size for the tiled printable HTML export. Letter = 8.5×11″, A4 = 210×297 mm.">
+          <Row label="Paper size" tip="Paper size for the tiled printable HTML export. Letter = 8.5×11″, A4 = 210×297 mm." htmlFor="sel-paper-size">
             <Select
               value={settings.printPaperSize}
               onValueChange={v => onUpdate({ printPaperSize: v as ToolRollSettings['printPaperSize'] })}
             >
-              <SelectTrigger className="h-7 text-xs w-24">
+              <SelectTrigger id="sel-paper-size" className="h-7 text-xs w-24">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -370,12 +395,12 @@ export function ToolRollSettingsPanel({ settings, units, onUpdate, onUnitsChange
               </SelectContent>
             </Select>
           </Row>
-          <Row label="Orientation" tip="Page orientation for printing. Landscape often reduces page count for wide patterns.">
+          <Row label="Orientation" tip="Page orientation for printing. Landscape often reduces page count for wide patterns." htmlFor="sel-orientation">
             <Select
               value={settings.printOrientation}
               onValueChange={v => onUpdate({ printOrientation: v as ToolRollSettings['printOrientation'] })}
             >
-              <SelectTrigger className="h-7 text-xs w-28">
+              <SelectTrigger id="sel-orientation" className="h-7 text-xs w-28">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -421,12 +446,12 @@ export function ToolRollSettingsPanel({ settings, units, onUpdate, onUnitsChange
           <Row label="Show dimension lines" tip="Measurement annotations on the pattern (overall width, height, etc.).">
             <Switch checked={settings.showDimensionLines} onCheckedChange={v => onUpdate({ showDimensionLines: v })} />
           </Row>
-          <Row label="Label mode" tip="Which tool info appears in pocket labels. None hides them; toolNames shows just the tool name; toolNamesAndDimensions adds size info.">
+          <Row label="Label mode" tip="Which tool info appears in pocket labels. None hides them; toolNames shows just the tool name; toolNamesAndDimensions adds size info." htmlFor="sel-label-mode">
             <Select
               value={settings.labelMode}
               onValueChange={v => onUpdate({ labelMode: v as ToolRollSettings['labelMode'] })}
             >
-              <SelectTrigger className="h-7 text-xs w-44">
+              <SelectTrigger id="sel-label-mode" className="h-7 text-xs w-44">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
