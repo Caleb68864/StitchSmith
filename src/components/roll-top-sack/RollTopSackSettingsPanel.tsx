@@ -2,6 +2,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import type { RollTopSackInputs } from '../../generators/roll-top-sack/types.js';
+import { convertLengthValues, type UnitSystem } from '../../utils/units.js';
+
+// The fields the panel labels `(${inputs.units})`; seam_allowance is always mm.
+const DISPLAY_UNIT_FIELDS = ['bottom_length', 'bottom_width', 'height_when_rolled', 'collar_height'] as const;
 
 interface Props {
   inputs: RollTopSackInputs;
@@ -31,7 +35,7 @@ function NumericField({
         id={id}
         type="number"
         min={0}
-        step={1}
+        step="any"
         value={value ?? ''}
         onChange={e => onChange(parseFloat(e.target.value))}
         className={`h-8 text-xs ${error ? 'border-destructive' : ''}`}
@@ -47,6 +51,11 @@ function NumericField({
 }
 
 export function RollTopSackSettingsPanel({ inputs, errors, onChange }: Props) {
+  function handleUnitsChange(next: UnitSystem) {
+    if (next === inputs.units) return;
+    onChange({ units: next, ...convertLengthValues(inputs, DISPLAY_UNIT_FIELDS, inputs.units, next) });
+  }
+
   return (
     <div className="rounded border border-border p-3 space-y-4">
       <h2 className="text-xs font-semibold">Dimensions</h2>
@@ -89,7 +98,7 @@ export function RollTopSackSettingsPanel({ inputs, errors, onChange }: Props) {
             variant={inputs.units === 'mm' ? 'default' : 'outline'}
             size="sm"
             className="h-7 text-xs px-3"
-            onClick={() => onChange({ units: 'mm' })}
+            onClick={() => handleUnitsChange('mm')}
           >
             mm
           </Button>
@@ -97,7 +106,7 @@ export function RollTopSackSettingsPanel({ inputs, errors, onChange }: Props) {
             variant={inputs.units === 'in' ? 'default' : 'outline'}
             size="sm"
             className="h-7 text-xs px-3"
-            onClick={() => onChange({ units: 'in' })}
+            onClick={() => handleUnitsChange('in')}
           >
             in
           </Button>

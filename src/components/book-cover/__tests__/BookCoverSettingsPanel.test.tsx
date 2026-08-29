@@ -179,3 +179,70 @@ describe('BookCoverSettingsPanel — width_ease and spine_bulge fields', () => {
     expect(bulgeInput.placeholder).toMatch(/6\.[34]/);
   });
 });
+
+describe('BookCoverSettingsPanel — unit toggle converts dimensions', () => {
+  it('switching mm → in converts the four book dims and keeps mm-stored fields untouched', () => {
+    const props = makeProps({
+      outer_pocket: { width: 120, height: 100, position: 'front' },
+      pen_holder: { count: 3, slot_width: 15 },
+    });
+    render(<BookCoverSettingsPanel {...props} />);
+    fireEvent.click(screen.getByRole('button', { name: /^in$/ }));
+    expect(props.onChange).toHaveBeenCalledOnce();
+    const call = props.onChange.mock.calls[0][0] as Partial<BookCoverProjectInputs>;
+    expect(call.units).toBe('in');
+    expect(call.book_height).toBeCloseTo(240 / 25.4, 3);
+    expect(call.book_width).toBeCloseTo(165 / 25.4, 3);
+    expect(call.spine_width).toBeCloseTo(20 / 25.4, 3);
+    expect(call.flap_depth).toBeCloseTo(30 / 25.4, 3);
+    // Pockets and pen slots are stored in mm (the generator reads them raw),
+    // so the toggle must not rescale them.
+    expect(call).not.toHaveProperty('outer_pocket');
+    expect(call).not.toHaveProperty('pen_holder');
+    expect(call).not.toHaveProperty('seam_allowance');
+  });
+
+  it('clicking the already-active unit is a no-op', () => {
+    const props = makeProps();
+    render(<BookCoverSettingsPanel {...props} />);
+    fireEvent.click(screen.getByRole('button', { name: /^mm$/ }));
+    expect(props.onChange).not.toHaveBeenCalled();
+  });
+});
+
+describe('BookCoverSettingsPanel — accessory dimensions are shown and entered in the display unit', () => {
+  it('in inch mode, a 127 mm pocket width displays as 5 and typing 4 stores 101.6 mm', () => {
+    const props = makeProps({ units: 'in', outer_pocket: { width: 127, height: 254, position: 'front' } });
+    render(<BookCoverSettingsPanel {...props} />);
+    fireEvent.click(screen.getByRole('button', { name: /Outer Pocket/i }));
+    const width = document.getElementById('outer-pocket-width') as HTMLInputElement;
+    expect(width.value).toBe('5');
+    fireEvent.change(width, { target: { value: '4' } });
+    const call = props.onChange.mock.calls[0][0] as Partial<BookCoverProjectInputs>;
+    expect(call.outer_pocket?.width).toBeCloseTo(101.6, 6);
+    expect(call.outer_pocket?.height).toBe(254);
+  });
+
+  it('in inch mode, a 12.7 mm pen slot displays as 0.5 and typing 1 stores 25.4 mm', () => {
+    const props = makeProps({ units: 'in', pen_holder: { count: 2, slot_width: 12.7 } });
+    render(<BookCoverSettingsPanel {...props} />);
+    fireEvent.click(screen.getByRole('button', { name: /Pen Holder/i }));
+    const slot = document.getElementById('pen-holder-slot-width') as HTMLInputElement;
+    expect(slot.value).toBe('0.5');
+    fireEvent.change(slot, { target: { value: '1' } });
+    const call = props.onChange.mock.calls[0][0] as Partial<BookCoverProjectInputs>;
+    expect(call.pen_holder?.slot_width).toBeCloseTo(25.4, 6);
+    expect(call.pen_holder?.count).toBe(2);
+  });
+
+  it('in mm mode, pocket values pass through unchanged', () => {
+    const props = makeProps({ inner_pocket: { width: 120, height: 80, position: 'back' } });
+    render(<BookCoverSettingsPanel {...props} />);
+    fireEvent.click(screen.getByRole('button', { name: /Inner Pocket/i }));
+    const height = document.getElementById('inner-pocket-height') as HTMLInputElement;
+    expect(height.value).toBe('80');
+    fireEvent.change(height, { target: { value: '90' } });
+    const call = props.onChange.mock.calls[0][0] as Partial<BookCoverProjectInputs>;
+    expect(call.inner_pocket?.height).toBe(90);
+  });
+});

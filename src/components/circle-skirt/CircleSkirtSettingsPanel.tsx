@@ -2,6 +2,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import type { CircleSkirtInputs, CircleSkirtPreset, ClosureType, WaistbandType } from '../../generators/circle-skirt/types.js';
+import { convertLengthValues, type UnitSystem } from '../../utils/units.js';
+
+// The fields the panel labels `(${units})`. Everything else (ease, seam/hem
+// allowance, band height, elastic width, fabric width) is always mm — see
+// resolveInputs in generators/circle-skirt/inputs.ts.
+const DISPLAY_UNIT_FIELDS = ['waist_circumference', 'skirt_length', 'hip_circumference'] as const;
 
 interface Props {
   inputs: CircleSkirtInputs;
@@ -71,6 +77,11 @@ const WAISTBAND_TYPES: { value: WaistbandType; label: string }[] = [
 
 export function CircleSkirtSettingsPanel({ inputs, errors, onChange }: Props) {
   const units = inputs.units ?? 'in';
+
+  function handleUnitsChange(next: UnitSystem) {
+    if (next === units) return;
+    onChange({ units: next, ...convertLengthValues(inputs, DISPLAY_UNIT_FIELDS, units, next) });
+  }
 
   return (
     <div className="rounded border border-border p-3 space-y-4">
@@ -158,7 +169,7 @@ export function CircleSkirtSettingsPanel({ inputs, errors, onChange }: Props) {
             variant={units === 'in' ? 'default' : 'outline'}
             size="sm"
             className="h-7 text-xs px-3"
-            onClick={() => onChange({ units: 'in' })}
+            onClick={() => handleUnitsChange('in')}
           >
             in
           </Button>
@@ -166,7 +177,7 @@ export function CircleSkirtSettingsPanel({ inputs, errors, onChange }: Props) {
             variant={units === 'mm' ? 'default' : 'outline'}
             size="sm"
             className="h-7 text-xs px-3"
-            onClick={() => onChange({ units: 'mm' })}
+            onClick={() => handleUnitsChange('mm')}
           >
             mm
           </Button>

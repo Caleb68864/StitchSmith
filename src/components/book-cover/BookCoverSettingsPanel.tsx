@@ -7,6 +7,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import type { BookCoverProjectInputs } from '../../state/useBookCoverProject.js';
 import { BOOK_PRESETS, FOLDOVER_PRESETS, ZIPPER_GAUGE_DEFAULTS } from '../../generators/book-cover/defaults.js';
 import type { ZipperGauge, InterfacingKind } from '../../generators/book-cover/types.js';
+import { convertLengthValues, type UnitSystem } from '../../utils/units.js';
+
+// Top-level fields the panel labels `(${inputs.units})`. Seam allowance, hems,
+// ease and the zipper corner radius are stored in mm regardless of the toggle.
+const DISPLAY_UNIT_FIELDS = ['book_height', 'book_width', 'spine_width', 'flap_depth'] as const;
 
 interface Props {
   inputs: BookCoverProjectInputs;
@@ -83,7 +88,7 @@ function NumericField({
         id={id}
         type="number"
         min={min ?? 0}
-        step={1}
+        step="any"
         value={value ?? ''}
         disabled={disabled}
         placeholder={placeholder}
@@ -359,6 +364,18 @@ export function BookCoverSettingsPanel({
     });
   }
 
+  function handleUnitsChange(next: UnitSystem) {
+    const from = inputs.units;
+    if (next === from) return;
+    const changes: Partial<BookCoverProjectInputs> = {
+      units: next,
+      ...convertLengthValues(inputs, DISPLAY_UNIT_FIELDS, from, next),
+    };
+    // Pockets and pen slots are STORED in mm (the generator reads them raw)
+    // and converted at the input edge, so the toggle leaves them alone.
+    onChange(changes);
+  }
+
   function handleFoldoverPreset(presetId: string) {
     if (!presetId || presetId === '__custom') {
       onChange({ foldover_preset: undefined });
@@ -447,7 +464,7 @@ export function BookCoverSettingsPanel({
               variant={inputs.units === 'mm' ? 'default' : 'outline'}
               size="sm"
               className="h-7 text-xs px-3"
-              onClick={() => onChange({ units: 'mm' })}
+              onClick={() => handleUnitsChange('mm')}
             >
               mm
             </Button>
@@ -455,7 +472,7 @@ export function BookCoverSettingsPanel({
               variant={inputs.units === 'in' ? 'default' : 'outline'}
               size="sm"
               className="h-7 text-xs px-3"
-              onClick={() => onChange({ units: 'in' })}
+              onClick={() => handleUnitsChange('in')}
             >
               in
             </Button>
@@ -519,16 +536,16 @@ export function BookCoverSettingsPanel({
             <NumericField
               id="outer-pocket-width"
               label={`Width (${inputs.units})`}
-              value={inputs.outer_pocket?.width}
+              value={inputs.outer_pocket ? fromMm(inputs.outer_pocket.width, inputs.units) : undefined}
               disabled={!inputs.outer_pocket}
-              onChange={v => onChange({ outer_pocket: { ...inputs.outer_pocket!, width: v } })}
+              onChange={v => onChange({ outer_pocket: { ...inputs.outer_pocket!, width: toMm(v, inputs.units) } })}
             />
             <NumericField
               id="outer-pocket-height"
               label={`Height (${inputs.units})`}
-              value={inputs.outer_pocket?.height}
+              value={inputs.outer_pocket ? fromMm(inputs.outer_pocket.height, inputs.units) : undefined}
               disabled={!inputs.outer_pocket}
-              onChange={v => onChange({ outer_pocket: { ...inputs.outer_pocket!, height: v } })}
+              onChange={v => onChange({ outer_pocket: { ...inputs.outer_pocket!, height: toMm(v, inputs.units) } })}
             />
           </div>
         </CollapsibleSection>
@@ -542,16 +559,16 @@ export function BookCoverSettingsPanel({
             <NumericField
               id="inner-pocket-width"
               label={`Width (${inputs.units})`}
-              value={inputs.inner_pocket?.width}
+              value={inputs.inner_pocket ? fromMm(inputs.inner_pocket.width, inputs.units) : undefined}
               disabled={!inputs.inner_pocket}
-              onChange={v => onChange({ inner_pocket: { ...inputs.inner_pocket!, width: v } })}
+              onChange={v => onChange({ inner_pocket: { ...inputs.inner_pocket!, width: toMm(v, inputs.units) } })}
             />
             <NumericField
               id="inner-pocket-height"
               label={`Height (${inputs.units})`}
-              value={inputs.inner_pocket?.height}
+              value={inputs.inner_pocket ? fromMm(inputs.inner_pocket.height, inputs.units) : undefined}
               disabled={!inputs.inner_pocket}
-              onChange={v => onChange({ inner_pocket: { ...inputs.inner_pocket!, height: v } })}
+              onChange={v => onChange({ inner_pocket: { ...inputs.inner_pocket!, height: toMm(v, inputs.units) } })}
             />
           </div>
         </CollapsibleSection>
@@ -573,9 +590,9 @@ export function BookCoverSettingsPanel({
             <NumericField
               id="pen-holder-slot-width"
               label={`Slot Width (${inputs.units})`}
-              value={inputs.pen_holder?.slot_width}
+              value={inputs.pen_holder ? fromMm(inputs.pen_holder.slot_width, inputs.units) : undefined}
               disabled={!inputs.pen_holder}
-              onChange={v => onChange({ pen_holder: { ...inputs.pen_holder!, slot_width: v } })}
+              onChange={v => onChange({ pen_holder: { ...inputs.pen_holder!, slot_width: toMm(v, inputs.units) } })}
             />
           </div>
         </CollapsibleSection>
