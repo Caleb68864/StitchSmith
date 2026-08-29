@@ -13,6 +13,8 @@ import {
 } from '../../lib/pattern-engine/exports/lazy.js';
 import { runExport, printOrDownloadHtml } from '../shared/runExport.js';
 import { downloadTextFile } from '../../utils/download.js';
+import { renderHtml } from '../../lib/pattern-engine/instructions/compile.js';
+import { escapeHtml } from '../../utils/escapeHtml.js';
 import { CutListTable } from './CutListTable.js';
 import type { BomRow } from '../../generators/circle-skirt/types.js';
 import type { Pattern } from '../../lib/pattern-engine/graph/Pattern.js';
@@ -88,6 +90,20 @@ export function ExportPanel({ inputs, project, hasErrors }: Props) {
       const dxf = mod.exportPatternToDxf(pattern);
       downloadTextFile(`${project.projectName}.dxf`, dxf, 'application/dxf');
     });
+  }
+
+  function handleInstructions() {
+    if (hasErrors) return;
+    let steps;
+    try {
+      steps = buildPattern(inputs).steps;
+    } catch {
+      return;
+    }
+    const result = renderHtml(steps);
+    if (!result.ok) return;
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${escapeHtml(project.projectName)} — Assembly Instructions</title></head><body>${result.value}</body></html>`;
+    downloadTextFile(`${project.projectName}-instructions.html`, html, 'text/html');
   }
 
   function handleToggleCutList() {
@@ -175,8 +191,8 @@ export function ExportPanel({ inputs, project, hasErrors }: Props) {
           size="sm"
           className="w-full justify-start text-xs"
           disabled={disabled}
-          onClick={() => {}}
-          title="Assembly instructions (coming soon)."
+          onClick={handleInstructions}
+          title="Download the assembly instructions as an HTML file."
         >
           <BookOpen className="h-3 w-3 mr-2" />
           Instructions

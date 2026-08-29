@@ -10,6 +10,14 @@ import { patternToSvg } from '../lib/pattern-engine/exports/svg.js';
 import type { Pattern } from '../lib/pattern-engine/graph/Pattern.js';
 import type { ConstructionStyle } from '../generators/zip-pouch/types.js';
 
+// Every generator page is a lazy route. In isolation a chunk mounts in well
+// under a second, but when the full suite runs, jsdom + vite transforms share
+// the machine and the first mount of a page can take several seconds. A 5 s
+// waitFor produced intermittent failures in the full run only; the budget
+// below is generous because a real regression fails immediately, not slowly.
+const LAZY_TIMEOUT = 20_000;
+vi.setConfig({ testTimeout: LAZY_TIMEOUT + 10_000 });
+
 beforeEach(() => {
   localStorage.clear();
   _resetStorage();
@@ -35,19 +43,19 @@ describe('App integration', () => {
     render(<App />);
     fireEvent.click(screen.getByRole('button', { name: /Open Tool Roll/i }));
     // Lazy-loaded — wait for wrench inputs to appear
-    await waitFor(() => expect(screen.getAllByDisplayValue(/wrench/i).length).toBe(4), { timeout: 5000 });
+    await waitFor(() => expect(screen.getAllByDisplayValue(/wrench/i).length).toBe(4), { timeout: LAZY_TIMEOUT });
   });
 
   it('loads the 4 starter tools when navigating to tool roll', async () => {
     render(<App />);
     fireEvent.click(screen.getByRole('button', { name: /Open Tool Roll/i }));
-    await waitFor(() => expect(screen.getAllByDisplayValue(/wrench/i).length).toBe(4), { timeout: 5000 });
+    await waitFor(() => expect(screen.getAllByDisplayValue(/wrench/i).length).toBe(4), { timeout: LAZY_TIMEOUT });
   });
 
   it('adds a tool so the tool count increments from 4 to 5', async () => {
     render(<App />);
     fireEvent.click(screen.getByRole('button', { name: /Open Tool Roll/i }));
-    await waitFor(() => screen.getByRole('button', { name: /add tool/i }), { timeout: 5000 });
+    await waitFor(() => screen.getByRole('button', { name: /add tool/i }), { timeout: LAZY_TIMEOUT });
 
     fireEvent.click(screen.getByRole('button', { name: /add tool/i }));
 
@@ -58,7 +66,7 @@ describe('App integration', () => {
   it('Reset button restores the 4 starter tools (sampleTools)', async () => {
     render(<App />);
     fireEvent.click(screen.getByRole('button', { name: /Open Tool Roll/i }));
-    await waitFor(() => screen.getByRole('button', { name: /add tool/i }), { timeout: 5000 });
+    await waitFor(() => screen.getByRole('button', { name: /add tool/i }), { timeout: LAZY_TIMEOUT });
 
     fireEvent.click(screen.getByRole('button', { name: /add tool/i }));
     await waitFor(() => expect(screen.queryAllByDisplayValue(/new tool/i).length).toBeGreaterThan(0));
@@ -73,7 +81,7 @@ describe('App integration', () => {
     fireEvent.click(screen.getByRole('button', { name: /Open Tri-Zip Backpack/i }));
     await waitFor(() =>
       expect(screen.getAllByText(/Tri-Zip Backpack Generator/i).length).toBeGreaterThan(0),
-      { timeout: 5000 }
+      { timeout: LAZY_TIMEOUT }
     );
   });
 
@@ -82,7 +90,7 @@ describe('App integration', () => {
     fireEvent.click(screen.getByRole('button', { name: /Open Book Cover/i }));
     await waitFor(() =>
       expect(screen.getAllByText(/Book Cover Generator/i).length).toBeGreaterThan(0),
-      { timeout: 5000 }
+      { timeout: LAZY_TIMEOUT }
     );
   });
 
@@ -111,7 +119,7 @@ describe('App integration', () => {
     fireEvent.click(screen.getByRole('button', { name: /Open Zip Pouch/i }));
     await waitFor(() =>
       expect(screen.getAllByRole('button', { name: /reset/i }).length).toBeGreaterThan(0),
-      { timeout: 5000 }
+      { timeout: LAZY_TIMEOUT }
     );
     expect(screen.getAllByText(/Zip Pouch Generator/i).length).toBeGreaterThan(0);
     expect(screen.getAllByRole('button', { name: /import/i }).length).toBeGreaterThan(0);
@@ -122,17 +130,17 @@ describe('App integration', () => {
     render(<App />);
     await waitFor(
       () => expect(screen.getByRole('button', { name: /Open Circle Skirt/i })).toBeTruthy(),
-      { timeout: 5000 },
+      { timeout: LAZY_TIMEOUT },
     );
   });
 
   it('navigates to circle skirt page when clicking Open Circle Skirt', async () => {
     render(<App />);
-    await waitFor(() => screen.getByRole('button', { name: /Open Circle Skirt/i }), { timeout: 5000 });
+    await waitFor(() => screen.getByRole('button', { name: /Open Circle Skirt/i }), { timeout: LAZY_TIMEOUT });
     fireEvent.click(screen.getByRole('button', { name: /Open Circle Skirt/i }));
     await waitFor(
       () => expect(screen.getAllByRole('button', { name: /reset/i }).length).toBeGreaterThan(0),
-      { timeout: 5000 },
+      { timeout: LAZY_TIMEOUT },
     );
     expect(screen.getAllByText(/Circle Skirt Generator/i).length).toBeGreaterThan(0);
   });
@@ -155,7 +163,7 @@ describe('App integration', () => {
       // not the header) to confirm the page is fully mounted before asserting.
       await waitFor(() =>
         expect(screen.getAllByRole('button', { name: /reset/i }).length).toBeGreaterThan(0),
-        { timeout: 5000 }
+        { timeout: LAZY_TIMEOUT }
       );
       // Page rendered without throwing — subtitle is the cheapest signal.
       expect(screen.getAllByText(subtitle).length).toBeGreaterThan(0);
