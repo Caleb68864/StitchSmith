@@ -247,3 +247,36 @@ describe('localStorage storage module', () => {
     });
   });
 });
+
+describe('localStorage storage module — pagehide flushes the pending write', () => {
+  let store: Record<string, string> = {};
+
+  beforeEach(() => {
+    store = {};
+    _resetStorageModule();
+    vi.useFakeTimers();
+    Object.defineProperty(globalThis, 'localStorage', {
+      value: {
+        getItem: (k: string) => store[k] ?? null,
+        setItem: (k: string, v: string) => { store[k] = v; },
+        removeItem: (k: string) => { delete store[k]; },
+      },
+      writable: true,
+      configurable: true,
+    });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    _resetStorageModule();
+  });
+
+  it('writes the pending project synchronously on pagehide', () => {
+    saveProject(makeProject({ projectName: 'unsaved edit' }));
+    expect(Object.keys(store)).toHaveLength(0);
+    window.dispatchEvent(new Event('pagehide'));
+    const written = Object.values(store);
+    expect(written).toHaveLength(1);
+    expect(JSON.parse(written[0]).projectName).toBe('unsaved edit');
+  });
+});

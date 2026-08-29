@@ -81,6 +81,11 @@ export function useTriZipProject(): UseTriZipProjectReturn {
   }, []);
 
   const importProject = useCallback((p: TriZipProject) => {
+    // parseProjectJson already checks generatorId on the file-import path; this
+    // is defence in depth so a caller can never load another generator's project.
+    if (p.generatorId !== 'tri-zip-backpack') {
+      throw new Error(`Cannot import project with generatorId '${p.generatorId}' into Tri-Zip Backpack`);
+    }
     setProjectState(p);
   }, []);
 

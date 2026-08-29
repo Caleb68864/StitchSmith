@@ -85,26 +85,44 @@ export function loadProject(): ToolRollProject | null {
   }
 }
 
+function writeNow(p: ToolRollProject): void {
+  // Skip write if we already know storage is unavailable
+  if (_writeFailure) return;
+  try {
+    localStorage.setItem(STORAGE_KEY, serialize(p));
+  } catch {
+    _writeFailure = true;
+    if (!_warnedOnce) {
+      console.warn(
+        "[StitchSmith] Session won't persist — browser storage disabled.",
+      );
+      _warnedOnce = true;
+    }
+  }
+}
+
 export function saveProject(p: ToolRollProject): void {
   // Always update in-memory cache immediately (synchronously)
   _inMemoryProject = p;
   if (_saveTimer !== null) clearTimeout(_saveTimer);
   _saveTimer = setTimeout(() => {
     _saveTimer = null;
-    // Skip write if we already know storage is unavailable
-    if (_writeFailure) return;
-    try {
-      localStorage.setItem(STORAGE_KEY, serialize(p));
-    } catch {
-      _writeFailure = true;
-      if (!_warnedOnce) {
-        console.warn(
-          "[StitchSmith] Session won't persist — browser storage disabled.",
-        );
-        _warnedOnce = true;
-      }
-    }
+    writeNow(p);
   }, 500);
+}
+
+/** Write any debounced-but-unwritten project immediately. */
+export function flushProject(): void {
+  if (_saveTimer === null) return;
+  clearTimeout(_saveTimer);
+  _saveTimer = null;
+  if (_inMemoryProject) writeNow(_inMemoryProject);
+}
+
+// Up to 500 ms of edits are only in memory when the tab closes; pagehide is the
+// last reliable hook on every browser (iOS Safari never fires unload).
+if (typeof window !== 'undefined') {
+  window.addEventListener('pagehide', flushProject);
 }
 
 export function clearProject(): void {

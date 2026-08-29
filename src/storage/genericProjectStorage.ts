@@ -94,6 +94,22 @@ export function makeProjectStorage<T>(opts: MakeProjectStorageOpts<T>): ProjectS
     }
   }
 
+  function writeNow(value: T): void {
+    try {
+      localStorage.setItem(opts.key, JSON.stringify(value));
+    } catch (err) {
+      writeFailed = true;
+      if (!warnedOnce) {
+        warnedOnce = true;
+        console.warn(`[stitchsmith] Saving ${opts.key} failed; subsequent changes will be kept only in memory.`, err);
+        toast.warning(
+          "Couldn't save to browser storage",
+          "Your changes are still visible but won't survive a page reload. Use Export to save your work as a file.",
+        );
+      }
+    }
+  }
+
   function save(value: T): void {
     memCache = value;
     if (writeFailed) return;
@@ -101,20 +117,23 @@ export function makeProjectStorage<T>(opts: MakeProjectStorageOpts<T>): ProjectS
     if (timer != null) clearTimeout(timer);
     timer = setTimeout(() => {
       timer = null;
-      try {
-        localStorage.setItem(opts.key, JSON.stringify(value));
-      } catch (err) {
-        writeFailed = true;
-        if (!warnedOnce) {
-          warnedOnce = true;
-          console.warn(`[stitchsmith] Saving ${opts.key} failed; subsequent changes will be kept only in memory.`, err);
-          toast.warning(
-            "Couldn't save to browser storage",
-            "Your changes are still visible but won't survive a page reload. Use Export to save your work as a file.",
-          );
-        }
-      }
+      writeNow(value);
     }, DEBOUNCE_MS);
+  }
+
+  /** Write any debounced-but-unwritten value immediately. */
+  function flush(): void {
+    if (timer == null) return;
+    clearTimeout(timer);
+    timer = null;
+    if (memCache != null && !writeFailed) writeNow(memCache);
+  }
+
+  // The debounce means up to DEBOUNCE_MS of edits are still only in memory when
+  // the tab closes or navigates away. `pagehide` is the last reliable hook on
+  // every browser (including iOS Safari, which never fires `unload`).
+  if (typeof window !== 'undefined') {
+    window.addEventListener('pagehide', flush);
   }
 
   function clear(): void {

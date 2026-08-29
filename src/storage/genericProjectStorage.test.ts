@@ -313,3 +313,31 @@ describe('genericProjectStorage — migrate option', () => {
     expect(s.load()).toBeNull();
   });
 });
+
+// --------------------------------------------------------------------------
+// Debounced writes must flush when the page is hidden — otherwise the last
+// <=250 ms of edits are lost on tab close / navigation.
+// --------------------------------------------------------------------------
+
+describe('genericProjectStorage — pagehide flushes the pending write', () => {
+  beforeEach(() => { localStorage.removeItem('stitchsmith.test.project'); vi.useFakeTimers(); });
+  afterEach(() => { vi.useRealTimers(); });
+
+  it('writes the pending value synchronously on pagehide', () => {
+    const s = makeStorage();
+    s.save({ version: 1, name: 'unsaved edit' });
+    expect(localStorage.getItem('stitchsmith.test.project')).toBeNull();
+    window.dispatchEvent(new Event('pagehide'));
+    expect(JSON.parse(localStorage.getItem('stitchsmith.test.project')!)).toEqual({ version: 1, name: 'unsaved edit' });
+  });
+
+  it('does not double-write after the flush', () => {
+    const s = makeStorage();
+    s.save({ version: 1, name: 'x' });
+    window.dispatchEvent(new Event('pagehide'));
+    // If the debounce timer were still armed it would overwrite this sentinel.
+    localStorage.setItem('stitchsmith.test.project', 'sentinel');
+    vi.runAllTimers();
+    expect(localStorage.getItem('stitchsmith.test.project')).toBe('sentinel');
+  });
+});

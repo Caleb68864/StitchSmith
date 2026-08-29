@@ -11,6 +11,7 @@ import {
   loadDxfExporter,
   loadTiledHtmlExporter,
 } from '../../lib/pattern-engine/exports/lazy.js';
+import { runExport, printOrDownloadHtml } from '../shared/runExport.js';
 import { downloadTextFile } from '../../utils/download.js';
 import { CutListTable } from './CutListTable.js';
 import type { BomRow } from '../../generators/circle-skirt/types.js';
@@ -52,26 +53,17 @@ export function ExportPanel({ inputs, project, hasErrors }: Props) {
   async function handleTiledHtml() {
     const pattern = getPattern();
     if (!pattern) return;
-    setTiledLoading(true);
-    try {
+    await runExport('Tiled HTML', setTiledLoading, async () => {
       const mod = await loadTiledHtmlExporter();
       const html = mod.patternToTiledHtml(pattern);
-      const win = window.open('about:blank', '_blank');
-      if (win) {
-        win.document.write(html);
-        win.document.close();
-        win.print();
-      }
-    } finally {
-      setTiledLoading(false);
-    }
+      printOrDownloadHtml(html, `${project.projectName}-tiled.html`);
+    });
   }
 
   async function handlePdf() {
     const pattern = getPattern();
     if (!pattern) return;
-    setPdfLoading(true);
-    try {
+    await runExport('PDF', setPdfLoading, async () => {
       const mod = await loadPdfExporter();
       const pdf = await mod.exportPatternToPdf(pattern, {
         defaultSeamAllowance: inputs.seam_allowance ?? 15,
@@ -85,22 +77,17 @@ export function ExportPanel({ inputs, project, hasErrors }: Props) {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-    } finally {
-      setPdfLoading(false);
-    }
+    });
   }
 
   async function handleDxf() {
     const pattern = getPattern();
     if (!pattern) return;
-    setDxfLoading(true);
-    try {
+    await runExport('DXF', setDxfLoading, async () => {
       const mod = await loadDxfExporter();
       const dxf = mod.exportPatternToDxf(pattern);
       downloadTextFile(`${project.projectName}.dxf`, dxf, 'application/dxf');
-    } finally {
-      setDxfLoading(false);
-    }
+    });
   }
 
   function handleToggleCutList() {

@@ -14,6 +14,7 @@ import {
   loadDxfExporter,
   loadTiledHtmlExporter,
 } from '../../lib/pattern-engine/exports/lazy.js';
+import { runExport } from '../shared/runExport.js';
 import { downloadTextFile } from '../../utils/download.js';
 import { CutListTable } from './CutListTable.js';
 import type { ExportCutList } from '../../lib/pattern-engine/exports/cutList.js';
@@ -56,21 +57,17 @@ export function ExportPanel({ inputs, project, hasErrors, showLabels = true }: P
   async function handleTiledHtml() {
     const r = getPattern();
     if (!r) return;
-    setTiledLoading(true);
-    try {
+    await runExport('Tiled HTML', setTiledLoading, async () => {
       const mod = await loadTiledHtmlExporter();
       const html = mod.patternToTiledHtml(r);
       downloadTextFile(`${project.projectName}-tiled.html`, html, 'text/html');
-    } finally {
-      setTiledLoading(false);
-    }
+    });
   }
 
   async function handlePdf() {
     const r = getPattern();
     if (!r) return;
-    setPdfLoading(true);
-    try {
+    await runExport('PDF', setPdfLoading, async () => {
       const mod = await loadPdfExporter();
       const pdf = await mod.exportPatternToPdf(r, {
         defaultSeamAllowance: inputs.seam_allowance ?? 10,
@@ -84,22 +81,17 @@ export function ExportPanel({ inputs, project, hasErrors, showLabels = true }: P
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-    } finally {
-      setPdfLoading(false);
-    }
+    });
   }
 
   async function handleDxf() {
     const r = getPattern();
     if (!r) return;
-    setDxfLoading(true);
-    try {
+    await runExport('DXF', setDxfLoading, async () => {
       const mod = await loadDxfExporter();
       const dxf = mod.exportPatternToDxf(r);
       downloadTextFile(`${project.projectName}.dxf`, dxf, 'application/dxf');
-    } finally {
-      setDxfLoading(false);
-    }
+    });
   }
 
   function handleCutList() {

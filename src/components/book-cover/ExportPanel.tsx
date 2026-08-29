@@ -7,6 +7,7 @@ import { buildPattern } from '../../generators/book-cover/index.js';
 import { patternToSvg } from '../../lib/pattern-engine/exports/svg.js';
 import { downloadTextFile, downloadBlob } from '../../utils/download.js';
 import { loadPdfExporter, loadDxfExporter, loadTiledHtmlExporter } from '../../lib/pattern-engine/exports/lazy.js';
+import { runExport } from '../shared/runExport.js';
 import type { Pattern } from '../../lib/pattern-engine/graph/Pattern.js';
 import type { Bom } from '../../generators/book-cover/types.js';
 
@@ -89,42 +90,33 @@ export function ExportPanel({ inputs, project, hasErrors }: Props) {
   async function handlePdf() {
     const r = getResult();
     if (!r) return;
-    setPdfBusy(true);
-    try {
+    await runExport('PDF', setPdfBusy, async () => {
       const { exportPatternToPdf } = await loadPdfExporter();
       const blob = await exportPatternToPdf(makePattern(r), {
         defaultSeamAllowance: inputs.seam_allowance ?? 9.5,
       });
       downloadBlob(`${project.projectName}.pdf`, blob);
-    } finally {
-      setPdfBusy(false);
-    }
+    });
   }
 
   async function handleDxf() {
     const r = getResult();
     if (!r) return;
-    setDxfBusy(true);
-    try {
+    await runExport('DXF', setDxfBusy, async () => {
       const { exportPatternToDxf } = await loadDxfExporter();
       const dxf = exportPatternToDxf(makePattern(r));
       downloadTextFile(`${project.projectName}.dxf`, dxf, 'application/dxf');
-    } finally {
-      setDxfBusy(false);
-    }
+    });
   }
 
   async function handleTiledHtml() {
     const r = getResult();
     if (!r) return;
-    setTiledBusy(true);
-    try {
+    await runExport('Tiled HTML', setTiledBusy, async () => {
       const { patternToTiledHtml } = await loadTiledHtmlExporter();
       const html = patternToTiledHtml(makePattern(r), { title: project.projectName });
       downloadTextFile(`${project.projectName}-tiled.html`, html, 'text/html');
-    } finally {
-      setTiledBusy(false);
-    }
+    });
   }
 
   function handleToggleCutList() {

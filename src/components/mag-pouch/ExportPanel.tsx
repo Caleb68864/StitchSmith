@@ -11,6 +11,7 @@ import {
   loadDxfExporter,
   loadTiledHtmlExporter,
 } from '../../lib/pattern-engine/exports/lazy.js';
+import { runExport, printOrDownloadHtml } from '../shared/runExport.js';
 import { downloadTextFile } from '../../utils/download.js';
 import { CutListTable } from './CutListTable.js';
 import type { ExportCutList } from '../../lib/pattern-engine/exports/cutList.js';
@@ -44,25 +45,16 @@ export function ExportPanel({ inputs, project, result, hasErrors }: Props) {
 
   async function handleTiledHtml() {
     if (!result) return;
-    setTiledLoading(true);
-    try {
+    await runExport('Tiled HTML', setTiledLoading, async () => {
       const mod = await loadTiledHtmlExporter();
       const html = mod.patternToTiledHtml(result.pattern);
-      const win = window.open('about:blank', '_blank');
-      if (win) {
-        win.document.write(html);
-        win.document.close();
-        win.print();
-      }
-    } finally {
-      setTiledLoading(false);
-    }
+      printOrDownloadHtml(html, `${project.projectName}-tiled.html`);
+    });
   }
 
   async function handlePdf() {
     if (!result) return;
-    setPdfLoading(true);
-    try {
+    await runExport('PDF', setPdfLoading, async () => {
       const mod = await loadPdfExporter();
       const pdf = await mod.exportPatternToPdf(result.pattern, {
         defaultSeamAllowance: inputs.seamAllowance * 25.4,
@@ -76,21 +68,16 @@ export function ExportPanel({ inputs, project, result, hasErrors }: Props) {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-    } finally {
-      setPdfLoading(false);
-    }
+    });
   }
 
   async function handleDxf() {
     if (!result) return;
-    setDxfLoading(true);
-    try {
+    await runExport('DXF', setDxfLoading, async () => {
       const mod = await loadDxfExporter();
       const dxf = mod.exportPatternToDxf(result.pattern);
       downloadTextFile(`${project.projectName}.dxf`, dxf, 'application/dxf');
-    } finally {
-      setDxfLoading(false);
-    }
+    });
   }
 
   function handleCutList() {

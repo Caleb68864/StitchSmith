@@ -97,6 +97,11 @@ export function useMagPouchProject(): UseMagPouchProjectReturn {
   }, []);
 
   const importProject = useCallback((p: MagPouchProject) => {
+    // parseProjectJson already checks generatorId on the file-import path; this
+    // is defence in depth so a caller can never load another generator's project.
+    if (p.generatorId !== 'mag-pouch') {
+      throw new Error(`Cannot import project with generatorId '${p.generatorId}' into Mag Pouch`);
+    }
     setProjectState(p);
   }, []);
 
