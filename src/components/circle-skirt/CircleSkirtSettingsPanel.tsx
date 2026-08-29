@@ -2,7 +2,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import type { CircleSkirtInputs, CircleSkirtPreset, ClosureType, WaistbandType } from '../../generators/circle-skirt/types.js';
-import { convertLengthValues, type UnitSystem } from '../../utils/units.js';
+import { convertLengthValues, inchesToMm, mmToInches, type UnitSystem } from '../../utils/units.js';
 
 // The fields the panel labels `(${units})`. Everything else (ease, seam/hem
 // allowance, band height, elastic width, fabric width) is always mm — see
@@ -78,6 +78,14 @@ const WAISTBAND_TYPES: { value: WaistbandType; label: string }[] = [
 export function CircleSkirtSettingsPanel({ inputs, errors, onChange }: Props) {
   const units = inputs.units ?? 'in';
 
+  // Allowances, band height and elastic width are always millimetres in the
+  // generator (resolveInputs never converts them). Show and accept them in the
+  // display unit and convert at the input edge, so an inch user never has to
+  // enter one field in mm while the one above it takes inches.
+  const display = (mm: number | undefined): number | undefined =>
+    mm === undefined ? undefined : units === 'in' ? Math.round(mmToInches(mm) * 1e4) / 1e4 : mm;
+  const store = (v: number): number => (units === 'in' ? inchesToMm(v) : v);
+
   function handleUnitsChange(next: UnitSystem) {
     if (next === units) return;
     onChange({ units: next, ...convertLengthValues(inputs, DISPLAY_UNIT_FIELDS, units, next) });
@@ -144,21 +152,21 @@ export function CircleSkirtSettingsPanel({ inputs, errors, onChange }: Props) {
         )}
         <NumericField
           id="seam-allowance"
-          label="Seam Allowance (mm)"
-          value={inputs.seam_allowance}
+          label={`Seam Allowance (${units})`}
+          value={display(inputs.seam_allowance)}
           error={errors['seam_allowance']}
           min={0}
-          step={1}
-          onChange={v => onChange({ seam_allowance: v })}
+          step={units === "in" ? 0.125 : 1}
+          onChange={v => onChange({ seam_allowance: store(v) })}
         />
         <NumericField
           id="hem-allowance"
-          label="Hem Allowance (mm)"
-          value={inputs.hem_allowance}
+          label={`Hem Allowance (${units})`}
+          value={display(inputs.hem_allowance)}
           error={errors['hem_allowance']}
           min={0}
-          step={1}
-          onChange={v => onChange({ hem_allowance: v })}
+          step={units === "in" ? 0.125 : 1}
+          onChange={v => onChange({ hem_allowance: store(v) })}
         />
       </div>
 
@@ -221,22 +229,22 @@ export function CircleSkirtSettingsPanel({ inputs, errors, onChange }: Props) {
       {inputs.waistband_type !== 'elastic-casing' ? (
         <NumericField
           id="band-height"
-          label="Band Height (mm)"
-          value={inputs.band_height}
+          label={`Band Height (${units})`}
+          value={display(inputs.band_height)}
           error={errors['band_height']}
           min={0}
-          step={1}
-          onChange={v => onChange({ band_height: v })}
+          step={units === "in" ? 0.125 : 1}
+          onChange={v => onChange({ band_height: store(v) })}
         />
       ) : (
         <NumericField
           id="elastic-width"
-          label="Elastic Width (mm)"
-          value={inputs.elastic_width}
+          label={`Elastic Width (${units})`}
+          value={display(inputs.elastic_width)}
           error={errors['elastic_width']}
           min={0}
-          step={1}
-          onChange={v => onChange({ elastic_width: v })}
+          step={units === "in" ? 0.125 : 1}
+          onChange={v => onChange({ elastic_width: store(v) })}
         />
       )}
     </div>

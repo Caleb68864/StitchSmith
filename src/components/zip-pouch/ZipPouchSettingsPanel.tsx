@@ -184,9 +184,9 @@ export function ZipPouchSettingsPanel({ inputs, errors, onChange }: Props) {
           <AccordionContent>
             <div className="space-y-3 pb-2">
               <div className="space-y-1">
-                <Label className="text-xs">Size Preset</Label>
+                <Label htmlFor="size-preset" className="text-xs">Size Preset</Label>
                 <Select value={preset} onValueChange={handlePresetChange}>
-                  <SelectTrigger className="h-8 text-xs">
+                  <SelectTrigger id="size-preset" className="h-8 text-xs">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -270,12 +270,12 @@ export function ZipPouchSettingsPanel({ inputs, errors, onChange }: Props) {
           <AccordionContent>
             <div className="space-y-3 pb-2">
               <div className="space-y-1">
-                <Label className="text-xs">Construction Style</Label>
+                <Label htmlFor="construction-style" className="text-xs">Construction Style</Label>
                 <Select
                   value={inputs.construction_style ?? 'boxed'}
                   onValueChange={(v) => onChange({ construction_style: v as ConstructionStyle })}
                 >
-                  <SelectTrigger className="h-8 text-xs">
+                  <SelectTrigger id="construction-style" className="h-8 text-xs">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>

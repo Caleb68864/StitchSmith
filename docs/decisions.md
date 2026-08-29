@@ -249,3 +249,10 @@
 - Surfaces: src/components/tool-roll/ToolRollSettingsPanel.tsx, __tests__/ToolRollSettingsPanel.a11y.test.tsx.
 - Watch: the test enables every optional feature, opens every accordion section, and asserts the list of unnamed textbox/spinbutton/switch/combobox controls is empty — adding a new `Row` whose child has no `id` is still fine (auto id), but a new Select must carry `htmlFor` + trigger `id` or the test names it.
 - Commit: improve(a11y)
+
+## 2026-08-29 — Circle Skirt allowances entered in mm under an inches toggle; Zip Pouch selects unlabelled
+- Symptom: (1) Circle Skirt's panel offered an in/mm toggle but hard-labelled Seam Allowance, Hem Allowance, Band Height and Elastic Width "(mm)", so an inch user entered waist and length in inches and, two fields down, allowances in millimetres. The generator contract (those fields are always mm in `resolveInputs`) was correct; the form was just exposing it. (2) The live-app accessible-name audit that caught Tool Roll also flagged Zip Pouch's Size Preset and Construction Style selects — `<Label>` with no `htmlFor`, trigger with no `id`.
+- Fix: Circle Skirt follows the Book Cover precedent: those four fields stay stored in mm, and the panel converts at the input edge (`display` rounds to 4 dp for the field, `store` converts back), with labels reading `(${units})` and a 1/8 in step in inch mode. The unit toggle still leaves them alone, because their stored value never changes. Zip Pouch's two selects gained `id` + `htmlFor`.
+- Surfaces: src/components/circle-skirt/CircleSkirtSettingsPanel.tsx, __tests__/CircleSkirtSettingsPanel.units.test.tsx, src/components/zip-pouch/ZipPouchSettingsPanel.tsx, __tests__/ZipPouchSettingsPanel.a11y.test.tsx.
+- Watch: the Circle Skirt step text still quotes allowances in mm ("including 15mm seam allowance") while the form shows 0.59 in; the pattern unit is mm by design (same call as Zip Pouch, 2026-08-18). App-wide, every form control now has an accessible name — the audit found zero unnamed controls on the other five pages.
+- Commit: improve(polish)
