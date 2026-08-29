@@ -1,4 +1,5 @@
 import type { Pattern } from '../graph/Pattern.js';
+import { assertFinitePattern } from '../graph/validate.js';
 import type { Edge } from '../graph/Edge.js';
 import { PDFDocument, rgb } from 'pdf-lib';
 import type { Piece } from '../graph/Piece.js';
@@ -214,6 +215,7 @@ export async function exportPatternToPdf(
   pattern: Pattern,
   options: PdfOptions = {},
 ): Promise<Blob> {
+  assertFinitePattern(pattern);
   const pageSize = options.pageSizeMm ?? { width: 210, height: 297 };
   const margin = options.marginMm ?? 15;
   const defaultSa = options.defaultSeamAllowance ?? 0;

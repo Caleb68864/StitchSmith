@@ -184,3 +184,36 @@ describe('buildPattern — waistband geometry', () => {
     expect(outline.edges.every(e => e.kind === 'straight')).toBe(true);
   });
 });
+
+// ── buildPattern must refuse invalid inputs, not draw them ──────────────────
+// resolveInputs is total (it never throws), so before this guard buildPattern
+// happily produced NaN-coordinate panels for a missing waist, and
+// `Array.from({ length: num_panels })` with sweep_angle_deg = Infinity threw
+// "Invalid array length" — or, with a merely huge sweep, allocated until the
+// tab died. Every caller already wraps buildPattern in try/catch, so a clear
+// error here is the correct contract.
+describe('buildPattern — rejects inputs that fail validateInputs', () => {
+  const base = { preset: 'half', waist_circumference: 700, skirt_length: 500, units: 'mm' } as const;
+
+  it('throws a message naming the field when the waist is missing', () => {
+    expect(() => buildPattern({ ...base, waist_circumference: undefined })).toThrow(/waist_circumference/);
+  });
+
+  it('throws instead of allocating an infinite number of panels', () => {
+    expect(() => buildPattern({ ...base, preset: 'custom', sweep_angle_deg: Infinity })).toThrow(/sweep_angle_deg/);
+  });
+
+  it('throws for a sweep outside [45, 720] rather than building thousands of panels', () => {
+    expect(() => buildPattern({ ...base, preset: 'custom', sweep_angle_deg: 1e9 })).toThrow(/sweep_angle_deg/);
+  });
+
+  it('throws for a NaN seam allowance rather than drawing NaN geometry', () => {
+    expect(() => buildPattern({ ...base, seam_allowance: NaN })).toThrow(/seam_allowance/);
+  });
+
+  it('still builds a valid pattern for good inputs', () => {
+    const r = buildPattern(base);
+    expect(r.pieces.length).toBeGreaterThan(0);
+    expect(JSON.stringify(r.pieces)).not.toMatch(/NaN|Infinity/);
+  });
+});

@@ -15,7 +15,7 @@ import type { Path } from '../../lib/pattern-engine/graph/Path.js';
 import type { ArcEdge, StraightEdge } from '../../lib/pattern-engine/graph/Edge.js';
 import type { Step } from '../../lib/pattern-engine/instructions/Step.js';
 import type { CircleSkirtInputs, ResolvedInputs } from './types.js';
-import { resolveInputs } from './inputs.js';
+import { resolveInputs, validateInputs } from './inputs.js';
 import { makeRectOutline } from '../../lib/pattern-engine/geometry/paths.js';
 
 export interface CircleSkirtBuildResult {
@@ -264,6 +264,15 @@ function buildSteps(resolved: ResolvedInputs, numPanels: number): Step[] {
  * steps and any advisory warnings.
  */
 export function buildPattern(inputs: CircleSkirtInputs): CircleSkirtBuildResult {
+  // resolveInputs is total — it never throws — so without this gate a missing
+  // waist becomes NaN geometry and an out-of-range sweep becomes
+  // `Array.from({ length: Infinity })` (or, for a merely huge sweep, an
+  // allocation that never finishes). Every caller wraps buildPattern in
+  // try/catch; a clear error naming the field is the contract.
+  const validation = validateInputs(inputs);
+  if (!validation.ok) {
+    throw new Error(`Invalid circle-skirt inputs: ${validation.errors.map(e => e.message).join(' ')}`);
+  }
   const resolved = resolveInputs(inputs);
   const { num_panels } = resolved;
 

@@ -4,6 +4,7 @@ import type { Path } from '../graph/Path.js';
 import type { Edge } from '../graph/Edge.js';
 import type { BoundingBox } from '../geometry/bbox.js';
 import { bboxFromPieceWithSa } from '../geometry/saBbox.js';
+import { assertFinitePattern } from '../graph/validate.js';
 import { computeSeamAllowancePolygon } from '../geometry/offset.js';
 
 function edgeToSvgCommands(edge: Edge, isFirst: boolean): string {
@@ -163,6 +164,7 @@ export interface SvgOptions {
  * Coordinates and dimensions are in mm (1 SVG user unit = 1 mm).
  */
 export function patternToSvg(pattern: Pattern, options: SvgOptions = {}): string {
+  assertFinitePattern(pattern);
   const margin = options.margin ?? 10;
   const gap = options.pieceGap ?? 5;
   const defaultSa = options.defaultSeamAllowance ?? 0;

@@ -1,4 +1,5 @@
 import type { Pattern } from '../graph/Pattern.js';
+import { assertFinitePattern } from '../graph/validate.js';
 import type { Edge } from '../graph/Edge.js';
 import type { Path } from '../graph/Path.js';
 
@@ -157,6 +158,7 @@ export function exportPatternToDxf(
   pattern: Pattern,
   options: DxfOptions = {},
 ): string {
+  assertFinitePattern(pattern);
   const bezierSegments = options.bezierSegments ?? 32;
   const layerNames = pattern.pieces.map((p) => p.id);
 

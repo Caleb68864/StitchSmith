@@ -5,3 +5,4 @@ export { makeEdgeIdGen } from './Edge.js';
 export type { Path } from './Path.js';
 export type { PieceAnnotation, Piece } from './Piece.js';
 export type { Pattern } from './Pattern.js';
+export { assertFinitePattern } from './validate.js';
