@@ -12,7 +12,16 @@ export const STORAGE_KEY = 'stitchsmith.tool-roll.project';
  */
 function migrateSettings(saved: unknown): ToolRollProject['settings'] {
   if (typeof saved !== 'object' || saved === null) return { ...defaultToolRollSettings };
-  return { ...defaultToolRollSettings, ...(saved as ToolRollProject['settings']) };
+  const merged = { ...defaultToolRollSettings, ...(saved as ToolRollProject['settings']) };
+  // SS2: 'basedOnRollDiameter' was a selectable tie-placement mode that the
+  // layout never implemented — it always drew a centred tie. The option has
+  // been withdrawn, so resolve stored projects to the behaviour they were
+  // actually getting. Without this the Select would render with no matching
+  // item (blank), which is a different way of not telling the user the truth.
+  if ((merged.tiePlacementMode as string) !== 'centered' && (merged.tiePlacementMode as string) !== 'manual') {
+    merged.tiePlacementMode = 'centered';
+  }
+  return merged;
 }
 
 // In-memory fallback when localStorage is unavailable

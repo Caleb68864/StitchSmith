@@ -350,7 +350,7 @@ export function ToolRollSettingsPanel({ settings, units, onUpdate, onUnitsChange
           <Row label="Enable tie" tip="Show a marker on the pattern for where to attach the tie/strap that holds the rolled-up roll closed.">
             <Switch checked={settings.tieEnabled} onCheckedChange={v => onUpdate({ tieEnabled: v })} />
           </Row>
-          <Row label="Tie placement" tip="How the tie's X position is determined. Centered = middle of the back panel. Based on Roll Diameter = position estimated from rolled-up bundle size (v1: not implemented). Manual = use the Tie position X value below." htmlFor="sel-tie-placement">
+          <Row label="Tie placement" tip="How the tie's X position is determined. Centered = middle of the back panel. Manual = use the Tie position X value below." htmlFor="sel-tie-placement">
             <Select
               value={settings.tiePlacementMode}
               onValueChange={v => onUpdate({ tiePlacementMode: v as ToolRollSettings['tiePlacementMode'] })}
@@ -359,8 +359,12 @@ export function ToolRollSettingsPanel({ settings, units, onUpdate, onUnitsChange
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
+                {/* SS2: "Based on Roll Diameter" was offered here and silently
+                    produced a centred tie — the layout only branches on
+                    'manual'. Its behaviour is undefined in the spec (listed
+                    under "Out of Scope (v1)"), so the option was withdrawn
+                    rather than given an invented geometry. */}
                 <SelectItem value="centered">Centered</SelectItem>
-                <SelectItem value="basedOnRollDiameter">Based on Roll Diameter</SelectItem>
                 <SelectItem value="manual">Manual</SelectItem>
               </SelectContent>
             </Select>

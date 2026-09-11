@@ -33,7 +33,22 @@ export type FlapHeightMode =
 /** When the flap follows a per-tool profile, this controls how the bottom edge connects between tools. */
 export type FlapTopStyle = 'stepped' | 'sloped' | 'smooth' | 'arc';
 
-export type TiePlacementMode = 'centered' | 'basedOnRollDiameter' | 'manual';
+/**
+ * SS2: `'basedOnRollDiameter'` was removed. It was selectable in the UI but
+ * `calculateToolRollLayout` only ever branched on `'manual'`, so choosing it
+ * silently produced a centred tie. The spec lists roll-diameter simulation
+ * under "Out of Scope (v1)" and the design doc never resolved what it should
+ * compute, so there was no behaviour to implement — only a choice to withdraw.
+ * Projects saved with the old value are normalised to `'centered'` (what they
+ * were actually getting) in `storage/localStorage.ts`.
+ *
+ * The 2026-05-20 spec (line 405) and design doc are left as written — they are
+ * the record that this mode was meant to ship disabled. To build it, a spec
+ * would first need to define what it computes: at minimum a rolled-bundle
+ * diameter derived from panel height, tool thicknesses and fabric thickness,
+ * and the rule that maps that diameter to a tie X position.
+ */
+export type TiePlacementMode = 'centered' | 'manual';
 
 export type LabelMode = 'none' | 'toolNames' | 'toolNamesAndDimensions';
 

@@ -462,9 +462,10 @@ export function calculateToolRollLayout(
 
   // ── Tie marks ────────────────────────────────────────────────────────────
   // The tie/strap attaches at the top of the back panel; the rectangle just
-  // shows the placement footprint. v1 supports 'centered' and 'manual' modes;
-  // 'basedOnRollDiameter' falls back to centered since roll-diameter prediction
-  // isn't implemented yet.
+  // shows the placement footprint. Two modes, both implemented: 'centered'
+  // (the default) and 'manual'. SS2 removed a third, 'basedOnRollDiameter',
+  // which was selectable in the UI but fell through to centred here — see
+  // `TiePlacementMode` in ./types.ts.
   const tieMarks = settings.tieEnabled
     ? [
         (() => {
