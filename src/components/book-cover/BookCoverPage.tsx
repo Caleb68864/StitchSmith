@@ -9,6 +9,8 @@ import { ConstructionSteps } from '../shared/ConstructionSteps.js';
 import { BookCoverSettingsPanel } from './BookCoverSettingsPanel.js';
 import { PatternPreview } from './PatternPreview.js';
 import { ExportPanel } from './ExportPanel.js';
+import { FoldPreview3D } from '../shared/FoldPreview3D.js';
+import type { Pattern } from '../../lib/pattern-engine/graph/Pattern.js';
 
 type BookCoverPageProps = Pick<
   UseBookCoverProjectReturn,
@@ -107,11 +109,16 @@ export function BookCoverPage({
     return r.ok;
   }, [project.inputs, hasErrors]);
 
-  const steps = useMemo(() => {
-    if (!engineValid) return [];
+  const built = useMemo(() => {
+    if (!engineValid) return null;
     const r = buildPattern(project.inputs);
-    return r.ok ? r.value.steps : [];
+    return r.ok ? r.value : null;
   }, [project.inputs, engineValid]);
+  const steps = built?.steps ?? [];
+  const pattern3d = useMemo<Pattern | null>(
+    () => (built ? { id: 'book-cover', name: 'Book Cover', pieces: built.pieces } : null),
+    [built],
+  );
 
   function handleReset() {
     if (window.confirm('Reset will discard all changes and restore default Book Cover settings. Continue?')) {
@@ -168,6 +175,7 @@ export function BookCoverPage({
       preview={
         <div className="space-y-3">
           <PatternPreview inputs={project.inputs} hasErrors={!engineValid} />
+          {pattern3d && <FoldPreview3D pattern={pattern3d} />}
           <PatternEngineLegend />
           {steps.length > 0 && <ConstructionSteps steps={steps} />}
         </div>

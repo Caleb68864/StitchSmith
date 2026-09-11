@@ -197,11 +197,17 @@ function _buildEdges(saGeo: SAPanelGeometry, _flap?: FlapSpec): EdgeSet {
     start: { x: xBodyRight, y: y0 },
     end:   { x: xBodyRight, y: h  },
   };
-  // Bottom-to-back fold (horizontal, separating front from bottom band)
-  const eFoldBottomToBack: Edge = {
+  // Front-to-bottom fold (horizontal, separating front from bottom band)
+  const eFoldFrontToBottom: Edge = {
     kind: 'straight', id: eid(), role: 'fold',
     start: { x: x0, y: yFrontTop },
     end:   { x: w,  y: yFrontTop },
+  };
+  // Bottom-to-back fold (horizontal, top of the bottom band / start of the back)
+  const eFoldBottomToBack: Edge = {
+    kind: 'straight', id: eid(), role: 'fold',
+    start: { x: x0, y: yBackBottom },
+    end: { x: w,  y: yBackBottom },
   };
   // Back-to-flap fold (horizontal, top of back panel / bottom of flap region)
   const eFoldBackToFlap: Edge = {
@@ -212,12 +218,12 @@ function _buildEdges(saGeo: SAPanelGeometry, _flap?: FlapSpec): EdgeSet {
 
   const allEdges: Edge[] = [
     eBottom, eRight, eTop, eLeft,
-    eFoldLeftWing, eFoldRightWing, eFoldBottomToBack, eFoldBackToFlap,
+    eFoldLeftWing, eFoldRightWing, eFoldFrontToBottom, eFoldBottomToBack, eFoldBackToFlap,
   ];
 
   const cutEdgeIds = [eBottom.id, eRight.id, eTop.id, eLeft.id];
   const foldEdgeIds = [
-    eFoldLeftWing.id, eFoldRightWing.id, eFoldBottomToBack.id, eFoldBackToFlap.id,
+    eFoldLeftWing.id, eFoldRightWing.id, eFoldFrontToBottom.id, eFoldBottomToBack.id, eFoldBackToFlap.id,
   ];
 
   const seamAllowances: Record<EdgeId, number> = {};
@@ -242,9 +248,13 @@ function _assemblePieces(edgeSet: EdgeSet, ctx: CalcContext): Piece[] {
     closed: true,
     edges: cutEdges,
   };
-  const foldPaths: Path[] = foldEdges.map(e => ({
+  // Labels name the fold for the legend and drive the 3D fold preview's
+  // default hinge angles (wing/bottom → 90°, lid → wrap).
+  const foldLabels = ['Wing fold (left)', 'Wing fold (right)', 'Front–bottom fold', 'Bottom–back fold', 'Lid fold'];
+  const foldPaths: Path[] = foldEdges.map((e, i) => ({
     id: `body-fold-${e.id}`,
     closed: false,
+    label: foldLabels[i],
     edges: [e],
   }));
 

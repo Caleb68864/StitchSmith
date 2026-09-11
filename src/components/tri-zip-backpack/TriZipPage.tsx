@@ -11,6 +11,8 @@ import { ConstructionSteps } from '../shared/ConstructionSteps.js';
 import { PatternPageShell } from '../shared/PatternPageShell.js';
 import { parseProjectJson, downloadProjectJson } from '../../export/projectEnvelopeIO.js';
 import { ValidationBanner } from '../shared/ValidationBanner.js';
+import { FoldPreview3D } from '../shared/FoldPreview3D.js';
+import type { Pattern } from '../../lib/pattern-engine/graph/Pattern.js';
 
 type TriZipPageProps = Pick<
   UseTriZipProjectReturn,
@@ -60,12 +62,14 @@ export function TriZipPage({ project, updateInputs, resetProject, importProject 
     return r.ok;
   }, [project.inputs, hasErrors]);
 
-  const steps = useMemo(() => {
-    if (!engineValid) return [];
+  const built = useMemo(() => {
+    if (!engineValid) return null;
     const preset = getPreset(project.inputs.stylePreset);
     const r = buildPattern(project.inputs, preset);
-    return r.ok ? r.value.steps : [];
+    return r.ok ? r.value : null;
   }, [project.inputs, engineValid]);
+  const steps = built?.steps ?? [];
+  const pattern3d = useMemo<Pattern | null>(() => (built ? { id: built.id, name: built.name, pieces: built.pieces } : null), [built]);
 
   function handleReset() {
     if (window.confirm('Reset will discard all changes and restore default Tri-Zip settings. This cannot be undone — continue?')) {
@@ -103,12 +107,15 @@ export function TriZipPage({ project, updateInputs, resetProject, importProject 
         />
       }
       preview={
+        <div className="space-y-3">
         <PatternPreview
           inputs={project.inputs}
           hasErrors={!engineValid}
           showLabels={showLabels}
           onShowLabelsChange={setShowLabels}
         />
+        {pattern3d && <FoldPreview3D pattern={pattern3d} />}
+        </div>
       }
       sidebar={
         <>

@@ -10,6 +10,8 @@ import { ConstructionSteps } from '../shared/ConstructionSteps.js';
 import { PatternPageShell } from '../shared/PatternPageShell.js';
 import { parseProjectJson, downloadProjectJson } from '../../export/projectEnvelopeIO.js';
 import { ValidationBanner } from '../shared/ValidationBanner.js';
+import { FoldPreview3D } from '../shared/FoldPreview3D.js';
+import type { Pattern } from '../../lib/pattern-engine/graph/Pattern.js';
 import type { BuildPatternError } from '../../generators/zip-pouch/types.js';
 
 type ZipPouchPageProps = Pick<
@@ -43,11 +45,16 @@ export function ZipPouchPage({ project, updateInputs, resetProject, importProjec
   );
   const hasErrors = !validationResult.ok;
 
-  const steps = useMemo(() => {
-    if (hasErrors) return [];
+  const built = useMemo(() => {
+    if (hasErrors) return null;
     const r = buildPattern(project.inputs);
-    return r.ok ? r.value.steps : [];
+    return r.ok ? r.value : null;
   }, [project.inputs, hasErrors]);
+  const steps = built?.steps ?? [];
+  const pattern3d = useMemo<Pattern | null>(
+    () => (built ? { id: 'zip-pouch', name: 'Zip Pouch', pieces: built.pieces } : null),
+    [built],
+  );
 
   function handleReset() {
     if (window.confirm('Reset will discard all changes and restore default Zip Pouch settings. Continue?')) {
@@ -82,7 +89,12 @@ export function ZipPouchPage({ project, updateInputs, resetProject, importProjec
           onChange={updateInputs}
         />
       }
-      preview={<PatternPreview inputs={project.inputs} hasErrors={hasErrors} />}
+      preview={
+        <div className="space-y-3">
+          <PatternPreview inputs={project.inputs} hasErrors={hasErrors} />
+          {pattern3d && <FoldPreview3D pattern={pattern3d} />}
+        </div>
+      }
       sidebar={
         <>
           <PatternEngineLegend />

@@ -6,6 +6,8 @@ import { buildPattern } from '../../generators/mag-pouch/buildPattern.js';
 import { PLATFORM_LABELS } from '../../generators/mag-pouch/magazines.js';
 import { MagPouchSettingsPanel } from './MagPouchSettingsPanel.js';
 import { PatternPreview } from './PatternPreview.js';
+import { FoldPreview3D } from '../shared/FoldPreview3D.js';
+import { resolveMagPouch, inToMm } from '../../generators/mag-pouch/resolve.js';
 import { ExportPanel } from './ExportPanel.js';
 import { CutListTable } from './CutListTable.js';
 import { ConstructionSteps } from '../shared/ConstructionSteps.js';
@@ -78,6 +80,55 @@ export function MagPouchPage({ project, updateInputs, resetProject, importProjec
     }));
   }, [result]);
 
+  // Where the magazine stands inside the folded pattern, in flat coordinates.
+  const foldObject = useMemo(() => {
+    if (!result) return undefined;
+    try {
+      const r = resolveMagPouch(inputs);
+      const mag = { width: inToMm(r.magIn.width), depth: inToMm(r.magIn.thickness), height: inToMm(r.magIn.height), label: 'magazine' };
+      if (r.construction === 'pleated_card') {
+        // Back panel: hem, then lid, then the card. The mag stands on the card's bottom hem fold and grows toward the lid (−y in pattern coords).
+        const cellCentreX = inToMm(r.backHemIn) + inToMm(r.cellSpanIn) * (Math.ceil(r.cellCount / 2) - 0.5);
+        const baseY = inToMm(r.backHemIn) + inToMm(r.flapLengthIn) + inToMm(r.pouchHeightIn);
+        return { ...mag, base: { pieceId: 'back', point: { x: cellCentreX, y: baseY }, direction: { x: 0, y: -1 } } };
+      }
+      // Folded-T body: SA | front | bottom band | back | lid (pattern y increases downward). The mag stands on the
+      // bottom-band/back fold and grows along +y over the back toward the lid.
+      const sa = inToMm(r.seamAllowanceIn);
+      const w = inToMm(r.cellSpanIn) + 2 * inToMm(r.cellDepthIn) + 2 * sa;
+      const baseY = sa + inToMm(r.pouchHeightIn) + inToMm(r.cellDepthIn);
+      return { ...mag, base: { pieceId: 'body', point: { x: w / 2, y: baseY }, direction: { x: 0, y: 1 } } };
+    } catch {
+      return undefined;
+    }
+  }, [inputs, result]);
+
+  // Assemble the card face over the back in the 3D view: fold it at the mouth and stand it one
+  // magazine deep in front of the card, bottom edges aligned. Rigid, so the pucker does not show.
+  const foldPlacements = useMemo(() => {
+    if (!result || result.derived.construction !== 'pleated_card') return undefined;
+    try {
+      const r = resolveMagPouch(inputs);
+      const backHem = inToMm(r.backHemIn);
+      const cardH = inToMm(r.pouchHeightIn);
+      const akHem = r.akFaceHem ? 0.75 * 25.4 : 0;
+      const faceCutH = 2 * cardH + akHem;
+      const faceEndHem = inToMm(r.faceEndHemIn);
+      const cardBottomY = backHem + inToMm(r.flapLengthIn) + cardH;
+      return {
+        face: {
+          // Root at the half that sits nearest the back; the other half folds 180° over it toward +z.
+          rootPoint: { x: inToMm(r.facePerCellIn) / 2 + faceEndHem, y: akHem + cardH + cardH / 2 },
+          dx: backHem - faceEndHem,
+          dy: cardBottomY - faceCutH,
+          dz: inToMm(r.magIn.thickness) + 1,
+        },
+      };
+    } catch {
+      return undefined;
+    }
+  }, [inputs, result]);
+
   const banner = (
     <>
       <ValidationBanner errors={errors} />
@@ -106,7 +157,18 @@ export function MagPouchPage({ project, updateInputs, resetProject, importProjec
       exportTooltip="Download this project as JSON"
       banner={banner}
       settings={<MagPouchSettingsPanel inputs={inputs} errors={errors} onChange={updateInputs} derived={result?.derived ?? null} />}
-      preview={<PatternPreview inputs={inputs} result={result} errors={errors} />}
+      preview={
+        <div className="space-y-3">
+          <PatternPreview inputs={inputs} result={result} errors={errors} />
+          {result && (
+            <FoldPreview3D
+              pattern={result.pattern}
+              object={foldObject}
+              placements={foldPlacements}
+            />
+          )}
+        </div>
+      }
       sidebar={
         <>
           <PatternEngineLegend />

@@ -222,7 +222,26 @@ PALS / hook-backed / belt back.
 Worth doing, in stages; the engine already emits fold and stitch lines with
 roles, which is most of what a folder needs.
 
-- **Stage 1 — fold preview (weeks, no physics).** Every piece is flat panels
+**Status (2026-09-11):** Stage 1 is built — `src/lib/fold-engine/` splits a
+piece by its full-span fold lines, hinges the regions in a tree rooted at the
+label point, and folds them by per-fold angles; `FoldPreview3D` renders it
+with Three.js (lazy chunk, WebGL-gated) with a fold slider, per-fold angle
+overrides and a "flat" toggle. Stage 2 is started: the Mag Pouch page drops
+the magazine solid into the folded pouch at a generator-supplied base
+(`FoldObject.base`), so exposed height, lid reach and cell fit are visible.
+Verified in headless Chromium on every page. Stage 2 now reports the cavity
+by ray-casting from the object against the folded panels (across, depth,
+floor, lid-over) with lid-hung panels excluded from the across/depth rays;
+the card face is placed folded over its back. A sweep test folds every
+generator's default output (seven patterns plus both strap families) and
+checks tiling, rigidity and tree completeness. Findings the folder surfaced:
+the folded-T body was missing its bottom-to-back fold line (fixed), and
+grid-cut pieces need the hinge tree to expand from the largest panel first
+or wings hang off corner squares (fixed). Still open: seam assembly so
+separate pieces (zip pouch front/back, card face pucker) join in 3D, and
+object bases for Tri-Zip.
+
+- **Stage 1 — fold preview (done, see status).** Every piece is flat panels
   joined at `fold` edges. Treat each region between fold lines as a rigid
   panel, hinge them at the fold angles the construction implies (a folded-T is
   four hinges; the card face is one mouth fold), and render with Three.js. Cheap,

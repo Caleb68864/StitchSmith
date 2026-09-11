@@ -10,6 +10,8 @@ import { ConstructionSteps } from '../shared/ConstructionSteps.js';
 import { PatternPageShell } from '../shared/PatternPageShell.js';
 import { parseProjectJson, downloadProjectJson } from '../../export/projectEnvelopeIO.js';
 import { ValidationBanner } from '../shared/ValidationBanner.js';
+import { FoldPreview3D } from '../shared/FoldPreview3D.js';
+import type { Pattern } from '../../lib/pattern-engine/graph/Pattern.js';
 
 type RollTopSackPageProps = Pick<
   UseRollTopSackProjectReturn,
@@ -53,11 +55,16 @@ export function RollTopSackPage({ project, updateInputs, resetProject, importPro
     return r.ok;
   }, [project.inputs, hasErrors]);
 
-  const steps = useMemo(() => {
-    if (!engineValid) return [];
+  const built = useMemo(() => {
+    if (!engineValid) return null;
     const r = buildPattern(project.inputs);
-    return r.ok ? r.value.steps : [];
+    return r.ok ? r.value : null;
   }, [project.inputs, engineValid]);
+  const steps = built?.steps ?? [];
+  const pattern3d = useMemo<Pattern | null>(
+    () => (built ? { id: 'roll-top-sack', name: 'Roll-Top Stuff Sack', pieces: built.pieces } : null),
+    [built],
+  );
 
   function handleReset() {
     if (window.confirm('Reset will discard all changes and restore default Roll-Top Sack settings. Continue?')) {
@@ -92,7 +99,12 @@ export function RollTopSackPage({ project, updateInputs, resetProject, importPro
           onChange={updateInputs}
         />
       }
-      preview={<PatternPreview inputs={project.inputs} hasErrors={!engineValid} />}
+      preview={
+        <div className="space-y-3">
+          <PatternPreview inputs={project.inputs} hasErrors={!engineValid} />
+          {pattern3d && <FoldPreview3D pattern={pattern3d} />}
+        </div>
+      }
       sidebar={
         <>
           <PatternEngineLegend />
