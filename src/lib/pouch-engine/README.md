@@ -39,6 +39,7 @@ pouch-engine/
   construction/
     ConstructionStrategy.ts  ← ConstructionStrategy interface, NotImplementedError
     foldedT.ts               ← foldedT strategy + foldedTDefaults (FULL)
+    pleatedCard.ts           ← SOE pleated card: hemmed back + folded face in N cells (FULL)
     boxedGusset.ts           ← stub — throws NotImplementedError
     centerGusset.ts          ← stub — throws NotImplementedError
     taco.ts                  ← stub — throws NotImplementedError
@@ -46,6 +47,11 @@ pouch-engine/
   components/
     flap.ts                  ← FlapSpec, FlapStyle, validateFlapSpec
     closure.ts               ← ClosureSpec, ClosureStyle, validateClosureSpec
+    attachment.ts            ← PALS back rows + mount straps, belt loop, ALICE, Velcro panel
+    retention.ts             ← lid hook/loop, interior loop, Velcro dot, Kydex wedge, bungee
+    cradle.ts                ← 1" webbing cradle strip per cell
+    facePals.ts              ← three 1" PALS bars per cell on the face
+    drainage.ts              ← open corner / sewn closed / grommet (folded-T)
     index.ts
   __tests__/
     boundaries.test.ts       ← engine import-boundary contract
@@ -77,7 +83,8 @@ Each step is a method of the exported `pipelineSteps` object, enabling vitest sp
 
 | Method | Status | Notes |
 |--------|--------|-------|
-| `folded_t` | ✅ Implemented | Best for `internal_depth ≤ internal_width / 2` |
+| `folded_t` | ✅ Implemented | Best for `internal_depth ≤ internal_width / 2`; seam-allowance construction |
+| `pleated_card` | ✅ Implemented | Hemmed back + folded double face pleated into `card.cellCount` cells; hems baked in, explicit 0 SA; requires `spec.card` |
 | `boxed_gusset` | 🚧 Stub | Throws `NotImplementedError` |
 | `center_gusset` | 🚧 Stub | Throws `NotImplementedError` |
 | `taco` | 🚧 Stub | Throws `NotImplementedError` |
@@ -88,4 +95,8 @@ The pouch engine **must not** import from `src/generators/` or `src/components/`
 
 ## Seam allowance
 
-Every generator built on this engine must pass a `seamAllowance` (mm, finite, ≥ 0) to `buildPouch`.  The SA is applied to cut edges; fold edges receive 0 SA.
+Every generator built on this engine must pass a `seamAllowance` (mm, finite, ≥ 0) to `buildPouch`.  For `folded_t` the SA is applied to cut edges; fold edges receive 0 SA.  For `pleated_card` the allowance is the hems in `spec.card` (`backHem`, `faceEndHem`): cut = finished + hems, and every cut edge carries an explicit `seamAllowances` entry of 0 so exporters draw no second line.
+
+## PALS geometry
+
+`components/attachment.ts` encodes the PALS spec: 1" webbing rows at a 2" pitch (1" gap), 1.5" column pitch, `palsRowCount(height)` and `palsColumnCount(width)`. Back rows are cut 1" over-length (trim after sewing); mount straps are cut back height + 50 mm.

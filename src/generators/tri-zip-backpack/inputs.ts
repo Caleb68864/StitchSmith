@@ -37,6 +37,12 @@ export function validateInputs(inputs: TriZipInputs): Result<true, BuildPatternE
   if (inputs.hem_allowance !== undefined && (!isFinite(inputs.hem_allowance) || inputs.hem_allowance < 0)) {
     return { ok: false, error: { kind: 'invalid-inputs', message: 'hem_allowance must be a non-negative finite number' } };
   }
+  if (inputs.strap_webbing_width !== undefined && (!isFinite(inputs.strap_webbing_width) || inputs.strap_webbing_width <= 0)) {
+    return { ok: false, error: { kind: 'invalid-inputs', message: 'strap_webbing_width must be a positive finite number', field: 'strap_webbing_width' } };
+  }
+  if (inputs.strap_pad_length !== undefined && (!isFinite(inputs.strap_pad_length) || inputs.strap_pad_length <= 0)) {
+    return { ok: false, error: { kind: 'invalid-inputs', message: 'strap_pad_length must be a positive finite number', field: 'strap_pad_length' } };
+  }
 
   return { ok: true, value: true };
 }
@@ -45,6 +51,7 @@ export function resolveInputs(inputs: TriZipInputs, preset: StylePreset): Resolv
   const hMm = toMm(inputs.height, inputs.units);
   const wMm = toMm(inputs.width, inputs.units);
   const dMm = toMm(inputs.depth, inputs.units);
+  const padLength = inputs.strap_pad_length ?? defaultStrapPadLength(hMm);
 
   return {
     height: hMm,
@@ -69,7 +76,30 @@ export function resolveInputs(inputs: TriZipInputs, preset: StylePreset): Resolv
     split_gusset: inputs.split_gusset ?? false,
     seam_allowance: inputs.seam_allowance ?? 10,
     hem_allowance: inputs.hem_allowance ?? 25,
+    strap_architecture: inputs.strap_architecture ?? 'foam_sandwich_mesh',
+    strap_edge_finish: inputs.strap_edge_finish ?? 'bound',
+    strap_webbing_width: inputs.strap_webbing_width ?? 25,
+    strap_pad_length: padLength,
+    strap_tail_length: strapTailLength(hMm, padLength, dMm),
+    strap_hardware: inputs.strap_hardware ?? 'ladderlock',
   };
+}
+
+/** Padded length defaults to 0.75 × bag height, clamped to a wearable 250–550 mm. */
+export function defaultStrapPadLength(heightMm: number): number {
+  return Math.min(550, Math.max(250, Math.round(heightMm * 0.75)));
+}
+
+/**
+ * Free tail webbing below the pad. The pad ends part-way down the back; the
+ * tail must reach the lower anchor at the bottom side of the bag, wrap the
+ * gusset, and leave adjustment. Depth is a REQUIRED term — the medpack build
+ * cut its straps 3" short by copying a cut list without the gusset dimension
+ * (vault packs/medpack-shoulder-harness.md).
+ */
+export const STRAP_ADJUST_RANGE_MM = 200;
+export function strapTailLength(heightMm: number, padLengthMm: number, depthMm: number): number {
+  return Math.max(150, Math.round(heightMm - padLengthMm + depthMm + STRAP_ADJUST_RANGE_MM));
 }
 
 export function computeVolumeLiters(inputs: TriZipInputs): number {

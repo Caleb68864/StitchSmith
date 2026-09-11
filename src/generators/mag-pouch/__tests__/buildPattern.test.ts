@@ -146,7 +146,7 @@ describe('buildPattern — BOM fixtures (M12)', () => {
     const result = buildPattern(
       baseInputs({ retention: 'flap_velcro', attachment: 'pals', drainage: 'open_corner' }),
     );
-    const matTypes = result.bom.materials.map((m) => m.type).sort();
+    const matTypes = [...new Set(result.bom.materials.map((m) => m.type))].sort();
     expect(matTypes).toContain('velcro-hook');
     expect(matTypes).toContain('velcro-loop');
   });
@@ -162,7 +162,7 @@ describe('buildPattern — BOM fixtures (M12)', () => {
     const result = buildPattern(
       baseInputs({ retention: 'flap_velcro', attachment: 'pals', drainage: 'open_corner' }),
     );
-    const matTypes = result.bom.materials.map((m) => m.type).sort();
+    const matTypes = [...new Set(result.bom.materials.map((m) => m.type))].sort();
     // Fixture: ['fabric', 'velcro-hook', 'velcro-loop', 'webbing']
     expect(matTypes).toEqual(['fabric', 'velcro-hook', 'velcro-loop', 'webbing']);
   });
@@ -171,7 +171,7 @@ describe('buildPattern — BOM fixtures (M12)', () => {
     const result = buildPattern(
       baseInputs({ retention: 'flap_velcro', attachment: 'pals', drainage: 'open_corner' }),
     );
-    const hwTypes = result.bom.hardware.map((h) => h.type).sort();
+    const hwTypes = [...new Set(result.bom.hardware.map((h) => h.type))].sort();
     // Fixture: []
     expect(hwTypes).toEqual([]);
   });
@@ -203,7 +203,7 @@ describe('buildPattern — BOM fixtures (M12)', () => {
     const result = buildPattern(
       baseInputs({ retention: 'flap_snap', attachment: 'pals', drainage: 'open_corner' }),
     );
-    const matTypes = result.bom.materials.map((m) => m.type).sort();
+    const matTypes = [...new Set(result.bom.materials.map((m) => m.type))].sort();
     // Fixture: ['fabric', 'webbing']
     expect(matTypes).toEqual(['fabric', 'webbing']);
   });
@@ -212,7 +212,7 @@ describe('buildPattern — BOM fixtures (M12)', () => {
     const result = buildPattern(
       baseInputs({ retention: 'flap_snap', attachment: 'pals', drainage: 'open_corner' }),
     );
-    const hwTypes = result.bom.hardware.map((h) => h.type).sort();
+    const hwTypes = [...new Set(result.bom.hardware.map((h) => h.type))].sort();
     // Fixture: ['snap']
     expect(hwTypes).toEqual(['snap']);
   });
@@ -237,7 +237,7 @@ describe('buildPattern — BOM fixtures (M12)', () => {
     const result = buildPattern(
       baseInputs({ retention: 'flap_fastex', attachment: 'pals', drainage: 'open_corner' }),
     );
-    const matTypes = result.bom.materials.map((m) => m.type).sort();
+    const matTypes = [...new Set(result.bom.materials.map((m) => m.type))].sort();
     // Fixture: ['fabric', 'webbing']
     expect(matTypes).toEqual(['fabric', 'webbing']);
   });
@@ -246,7 +246,7 @@ describe('buildPattern — BOM fixtures (M12)', () => {
     const result = buildPattern(
       baseInputs({ retention: 'flap_fastex', attachment: 'pals', drainage: 'open_corner' }),
     );
-    const hwTypes = result.bom.hardware.map((h) => h.type).sort();
+    const hwTypes = [...new Set(result.bom.hardware.map((h) => h.type))].sort();
     // Fixture: ['fastex']
     expect(hwTypes).toEqual(['fastex']);
   });
@@ -277,7 +277,7 @@ describe('buildPattern — BOM fixtures (M12)', () => {
     const result = buildPattern(
       baseInputs({ retention: 'open_top_bungee', attachment: 'pals', drainage: 'open_corner' }),
     );
-    const matTypes = result.bom.materials.map((m) => m.type).sort();
+    const matTypes = [...new Set(result.bom.materials.map((m) => m.type))].sort();
     // Fixture: ['cord', 'fabric', 'webbing']
     expect(matTypes).toEqual(['cord', 'fabric', 'webbing']);
   });
@@ -286,7 +286,7 @@ describe('buildPattern — BOM fixtures (M12)', () => {
     const result = buildPattern(
       baseInputs({ retention: 'open_top_bungee', attachment: 'pals', drainage: 'open_corner' }),
     );
-    const hwTypes = result.bom.hardware.map((h) => h.type).sort();
+    const hwTypes = [...new Set(result.bom.hardware.map((h) => h.type))].sort();
     // Fixture: ['cord-lock']
     expect(hwTypes).toEqual(['cord-lock']);
   });
@@ -334,7 +334,7 @@ describe('buildPattern — AK warning (M11)', () => {
 // ─── Parametric smoke test (96 combinations) ─────────────────────────────────
 
 describe('buildPattern — parametric smoke test', () => {
-  const retentions: RetentionStyle[] = ['flap_velcro', 'flap_snap', 'flap_fastex', 'open_top_bungee'];
+  const retentions: RetentionStyle[] = ['flap_velcro', 'flap_snap', 'flap_fastex', 'open_top_bungee', 'velcro_dot', 'kydex_wedge', 'none'];
   const attachments: AttachmentStyle[] = ['pals', 'belt_loop'];
   const drainages: DrainageStyle[] = ['open_corner', 'sewn_closed', 'grommet'];
   const magazineIds = MAGAZINE_IDS;

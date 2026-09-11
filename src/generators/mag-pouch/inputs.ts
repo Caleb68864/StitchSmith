@@ -7,7 +7,7 @@
  * error message.
  */
 
-import type { MagPouchInputs, ValidationResult } from './types.js';
+import type { MagPouchInputs, ValidationResult, RetentionStyle, BottomStyle, MagPouchConstruction } from './types.js';
 import { getMagazine } from './magazines.js';
 import {
   DEFAULT_EASE_WIDTH_IN,
@@ -17,9 +17,23 @@ import {
   DEFAULT_LOOP_LENGTH_IN,
   DEFAULT_CLOSURE_OVERLAP_IN,
   DEFAULT_SEAM_ALLOWANCE_IN,
+  DEFAULT_CONSTRUCTION,
+  DEFAULT_CELL_COUNT,
 } from './defaults.js';
 
 const VALID_SA: ReadonlySet<number> = new Set([0.25, 0.375, 0.5]);
+const VALID_CONSTRUCTION: ReadonlySet<MagPouchConstruction> = new Set(['folded_t', 'pleated_card']);
+const VALID_RETENTION: ReadonlySet<RetentionStyle> = new Set([
+  'flap_velcro', 'flap_snap', 'flap_fastex', 'open_top_bungee', 'velcro_dot', 'kydex_wedge', 'none',
+]);
+const VALID_BOTTOM: ReadonlySet<BottomStyle> = new Set(['cradle', 'pleat', 'open']);
+
+/** Maximum cells on one card — beyond this the card is a placard, not a pouch. */
+export const MAX_CELL_COUNT = 8;
+
+function finitePositive(v: unknown): v is number {
+  return typeof v === 'number' && Number.isFinite(v) && v > 0;
+}
 
 /**
  * Validate `MagPouchInputs` and return a result object.
@@ -44,31 +58,57 @@ export function validateInputs(inputs: MagPouchInputs): ValidationResult {
       }
     }
   } else {
-    // Custom mode — validate width, thickness, height
-    const { width, thickness, height, units } = inputs.magazine;
-    const u = units ?? 'in';
-
-    if (width === undefined || !Number.isFinite(width) || width <= 0) {
+    const { width, thickness, height } = inputs.magazine;
+    if (!finitePositive(width)) {
       errors['width'] = 'width must be a positive finite number.';
     }
-    if (thickness === undefined || !Number.isFinite(thickness) || thickness <= 0) {
+    if (!finitePositive(thickness)) {
       errors['thickness'] = 'thickness must be a positive finite number.';
     }
-    if (height === undefined || !Number.isFinite(height) || height <= 0) {
+    if (!finitePositive(height)) {
       errors['height'] = 'height must be a positive finite number.';
     }
+  }
 
-    // Convert NaN check (already covered above, but belt-and-suspenders for 0)
-    if (width !== undefined && Number.isFinite(width) && width === 0) {
-      errors['width'] = 'width must be greater than zero.';
+  // ── Construction / cells ─────────────────────────────────────────────────────
+
+  const construction = inputs.construction ?? DEFAULT_CONSTRUCTION;
+  if (!VALID_CONSTRUCTION.has(construction)) {
+    errors['construction'] = `construction must be folded_t or pleated_card (got ${String(construction)}).`;
+  }
+
+  const cellCount = inputs.cell_count ?? DEFAULT_CELL_COUNT;
+  if (!Number.isInteger(cellCount) || cellCount < 1 || cellCount > MAX_CELL_COUNT) {
+    errors['cell_count'] = `cell_count must be a whole number from 1 to ${MAX_CELL_COUNT} (got ${cellCount}).`;
+  } else if (construction === 'folded_t' && cellCount !== 1) {
+    errors['cell_count'] = 'The folded-T body is a single cell — switch construction to pleated_card for a multi-cell card.';
+  }
+
+  if (inputs.cell_span !== undefined && (!Number.isFinite(inputs.cell_span) || inputs.cell_span <= 0 || inputs.cell_span > 12)) {
+    errors['cell_span'] = `cell_span must be a positive number of inches up to 12 (got ${inputs.cell_span}).`;
+  }
+  if (inputs.face_per_cell !== undefined && (!Number.isFinite(inputs.face_per_cell) || inputs.face_per_cell <= 0 || inputs.face_per_cell > 24)) {
+    errors['face_per_cell'] = `face_per_cell must be a positive number of inches up to 24 (got ${inputs.face_per_cell}).`;
+  }
+  if (inputs.cell_span !== undefined && inputs.face_per_cell !== undefined &&
+      Number.isFinite(inputs.cell_span) && Number.isFinite(inputs.face_per_cell) &&
+      inputs.face_per_cell <= inputs.cell_span) {
+    errors['face_per_cell'] = `face_per_cell (${inputs.face_per_cell}") must exceed cell_span (${inputs.cell_span}") — the face needs pucker to wrap the magazine.`;
+  }
+  if (inputs.bottom_style !== undefined && !VALID_BOTTOM.has(inputs.bottom_style)) {
+    errors['bottom_style'] = `bottom_style must be cradle, pleat or open (got ${String(inputs.bottom_style)}).`;
+  }
+  for (const key of ['back_hem', 'face_end_hem'] as const) {
+    const v = inputs[key];
+    if (v !== undefined && (!Number.isFinite(v) || v < 0.25 || v > 2)) {
+      errors[key] = `${key} must be between 0.25" and 2" (got ${v}).`;
     }
-    if (thickness !== undefined && Number.isFinite(thickness) && thickness === 0) {
-      errors['thickness'] = 'thickness must be greater than zero.';
-    }
-    if (height !== undefined && Number.isFinite(height) && height === 0) {
-      errors['height'] = 'height must be greater than zero.';
-    }
-    void u; // units validated by type system
+  }
+
+  // ── Retention ────────────────────────────────────────────────────────────────
+
+  if (!VALID_RETENTION.has(inputs.retention)) {
+    errors['retention'] = `Unknown retention style "${String(inputs.retention)}".`;
   }
 
   // ── Ease ─────────────────────────────────────────────────────────────────────
@@ -85,12 +125,12 @@ export function validateInputs(inputs: MagPouchInputs): ValidationResult {
       `ease_depth must be a finite number in [0, 1"] (got ${easeDepth}).`;
   }
 
-  // ── Exposed percentage ───────────────────────────────────────────────────────
+  // ── Coverage ─────────────────────────────────────────────────────────────────
 
-  const exposedPct = inputs.exposed_percentage ?? DEFAULT_EXPOSED_PERCENTAGE;
-  if (!Number.isFinite(exposedPct) || exposedPct < 0.40 || exposedPct > 1.0) {
+  const coverage = inputs.exposed_percentage ?? DEFAULT_EXPOSED_PERCENTAGE;
+  if (!Number.isFinite(coverage) || coverage < 0.40 || coverage > 1.0) {
     errors['exposed_percentage'] =
-      `exposed_percentage must be in [0.40, 1.0] (got ${exposedPct}).`;
+      `coverage must be in [0.40, 1.0] (got ${coverage}).`;
   }
 
   // ── Seam allowance ───────────────────────────────────────────────────────────

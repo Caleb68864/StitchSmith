@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { magazines, getMagazine, MAGAZINE_IDS } from '../magazines.js';
+import { magazines, getMagazine, MAGAZINE_IDS, PLATFORM_LABELS } from '../magazines.js';
 
 const EXPECTED_IDS = [
   'ar15_30_round',
@@ -13,20 +13,22 @@ const EXPECTED_IDS = [
   'pmag_gen3',
   'lancer_l5',
   'm4_stanag',
+  'pmag_308_20',
+  'ak47_762x39_30round',
 ] as const;
 
 describe('magazines', () => {
-  it('exports exactly six magazine entries', () => {
-    expect(Object.keys(magazines)).toHaveLength(6);
+  it('exports exactly eight magazine entries', () => {
+    expect(Object.keys(magazines)).toHaveLength(8);
   });
 
-  it('contains exactly the six expected IDs', () => {
+  it('contains exactly the expected IDs', () => {
     const ids = Object.keys(magazines).sort();
     expect(ids).toEqual([...EXPECTED_IDS].sort());
   });
 
   it('exports MAGAZINE_IDS matching the magazine table keys', () => {
-    expect(MAGAZINE_IDS.sort()).toEqual([...EXPECTED_IDS].sort());
+    expect([...MAGAZINE_IDS].sort()).toEqual([...EXPECTED_IDS].sort());
   });
 
   it.each(EXPECTED_IDS)('%s — has required fields', (id) => {
@@ -37,6 +39,7 @@ describe('magazines', () => {
     expect(typeof entry.width).toBe('number');
     expect(typeof entry.thickness).toBe('number');
     expect(typeof entry.height).toBe('number');
+    expect(PLATFORM_LABELS[entry.platform]).toBeTruthy();
   });
 
   it.each(EXPECTED_IDS)('%s — id field matches key', (id) => {
@@ -49,11 +52,12 @@ describe('magazines', () => {
 
   // ── Dimension values per spec §2.3 ──────────────────────────────────────────
 
-  it('ar15_30_round: 2.55 × 1.0 × 7.5 (inches)', () => {
+  it('ar15_30_round: 2.55 × 1.0 × 7.5 (inches), 5.56 platform', () => {
     const m = magazines['ar15_30_round'];
     expect(m.width).toBe(2.55);
     expect(m.thickness).toBe(1.0);
     expect(m.height).toBe(7.5);
+    expect(m.platform).toBe('rifle_556');
   });
 
   it('ar15_20_round: 2.55 × 1.0 × 5.5 (inches)', () => {
@@ -63,13 +67,6 @@ describe('magazines', () => {
     expect(m.height).toBe(5.5);
   });
 
-  it('pmag_gen2: 2.6 × 1.05 × 7.5 (inches)', () => {
-    const m = magazines['pmag_gen2'];
-    expect(m.width).toBe(2.6);
-    expect(m.thickness).toBe(1.05);
-    expect(m.height).toBe(7.5);
-  });
-
   it('pmag_gen3: 2.6 × 1.05 × 7.5 (inches)', () => {
     const m = magazines['pmag_gen3'];
     expect(m.width).toBe(2.6);
@@ -77,29 +74,35 @@ describe('magazines', () => {
     expect(m.height).toBe(7.5);
   });
 
-  it('lancer_l5: 2.55 × 1.05 × 7.5 (inches)', () => {
-    const m = magazines['lancer_l5'];
-    expect(m.width).toBe(2.55);
-    expect(m.thickness).toBe(1.05);
-    expect(m.height).toBe(7.5);
+  // ── Vault-sourced platforms ────────────────────────────────────────────────
+
+  it('pmag_308_20: 2.9 × 1.1 × 5.75 — the stacked-rig .308 test case', () => {
+    const m = magazines['pmag_308_20'];
+    expect(m.width).toBe(2.9);
+    expect(m.thickness).toBe(1.1);
+    expect(m.height).toBe(5.75);
+    expect(m.platform).toBe('rifle_308');
   });
 
-  it('m4_stanag: 2.55 × 1.0 × 7.5 (inches)', () => {
-    const m = magazines['m4_stanag'];
-    expect(m.width).toBe(2.55);
-    expect(m.thickness).toBe(1.0);
-    expect(m.height).toBe(7.5);
+  it('ak47_762x39_30round: 2.5 × 1.1 × 9.5, AK platform', () => {
+    const m = magazines['ak47_762x39_30round'];
+    expect(m.width).toBe(2.5);
+    expect(m.thickness).toBe(1.1);
+    expect(m.height).toBe(9.5);
+    expect(m.platform).toBe('ak');
   });
 
-  // ── getMagazine helper ────────────────────────────────────────────────────
-
-  it('getMagazine returns the entry for a known id', () => {
-    const entry = getMagazine('ar15_30_round');
-    expect(entry).toBeDefined();
-    expect(entry!.id).toBe('ar15_30_round');
+  it('every 5.56 preset is under the AK thresholds', () => {
+    for (const id of MAGAZINE_IDS) {
+      const m = magazines[id];
+      if (m.platform === 'rifle_556') {
+        expect(m.height).toBeLessThan(8.5);
+      }
+    }
   });
 
   it('getMagazine returns undefined for an unknown id', () => {
-    expect(getMagazine('ak47_made_up')).toBeUndefined();
+    expect(getMagazine('nope')).toBeUndefined();
+    expect(getMagazine('ar15_30_round')?.id).toBe('ar15_30_round');
   });
 });

@@ -1,8 +1,9 @@
 import { useMemo } from 'react';
 import type { MagPouchProject } from '../../state/useMagPouchProject.js';
-import type { MagPouchInputs, MagPouchBuildResult } from '../../generators/mag-pouch/types.js';
+import type { MagPouchInputs, MagPouchBuildResult, MagPouchDerived } from '../../generators/mag-pouch/types.js';
 import { validateInputs } from '../../generators/mag-pouch/inputs.js';
-import { buildPattern, detectAkProfile } from '../../generators/mag-pouch/buildPattern.js';
+import { buildPattern } from '../../generators/mag-pouch/buildPattern.js';
+import { PLATFORM_LABELS } from '../../generators/mag-pouch/magazines.js';
 import { MagPouchSettingsPanel } from './MagPouchSettingsPanel.js';
 import { PatternPreview } from './PatternPreview.js';
 import { ExportPanel } from './ExportPanel.js';
@@ -21,6 +22,41 @@ interface Props {
   importProject: (p: MagPouchProject) => void;
 }
 
+function inches(v: number): string {
+  return `${(Math.round(v * 100) / 100).toString()}"`;
+}
+
+function DerivedSummary({ d }: { d: MagPouchDerived }) {
+  const rows: [string, string][] = [
+    ['Construction', d.construction === 'pleated_card' ? `Pleated card, ${d.cellCount} cell${d.cellCount === 1 ? '' : 's'}` : 'Folded-T single'],
+    ['Platform', PLATFORM_LABELS[d.platform]],
+    ['Cell span', `${inches(d.cellSpanIn)} (${d.palsColumns} PALS column${d.palsColumns === 1 ? '' : 's'} total)`],
+    ...(d.facePerCellIn !== undefined && d.puckerPerSideIn !== undefined
+      ? [['Face per cell', `${inches(d.facePerCellIn)} — pucker ${inches(d.puckerPerSideIn)} each side`] as [string, string]]
+      : []),
+    ['Pouch height', `${inches(d.pouchHeightIn)}; ${inches(d.exposedHeightIn)} of mag stands proud`],
+    ...(d.flapLengthIn > 0 ? [['Lid length', inches(d.flapLengthIn)] as [string, string]] : []),
+    ...(d.palsRows > 0 ? [['Back PALS rows', String(d.palsRows)] as [string, string]] : []),
+    ['Worst stack', `${d.maxLayers} layers — sew forward only, turn the work`],
+    ...(d.caliberLocked ? [['Caliber', 'Locked by bungee retention'] as [string, string]] : []),
+  ];
+  return (
+    <div className="rounded border border-border p-3 space-y-2" data-testid="derived-summary">
+      <h3 className="text-xs font-semibold">Derived numbers</h3>
+      <table className="w-full text-xs">
+        <tbody>
+          {rows.map(([k, v]) => (
+            <tr key={k} className="border-b border-border/50">
+              <td className="py-1 pr-2 text-muted-foreground whitespace-nowrap align-top">{k}</td>
+              <td className="py-1 tabular-nums">{v}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 export function MagPouchPage({ project, updateInputs, resetProject, importProject }: Props) {
   const { inputs } = project;
 
@@ -33,25 +69,14 @@ export function MagPouchPage({ project, updateInputs, resetProject, importProjec
     try { return buildPattern(inputs); } catch { return null; }
   }, [inputs, hasErrors]);
 
-  const akWarning = useMemo(() => {
-    if (inputs.magazine.mode === 'custom') {
-      const { width, thickness, height } = inputs.magazine;
-      if (width !== undefined && thickness !== undefined && height !== undefined) {
-        return detectAkProfile({ width, thickness, height });
-      }
-    }
-    return undefined;
-  }, [inputs.magazine]);
-
   const allWarnings = useMemo<UiWarning[]>(() => {
     const engineWarnings: string[] = result?.warnings ?? [];
-    const allStrings = [...(akWarning ? [akWarning] : []), ...engineWarnings].filter(Boolean);
-    return allStrings.map((message, i) => ({
+    return engineWarnings.filter(Boolean).map((message, i) => ({
       id: `mag-pouch-warning-${i}`,
       severity: 'warning' as const,
       message,
     }));
-  }, [result, akWarning]);
+  }, [result]);
 
   const banner = (
     <>
@@ -80,7 +105,7 @@ export function MagPouchPage({ project, updateInputs, resetProject, importProjec
       importTooltip="Load a previously-exported Mag Pouch project (.json)"
       exportTooltip="Download this project as JSON"
       banner={banner}
-      settings={<MagPouchSettingsPanel inputs={inputs} errors={errors} onChange={updateInputs} />}
+      settings={<MagPouchSettingsPanel inputs={inputs} errors={errors} onChange={updateInputs} derived={result?.derived ?? null} />}
       preview={<PatternPreview inputs={inputs} result={result} errors={errors} />}
       sidebar={
         <>
@@ -92,11 +117,12 @@ export function MagPouchPage({ project, updateInputs, resetProject, importProjec
             hasErrors={hasErrors}
             onImportProject={importProject}
           />
+          {result && <DerivedSummary d={result.derived} />}
           <ConstructionSteps steps={result?.steps ?? []} title="Assembly Instructions" />
           {result && (
             <div className="rounded border border-border p-3 space-y-2">
-              <h3 className="text-xs font-semibold">Bill of Materials</h3>
-              <CutListTable bom={result.bom} />
+              <h3 className="text-xs font-semibold">Cut list & bill of materials</h3>
+              <CutListTable bom={result.bom} cutPieces={result.cutPieces} />
             </div>
           )}
         </>

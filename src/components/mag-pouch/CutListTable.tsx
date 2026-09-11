@@ -16,6 +16,20 @@ interface Props {
   cutPieces?: CutPieceRow[];
 }
 
+const CUT_TAG_LABEL: Record<string, string> = {
+  'cut-to-net': 'cut to net',
+  'trim-after-sew': 'cut long, trim after',
+  'mock-derived': 'mock first',
+};
+
+function dims(m: { cutWidthMm?: number; cutLengthMm?: number }): string {
+  if (m.cutWidthMm !== undefined && m.cutLengthMm !== undefined) {
+    return `${m.cutWidthMm.toFixed(1)} × ${m.cutLengthMm.toFixed(1)}`;
+  }
+  if (m.cutLengthMm !== undefined) return `${m.cutLengthMm.toFixed(1)} long`;
+  return '—';
+}
+
 export function CutListTable({ bom, cutPieces }: Props) {
   return (
     <div className="space-y-4 text-xs">
@@ -55,6 +69,8 @@ export function CutListTable({ bom, cutPieces }: Props) {
               <tr className="border-b border-border">
                 <th className="text-left py-1 pr-2">Material</th>
                 <th className="text-left py-1 pr-2">Type</th>
+                <th className="text-right py-1 pr-2">Cut (mm)</th>
+                <th className="text-right py-1 pr-2">Qty</th>
                 <th className="text-left py-1">Notes</th>
               </tr>
             </thead>
@@ -63,7 +79,12 @@ export function CutListTable({ bom, cutPieces }: Props) {
                 <tr key={mat.id} className="border-b border-border/50">
                   <td className="py-1 pr-2 font-medium">{mat.name}</td>
                   <td className="py-1 pr-2 text-muted-foreground">{mat.type}</td>
-                  <td className="py-1 text-muted-foreground">{mat.notes ?? '—'}</td>
+                  <td className="py-1 pr-2 text-right tabular-nums whitespace-nowrap">{dims(mat)}</td>
+                  <td className="py-1 pr-2 text-right tabular-nums">{mat.quantity ?? '—'}</td>
+                  <td className="py-1 text-muted-foreground">
+                    {mat.cutTag && <span className="mr-1 rounded bg-muted px-1 py-0.5">{CUT_TAG_LABEL[mat.cutTag] ?? mat.cutTag}</span>}
+                    {mat.notes ?? ''}
+                  </td>
                 </tr>
               ))}
             </tbody>

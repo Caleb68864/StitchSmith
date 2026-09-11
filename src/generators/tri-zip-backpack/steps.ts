@@ -105,27 +105,6 @@ export function triZipSubsystemSteps(): Step[] {
   ];
 }
 
-export function shoulderStrapSteps(): Step[] {
-  return [
-    {
-      id: 'tri-zip.shoulder-straps.cut',
-      title: 'Cut shoulder straps (pair)',
-      body: 'Cut two shoulder strap panels. Cut foam padding inserts to fit.',
-      dependsOn: [],
-      refsPieces: ['shoulder-strap'],
-      group: 'Straps',
-    },
-    {
-      id: 'tri-zip.shoulder-straps.assemble',
-      title: 'Assemble shoulder straps',
-      body: 'Sandwich foam between outer and inner strap panels. Edge-stitch on all sides.',
-      dependsOn: ['tri-zip.shoulder-straps.cut'],
-      refsPieces: ['shoulder-strap'],
-      group: 'Straps',
-    },
-  ];
-}
-
 export function sternumStrapSteps(): Step[] {
   return [
     {

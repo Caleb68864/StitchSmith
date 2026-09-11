@@ -11,16 +11,20 @@ interface Props {
   onChange: (changes: Partial<MagPouchInputs>) => void;
 }
 
-const RETENTION_OPTIONS: { value: RetentionStyle; label: string }[] = [
-  { value: 'flap_velcro', label: 'Flap + Velcro' },
-  { value: 'flap_snap', label: 'Flap + Snap' },
-  { value: 'flap_fastex', label: 'Flap + Fastex' },
-  { value: 'open_top_bungee', label: 'Open Top + Bungee' },
+const RETENTION_OPTIONS: { value: RetentionStyle; label: string; description: string }[] = [
+  { value: 'flap_velcro', label: 'Lid + Velcro', description: 'Lid cut integral with the back folds over the mag; hook on the lid, loop on the face.' },
+  { value: 'flap_snap', label: 'Lid + snap', description: 'Integral lid with a Line 24 snap per cell.' },
+  { value: 'flap_fastex', label: 'Lid + side-release buckle', description: 'Integral lid with a 1" buckle per cell.' },
+  { value: 'open_top_bungee', label: 'Open top + bungee', description: 'Bungee over the mag top with a pull tab. Caliber-committed.' },
+  { value: 'velcro_dot', label: 'Open top + Velcro dot', description: 'Loop on both interior walls; 1" hook square on one face of the mag.' },
+  { value: 'kydex_wedge', label: 'Open top + Kydex wedge', description: 'Loop on both interior walls; bought wedge keyed to the platform.' },
+  { value: 'none', label: 'Open top, friction only', description: 'Cell depth does the holding.' },
 ];
 
 export function RetentionSection({ inputs, errors, onChange }: Props) {
-  const hasFlapClosure = inputs.retention !== 'open_top_bungee';
+  const hasFlapClosure = inputs.retention.startsWith('flap_');
   const hasVelcro = inputs.retention === 'flap_velcro';
+  const current = RETENTION_OPTIONS.find((o) => o.value === inputs.retention);
 
   return (
     <div className="space-y-3">
@@ -40,13 +44,15 @@ export function RetentionSection({ inputs, errors, onChange }: Props) {
             </option>
           ))}
         </select>
+        {current && <p className="text-xs text-muted-foreground">{current.description}</p>}
+        {errors['retention'] && <p className="text-xs text-destructive">{errors['retention']}</p>}
       </div>
 
       {hasFlapClosure && (
         <>
           <div className="space-y-1">
             <label htmlFor="closure-overlap" className="text-xs font-medium">
-              Closure overlap (in)
+              Closure reach down the face (in)
             </label>
             <input
               id="closure-overlap"
@@ -57,6 +63,9 @@ export function RetentionSection({ inputs, errors, onChange }: Props) {
               value={inputs.closure_overlap ?? DEFAULT_CLOSURE_OVERLAP_IN}
               onChange={e => onChange({ closure_overlap: parseFloat(e.target.value) })}
             />
+            <p className="text-xs text-muted-foreground">
+              How far the lid comes down the face after wrapping the mag top. Lid length = exposed mag + cell depth + this.
+            </p>
             {errors['closure_overlap'] && (
               <p className="text-xs text-destructive">{errors['closure_overlap']}</p>
             )}
@@ -64,7 +73,7 @@ export function RetentionSection({ inputs, errors, onChange }: Props) {
 
           <div className="space-y-1">
             <label htmlFor="flap-length" className="text-xs font-medium">
-              Flap length (in) — optional override
+              Lid length (in) — optional override
             </label>
             <input
               id="flap-length"
@@ -73,7 +82,7 @@ export function RetentionSection({ inputs, errors, onChange }: Props) {
               min="0.1"
               className="flex h-8 w-full rounded-md border border-input bg-background px-2 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               value={inputs.flap_length ?? ''}
-              placeholder="Computed from exposed %"
+              placeholder="Derived from coverage + reach"
               onChange={e => {
                 const v = e.target.value === '' ? undefined : parseFloat(e.target.value);
                 onChange({ flap_length: v });
@@ -118,6 +127,7 @@ export function RetentionSection({ inputs, errors, onChange }: Props) {
               value={inputs.loop_length ?? DEFAULT_LOOP_LENGTH_IN}
               onChange={e => onChange({ loop_length: parseFloat(e.target.value) })}
             />
+            <p className="text-xs text-muted-foreground">Loop = hook + travel.</p>
             {errors['loop_length'] && (
               <p className="text-xs text-destructive">{errors['loop_length']}</p>
             )}

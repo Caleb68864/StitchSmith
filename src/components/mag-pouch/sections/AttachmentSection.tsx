@@ -10,12 +10,12 @@ const ATTACHMENT_OPTIONS: { value: AttachmentStyle; label: string; description: 
   {
     value: 'pals',
     label: 'PALS / MOLLE',
-    description: 'Standard 1" PALS webbing rows — compatible with MOLLE vests and plate carriers.',
+    description: 'Sewn 1" PALS rows on the back plus vertical mount straps. The cell span snaps to the 1.5" grid (3" per rifle mag) so it mounts in spec spacing.',
   },
   {
     value: 'molle',
-    label: 'MOLLE (wide)',
-    description: 'MOLLE-compatible wide rows with reinforced attachment points.',
+    label: 'MOLLE',
+    description: 'Same geometry as PALS — MOLLE is the platform name, PALS is the webbing spec.',
   },
   {
     value: 'belt_loop',
@@ -30,7 +30,7 @@ const ATTACHMENT_OPTIONS: { value: AttachmentStyle; label: string; description: 
   {
     value: 'velcro_panel',
     label: 'Velcro panel',
-    description: 'Full-face hook panel — adheres to any loop-lined vest or carrier.',
+    description: 'Full-back hook panel for a loop-lined placard or carrier. No grid tax: the cell can run close to the magazine.',
   },
 ];
 

@@ -1,4 +1,4 @@
-import { magazines, MAGAZINE_IDS } from '../../../generators/mag-pouch/magazines.js';
+import { magazines, MAGAZINE_IDS, PLATFORM_LABELS, type MagazinePlatform } from '../../../generators/mag-pouch/magazines.js';
 import type { MagazineSpec } from '../../../generators/mag-pouch/types.js';
 
 interface Props {
@@ -7,12 +7,15 @@ interface Props {
   onChange: (spec: MagazineSpec) => void;
 }
 
+const PLATFORM_ORDER: MagazinePlatform[] = ['rifle_556', 'rifle_308', 'ak'];
+const CUSTOM_PLATFORMS: MagazinePlatform[] = ['custom', 'rifle_556', 'rifle_308', 'ak'];
+
 export function MagazineSection({ magazine, errors, onChange }: Props) {
   const isCustom = magazine.mode === 'custom';
 
   function handlePresetChange(value: string) {
     if (value === '__custom__') {
-      onChange({ mode: 'custom', units: 'in' });
+      onChange({ mode: 'custom', units: 'in', platform: 'custom' });
     } else {
       onChange({ mode: 'predefined', presetId: value, units: 'in' });
     }
@@ -24,6 +27,7 @@ export function MagazineSection({ magazine, errors, onChange }: Props) {
   }
 
   const selectValue = isCustom ? '__custom__' : (magazine.presetId ?? '');
+  const selected = !isCustom && magazine.presetId ? magazines[magazine.presetId] : undefined;
 
   return (
     <div className="space-y-3">
@@ -37,18 +41,27 @@ export function MagazineSection({ magazine, errors, onChange }: Props) {
           value={selectValue}
           onChange={e => handlePresetChange(e.target.value)}
         >
-          {MAGAZINE_IDS.map(id => (
-            <option key={id} value={id}>
-              {magazines[id].description}
-            </option>
+          {PLATFORM_ORDER.map(platform => (
+            <optgroup key={platform} label={PLATFORM_LABELS[platform]}>
+              {MAGAZINE_IDS.filter(id => magazines[id].platform === platform).map(id => (
+                <option key={id} value={id}>
+                  {magazines[id].description}
+                </option>
+              ))}
+            </optgroup>
           ))}
           <option value="__custom__">Custom…</option>
         </select>
+        {selected && (
+          <p className="text-xs text-muted-foreground">
+            {selected.width}" × {selected.thickness}" × {selected.height}" (width × thickness × height) — {PLATFORM_LABELS[selected.platform]}
+          </p>
+        )}
       </div>
 
       {isCustom && (
         <div className="space-y-2 border-l-2 border-muted pl-3">
-          <p className="text-xs text-muted-foreground">Enter custom magazine dimensions (inches):</p>
+          <p className="text-xs text-muted-foreground">Enter custom magazine dimensions (inches). Width is front-to-back at the widest rib; thickness is the cell depth.</p>
           <div className="grid grid-cols-3 gap-2">
             <div className="space-y-1">
               <label htmlFor="mag-width" className="text-xs font-medium">Width (in)</label>
@@ -98,6 +111,22 @@ export function MagazineSection({ magazine, errors, onChange }: Props) {
                 <p className="text-xs text-destructive">{errors['height']}</p>
               )}
             </div>
+          </div>
+          <div className="space-y-1">
+            <label htmlFor="mag-platform" className="text-xs font-medium">Platform</label>
+            <select
+              id="mag-platform"
+              className="flex h-8 w-full rounded-md border border-input bg-background px-2 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              value={magazine.platform ?? 'custom'}
+              onChange={e => onChange({ ...magazine, mode: 'custom', platform: e.target.value as MagazinePlatform })}
+            >
+              {CUSTOM_PLATFORMS.map(p => (
+                <option key={p} value={p}>{PLATFORM_LABELS[p]}</option>
+              ))}
+            </select>
+            <p className="text-xs text-muted-foreground">
+              Drives the PALS cell span (.308 = 3.5", off-grid), the AK face hem and platform-keyed hardware.
+            </p>
           </div>
         </div>
       )}

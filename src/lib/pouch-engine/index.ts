@@ -9,6 +9,7 @@
 import type { Pattern } from '../pattern-engine/graph/Pattern.js';
 import type { PouchSpec, PouchResult } from './construction/ConstructionStrategy.js';
 import { foldedT } from './construction/foldedT.js';
+import { pleatedCard } from './construction/pleatedCard.js';
 import { boxedGusset } from './construction/boxedGusset.js';
 import { centerGusset } from './construction/centerGusset.js';
 import { taco } from './construction/taco.js';
@@ -24,7 +25,7 @@ export type {
   AttachmentSpec,
   AttachmentResult,
 } from './components/attachment.js';
-export { buildAttachment, palsRowCount } from './components/attachment.js';
+export { buildAttachment, palsRowCount, palsColumnCount, PALS_COLUMN_PITCH_MM } from './components/attachment.js';
 export type {
   DrainageStyle,
   DrainageSpec,
@@ -38,7 +39,31 @@ export type {
   PouchSpec,
   PouchResult,
   ConstructionMethod,
+  PleatedCardParams,
+  CardBottomStyle,
 } from './construction/ConstructionStrategy.js';
+export {
+  pleatedCardGeometry,
+  pleatedCardWarnings,
+  MIN_PUCKER_PER_SIDE_MM,
+  PC_STEP_CUT,
+  PC_STEP_HEM_BACK,
+  PC_STEP_HEM_FACE,
+  PC_STEP_MARK,
+  PC_STEP_INTERIOR,
+  PC_STEP_JOIN_BOTTOM,
+  PC_STEP_JOIN_DIVISIONS,
+  PC_STEP_JOIN_SIDES,
+  PC_STEP_BOTTOM,
+  PC_STEP_LID,
+} from './construction/pleatedCard.js';
+export type { PleatedCardGeometry } from './construction/pleatedCard.js';
+export type { RetentionStyle, RetentionSpec, RetentionResult } from './components/retention.js';
+export { buildRetention } from './components/retention.js';
+export type { CradleSpec, CradleResult } from './components/cradle.js';
+export { buildCradles } from './components/cradle.js';
+export type { FacePalsSpec, FacePalsResult } from './components/facePals.js';
+export { buildFacePals } from './components/facePals.js';
 export { NotImplementedError } from './construction/ConstructionStrategy.js';
 export { foldedTDefaults } from './construction/foldedT.js';
 export { boxedGussetDefaults } from './construction/boxedGusset.js';
@@ -53,6 +78,7 @@ export { tacoDefaults } from './construction/taco.js';
  */
 export const defaults = {
   folded_t: foldedTDefaults,
+  pleated_card: {},
   boxed_gusset: boxedGussetDefaults,
   center_gusset: centerGussetDefaults,
   taco: tacoDefaults,
@@ -68,6 +94,7 @@ export const defaults = {
 export function buildPouch(spec: PouchSpec): PouchResult {
   const strategy = {
     folded_t: foldedT,
+    pleated_card: pleatedCard,
     boxed_gusset: boxedGusset,
     center_gusset: centerGusset,
     taco: taco,
@@ -83,5 +110,5 @@ export function buildPouch(spec: PouchSpec): PouchResult {
     units: spec.units ?? 'mm',
   };
 
-  return { pattern, warnings };
+  return { pattern, warnings, steps };
 }

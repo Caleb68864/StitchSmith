@@ -5,12 +5,49 @@ import type { FitParams } from '../fit/index.js';
 import type { FlapSpec } from '../components/flap.js';
 import type { ClosureSpec } from '../components/closure.js';
 
-/** The four construction methods supported by the pouch engine. */
+/** The construction methods supported by the pouch engine. */
 export type ConstructionMethod =
   | 'folded_t'
+  | 'pleated_card'
   | 'boxed_gusset'
   | 'center_gusset'
   | 'taco';
+
+/** How the bottom of a pleated-card cell is closed. */
+export type CardBottomStyle = 'cradle' | 'pleat' | 'open';
+
+/**
+ * Parameters for the `pleated_card` construction — a hemmed back panel with a
+ * folded, double-layer face pleated into N side-by-side cells (the SOE
+ * "4-pack single rifle mag card"). All values in mm.
+ *
+ * Every dimension here is a FINISHED dimension except the hems; the strategy
+ * derives cut sizes as `finished + hems` (hems fold once, raw edge to a mark
+ * at twice the hem depth). See `docs` in the vault:
+ * mag-pouches/mag-pouch-4pack-single-dimensions.md.
+ */
+export interface PleatedCardParams {
+  /** Number of side-by-side cells. */
+  cellCount: number;
+  /** Finished span of one cell across the back panel. */
+  cellSpan: number;
+  /** Face fabric consumed per cell (span + pucker each side). */
+  facePerCell: number;
+  /** Finished card height — how deep the object sits. */
+  cardHeight: number;
+  /** Single-fold hem on every back-panel edge. */
+  backHem: number;
+  /** Single-fold hem on each face end. */
+  faceEndHem: number;
+  /**
+   * Extra face height, hemmed over where the two raw edges meet at the cell
+   * bottom (the AK variant). 0 leaves the raw edges meeting unhemmed.
+   */
+  faceBottomHem: number;
+  /** Lid length above the card, cut integral with the back. 0 = open top. */
+  flapLength: number;
+  bottomStyle: CardBottomStyle;
+}
 
 /** Full specification passed to `buildPouch` and to each strategy. */
 export interface PouchSpec {
@@ -22,12 +59,16 @@ export interface PouchSpec {
   units?: 'mm';
   flap?: FlapSpec;
   closure?: ClosureSpec;
+  /** Required when `construction === 'pleated_card'`. */
+  card?: PleatedCardParams;
 }
 
 /** Value returned by `buildPouch`. */
 export interface PouchResult {
   pattern: import('../../pattern-engine/graph/Pattern.js').Pattern;
   warnings: string[];
+  /** Strategy assembly steps, in build order. */
+  steps: Step[];
 }
 
 /**

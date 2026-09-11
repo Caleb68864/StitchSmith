@@ -2,122 +2,67 @@
  * Mag Pouch Generator — toPouchSpec
  *
  * Converts `MagPouchInputs` into the engine-agnostic `PouchSpec` consumed by
- * `buildPouch()`.  All measurements are converted to millimetres here.
+ * `buildPouch()`.  All measurements are converted to millimetres here; every
+ * derived number comes from `resolveMagPouch` so the spec, the BOM and the
+ * step text agree.
  */
 
 import type { MagPouchInputs } from './types.js';
-import type { PouchSpec } from '../../lib/pouch-engine/construction/ConstructionStrategy.js';
-import { getMagazine } from './magazines.js';
-import {
-  DEFAULT_EASE_WIDTH_IN,
-  DEFAULT_EASE_DEPTH_IN,
-  DEFAULT_EXPOSED_PERCENTAGE,
-  DEFAULT_HOOK_LENGTH_IN,
-} from './defaults.js';
+import type { PouchSpec, PleatedCardParams } from '../../lib/pouch-engine/construction/ConstructionStrategy.js';
+import { resolveMagPouch, akFaceHemIn, inToMm, type ResolvedMagPouch } from './resolve.js';
 
-const IN_TO_MM = 25.4;
-
-function inToMm(inches: number): number {
-  return inches * IN_TO_MM;
-}
-
-/**
- * Resolve magazine dimensions (in inches) from `MagPouchInputs`.
- * Returns `{ width, thickness, height }` in inches.
- *
- * @throws {Error} if the preset ID is unknown.
- */
-function resolveMagazineDimsIn(inputs: MagPouchInputs): {
-  width: number;
-  thickness: number;
-  height: number;
-} {
-  if (inputs.magazine.mode === 'predefined') {
-    const id = inputs.magazine.presetId!;
-    const entry = getMagazine(id);
-    if (!entry) {
-      throw new Error(
-        `Unknown magazine preset "${id}". ` +
-          'Use one of the predefined IDs from magazines.ts.',
-      );
-    }
-    return { width: entry.width, thickness: entry.thickness, height: entry.height };
-  }
-
-  // Custom mode
-  const { width, thickness, height, units } = inputs.magazine;
-  const u = units ?? 'in';
-
-  if (width === undefined || thickness === undefined || height === undefined) {
-    throw new Error(
-      'Custom magazine must specify width, thickness, and height.',
-    );
-  }
-
-  // Normalise to inches for consistent downstream handling
-  const toIn = (v: number) => (u === 'mm' ? v / IN_TO_MM : v);
+/** Build the pleated-card parameter block (mm) from a resolved pouch. */
+export function toCardParams(r: ResolvedMagPouch): PleatedCardParams {
   return {
-    width: toIn(width),
-    thickness: toIn(thickness),
-    height: toIn(height),
+    cellCount: r.cellCount,
+    cellSpan: inToMm(r.cellSpanIn),
+    facePerCell: inToMm(r.facePerCellIn),
+    cardHeight: inToMm(r.pouchHeightIn),
+    backHem: inToMm(r.backHemIn),
+    faceEndHem: inToMm(r.faceEndHemIn),
+    faceBottomHem: inToMm(akFaceHemIn(r)),
+    flapLength: inToMm(r.flapLengthIn),
+    bottomStyle: r.bottomStyle,
   };
 }
 
 /**
  * Convert `MagPouchInputs` to a `PouchSpec` ready for the pouch engine.
  *
- * - Magazine dimensions (inches) are converted to mm.
- * - Ease values (inches) are applied to object width and depth.
- * - Seam allowance (inches) is converted to mm.
- * - Construction method is always `'folded_t'` for v1.
- * - A square flap is generated for flap-retention styles; bungee gets no flap.
+ * - `object` is the bare magazine in mm; ease travels in `fit`.
+ * - For a PALS mount the width ease is widened so the internal width lands on
+ *   the 1.5" grid (a rifle cell is 3", not 2.8").
+ * - Coverage (`exposed_percentage`) is passed through unchanged: the engine
+ *   computes `internal_height = object.height × coverage`.
+ * - A lid is generated for flap retention styles; its length is derived from
+ *   the exposed magazine height + cell depth + closure overlap.
  */
 export function toPouchSpec(inputs: MagPouchInputs): PouchSpec {
-  const magIn = resolveMagazineDimsIn(inputs);
-
-  const easeWidthIn = inputs.ease_width ?? DEFAULT_EASE_WIDTH_IN;
-  const easeDepthIn = inputs.ease_depth ?? DEFAULT_EASE_DEPTH_IN;
-  const exposedPct = inputs.exposed_percentage ?? DEFAULT_EXPOSED_PERCENTAGE;
-  const saIn = inputs.seamAllowance;
-  const hookLenIn = inputs.hook_length ?? DEFAULT_HOOK_LENGTH_IN;
-
-  // Object dimensions: bare magazine dimensions in mm.
-  // Ease is passed separately via `fit.width_ease` / `fit.depth_ease` so the
-  // engine applies it during the calculation pipeline, not here.
-  const objectWidth = inToMm(magIn.width);
-  const objectDepth = inToMm(magIn.thickness);
-  const objectHeight = inToMm(magIn.height);
-
-  // Flap length is based on the closure hook length as a minimum
-  // (the flap must be long enough to accommodate the hook strip + overlap)
-  const flapLengthIn = inputs.flap_length ?? hookLenIn;
-  const flapLengthMm = inToMm(flapLengthIn);
-
-  // Build flap spec for retention styles that have a flap
-  const hasFLap =
-    inputs.retention === 'flap_velcro' ||
-    inputs.retention === 'flap_snap' ||
-    inputs.retention === 'flap_fastex';
+  const r = resolveMagPouch(inputs);
 
   const spec: PouchSpec = {
     object: {
-      width: objectWidth,
-      depth: objectDepth,
-      height: objectHeight,
+      width: inToMm(r.magIn.width),
+      depth: inToMm(r.magIn.thickness),
+      height: inToMm(r.magIn.height),
     },
     fit: {
-      width_ease: inToMm(easeWidthIn),
-      depth_ease: inToMm(easeDepthIn),
+      width_ease: inToMm(r.cellSpanIn - r.magIn.width),
+      depth_ease: inToMm(r.easeDepthIn),
       height_ease: 0,
-      exposed_percentage: exposedPct,
+      exposed_percentage: r.coverage,
     },
-    construction: 'folded_t',
-    seamAllowance: inToMm(saIn),
+    construction: r.construction,
+    seamAllowance: inToMm(r.seamAllowanceIn),
     units: 'mm',
-    flap: hasFLap
-      ? { style: 'square', length_mm: flapLengthMm }
+    flap: r.hasFlap
+      ? { style: 'square', length_mm: inToMm(r.flapLengthIn) }
       : { style: 'none' },
   };
+
+  if (r.construction === 'pleated_card') {
+    spec.card = toCardParams(r);
+  }
 
   return spec;
 }

@@ -8,57 +8,83 @@ import type { AttachmentStyle } from '../components/attachment.js';
 import type { StraightEdge } from '../../pattern-engine/graph/Edge.js';
 
 // ─── PALS row count math ──────────────────────────────────────────────────────
+//
+// PALS spec: 1" webbing rows with a 1" gap (2" pitch), 0.5" clear at the top
+// and bottom of the back. 5.5" (the SOE 4-pack card) fits 2 rows; 7.5" fits 3.
 
 describe('palsRowCount', () => {
-  it('returns floor((h - 12.7) / 25.4)', () => {
-    // Three different heights per [BEHAVIORAL] criterion
-    expect(palsRowCount(200)).toBe(Math.floor((200 - 12.7) / 25.4)); // 7
-    expect(palsRowCount(100)).toBe(Math.floor((100 - 12.7) / 25.4)); // 3
-    expect(palsRowCount(150)).toBe(Math.floor((150 - 12.7) / 25.4)); // 5
+  it('fits 2 rows on a 5.5" card and 3 on 7.5"', () => {
+    expect(palsRowCount(5.5 * 25.4)).toBe(2);
+    expect(palsRowCount(7.5 * 25.4)).toBe(3);
+  });
+
+  it('follows floor((h - 1") + 1") / 2") for other heights', () => {
+    expect(palsRowCount(200)).toBe(3);
+    expect(palsRowCount(100)).toBe(1);
+    expect(palsRowCount(150)).toBe(2);
   });
 
   it('returns 0 when height is too short for any row', () => {
     expect(palsRowCount(12)).toBe(0);
+    expect(palsRowCount(NaN)).toBe(0);
   });
 });
 
 // ─── buildAttachment — pals ───────────────────────────────────────────────────
 
 describe('buildAttachment pals', () => {
-  it('quantity equals palsRowCount for 200 mm', () => {
+  it('emits back rows (qty = row count) and vertical mount straps (qty = columns)', () => {
+    const result = buildAttachment({ style: 'pals', finishedHeight_mm: 200, finishedWidth_mm: 3 * 25.4 });
+    expect(result.pieces).toHaveLength(2);
+    const rows = result.pieces.find((p) => p.id === 'pals-back-row');
+    const straps = result.pieces.find((p) => p.id === 'pals-mount-strap');
+    expect(rows?.quantity).toBe(palsRowCount(200));
+    expect(straps?.quantity).toBe(2); // a 3" back spans two 1.5" columns
+  });
+
+  it('back rows are cut 1" longer than the back so they can be trimmed flush after sewing', () => {
+    const backW = 12 * 25.4;
+    const result = buildAttachment({ style: 'pals', finishedHeight_mm: 5.5 * 25.4, finishedWidth_mm: backW });
+    const rows = result.pieces.find((p) => p.id === 'pals-back-row')!;
+    const topEdge = rows.paths[0].edges.find((e) => e.id.includes('top')) as StraightEdge;
+    expect(topEdge.end.x).toBeCloseTo(backW + 25.4, 5);
+  });
+
+  it('mount strap length is back height + 50 mm tuck', () => {
     const result = buildAttachment({ style: 'pals', finishedHeight_mm: 200 });
-    const expectedRows = Math.floor((200 - 12.7) / 25.4);
-    expect(result.pieces).toHaveLength(1);
-    expect(result.pieces[0].quantity).toBe(expectedRows);
+    const straps = result.pieces.find((p) => p.id === 'pals-mount-strap')!;
+    const rightEdge = straps.paths[0].edges.find((e) => e.id.includes('right')) as StraightEdge;
+    expect(rightEdge.end.y).toBeCloseTo(250, 5);
   });
 
-  it('quantity equals palsRowCount for 100 mm', () => {
-    const result = buildAttachment({ style: 'pals', finishedHeight_mm: 100 });
-    const expectedRows = Math.floor((100 - 12.7) / 25.4);
-    expect(result.pieces[0].quantity).toBe(expectedRows);
+  it('defaults the back width to one 3" rifle cell (2 straps) and honours mountColumns', () => {
+    const dflt = buildAttachment({ style: 'pals', finishedHeight_mm: 200 });
+    expect(dflt.pieces.find((p) => p.id === 'pals-mount-strap')?.quantity).toBe(2);
+    const eight = buildAttachment({ style: 'pals', finishedHeight_mm: 200, finishedWidth_mm: 12 * 25.4 });
+    expect(eight.pieces.find((p) => p.id === 'pals-mount-strap')?.quantity).toBe(8);
+    const forced = buildAttachment({ style: 'pals', finishedHeight_mm: 200, mountColumns: 3 });
+    expect(forced.pieces.find((p) => p.id === 'pals-mount-strap')?.quantity).toBe(3);
   });
 
-  it('quantity equals palsRowCount for 150 mm', () => {
-    const result = buildAttachment({ style: 'pals', finishedHeight_mm: 150 });
-    const expectedRows = Math.floor((150 - 12.7) / 25.4);
-    expect(result.pieces[0].quantity).toBe(expectedRows);
-  });
-
-  it('strap total height is row_height + 50 mm fold-over', () => {
+  it('every strip carries an explicit 0 seam allowance on every edge', () => {
     const result = buildAttachment({ style: 'pals', finishedHeight_mm: 200 });
-    const piece = result.pieces[0];
-    // The piece outline edges span from y=0 to y = rowHeight + 50
-    // row height = 25.4 mm, fold-over = 50 mm → total = 75.4 mm
-    const expectedTotal = 25.4 + 50;
-    const outline = piece.paths[0].edges;
-    const rightEdge = outline.find((e) => e.id.includes('right')) as StraightEdge | undefined;
-    expect(rightEdge).toBeDefined();
-    expect(rightEdge!.end.y).toBeCloseTo(expectedTotal, 5);
+    for (const piece of result.pieces) {
+      for (const edge of piece.paths[0].edges) {
+        expect(piece.seamAllowances?.[edge.id]).toBe(0);
+      }
+    }
   });
 
-  it('emits at least one assembly step', () => {
+  it('warns when the back width is off the 1.5" grid', () => {
+    const result = buildAttachment({ style: 'pals', finishedHeight_mm: 200, finishedWidth_mm: 3.5 * 25.4 });
+    expect(result.warnings.some((w) => w.includes('spec spacing'))).toBe(true);
+    const onGrid = buildAttachment({ style: 'pals', finishedHeight_mm: 200, finishedWidth_mm: 4.5 * 25.4 });
+    expect(onGrid.warnings).toHaveLength(0);
+  });
+
+  it('emits row and strap steps', () => {
     const result = buildAttachment({ style: 'pals', finishedHeight_mm: 200 });
-    expect(result.steps.length).toBeGreaterThan(0);
+    expect(result.steps.map((s) => s.id)).toEqual(['pals-back-rows', 'pals-mount-straps']);
   });
 
   it('emits a warning when finishedHeight_mm is too short for any rows', () => {

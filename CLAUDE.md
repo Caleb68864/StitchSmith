@@ -43,12 +43,42 @@ A generator using this convention MUST:
 Consequence: no SA-offset cut line is drawn, because the cut line *is* the
 outer line. That is expected under this convention, not a defect.
 
-Used by: **Zip Pouch** (see `src/generators/zip-pouch/dimensions.ts`).
+Used by: **Zip Pouch** (see `src/generators/zip-pouch/dimensions.ts`) and the
+**Mag Pouch pleated card** construction (`src/lib/pouch-engine/construction/pleatedCard.ts`,
+dimensions resolved in `src/generators/mag-pouch/resolve.ts`). The card is
+hemmed, not seam-allowanced: cut = finished + hems, hem folds are `fold`-role
+edges, cell divisions are `stitch`-role lines, every strip and panel carries
+explicit `seamAllowances: 0`. The Mag Pouch folded-T construction stays on
+Convention A.
 
 ### Both conventions
 
 - Hem allowances (where applicable) are emitted as `fold`-role edges and rendered dashed.
 - Step instructions that say "cut including seam allowance" must reflect what is actually drawn.
+
+## Vault-derived rules (do not "simplify" these away)
+
+The MYOG research vault (`~/Documents/Notes/Caleb's Vault/Hobbies/MYOG`, index
+in `stitchsmith-reference-prompt.md`) is the source for most tactical-gear
+numbers. Rules already encoded, with the note that justifies each:
+
+- PALS column pitch 1.5" is immutable; a PALS-mounted rifle cell is 3", not
+  mag width + ease (`mag-pouches/pals-grid-vs-cell-width.md`). Off-grid spans
+  get the "will not mount up in spec spacing" warning — a tested failure.
+- PALS rows are 1" webbing at a 2" pitch (1" gap); back rows are cut 1" long
+  and trimmed after sewing (`plate-carriers/pals-sewn-webbing.md`,
+  `reference/technique-stitch-shrinkage.md`).
+- Face per cell ≈ mag_w + 2·mag_t + ease; pucker per side must stay ≥ ~0.9"
+  (`rigs/micro-rig-mag-cell-sizing.md`, `mag-pouches/mag-pouch-4pack-single-dimensions.md`).
+- Hems are single-fold, marked at double the depth; cut = finished + hems
+  (`bags/construction-hem-mark-at-double.md`).
+- Interior pieces (loop, cradles, face bars) go on the face before any join;
+  bottom edge first, then divisions, then sides (`reference/technique-glide-path-sequencing.md`).
+- Padded straps: SOE's recommended build tacks the webbing 1" into the pad
+  ends, never through the foam (`rigs/harness-padded-strap-construction.md`);
+  strap length must take the gusset depth as an input (`packs/medpack-shoulder-harness.md`).
+- When a note marks a number Open / Inferred, carry it forward as an input or
+  a warning tagged `mock-derived`, never as a hard default.
 
 ## Engine usage
 
@@ -58,7 +88,10 @@ All generators (Tool Roll, Tri-Zip, Roll-Top Sack, Mag Pouch, Book Cover, Zip Po
 
 - `schemaVersion: 1` → Tool Roll, Roll-Top Sack
 - `schemaVersion: 2` → Tri-Zip
-- `schemaVersion: 3` → Mag Pouch
+- `schemaVersion: 3` → Mag Pouch (v3 gained optional `construction`, `cell_count`,
+  `cell_span`, `face_per_cell`, `bottom_style`, hems and the `velcro_dot` /
+  `kydex_wedge` / `none` retention styles without a version bump — every new
+  field is optional and defaults to the pre-existing behaviour)
 - `schemaVersion: 4` → Book Cover
 - `schemaVersion: 5` → Zip Pouch
 - `schemaVersion: 6` → Circle Skirt

@@ -17,7 +17,7 @@ export const PATTERNS: PatternEntry[] = [
   {
     id: 'tri-zip-backpack',
     title: 'Tri-Zip Backpack',
-    description: 'Generate sewing patterns for a modular tri-zip backpack with customizable sections, shoulder straps, and organizational panels.',
+    description: 'Generate sewing patterns for a modular tri-zip backpack with customizable sections, padded J/S-curve shoulder straps (shell, foam and mesh pieces), and organizational panels.',
     available: true,
     route: 'tri-zip',
   },
@@ -46,7 +46,7 @@ export function registerPattern(entry: PatternEntry): void {
 registerPattern({
   id: 'mag-pouch',
   title: 'Mag Pouch',
-  description: 'Parametric magazine pouch with MOLLE/PALS attachment, retention flap, and drainage options.',
+  description: 'Parametric magazine pouch: folded-T single or the SOE pleated card (1–8 cells, cradles, interior loop, PALS-grid cell spans). 5.56, .308 and AK presets; lid, bungee, Velcro-dot or Kydex retention.',
   available: true,
   route: 'mag-pouch',
 });

@@ -72,3 +72,6 @@ multipiece-*.png
 
 # Project docs / planning (local only)
 docs/
+
+# Machine-local Claude Code settings (hooks point at per-machine paths)
+.claude/settings.local.json

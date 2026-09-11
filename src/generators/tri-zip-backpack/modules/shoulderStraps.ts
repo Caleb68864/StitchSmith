@@ -1,80 +1,50 @@
-import type { Edge } from '../../../lib/pattern-engine/graph/Edge.js';
-import { makeEdgeIdGen } from '../../../lib/pattern-engine/graph/Edge.js';
-import type { Path } from '../../../lib/pattern-engine/graph/Path.js';
-import type { Piece } from '../../../lib/pattern-engine/graph/Piece.js';
+/**
+ * Tri-Zip shoulder straps — built on the shared strap engine.
+ *
+ * Outputs the padded-strap primitive (outer shell, backer, foam, webbing
+ * tail and top anchor) as a mirrored pair. Piece id `shoulder-strap` and the
+ * step ids `tri-zip.shoulder-straps.cut` / `.assemble` are referenced by the
+ * back-panel and final-assembly steps, so they are fixed here.
+ */
+
 import type { ResolvedInputs, ModuleResult } from '../types.js';
-import { shoulderStrapSteps } from '../steps.js';
+import { buildPaddedStrap } from '../../../lib/strap-engine/index.js';
+import type { StrapCurve } from '../../../lib/strap-engine/types.js';
 
-function pt(x: number, y: number) { return { x, y }; }
+const CURVE_MAP: Record<ResolvedInputs['curve_style'], StrapCurve> = {
+  straight: 'straight',
+  ergonomic: 'j_curve',
+  s_curve: 's_curve',
+};
 
-export function buildShoulderStraps(r: ResolvedInputs): ModuleResult {
-  const { strap_width, height, curve_style } = r;
-  // Shoulder strap approximate length = 0.75 * bag height + 350 mm for loop/adjustment
-  const strapLength = height * 0.75 + 350;
+export function buildShoulderStraps(r: ResolvedInputs): ModuleResult & { warnings: string[] } {
+  const result = buildPaddedStrap({
+    padLength_mm: r.strap_pad_length,
+    padWidth_mm: r.strap_width,
+    foamThickness_mm: r.foam_thickness,
+    curve: CURVE_MAP[r.curve_style],
+    architecture: r.strap_architecture,
+    edgeFinish: r.strap_edge_finish,
+    webbingWidth_mm: r.strap_webbing_width,
+    tailLength_mm: r.strap_tail_length,
+    seamAllowance_mm: r.seam_allowance,
+    quantity: 2,
+    hardware: r.strap_hardware,
+    idPrefix: 'tri-zip.shoulder-straps.',
+    pieceId: 'shoulder-strap',
+    name: 'Shoulder strap',
+    gussetDepth_mm: r.depth,
+  });
 
-  const eid = makeEdgeIdGen('shoulder-strap-outline');
-  const seg = (sx: number, sy: number, ex: number, ey: number): Edge =>
-    ({ kind: 'straight', id: eid(), role: 'cut', start: pt(sx, sy), end: pt(ex, ey) });
-  const bezier = (sx: number, sy: number, ex: number, ey: number,
-    cp1x: number, cp1y: number, cp2x: number, cp2y: number): Edge =>
-    ({
-      kind: 'bezier', id: eid(), role: 'cut',
-      start: pt(sx, sy), end: pt(ex, ey),
-      cp1: pt(cp1x, cp1y), cp2: pt(cp2x, cp2y),
-    });
-
-  let path: Path;
-  if (curve_style === 's_curve') {
-    // S-curve: bezier on long sides
-    const midY = strapLength / 2;
-    const inset = strap_width * 0.15;
-    path = {
-      id: 'shoulder-strap-outline',
-      edges: [
-        bezier(0, 0, 0, strapLength, inset, midY * 0.3, -inset, midY * 0.7),
-        seg(0, strapLength, strap_width, strapLength),
-        bezier(strap_width, strapLength, strap_width, 0, strap_width - inset, midY * 0.7, strap_width + inset, midY * 0.3),
-        seg(strap_width, 0, 0, 0),
-      ],
-      closed: true,
-    };
-  } else if (curve_style === 'ergonomic') {
-    const inset = strap_width * 0.1;
-    path = {
-      id: 'shoulder-strap-outline',
-      edges: [
-        bezier(0, 0, 0, strapLength, -inset, strapLength * 0.4, -inset, strapLength * 0.6),
-        seg(0, strapLength, strap_width, strapLength),
-        bezier(strap_width, strapLength, strap_width, 0, strap_width + inset, strapLength * 0.6, strap_width + inset, strapLength * 0.4),
-        seg(strap_width, 0, 0, 0),
-      ],
-      closed: true,
-    };
-  } else {
-    // straight
-    path = {
-      id: 'shoulder-strap-outline',
-      edges: [
-        seg(0, 0, strap_width, 0),
-        seg(strap_width, 0, strap_width, strapLength),
-        seg(strap_width, strapLength, 0, strapLength),
-        seg(0, strapLength, 0, 0),
-      ],
-      closed: true,
-    };
+  // Hardware has no home in the tri-zip BOM yet; surface it in the last step.
+  const hardwareLine = result.hardware
+    .filter((h) => h.quantity > 0)
+    .map((h) => `${h.quantity} × ${h.name}`)
+    .join(', ');
+  const last = result.steps[result.steps.length - 1];
+  if (last && hardwareLine) {
+    last.body += ` Hardware: ${hardwareLine}.`;
   }
 
-  const piece: Piece = {
-    id: 'shoulder-strap',
-    name: 'Shoulder Strap',
-    mirror: true,
-    quantity: 2,
-    paths: [path],
-    annotations: [
-      { kind: 'grain', label: 'Grain', point: pt(strap_width / 2, strapLength / 2), angle: 90 },
-      { kind: 'label', label: `Shoulder Strap (×2)\n${strap_width}×${Math.round(strapLength)} mm` },
-    ],
-  };
-
-  return { pieces: [piece], steps: shoulderStrapSteps() };
+  return { pieces: result.pieces, steps: result.steps, warnings: result.warnings };
 }

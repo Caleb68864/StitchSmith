@@ -61,6 +61,6 @@ describe('detectAkProfile', () => {
 
   it('AK_WARNING_COPY contains the documented AK warning text', () => {
     expect(AK_WARNING_COPY).toContain('AK-pattern magazine dimensions detected');
-    expect(AK_WARNING_COPY).toContain('folded-T construction');
+    expect(AK_WARNING_COPY).toContain('folded-T');
   });
 });

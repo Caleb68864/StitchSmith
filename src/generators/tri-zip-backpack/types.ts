@@ -1,5 +1,8 @@
 import type { Piece } from '../../lib/pattern-engine/graph/Piece.js';
 import type { Step } from '../../lib/pattern-engine/instructions/Step.js';
+import type { PadArchitecture, EdgeFinish, StrapHardware } from '../../lib/strap-engine/types.js';
+
+export type { PadArchitecture as StrapArchitecture, EdgeFinish as StrapEdgeFinish, StrapHardware };
 
 export type PresetName =
   | 'urban_assault'
@@ -59,6 +62,16 @@ export interface TriZipInputs {
   seam_allowance?: number;
   /** Hem allowance (mm) applied to free edges that fold under (laptop sleeve top, gusset long edges). */
   hem_allowance?: number;
+  /** Shoulder pad build. Default 'foam_sandwich_mesh' (shell + closed-cell foam + spacer mesh, bound). */
+  strap_architecture?: PadArchitecture;
+  /** Shoulder pad edge finish. Default 'bound'. */
+  strap_edge_finish?: EdgeFinish;
+  /** Load-bearing strap webbing width, mm. Default 25. */
+  strap_webbing_width?: number;
+  /** Padded length, mm. Default 0.75 × bag height, clamped to 250–550. */
+  strap_pad_length?: number;
+  /** Lower-anchor hardware. Default 'ladderlock'. */
+  strap_hardware?: StrapHardware;
 }
 
 export interface ResolvedInputs {
@@ -84,6 +97,13 @@ export interface ResolvedInputs {
   split_gusset: boolean;
   seam_allowance: number;
   hem_allowance: number;
+  strap_architecture: PadArchitecture;
+  strap_edge_finish: EdgeFinish;
+  strap_webbing_width: number;
+  strap_pad_length: number;
+  /** Free tail webbing below the pad, mm — derived from height, pad length AND gusset depth. */
+  strap_tail_length: number;
+  strap_hardware: StrapHardware;
 }
 
 export type Result<T, E> = { ok: true; value: T } | { ok: false; error: E };

@@ -7,6 +7,7 @@
 
 import type { Pattern } from '../../lib/pattern-engine/graph/Pattern.js';
 import type { Step } from '../../lib/pattern-engine/instructions/Step.js';
+import type { MagazinePlatform } from './magazines.js';
 
 // ─── Magazine spec ─────────────────────────────────────────────────────────────
 
@@ -23,21 +24,39 @@ export interface MagazineSpec {
   /** Custom height (mode === 'custom'); unit determined by `units`. */
   height?: number;
   units: Units;
+  /** Platform for a custom magazine (drives cell span, AK hem, .308 handling). Default 'custom'. */
+  platform?: MagazinePlatform;
 }
 
-// ─── Retention / Attachment / Drainage ────────────────────────────────────────
+// ─── Construction / Retention / Attachment / Drainage ─────────────────────────
 
 /**
- * Retention styles available in v1.
- * NOTE: `removable_flap` is intentionally excluded from this union.  Adding it
- * requires coordinated updates to the engine and UI; it must not be silently
- * added here without those changes.
+ * folded_t     — one-piece folded body (front → bottom → back, wings fold round
+ *                the sides); single cell; seam-allowance construction.
+ * pleated_card — SOE card: hemmed back panel + folded double face pleated into
+ *                N cells; hems baked in, no seam allowance offset.
+ */
+export type MagPouchConstruction = 'folded_t' | 'pleated_card';
+
+/** How a pleated-card cell bottom is closed. */
+export type BottomStyle = 'cradle' | 'pleat' | 'open';
+
+/**
+ * Retention styles.
+ *   flap_*          — lid folded over the mag top (integral with the back)
+ *   open_top_bungee — bungee laced through face bars with a pull tab
+ *   velcro_dot      — interior loop both walls + 1" hook square on the mag
+ *   kydex_wedge     — interior loop both walls + bought platform-keyed wedge
+ *   none            — friction only (cell depth is the retention)
  */
 export type RetentionStyle =
   | 'flap_velcro'
   | 'flap_snap'
   | 'flap_fastex'
-  | 'open_top_bungee';
+  | 'open_top_bungee'
+  | 'velcro_dot'
+  | 'kydex_wedge'
+  | 'none';
 
 export type AttachmentStyle =
   | 'pals'
@@ -57,27 +76,56 @@ export interface MagPouchInputs {
   magazine: MagazineSpec;
   retention: RetentionStyle;
   attachment: AttachmentStyle;
+  /** Bottom drainage — folded_t only (the card's cradle/open bottoms drain by nature). */
   drainage: DrainageStyle;
-  /** Seam allowance in inches.  Must be one of the three allowed values. */
+  /** Seam allowance in inches (folded_t).  Must be one of the three allowed values. */
   seamAllowance: SeamAllowance;
+  /** Construction method. Default 'folded_t'. */
+  construction?: MagPouchConstruction;
+  /** Cells side by side (pleated_card). Default 1. folded_t requires 1. */
+  cell_count?: number;
+  /**
+   * Finished span of one cell across the back, inches. Derived when omitted:
+   * PALS mounts snap to a multiple of 1.5" (3.0" rifle, 4.5" for .308); other
+   * mounts use magazine width + ease.
+   */
+  cell_span?: number;
+  /**
+   * Face fabric per cell, inches (pleated_card). Derived when omitted:
+   * mag_width + 2 × mag_thickness + face_ease (≈ 4.875" for a rifle mag).
+   */
+  face_per_cell?: number;
+  /** Cell bottom (pleated_card). Default 'cradle'. */
+  bottom_style?: BottomStyle;
+  /** Back panel hem, inches (pleated_card). Default 1.0. */
+  back_hem?: number;
+  /** Face end hem, inches (pleated_card). Default 0.5. */
+  face_end_hem?: number;
+  /** Hem the face raw-edge meeting (+0.75" face). Default true for AK, false otherwise. */
+  ak_face_hem?: boolean;
+  /** Three 1" PALS bars per cell on the face (pleated_card). Default true; forced on by bungee retention. */
+  face_pals?: boolean;
+  /** Line both interior walls of every cell with loop (pleated_card). Default true. */
+  interior_loop?: boolean;
   /** Lateral ease added to the magazine width (inches). Default: 0.25". */
   ease_width?: number;
   /** Front-to-back ease added to the magazine depth (inches). Default: 0.25". */
   ease_depth?: number;
   /**
-   * Fraction of magazine height that remains exposed above the pouch opening.
-   * Range [0.40, 1.0].  Default: 0.70.
+   * Coverage: fraction of magazine height INSIDE the pouch (the pouch is this
+   * fraction of the mag height; the rest stands proud for the grab).
+   * Range [0.40, 1.0].  Default: 0.70.  Key kept for project-file compatibility.
    */
   exposed_percentage?: number;
   /** Length of the hook-side velcro strip (inches).  Default: 3". */
   hook_length?: number;
-  /** Length of the loop-side velcro strip (inches).  Default: 4". */
+  /** Length of the loop-side velcro strip (inches).  Default: hook + 1" travel = 4". */
   loop_length?: number;
-  /** Overlap of closure hardware (inches).  Default: 2.5". */
+  /** How far the lid closure reaches down the face (inches).  Default: 2.5". */
   closure_overlap?: number;
   /**
-   * Total flap length (inches).  Computed from `exposed_percentage` when omitted.
-   * hook_length and loop_length must not exceed this value.
+   * Total lid length (inches).  Derived when omitted: exposed mag height +
+   * cell depth + closure_overlap. hook_length and loop_length must not exceed it.
    */
   flap_length?: number;
   /** Grommet size identifier.  Default: '#0'. */
@@ -100,13 +148,28 @@ export type MagPouchHardwareType =
   | 'cord-lock'
   | 'grommet'
   | 'buckle'
+  | 'wedge'
+  | 'clip'
   | 'other';
+
+/**
+ * How a cut length should be treated on the bench (vault
+ * reference/technique-stitch-shrinkage.md): Velcro and long webbing runs draw
+ * in as they are sewn, so they are cut long and trimmed after.
+ */
+export type CutTag = 'cut-to-net' | 'trim-after-sew' | 'mock-derived';
 
 export interface MagPouchBomMaterial {
   id: string;
   name: string;
   type: MagPouchMaterialType;
   notes?: string;
+  /** Cut width in mm, when the material is a strip. */
+  cutWidthMm?: number;
+  /** Cut length in mm, when the material is a strip. */
+  cutLengthMm?: number;
+  quantity?: number;
+  cutTag?: CutTag;
 }
 
 export interface MagPouchBomHardware {
@@ -122,6 +185,43 @@ export interface MagPouchBom {
   hardware: MagPouchBomHardware[];
 }
 
+/** One row of the cut list (a pattern piece with its cut envelope). */
+export interface MagPouchCutPiece {
+  id: string;
+  name: string;
+  widthMm: number;
+  sizeMm: number;
+  quantity: number;
+  notes?: string;
+}
+
+/** Numbers the generator derived, surfaced so the builder can sanity-check them. */
+export interface MagPouchDerived {
+  construction: MagPouchConstruction;
+  platform: MagazinePlatform;
+  cellCount: number;
+  /** Cell span on the back, inches. */
+  cellSpanIn: number;
+  /** PALS columns the back spans (pals/molle mounts). */
+  palsColumns: number;
+  /** Face fabric per cell, inches (pleated_card). */
+  facePerCellIn?: number;
+  /** Pucker per side, inches (pleated_card). */
+  puckerPerSideIn?: number;
+  /** Finished pouch/card height, inches. */
+  pouchHeightIn: number;
+  /** Magazine standing proud of the mouth, inches. */
+  exposedHeightIn: number;
+  /** Lid length, inches (0 when no lid). */
+  flapLengthIn: number;
+  /** Back PALS rows that fit. */
+  palsRows: number;
+  /** Worst-case layer count the machine must sew through. */
+  maxLayers: number;
+  /** True when bungee retention commits the pouch to one platform. */
+  caliberLocked: boolean;
+}
+
 // ─── Build result ──────────────────────────────────────────────────────────────
 
 export interface MagPouchBuildResult {
@@ -129,6 +229,8 @@ export interface MagPouchBuildResult {
   warnings: string[];
   bom: MagPouchBom;
   steps: Step[];
+  cutPieces: MagPouchCutPiece[];
+  derived: MagPouchDerived;
 }
 
 // ─── Validation ────────────────────────────────────────────────────────────────
