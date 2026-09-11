@@ -45,7 +45,10 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'jsdom',
-    setupFiles: [],
+    // Node 26 shadows jsdom's localStorage with an undefined-returning getter,
+    // so vitest never installs a working one. See the file for the mechanism
+    // and for when it can be deleted.
+    setupFiles: ['./src/test/localStorageShim.ts'],
     passWithNoTests: true,
     // Agent worktrees under .claude/ contain full repo copies; keep them out of
     // the test run so their tests don't inflate/pollute results.
