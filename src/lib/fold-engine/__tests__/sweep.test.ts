@@ -68,7 +68,12 @@ describe.each(sources)('fold-engine sweep: $name', ({ pieces }) => {
       const a = flat.panels[i].vertices;
       const b = folded.panels[i].vertices;
       expect(a.length).toBeGreaterThanOrEqual(3);
-      expect(flat.panels[i].triangles.length).toBeGreaterThanOrEqual(a.length - 2);
+      // Triangles cover the region (collinear vertices are pruned, so count is not n − 2).
+      const triArea = flat.panels[i].triangles.reduce((s, [p, q, r]) => {
+        const ax = a[p][0], ay = a[p][1], bx = a[q][0], by = a[q][1], cx = a[r][0], cy = a[r][1];
+        return s + Math.abs((bx - ax) * (cy - ay) - (by - ay) * (cx - ax)) / 2;
+      }, 0);
+      expect(triArea).toBeCloseTo(m.regions[i].area, 1);
       for (let k = 0; k < a.length; k++) {
         const n = (k + 1) % a.length;
         const la = Math.hypot(a[n][0] - a[k][0], a[n][1] - a[k][1], a[n][2] - a[k][2]);

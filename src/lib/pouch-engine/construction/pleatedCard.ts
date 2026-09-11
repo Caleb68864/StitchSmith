@@ -136,7 +136,17 @@ function buildBackPanel(c: PleatedCardParams, g: PleatedCardGeometry): Piece {
   ];
 
   if (g.lidFoldY !== null) {
-    paths.push(line(eid, 'fold', 'lid-fold', 0, g.lidFoldY, w, g.lidFoldY, 'Lid fold — lid folds forward over the mags'));
+    paths.push(line(eid, 'fold', 'lid-fold', 0, g.lidFoldY, w, g.lidFoldY, 'Lid fold (0°) — lid continues behind the mags, creasing in use'));
+    // Creases where the lid wraps a magazine standing proud: over the top, then down the face.
+    const exposed = c.exposedHeight ?? 0;
+    const objDepth = c.objectDepth ?? 0;
+    if (exposed > 0 && objDepth > 0 && exposed + objDepth < c.flapLength) {
+      const yTop = g.lidFoldY - exposed;
+      const yFront = yTop - objDepth;
+      // Full width: the side hems crease with the lid.
+      paths.push(line(eid, 'fold', 'lid-crease-top', 0, yTop, w, yTop, 'Lid crease over the top (90°)'));
+      paths.push(line(eid, 'fold', 'lid-crease-front', 0, yFront, w, yFront, 'Lid crease down the face (90°)'));
+    }
   }
 
   for (let k = 1; k < c.cellCount; k++) {

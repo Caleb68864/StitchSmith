@@ -6,7 +6,7 @@ import { buildPattern } from '../../generators/mag-pouch/buildPattern.js';
 import { PLATFORM_LABELS } from '../../generators/mag-pouch/magazines.js';
 import { MagPouchSettingsPanel } from './MagPouchSettingsPanel.js';
 import { PatternPreview } from './PatternPreview.js';
-import { FoldPreview3D } from '../shared/FoldPreview3D.js';
+import { FoldPreview3D, type SeamSpec } from '../shared/FoldPreview3D.js';
 import { resolveMagPouch, inToMm } from '../../generators/mag-pouch/resolve.js';
 import { ExportPanel } from './ExportPanel.js';
 import { CutListTable } from './CutListTable.js';
@@ -129,6 +129,81 @@ export function MagPouchPage({ project, updateInputs, resetProject, importProjec
     }
   }, [inputs, result]);
 
+  // Seams for the cloth simulation, in flat pattern coordinates.
+  const foldSeams = useMemo<SeamSpec[]>(() => {
+    if (!result) return [];
+    try {
+      const r = resolveMagPouch(inputs);
+      const seams: SeamSpec[] = [];
+      const hook = inToMm(r.hookLengthIn);
+      const overlap = inToMm(r.closureOverlapIn);
+      if (r.construction === 'pleated_card') {
+        const cells = r.cellCount;
+        const backHem = inToMm(r.backHemIn);
+        const faceEndHem = inToMm(r.faceEndHemIn);
+        const span = inToMm(r.cellSpanIn);
+        const fpc = inToMm(r.facePerCellIn);
+        const cardH = inToMm(r.pouchHeightIn);
+        const flap = inToMm(r.flapLengthIn);
+        const akHem = r.akFaceHem ? 0.75 * 25.4 : 0;
+        const faceCutH = 2 * cardH + akHem;
+        const cardBottomY = backHem + flap + cardH;
+        // Divisions and outer sides: face root half to the card, running the card height.
+        // The face bottom gathers under the magazine and is not modelled as a seam.
+        for (let k = 0; k <= cells; k++) {
+          const xf = faceEndHem + k * fpc;
+          const xb = backHem + k * span;
+          const name = k === 0 || k === cells ? 'outer side' : `division ${k}`;
+          // The division stitching runs through BOTH face layers and the back: seam the inner
+          // (root) half and the outer half of the folded face to the same back line.
+          seams.push(
+            { label: name, a: { pieceId: 'face', from: { x: xf, y: faceCutH }, to: { x: xf, y: faceCutH - cardH } }, b: { pieceId: 'back', from: { x: xb, y: cardBottomY }, to: { x: xb, y: cardBottomY - cardH } } },
+            { label: `${name} (outer layer)`, a: { pieceId: 'face', from: { x: xf, y: akHem }, to: { x: xf, y: akHem + cardH } }, b: { pieceId: 'back', from: { x: xb, y: cardBottomY }, to: { x: xb, y: cardBottomY - cardH } }, gap: 2.4 },
+          );
+        }
+        if (r.hasFlap) {
+          // Lid tip (hook) to the face's outer half (loop), one closure per cell.
+          for (let k = 0; k < cells; k++) {
+            const xf = faceEndHem + (k + 0.5) * fpc;
+            const xb = backHem + (k + 0.5) * span;
+            seams.push({
+              label: `closure ${k + 1}`, samples: 3,
+              a: { pieceId: 'back', from: { x: xb - 15, y: backHem + hook / 2 }, to: { x: xb + 15, y: backHem + hook / 2 } },
+              b: { pieceId: 'face', from: { x: xf - 15, y: akHem + cardH - overlap + hook / 2 }, to: { x: xf + 15, y: akHem + cardH - overlap + hook / 2 } },
+            });
+          }
+        }
+        return seams;
+      }
+      // Folded-T: each front wing's outer edge sews to the back wing's seam line, mouth to mouth.
+      const sa = inToMm(r.seamAllowanceIn);
+      const ph = inToMm(r.pouchHeightIn);
+      const cd = inToMm(r.cellDepthIn);
+      const w = inToMm(r.cellSpanIn) + 2 * cd + 2 * sa;
+      const mouthBack = sa + 2 * ph + cd;
+      // Each wing wraps the side and its outer edge lands on the opposite panel one SA inside
+      // that panel's wing fold, mouth to mouth (the wings overlap into a double-layer side).
+      const xIn = sa + cd + sa;
+      seams.push(
+        { label: 'front wing, left', a: { pieceId: 'body', from: { x: 0, y: sa }, to: { x: 0, y: sa + ph } }, b: { pieceId: 'body', from: { x: xIn, y: mouthBack }, to: { x: xIn, y: mouthBack - ph } } },
+        { label: 'front wing, right', a: { pieceId: 'body', from: { x: w, y: sa }, to: { x: w, y: sa + ph } }, b: { pieceId: 'body', from: { x: w - xIn, y: mouthBack }, to: { x: w - xIn, y: mouthBack - ph } } },
+        { label: 'back wing, left', a: { pieceId: 'body', from: { x: 0, y: mouthBack }, to: { x: 0, y: mouthBack - ph } }, b: { pieceId: 'body', from: { x: xIn, y: sa }, to: { x: xIn, y: sa + ph } } },
+        { label: 'back wing, right', a: { pieceId: 'body', from: { x: w, y: mouthBack }, to: { x: w, y: mouthBack - ph } }, b: { pieceId: 'body', from: { x: w - xIn, y: sa }, to: { x: w - xIn, y: sa + ph } } },
+      );
+      if (r.hasFlap) {
+        const h = mouthBack + inToMm(r.flapLengthIn) + sa;
+        seams.push({
+          label: 'lid closure', samples: 3,
+          a: { pieceId: 'body', from: { x: w / 2 - 15, y: h - sa - hook / 2 }, to: { x: w / 2 + 15, y: h - sa - hook / 2 } },
+          b: { pieceId: 'body', from: { x: w / 2 - 15, y: sa + overlap - hook / 2 }, to: { x: w / 2 + 15, y: sa + overlap - hook / 2 } },
+        });
+      }
+      return seams;
+    } catch {
+      return [];
+    }
+  }, [inputs, result]);
+
   const banner = (
     <>
       <ValidationBanner errors={errors} />
@@ -165,6 +240,7 @@ export function MagPouchPage({ project, updateInputs, resetProject, importProjec
               pattern={result.pattern}
               object={foldObject}
               placements={foldPlacements}
+              seams={foldSeams}
             />
           )}
         </div>

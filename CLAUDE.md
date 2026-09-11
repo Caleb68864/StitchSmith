@@ -80,6 +80,21 @@ numbers. Rules already encoded, with the note that justifies each:
 - When a note marks a number Open / Inferred, carry it forward as an input or
   a warning tagged `mock-derived`, never as a hard default.
 
+## 3D preview conventions
+
+- Every `fold`-role path a generator emits is a hinge for the 3D preview
+  (`src/lib/fold-engine`) and a crease for the cloth simulation
+  (`src/lib/cloth-engine`). A fold only splits the regions it fully crosses,
+  so short marks are harmless, but label real folds: the default angle comes
+  from the label (`hem`/`mouth` → 180°, `lid` → 150°, `wing`/`bottom`/`spine`
+  → 90°), and a label may state it outright, e.g. `Lid crease over the top (90°)`.
+- A lid that wraps an object standing proud of the mouth needs two creases
+  (over the top, down the face) and a length of 2 × exposed + depth + overlap.
+- Generators supply seams to the preview in flat pattern coordinates
+  (`FoldPreview3D.seams`); a seam through a folded double layer must be
+  declared for both layers. Gathered seams are not modelled — leave them out
+  and say so.
+
 ## Engine usage
 
 All generators (Tool Roll, Tri-Zip, Roll-Top Sack, Mag Pouch, Book Cover, Zip Pouch, Circle Skirt) consume `src/lib/pattern-engine/` for graph types (`Point`, `Edge`, `Path`, `Piece`, `Pattern`), geometry helpers (offset, arc, bbox), and exporters (SVG, PDF, DXF, project JSON). New generators must use the engine — do not fork geometry or export code into the generator directory.

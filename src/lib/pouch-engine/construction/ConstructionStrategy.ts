@@ -47,6 +47,10 @@ export interface PleatedCardParams {
   /** Lid length above the card, cut integral with the back. 0 = open top. */
   flapLength: number;
   bottomStyle: CardBottomStyle;
+  /** Object height standing proud of the mouth, mm — places the lid creases. Default 0 (none). */
+  exposedHeight?: number;
+  /** Object depth the lid wraps over the top, mm. Default 0. */
+  objectDepth?: number;
 }
 
 /** Full specification passed to `buildPouch` and to each strategy. */

@@ -23,6 +23,8 @@ export function toCardParams(r: ResolvedMagPouch): PleatedCardParams {
     faceBottomHem: inToMm(akFaceHemIn(r)),
     flapLength: inToMm(r.flapLengthIn),
     bottomStyle: r.bottomStyle,
+    exposedHeight: inToMm(r.exposedHeightIn),
+    objectDepth: inToMm(r.cellDepthIn),
   };
 }
 

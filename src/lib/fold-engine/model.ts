@@ -18,7 +18,7 @@ import {
   type Poly,
   type Line,
   pathToPolygon,
-  splitPolygon,
+  splitPolygonMulti,
   sideOf,
   area,
   centroid,
@@ -71,7 +71,11 @@ export interface FoldModel {
 }
 
 export interface BuildOptions {
-  /** A fold line must span at least this fraction of the outline along its direction to count as a hinge. */
+  /**
+   * A fold line must span at least this fraction of the outline along its
+   * direction to be considered at all. Default 0: a fold only splits the
+   * regions it fully crosses, which already ignores short tick marks.
+   */
   minSpanFraction?: number;
   /** Curve sampling per edge. */
   segments?: number;
@@ -109,6 +113,37 @@ function intervalsOnLine(poly: Poly, line: Line): [number, number][] {
   return out;
 }
 
+/**
+ * Parameter range (along `line.d` from `line.p`) over which the infinite line
+ * lies inside the polygon: the span between its first and last crossings of
+ * the boundary. Null when the line misses the polygon.
+ */
+function lineSpanInPolygon(poly: Poly, line: Line): [number, number] | null {
+  let lo = Infinity;
+  let hi = -Infinity;
+  const n = poly.length;
+  for (let i = 0; i < n; i++) {
+    const a = poly[i];
+    const b = poly[(i + 1) % n];
+    const sa = sideOf(line, a);
+    const sb = sideOf(line, b);
+    const onA = Math.abs(sa) < 1e-6;
+    const onB = Math.abs(sb) < 1e-6;
+    const push = (q: Point) => {
+      const t = (q.x - line.p.x) * line.d.x + (q.y - line.p.y) * line.d.y;
+      lo = Math.min(lo, t);
+      hi = Math.max(hi, t);
+    };
+    if (onA) push(a);
+    if (onB) push(b);
+    if (!onA && !onB && sa * sb < 0) {
+      const t = sa / (sa - sb);
+      push({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t });
+    }
+  }
+  return hi - lo > 1e-6 ? [lo, hi] : null;
+}
+
 /** Longest overlap between two interval sets, or null when they barely touch. */
 function overlapInterval(a: [number, number][], b: [number, number][]): [number, number] | null {
   let best: [number, number] | null = null;
@@ -122,7 +157,7 @@ function overlapInterval(a: [number, number][], b: [number, number][]): [number,
 
 /** Build the fold model for one piece, or null when it has no closed outline. */
 export function buildFoldModel(piece: Piece, opts: BuildOptions = {}): FoldModel | null {
-  const minSpan = opts.minSpanFraction ?? 0.6;
+  const minSpan = opts.minSpanFraction ?? 0;
   const segments = opts.segments ?? 16;
   const outlinePath = piece.paths.find((p) => p.closed && p.edges.length > 0);
   if (!outlinePath) return null;
@@ -142,16 +177,44 @@ export function buildFoldModel(piece: Piece, opts: BuildOptions = {}): FoldModel
     folds.push({ index: folds.length, pathId: path.id, label: path.label, a: e.start, b: e.end, line: { p: e.start, d }, length: len });
   }
 
-  // Split the outline by every fold line.
+  // Split the outline by the fold SEGMENTS: a fold only splits a region it
+  // crosses from side to side, so a wing fold that runs the front row does not
+  // slice the bottom band, and a short box-corner tick splits nothing. Repeat
+  // until no region changes, because a segment may only fully cross a region
+  // after another fold has cut it down.
   let polys: Poly[] = [outline];
-  for (const f of folds) {
-    const next: Poly[] = [];
-    for (const poly of polys) {
-      const { pos, neg } = splitPolygon(poly, f.line);
-      if (pos.length >= 3) next.push(pos);
-      if (neg.length >= 3) next.push(neg);
+  for (let pass = 0; pass < 8; pass++) {
+    let changed = false;
+    for (const f of folds) {
+      const ta = 0;
+      const tb = f.length;
+      const next: Poly[] = [];
+      for (const poly of polys) {
+        const span = lineSpanInPolygon(poly, f.line);
+        if (!span || ta > span[0] + 1e-3 || tb < span[1] - 1e-3) { next.push(poly); continue; }
+        const { pos, neg } = splitPolygonMulti(poly, f.line);
+        if (pos.length > 0 && neg.length > 0) { next.push(...pos, ...neg); changed = true; }
+        else next.push(poly);
+      }
+      polys = next;
     }
-    polys = next;
+    if (!changed) break;
+  }
+  // Drop folds that split nothing (short tick marks, lines outside the piece) and reindex.
+  {
+    const used = new Set<number>();
+    for (const f of folds) {
+      for (const poly of polys) {
+        const span = lineSpanInPolygon(poly, f.line);
+        if (!span) continue;
+        // A fold is "used" when some region has boundary lying on it.
+        if (intervalsOnLine(poly, f.line).length > 0) { used.add(f.index); break; }
+      }
+    }
+    const kept = folds.filter((f) => used.has(f.index));
+    kept.forEach((f, i) => { f.index = i; });
+    folds.length = 0;
+    folds.push(...kept);
   }
   const regions: Region[] = polys.map((poly, index) => ({ index, poly, centroid: centroid(poly), area: area(poly) }));
 
@@ -168,6 +231,11 @@ export function buildFoldModel(piece: Piece, opts: BuildOptions = {}): FoldModel
         if (si * sj >= 0) continue; // same side: not across this fold
         const ov = overlapInterval(ivs[i], ivs[j]);
         if (!ov) continue;
+        // A hinge needs a real shared edge: a seam-allowance sliver (a wing's bottom
+        // edge overlapping the band's top edge by one SA) is not a fold.
+        const lenI = ivs[i].reduce((s, [a, b]) => s + (b - a), 0);
+        const lenJ = ivs[j].reduce((s, [a, b]) => s + (b - a), 0);
+        if (ov[1] - ov[0] < 0.5 * Math.min(lenI, lenJ)) continue;
         const a = { x: f.line.p.x + f.line.d.x * ov[0], y: f.line.p.y + f.line.d.y * ov[0] };
         const b = { x: f.line.p.x + f.line.d.x * ov[1], y: f.line.p.y + f.line.d.y * ov[1] };
         adj[i].push({ other: j, fold: f.index, a, b });
@@ -229,6 +297,9 @@ export function defaultFoldAngles(model: FoldModel): number[] {
   const total = model.regions.reduce((s, r) => s + r.area, 0) || 1;
   return model.folds.map((f) => {
     const key = `${f.label ?? ''} ${f.pathId}`.toLowerCase();
+    // A label may state its angle outright, e.g. "Lid crease over the top (90°)".
+    const explicit = /\((-?\d+(?:\.\d+)?)°\)/.exec(f.label ?? '');
+    if (explicit) return parseFloat(explicit[1]) * DEG;
     if (/hem|mouth|tube|centre|center|half/.test(key)) return 180 * DEG;
     if (/lid|flap/.test(key)) return 150 * DEG;
     if (/spine|cover|collar|wing|bottom|box|gusset/.test(key)) return 90 * DEG;
@@ -308,13 +379,11 @@ export interface FoldedModel {
   hinges: FoldedHingeLine[];
 }
 
-/**
- * Fold the model: `angles[i]` is the full hinge angle for fold i (radians),
- * `t` scales every angle (0 = flat, 1 = fully folded).
- */
-export function foldModel(model: FoldModel, angles: number[], t = 1): FoldedModel {
+/** Column-major 4×4 transform per region for the given fold angles (exported for the cloth engine). */
+export type RegionTransform = number[];
+
+export function regionTransforms(model: FoldModel, angles: number[], t = 1): RegionTransform[] {
   const transforms: Mat4[] = model.regions.map(() => identity());
-  const hingeLines: FoldedHingeLine[] = [];
   for (const h of model.hinges) {
     const f = model.folds[h.fold];
     const a3 = to3(f.a);
@@ -324,6 +393,23 @@ export function foldModel(model: FoldModel, angles: number[], t = 1): FoldedMode
     const theta = (angles[h.fold] ?? 0) * t * h.sign;
     // Rotate in the flat frame, then carry the parent's transform.
     transforms[h.child] = multiply(transforms[h.parent], rotateAboutLine(a3, u, theta));
+  }
+  return transforms;
+}
+
+/** Map a flat pattern point (mm, y down) to 3D through a region transform. */
+export function transformFlatPoint(m: RegionTransform, p: Point): Vec3 {
+  return apply(m, to3(p));
+}
+
+/**
+ * Fold the model: `angles[i]` is the full hinge angle for fold i (radians),
+ * `t` scales every angle (0 = flat, 1 = fully folded).
+ */
+export function foldModel(model: FoldModel, angles: number[], t = 1): FoldedModel {
+  const transforms = regionTransforms(model, angles, t);
+  const hingeLines: FoldedHingeLine[] = [];
+  for (const h of model.hinges) {
     hingeLines.push({ fold: h.fold, a: apply(transforms[h.parent], to3(h.a)), b: apply(transforms[h.parent], to3(h.b)) });
   }
   const panels: FoldedPanel[] = model.regions.map((r) => ({
@@ -332,6 +418,17 @@ export function foldModel(model: FoldModel, angles: number[], t = 1): FoldedMode
     triangles: triangulate(r.poly),
   }));
   return { pieceId: model.pieceId, panels, hinges: hingeLines };
+}
+
+/** True when a flat point lies within `tol` of any fold segment of the model. */
+export function onAnyFold(model: FoldModel, q: Point, tol = 1): boolean {
+  for (const f of model.folds) {
+    const off = Math.abs(f.line.d.x * (q.y - f.line.p.y) - f.line.d.y * (q.x - f.line.p.x));
+    if (off > tol) continue;
+    const along = (q.x - f.line.p.x) * f.line.d.x + (q.y - f.line.p.y) * f.line.d.y;
+    if (along > -tol && along < f.length + tol) return true;
+  }
+  return false;
 }
 
 /** Index of the region containing a flat-pattern point, or −1. */

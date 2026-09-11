@@ -48,6 +48,8 @@ export interface PanelGeometry {
   bottomBandHeight: number;
   /** Flap height in mm, 0 when no flap. */
   flapHeight: number;
+  /** Object height standing proud of the mouth, mm (0 when fully enclosed). */
+  exposedHeight: number;
   internalDims: InternalDimensions;
 }
 
@@ -56,6 +58,8 @@ export interface SAPanelGeometry extends PanelGeometry {
   sa: number;
   cutWidth: number;
   cutHeight: number;
+  /** Object height standing proud of the mouth (object height − internal height), mm. */
+  exposedHeight: number;
 }
 
 /** Edges grouped by semantic role. */
@@ -117,6 +121,7 @@ function _checkAspectRatio(dims: InternalDimensions, method: ConstructionMethod)
 function _computePanelGeometry(
   dims: InternalDimensions,
   flap?: FlapSpec,
+  objectHeight?: number,
 ): PanelGeometry {
   const wingWidth = dims.depth;
   const frontHeight = dims.height;
@@ -137,6 +142,7 @@ function _computePanelGeometry(
     backHeight,
     bottomBandHeight,
     flapHeight,
+    exposedHeight: Math.max(0, (objectHeight ?? dims.height) - dims.height),
     internalDims: dims,
   };
 }
@@ -147,6 +153,7 @@ function _applySeamAllowances(geo: PanelGeometry, sa: number): SAPanelGeometry {
     sa,
     cutWidth: geo.panelWidth + sa * 2,
     cutHeight: geo.panelHeight + sa * 2,
+    exposedHeight: geo.exposedHeight,
   };
 }
 
@@ -173,57 +180,84 @@ function _buildEdges(saGeo: SAPanelGeometry, _flap?: FlapSpec): EdgeSet {
   // Key X positions
   const xWingRight   = sa + wingW;
   const xBodyRight   = xWingRight + saGeo.internalDims.width;
-  // const xWingRight2  = w - sa; // same as xBodyRight + wingW
 
   let edgeCounter = 0;
   const eid = () => `body:e${edgeCounter++}`;
 
-  // Perimeter cut edges (outer rectangle)
-  const eBottom: Edge = { kind: 'straight', id: eid(), role: 'cut', start: { x: x0, y: y0 },      end: { x: w,  y: y0 } };
-  const eRight:  Edge = { kind: 'straight', id: eid(), role: 'cut', start: { x: w,  y: y0 },      end: { x: w,  y: h  } };
-  const eTop:    Edge = { kind: 'straight', id: eid(), role: 'cut', start: { x: w,  y: h  },      end: { x: x0, y: h  } };
-  const eLeft:   Edge = { kind: 'straight', id: eid(), role: 'cut', start: { x: x0, y: h  },      end: { x: x0, y: y0 } };
+  // Perimeter: a true cross. Wings exist on the front and back rows only; the
+  // bottom band and the lid are the centre width plus one seam allowance each
+  // side, so the band's sides and the lid's sides carry SA and the corner
+  // squares (which could never fold two ways) are cut away.
+  // Notches run the full band height and the full lid height, so the wings end
+  // exactly at the fold lines (their bottom edges are raw — bind or leave the
+  // corner open) and the band / lid keep one SA of side beyond the centre.
+  const wingW0 = wingW;                    // notch depth = finished wing depth
+  const yFrontRowBottom = yFrontTop;
+  const yBackRowTop = yBackBottom;
+  const yLidRowBottom = yBackTop;
+  const ring: { x: number; y: number }[] = [
+    { x: x0, y: y0 }, { x: w, y: y0 },
+    { x: w, y: yFrontRowBottom }, { x: w - wingW0, y: yFrontRowBottom },
+    { x: w - wingW0, y: yBackRowTop }, { x: w, y: yBackRowTop },
+    { x: w, y: yLidRowBottom }, { x: w - wingW0, y: yLidRowBottom },
+    { x: w - wingW0, y: h }, { x: wingW0, y: h },
+    { x: wingW0, y: yLidRowBottom }, { x: x0, y: yLidRowBottom },
+    { x: x0, y: yBackRowTop }, { x: wingW0, y: yBackRowTop },
+    { x: wingW0, y: yFrontRowBottom }, { x: x0, y: yFrontRowBottom },
+  ];
+  const cutEdgesList: Edge[] = ring.map((p, i) => ({
+    kind: 'straight', id: eid(), role: 'cut', start: p, end: ring[(i + 1) % ring.length],
+  }));
 
-  // Fold lines
-  // Left wing fold  (vertical, at x = sa + wingW)
-  const eFoldLeftWing: Edge = {
-    kind: 'straight', id: eid(), role: 'fold',
-    start: { x: xWingRight, y: y0 },
-    end:   { x: xWingRight, y: h  },
-  };
-  // Right wing fold (vertical, at x = sa + wingW + internalWidth)
-  const eFoldRightWing: Edge = {
-    kind: 'straight', id: eid(), role: 'fold',
-    start: { x: xBodyRight, y: y0 },
-    end:   { x: xBodyRight, y: h  },
-  };
+  // Fold lines. Wing folds are per row (they do not run through the band or
+  // lid); the three horizontal folds span the full width of their rows.
+  const eFoldLeftWingFront: Edge = { kind: 'straight', id: eid(), role: 'fold', start: { x: xWingRight, y: y0 }, end: { x: xWingRight, y: yFrontRowBottom } };
+  const eFoldRightWingFront: Edge = { kind: 'straight', id: eid(), role: 'fold', start: { x: xBodyRight, y: y0 }, end: { x: xBodyRight, y: yFrontRowBottom } };
+  const eFoldLeftWingBack: Edge = { kind: 'straight', id: eid(), role: 'fold', start: { x: xWingRight, y: yBackRowTop }, end: { x: xWingRight, y: yLidRowBottom } };
+  const eFoldRightWingBack: Edge = { kind: 'straight', id: eid(), role: 'fold', start: { x: xBodyRight, y: yBackRowTop }, end: { x: xBodyRight, y: yLidRowBottom } };
   // Front-to-bottom fold (horizontal, separating front from bottom band)
   const eFoldFrontToBottom: Edge = {
     kind: 'straight', id: eid(), role: 'fold',
     start: { x: x0, y: yFrontTop },
-    end:   { x: w,  y: yFrontTop },
+    end: { x: w,  y: yFrontTop },
   };
-  // Bottom-to-back fold (horizontal, top of the bottom band / start of the back)
+  // Bottom-to-back fold (horizontal, top of the bottom band / start of back)
   const eFoldBottomToBack: Edge = {
     kind: 'straight', id: eid(), role: 'fold',
     start: { x: x0, y: yBackBottom },
     end: { x: w,  y: yBackBottom },
   };
-  // Back-to-flap fold (horizontal, top of back panel / bottom of flap region)
+  // Back-to-flap fold (horizontal, top of back panel / bottom of flap region).
+  // The lid continues flat behind the object; it takes its creases in use.
   const eFoldBackToFlap: Edge = {
     kind: 'straight', id: eid(), role: 'fold',
     start: { x: x0, y: yBackTop },
-    end:   { x: w,  y: yBackTop },
+    end: { x: w,  y: yBackTop },
   };
+  // Lid creases where it wraps the object standing proud of the mouth: over the
+  // top (one exposed height past the mouth) and down the front (one depth later).
+  const lidCreases: Edge[] = [];
+  if (saGeo.flapHeight > 0 && saGeo.exposedHeight > 0) {
+    const yTop = yBackTop + saGeo.exposedHeight;
+    const yFront = yTop + saGeo.internalDims.depth;
+    if (yFront < h - sa) {
+      lidCreases.push(
+        { kind: 'straight', id: eid(), role: 'fold', start: { x: wingW, y: yTop }, end: { x: w - wingW, y: yTop } },
+        { kind: 'straight', id: eid(), role: 'fold', start: { x: wingW, y: yFront }, end: { x: w - wingW, y: yFront } },
+      );
+    }
+  }
 
   const allEdges: Edge[] = [
-    eBottom, eRight, eTop, eLeft,
-    eFoldLeftWing, eFoldRightWing, eFoldFrontToBottom, eFoldBottomToBack, eFoldBackToFlap,
+    ...cutEdgesList,
+    eFoldLeftWingFront, eFoldRightWingFront, eFoldLeftWingBack, eFoldRightWingBack,
+    eFoldFrontToBottom, eFoldBottomToBack, eFoldBackToFlap, ...lidCreases,
   ];
 
-  const cutEdgeIds = [eBottom.id, eRight.id, eTop.id, eLeft.id];
+  const cutEdgeIds = cutEdgesList.map((e) => e.id);
   const foldEdgeIds = [
-    eFoldLeftWing.id, eFoldRightWing.id, eFoldFrontToBottom.id, eFoldBottomToBack.id, eFoldBackToFlap.id,
+    eFoldLeftWingFront.id, eFoldRightWingFront.id, eFoldLeftWingBack.id, eFoldRightWingBack.id,
+    eFoldFrontToBottom.id, eFoldBottomToBack.id, eFoldBackToFlap.id, ...lidCreases.map((e) => e.id),
   ];
 
   const seamAllowances: Record<EdgeId, number> = {};
@@ -250,7 +284,7 @@ function _assemblePieces(edgeSet: EdgeSet, ctx: CalcContext): Piece[] {
   };
   // Labels name the fold for the legend and drive the 3D fold preview's
   // default hinge angles (wing/bottom → 90°, lid → wrap).
-  const foldLabels = ['Wing fold (left)', 'Wing fold (right)', 'Front–bottom fold', 'Bottom–back fold', 'Lid fold'];
+  const foldLabels = ['Wing fold (front, left)', 'Wing fold (front, right)', 'Wing fold (back, left)', 'Wing fold (back, right)', 'Front–bottom fold', 'Bottom–back fold', 'Lid fold (0°)', 'Lid crease over the top (90°)', 'Lid crease down the front (90°)'];
   const foldPaths: Path[] = foldEdges.map((e, i) => ({
     id: `body-fold-${e.id}`,
     closed: false,
@@ -327,7 +361,7 @@ export function runCalcPipeline(spec: PouchSpec): {
   ctx.warnings = warnings;
 
   // Step 4 – panel geometry
-  const panelGeo = pipelineSteps.computePanelGeometry(dims, ctx.spec.flap);
+  const panelGeo = pipelineSteps.computePanelGeometry(dims, ctx.spec.flap, ctx.spec.object.height);
   ctx.panelGeo = panelGeo;
 
   // Step 5 – seam allowances

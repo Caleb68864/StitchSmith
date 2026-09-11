@@ -112,31 +112,146 @@ function intersect(a: Point, b: Point, line: Line): Point {
 }
 
 /**
- * Split a polygon by an infinite line into the part on the positive side and
- * the part on the negative side (Sutherland–Hodgman against each half-plane).
- * Either part may be empty. Vertices on the line go to both parts.
+ * Split a simple polygon by an infinite line into the parts on the positive
+ * side and the negative side. Works for concave outlines (the folded-T cross,
+ * an L): the boundary is cut into chains at its crossings of the line, and the
+ * chains on each side are stitched back together along the line by pairing
+ * consecutive crossings (the inside intervals of a simple polygon alternate).
+ * Boundary runs lying ON the line stay with the side whose interior touches
+ * them. Either result may be empty; each may hold several polygons.
+ */
+export function splitPolygonMulti(poly: Poly, line: Line, tol = 1e-6): { pos: Poly[]; neg: Poly[] } {
+  const n = poly.length;
+  if (n < 3) return { pos: [], neg: [] };
+  const raw = poly.map((q): -1 | 0 | 1 => {
+    const v = sideOf(line, q);
+    return v > tol ? 1 : v < -tol ? -1 : 0;
+  });
+  if (raw.every((x) => x >= 0)) return { pos: [poly], neg: [] };
+  if (raw.every((x) => x <= 0)) return { pos: [], neg: [poly] };
+  // A vertex on the line whose nearest off-line neighbours share a side is a
+  // touch, not a crossing: give it that side so only real crossings make runs.
+  const sides = raw.slice();
+  const nextNonZero = (i: number, dir: 1 | -1): -1 | 1 => {
+    for (let k = 1; k < n; k++) { const v = raw[(i + dir * k + n * k) % n]; if (v !== 0) return v; }
+    return 1;
+  };
+  for (let i = 0; i < n; i++) {
+    if (raw[i] !== 0) continue;
+    const a = nextNonZero(i, -1);
+    const b = nextNonZero(i, 1);
+    if (a === b) sides[i] = a;
+  }
+  if (sides.every((x) => x >= 0)) return { pos: [poly], neg: [] };
+  if (sides.every((x) => x <= 0)) return { pos: [], neg: [poly] };
+
+  // Ring with intersection vertices inserted at every side change.
+  type V = { p: Point; s: -1 | 0 | 1 };
+  const ring0: V[] = [];
+  for (let i = 0; i < n; i++) {
+    const a = poly[i];
+    const b = poly[(i + 1) % n];
+    ring0.push({ p: a, s: sides[i] });
+    if (sides[i] * sides[(i + 1) % n] < 0) ring0.push({ p: intersect(a, b, line), s: 0 });
+  }
+  // Rotate so the ring starts at the first vertex of a chain (previous vertex is on the line or the other side).
+  let start = -1;
+  for (let i = 0; i < ring0.length; i++) {
+    const v = ring0[i];
+    const prev = ring0[(i + ring0.length - 1) % ring0.length];
+    if (v.s !== 0 && prev.s !== v.s) { start = i; break; }
+  }
+  if (start < 0) return { pos: [], neg: [] };
+  const ring = ring0.slice(start).concat(ring0.slice(0, start));
+
+  const ccw = signedArea(poly) > 0;
+  const tOf = (q: Point) => (q.x - line.p.x) * line.d.x + (q.y - line.p.y) * line.d.y;
+
+  // Segments: chains (one side) and runs (on the line), alternating.
+  type Seg = { kind: 'chain'; side: -1 | 1; verts: Point[] } | { kind: 'run'; verts: Point[] };
+  const segs: Seg[] = [];
+  for (const v of ring) {
+    const last = segs[segs.length - 1];
+    if (v.s === 0) {
+      if (last && last.kind === 'run') last.verts.push(v.p); else segs.push({ kind: 'run', verts: [v.p] });
+    } else if (last && last.kind === 'chain' && last.side === v.s) {
+      last.verts.push(v.p);
+    } else {
+      segs.push({ kind: 'chain', side: v.s, verts: [v.p] });
+    }
+  }
+  const chains = segs.filter((x): x is Seg & { kind: 'chain' } => x.kind === 'chain').map((c) => ({ side: c.side, verts: [...c.verts] }));
+  if (chains.length < 2) {
+    const c = chains[0];
+    return c && c.side > 0 ? { pos: [dedupe(c.verts)], neg: [] } : c ? { pos: [], neg: [dedupe(c.verts)] } : { pos: [], neg: [] };
+  }
+  // Attach each run (a crossing) to its neighbouring chains.
+  let ci = -1;
+  for (const seg of segs) {
+    if (seg.kind === 'chain') { ci++; continue; }
+    const prev = chains[(ci + chains.length) % chains.length];
+    const next = chains[(ci + 1) % chains.length];
+    const run = seg.verts;
+    if (run.length === 1) {
+      prev.verts.push(run[0]);
+      next.verts.unshift(run[0]);
+      continue;
+    }
+    const runDir = tOf(run[run.length - 1]) - tOf(run[0]);
+    // Interior lies to the left of the boundary for a CCW ring: that side owns the run.
+    const owner = (runDir > 0 ? 1 : -1) * (ccw ? 1 : -1);
+    if (owner === prev.side) { prev.verts.push(...run); next.verts.unshift(run[run.length - 1]); }
+    else { prev.verts.push(run[0]); next.verts.unshift(...run); }
+  }
+  // Chains whose ring-wrap split them are already contiguous because the ring starts at a chain start.
+
+  // Crossings: each chain's start and end lie on the line. Sort by t and pair (2k, 2k+1).
+  const ends = chains.flatMap((c, i) => [
+    { t: tOf(c.verts[0]), chain: i, end: 'start' as const },
+    { t: tOf(c.verts[c.verts.length - 1]), chain: i, end: 'end' as const },
+  ]);
+  // Distinct crossing points along the line, sorted.
+  const ts = [...new Set(ends.map((e) => Math.round(e.t * 1e6) / 1e6))].sort((a, b) => a - b);
+  const partnerT = (t: number): number | null => {
+    const k = ts.findIndex((x) => Math.abs(x - t) < 1e-5);
+    if (k < 0) return null;
+    const pk = k % 2 === 0 ? k + 1 : k - 1;
+    return pk >= 0 && pk < ts.length ? ts[pk] : null;
+  };
+
+  const result: { pos: Poly[]; neg: Poly[] } = { pos: [], neg: [] };
+  const visited = new Set<number>();
+  for (let s0 = 0; s0 < chains.length; s0++) {
+    if (visited.has(s0)) continue;
+    const side = chains[s0].side;
+    const out: Point[] = [];
+    let cur = s0;
+    let guard = 0;
+    while (!visited.has(cur) && guard++ <= chains.length) {
+      visited.add(cur);
+      out.push(...chains[cur].verts);
+      const tEnd = tOf(chains[cur].verts[chains[cur].verts.length - 1]);
+      const tP = partnerT(tEnd);
+      if (tP === null) break;
+      const next = chains.findIndex((c, i) => !visited.has(i) && c.side === side && Math.abs(tOf(c.verts[0]) - tP) < 1e-5);
+      if (next < 0) break;
+      cur = next;
+    }
+    const cleaned = dedupe(out);
+    if (cleaned.length >= 3 && area(cleaned) > tol) (side > 0 ? result.pos : result.neg).push(cleaned);
+  }
+  return result;
+}
+
+/**
+ * Split a polygon by an infinite line. Convenience wrapper returning one
+ * polygon per side (the largest when the split yields several); callers that
+ * need every part use `splitPolygonMulti`.
  */
 export function splitPolygon(poly: Poly, line: Line, tol = 1e-6): { pos: Poly; neg: Poly } {
-  const clip = (sign: 1 | -1): Poly => {
-    const out: Poly = [];
-    const n = poly.length;
-    for (let i = 0; i < n; i++) {
-      const a = poly[i];
-      const b = poly[(i + 1) % n];
-      const sa = sideOf(line, a) * sign;
-      const sb = sideOf(line, b) * sign;
-      const aIn = sa >= -tol;
-      const bIn = sb >= -tol;
-      if (aIn) out.push(a);
-      if ((aIn && !bIn) || (!aIn && bIn)) {
-        if (Math.abs(sa) > tol || Math.abs(sb) > tol) out.push(intersect(a, b, line));
-      }
-    }
-    return dedupe(out);
-  };
-  const pos = clip(1);
-  const neg = clip(-1);
-  return { pos: area(pos) > tol ? pos : [], neg: area(neg) > tol ? neg : [] };
+  const r = splitPolygonMulti(poly, line, tol);
+  const biggest = (arr: Poly[]) => arr.reduce<Poly>((best, p) => (area(p) > area(best) ? p : best), []);
+  return { pos: biggest(r.pos), neg: biggest(r.neg) };
 }
 
 function dedupe(p: Poly): Poly {
@@ -167,12 +282,31 @@ export function boundaryOnLine(poly: Poly, line: Line): number {
   return len;
 }
 
-/** Ear-clipping triangulation. Returns index triples into `poly`. */
+/**
+ * Ear-clipping triangulation. Returns index triples into `poly`. Collinear
+ * vertices (which appear wherever a split line meets a straight edge) are
+ * skipped as ear tips so they cannot stall the clipper, and are still covered
+ * because the ear on either side spans them.
+ */
 export function triangulate(poly: Poly): [number, number, number][] {
   const n = poly.length;
   if (n < 3) return [];
-  const idx = Array.from({ length: n }, (_, i) => i);
+  let idx = Array.from({ length: n }, (_, i) => i);
   if (signedArea(poly) < 0) idx.reverse();
+  // Remove collinear middle vertices from the working ring; they add no area.
+  const collinear = (a: Point, b: Point, c: Point) => Math.abs((b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x)) < 1e-7 * Math.max(1, dist(a, c));
+  let pruned = true;
+  while (pruned && idx.length > 3) {
+    pruned = false;
+    for (let i = 0; i < idx.length; i++) {
+      const a = poly[idx[(i + idx.length - 1) % idx.length]];
+      const b = poly[idx[i]];
+      const c = poly[idx[(i + 1) % idx.length]];
+      if (collinear(a, b, c)) { idx.splice(i, 1); pruned = true; break; }
+    }
+  }
+  if (idx.length < 3) return [];
+  idx = [...idx];
   const tris: [number, number, number][] = [];
   const isConvex = (a: Point, b: Point, c: Point) => (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x) > EPS;
   const inTri = (p: Point, a: Point, b: Point, c: Point) => {

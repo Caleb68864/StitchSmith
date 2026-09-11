@@ -10,11 +10,28 @@ import {
   measureCavity,
   regionsUnderFolds,
   withoutRegions,
+  regionAt,
+  onAnyFold,
   type FoldModel,
   type FoldedModel,
   type CavityReport,
 } from '../../lib/fold-engine/index.js';
-import type { FoldPreview3DProps, PiecePlacement } from './FoldPreview3D.js';
+import type { FoldPreview3DProps, PiecePlacement, SeamSpec } from './FoldPreview3D.js';
+import {
+  buildClothMesh,
+  createWorld,
+  step as clothStep,
+  seamResidual,
+  maxStretch,
+  maxPenetration,
+  foldedInitial,
+  foldedCreaseRest,
+  type ClothWorld,
+} from '../../lib/cloth-engine/index.js';
+
+const CLOTH_SPACING = 8;
+const CLOTH_STEPS = 360;
+const CLOTH_STEPS_PER_FRAME = 8;
 
 const DEG = Math.PI / 180;
 const PIECE_GAP = 20;
@@ -63,7 +80,12 @@ function fmtMm(v: number | null): string {
   return v === null ? 'open' : `${Math.round(v)} mm`;
 }
 
-export function FoldViewer({ pattern, object, placements = {}, initialProgress = 1, height = 360 }: FoldPreview3DProps) {
+// Stable defaults: fresh `{}` / `[]` per render would re-run the geometry effect on
+// every stats update and restart the cloth simulation from step 0.
+const NO_PLACEMENTS: Record<string, PiecePlacement> = {};
+const NO_SEAMS: SeamSpec[] = [];
+
+export function FoldViewer({ pattern, object, placements = NO_PLACEMENTS, seams = NO_SEAMS, initialProgress = 1, height = 360 }: FoldPreview3DProps) {
   const mountRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<{ scene: THREE.Scene; group: THREE.Group; renderer: THREE.WebGLRenderer; camera: THREE.PerspectiveCamera; controls: OrbitControls } | null>(null);
   const [progress, setProgress] = useState(initialProgress);
@@ -72,6 +94,9 @@ export function FoldViewer({ pattern, object, placements = {}, initialProgress =
   const [angleOverrides, setAngleOverrides] = useState<Record<string, number>>({});
   const [allPieces, setAllPieces] = useState(false);
   const [cavity, setCavity] = useState<(CavityReport & { floor: number | null; above: number | null }) | null>(null);
+  const [simulate, setSimulate] = useState(false);
+  const [simStats, setSimStats] = useState<{ steps: number; stretch: number; seam: number; pen: number } | null>(null);
+  const clothRef = useRef<{ world: ClothWorld; geoms: THREE.BufferGeometry[]; raf: number } | null>(null);
 
   const entries = useMemo(() => layoutPieces(pattern, allPieces, placements, object?.base), [pattern, allPieces, placements, object?.base]);
   const first = entries[0];
@@ -138,6 +163,20 @@ export function FoldViewer({ pattern, object, placements = {}, initialProgress =
     const bounds = new THREE.Box3();
     const foldedModels: FoldedModel[] = [];
 
+    // Object placement (used by both the box and the cloth solids).
+    let objectBox: { center: [number, number, number]; half: [number, number, number]; dir3: THREE.Vector3 } | null = null;
+    if (object && first) {
+      const host = object.base ? entries.find((e) => e.model.pieceId === object.base!.pieceId) ?? first : first;
+      const root = host.model.regions[host.model.root];
+      const dirFlat = object.base?.direction ?? { x: 0, y: -1 };
+      const dir3 = new THREE.Vector3(dirFlat.x, -dirFlat.y, 0).normalize();
+      const base = object.base?.point ?? { x: root.centroid.x, y: Math.max(...root.poly.map((p) => p.y)) };
+      // Lift the object one fabric thickness off its base seam so cloth can pass under it.
+      const centre = new THREE.Vector3(base.x + host.offsetX, -base.y - host.offsetY, host.offsetZ + object.depth / 2 + 0.6).add(dir3.clone().multiplyScalar(object.height / 2 + 1.5));
+      const vertical = Math.abs(dir3.y) > Math.abs(dir3.x);
+      objectBox = { center: [centre.x, centre.y, centre.z], half: vertical ? [object.width / 2, object.height / 2, object.depth / 2] : [object.height / 2, object.width / 2, object.depth / 2], dir3 };
+    }
+
     for (const entry of entries) {
       const angles = defaultFoldAngles(entry.model).map((a, i) => {
         const key = `${entry.model.pieceId}:${i}`;
@@ -175,23 +214,95 @@ export function FoldViewer({ pattern, object, placements = {}, initialProgress =
       }
     }
 
+    // Stage 3: cloth simulation replaces the rigid panels with a seamed, relaxed mesh.
+    if (clothRef.current) { cancelAnimationFrame(clothRef.current.raf); clothRef.current = null; }
+    if (simulate && !showFlat) {
+      // Drop the rigid panel meshes; keep hinge lines for orientation.
+      for (const c of [...group.children]) if ((c as THREE.Mesh).isMesh) { group.remove(c); }
+      const clothMeshes = entries.map((e) => {
+        const piece = pattern.pieces.find((p) => p.id === e.model.pieceId)!;
+        const seamXs = seams.flatMap((sm) => [sm.a, sm.b].filter((sd) => sd.pieceId === piece.id).flatMap((sd) => [sd.from.x, sd.to.x]));
+        const seamYs = seams.flatMap((sm) => [sm.a, sm.b].filter((sd) => sd.pieceId === piece.id).flatMap((sd) => [sd.from.y, sd.to.y]));
+        return buildClothMesh(piece, { spacing: CLOTH_SPACING, extraX: seamXs, extraY: seamYs });
+      });
+      const valid = clothMeshes.map((m, i) => (m ? { mesh: m, entry: entries[i] } : null)).filter((x): x is { mesh: NonNullable<typeof clothMeshes[number]>; entry: PieceEntry } => x !== null);
+      if (valid.length > 0) {
+        const anglesOf = (entry: PieceEntry) => defaultFoldAngles(entry.model).map((a, i) => {
+          const key = `${entry.model.pieceId}:${i}`;
+          return key in angleOverrides ? angleOverrides[key] * DEG : a;
+        });
+        const inits = valid.map(({ entry }) => foldedInitial({ model: entry.model, angles: anglesOf(entry), t: progress, offset: { dx: entry.offsetX, dy: entry.offsetY, dz: entry.offsetZ } }));
+        const creases = valid.map(({ entry }) => foldedCreaseRest({ model: entry.model, angles: anglesOf(entry), t: progress }));
+        const hostId = object?.base?.pieceId ?? valid[0].entry.model.pieceId;
+        const solids = object && showObject && objectBox ? [{ kind: 'box' as const, center: objectBox.center, half: objectBox.half }] : [];
+        const world = createWorld({
+          meshes: valid.map((v) => v.mesh),
+          initial: (mi, _v, f) => inits[mi](f),
+          bendRest: (mi, k, l, i, j) => creases[mi](k, l, i, j),
+          seams,
+          solids,
+          // Pin the host panel's interior; its fold-line vertices stay free so the hinges can flex.
+          pinned: (mi, _v, f) => valid[mi].entry.model.pieceId === hostId
+            && regionAt(valid[mi].entry.model, f) === valid[mi].entry.model.root
+            && !onAnyFold(valid[mi].entry.model, f, 1.5),
+          params: { spacing: CLOTH_SPACING },
+        });
+        const geoms: THREE.BufferGeometry[] = valid.map(({ mesh, entry }) => {
+          const geom = new THREE.BufferGeometry();
+          geom.setAttribute('position', new THREE.BufferAttribute(new Float32Array(mesh.vertexCount * 3), 3));
+          geom.setIndex(Array.from(mesh.triangles));
+          const mat = new THREE.MeshStandardMaterial({ color: entry.color, side: THREE.DoubleSide, roughness: 0.9, metalness: 0, flatShading: false });
+          group.add(new THREE.Mesh(geom, mat));
+          return geom;
+        });
+        const upload = () => {
+          valid.forEach(({ mesh }, mi) => {
+            const attr = geoms[mi].getAttribute('position') as THREE.BufferAttribute;
+            const b = world.base[mi];
+            for (let v = 0; v < mesh.vertexCount; v++) {
+              attr.setXYZ(v, world.pos[3 * (b + v)], world.pos[3 * (b + v) + 1], world.pos[3 * (b + v) + 2]);
+            }
+            attr.needsUpdate = true;
+            geoms[mi].computeVertexNormals();
+          });
+        };
+        upload();
+        // Debug hook (used by the headless screenshot harness): run the remaining steps now.
+        (window as unknown as { __stitchsmithFoldViewer?: { finish: () => void } }).__stitchsmithFoldViewer = {
+          finish: () => {
+            while (world.steps < CLOTH_STEPS) clothStep(world);
+            upload();
+            setSimStats({ steps: world.steps, stretch: maxStretch(world), seam: seamResidual(world).mean, pen: maxPenetration(world) });
+          },
+        };
+        const tick = () => {
+          if (world.steps < CLOTH_STEPS) {
+            for (let k = 0; k < CLOTH_STEPS_PER_FRAME; k++) clothStep(world);
+            upload();
+            if (world.steps % 20 === 0 || world.steps >= CLOTH_STEPS) {
+              setSimStats({ steps: world.steps, stretch: maxStretch(world), seam: seamResidual(world).mean, pen: maxPenetration(world) });
+            }
+            clothRef.current = { world, geoms, raf: requestAnimationFrame(tick) };
+          }
+        };
+        clothRef.current = { world, geoms, raf: requestAnimationFrame(tick) };
+      }
+    } else {
+      setSimStats(null);
+    }
+
     // Object box. Its base sits on the root region (which stays flat), so flat
     // pattern coordinates map straight to 3D: (x, −y, 0).
     let up = new THREE.Vector3(0, 1, 0);
-    if (object && showObject && first) {
-      const host = object.base ? entries.find((e) => e.model.pieceId === object.base!.pieceId) ?? first : first;
-      const root = host.model.regions[host.model.root];
-      const dirFlat = object.base?.direction ?? { x: 0, y: -1 };
-      const dir3 = new THREE.Vector3(dirFlat.x, -dirFlat.y, 0).normalize();
-      const base = object.base?.point ?? { x: root.centroid.x, y: Math.max(...root.poly.map((p) => p.y)) };
-      const centre = new THREE.Vector3(base.x + host.offsetX, -base.y - host.offsetY, host.offsetZ + object.depth / 2 + 0.5).add(dir3.clone().multiplyScalar(object.height / 2));
+    if (object && showObject && first && objectBox) {
+      const dir3 = objectBox.dir3;
       const box = new THREE.Mesh(
         new THREE.BoxGeometry(object.width, object.height, object.depth),
         new THREE.MeshStandardMaterial({ color: 0x333333, transparent: true, opacity: 0.45, roughness: 0.6 }),
       );
       // BoxGeometry's height runs along +y; rotate about z so it runs along dir3.
       box.rotation.z = Math.atan2(dir3.y, dir3.x) - Math.PI / 2;
-      box.position.copy(centre);
+      box.position.set(objectBox.center[0], objectBox.center[1], objectBox.center[2]);
       group.add(box);
       const wire = new THREE.LineSegments(new THREE.EdgesGeometry(box.geometry), new THREE.LineBasicMaterial({ color: 0x111111 }));
       wire.rotation.copy(box.rotation);
@@ -199,14 +310,14 @@ export function FoldViewer({ pattern, object, placements = {}, initialProgress =
       group.add(wire);
       up = dir3;
       // Stage 2: measure the cavity around the object with rays against the folded panels.
-      if (!showFlat && progress >= 0.999) {
+      if (!showFlat && progress >= 0.999 && !simulate) {
+        const centre = box.position;
         const half: [number, number, number] = [object.width / 2, object.height / 2, object.depth / 2];
         // A rigid lid sweeps through the object instead of wrapping it, so measure across/depth
         // without any panel hanging off a lid fold, and only use the full model for the height axis.
         const noLid = foldedModels.map((fm, i) => withoutRegions(fm, regionsUnderFolds(entries[i].model, (f) => /lid|flap/i.test(`${f.label ?? ''} ${f.pathId}`))));
         const body = measureCavity(noLid, [centre.x, centre.y, centre.z], half);
         const full = measureCavity(foldedModels, [centre.x, centre.y, centre.z], half);
-        // The object's height runs along dir3: the floor is behind it, "above" is ahead of it.
         const floor = dir3.y < 0 ? full.y.pos : full.y.neg;
         const above = dir3.y < 0 ? full.y.neg : full.y.pos;
         setCavity({ ...body, y: full.y, floor, above });
@@ -234,7 +345,8 @@ export function FoldViewer({ pattern, object, placements = {}, initialProgress =
       s.controls.update();
     }
     if (!(object && showObject && first)) setCavity(null);
-  }, [entries, progress, showObject, showFlat, angleOverrides, object, first]);
+    return () => { if (clothRef.current) { cancelAnimationFrame(clothRef.current.raf); clothRef.current = null; } };
+  }, [entries, progress, showObject, showFlat, angleOverrides, object, first, simulate, seams, pattern]);
 
   const foldControls = entries.flatMap((e) =>
     e.model.folds.map((f, i) => {
@@ -256,9 +368,19 @@ export function FoldViewer({ pattern, object, placements = {}, initialProgress =
         </label>
         <label className="flex items-center gap-1"><input type="checkbox" checked={showFlat} onChange={(e) => setShowFlat(e.target.checked)} /> flat</label>
         <label className="flex items-center gap-1"><input type="checkbox" checked={allPieces} onChange={(e) => setAllPieces(e.target.checked)} /> all pieces</label>
+        {seams.length > 0 && <label className="flex items-center gap-1"><input type="checkbox" checked={simulate} onChange={(e) => setSimulate(e.target.checked)} /> simulate seams</label>}
         {object && <label className="flex items-center gap-1"><input type="checkbox" checked={showObject} onChange={(e) => setShowObject(e.target.checked)} /> {object.label ?? 'object'}</label>}
         <span className="text-muted-foreground">drag to orbit, wheel to zoom</span>
       </div>
+      {simStats && (
+        <div className="text-xs rounded border border-border p-2 flex flex-wrap gap-3" data-testid="sim-stats">
+          <span><span className="text-muted-foreground">Cloth:</span> {simStats.steps}/{CLOTH_STEPS} steps</span>
+          <span><span className="text-muted-foreground">max stretch</span> {(simStats.stretch * 100).toFixed(1)}%</span>
+          <span><span className="text-muted-foreground">seam gap</span> {simStats.seam.toFixed(1)} mm</span>
+          <span><span className="text-muted-foreground">penetration</span> {simStats.pen.toFixed(1)} mm</span>
+          <span className="text-muted-foreground">gathered seams are not modelled yet</span>
+        </div>
+      )}
       {cavity && object && (
         <div className="text-xs rounded border border-border p-2 grid grid-cols-3 gap-2" data-testid="fit-report">
           <div><span className="text-muted-foreground">Across:</span> cavity {fmtMm(cavity.x.extent)}, {object.label ?? 'object'} {Math.round(object.width)} mm — <span className={cavity.x.clearance !== null && cavity.x.clearance < 0 ? 'text-destructive' : ''}>clearance {fmtMm(cavity.x.clearance)}</span></div>

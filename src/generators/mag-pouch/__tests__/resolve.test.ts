@@ -84,10 +84,10 @@ describe('resolveMagPouch — face, heights, lid', () => {
     expect(r.exposedHeightIn).toBeCloseTo(2.25, 9);
   });
 
-  it('lid length = exposed height + cell depth + closure reach', () => {
+  it('lid length = 2 × exposed height (up behind the mag, back down to the mouth) + cell depth + closure reach', () => {
     const r = resolveMagPouch(inputs());
-    // 2.25 + (1.0 + 0.25) + 2.5
-    expect(r.flapLengthIn).toBeCloseTo(6.0, 9);
+    // 2 × 2.25 + (1.0 + 0.25) + 2.5
+    expect(r.flapLengthIn).toBeCloseTo(8.25, 9);
     expect(r.hasFlap).toBe(true);
   });
 

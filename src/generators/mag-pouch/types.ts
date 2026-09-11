@@ -124,8 +124,9 @@ export interface MagPouchInputs {
   /** How far the lid closure reaches down the face (inches).  Default: 2.5". */
   closure_overlap?: number;
   /**
-   * Total lid length (inches).  Derived when omitted: exposed mag height +
-   * cell depth + closure_overlap. hook_length and loop_length must not exceed it.
+   * Total lid length (inches).  Derived when omitted: 2 × exposed mag height
+   * (up behind the mag and back down to the mouth) + cell depth + closure_overlap.
+   * hook_length and loop_length must not exceed it.
    */
   flap_length?: number;
   /** Grommet size identifier.  Default: '#0'. */

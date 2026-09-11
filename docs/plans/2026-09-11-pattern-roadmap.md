@@ -237,9 +237,34 @@ generator's default output (seven patterns plus both strap families) and
 checks tiling, rigidity and tree completeness. Findings the folder surfaced:
 the folded-T body was missing its bottom-to-back fold line (fixed), and
 grid-cut pieces need the hinge tree to expand from the largest panel first
-or wings hang off corner squares (fixed). Still open: seam assembly so
-separate pieces (zip pouch front/back, card face pucker) join in 3D, and
-object bases for Tri-Zip.
+or wings hang off corner squares (fixed). Still open: object bases for Tri-Zip.
+
+**Stage 3 status (2026-09-11):** `src/lib/cloth-engine/` — position-based
+dynamics on a rectilinear grid mesh per piece: stretch constraints hold flat
+edge lengths, bending constraints remember the rigid creases analytically
+(fold angle at each fold segment; flat everywhere else, and flat wherever the
+rigid start is torn at a three-way corner), seams pull matched stitch lines
+together with a ramped rest length and a per-iteration cap, and the magazine
+is a box collider with continuous push-out so cloth slides over its edges
+instead of tunnelling. The viewer's "simulate seams" mode starts from the
+rigid fold and relaxes; generators declare seams in flat coordinates
+(`FoldPreview3D.seams`). Tests pin: two panels seamed edge to edge (0.5 mm
+gap, < 2 % stretch); the folded-T body seamed round a magazine (< 10 %,
+the residual at the band/wing corner where SA turns under a seam); the lid
+closure holding over the magazine; the card face puckering 38 mm at
+mid-cell against 3" divisions with < 8 % stretch.
+
+Three pattern faults the cloth surfaced and that are now fixed in the
+generators: the folded-T lid was 2 × exposed height short (it must climb
+behind the magazine, cross the top, come back down to the mouth, then
+overlap — 8.25" not 6" on a 30-round AR mag); the folded-T outline needed
+its corner squares notched (a true cross) because they cannot fold two
+ways; and a lid that wraps a proud magazine takes two creases in use, which
+both constructions now emit as fold lines with explicit default angles.
+
+Not modelled yet: gathered seams (the face bottom "alligator lips" —
+needs a finer mesh or a pleat solver), self-collision between the face's
+two layers and between overlapping wings, friction, and gravity draping.
 
 - **Stage 1 — fold preview (done, see status).** Every piece is flat panels
   joined at `fold` edges. Treat each region between fold lines as a rigid
@@ -252,7 +277,7 @@ object bases for Tri-Zip.
 - **Stage 2 — object fit.** Drop a parametric magazine / phone / tool solid
   into the folded pouch and report clearance and coverage. The pouch engine's
   `CarriedObject` already carries the dimensions.
-- **Stage 3 — cloth simulation (long shot).** Pucker and pleats are what a
+- **Stage 3 — cloth simulation (built, first pass; see status below).** Pucker and pleats are what a
   rigid folder cannot show. Options: a position-based-dynamics cloth in the
   browser (Three.js + a PBD solver, or a WASM build of ARCSim / Bullet soft
   body) seaming pieces along `stitch` edges. Cordura is stiff enough that a

@@ -163,8 +163,11 @@ export function resolveMagPouch(inputs: MagPouchInputs): ResolvedMagPouch {
   const closureOverlapIn = inputs.closure_overlap ?? DEFAULT_CLOSURE_OVERLAP_IN;
   const hookLengthIn = inputs.hook_length ?? DEFAULT_HOOK_LENGTH_IN;
   const loopLengthIn = inputs.loop_length ?? DEFAULT_LOOP_LENGTH_IN;
+  // A lid wrapping an object that stands proud climbs the exposed height behind it,
+  // crosses the top, comes back DOWN the exposed height to the mouth, then overlaps
+  // the face. (The 3D fold preview caught the missing second exposed height.)
   const flapLengthIn = hasFlap
-    ? (inputs.flap_length ?? exposedHeightIn + cellDepthIn + closureOverlapIn)
+    ? (inputs.flap_length ?? 2 * exposedHeightIn + cellDepthIn + closureOverlapIn)
     : 0;
 
   // ── Card-only knobs ───────────────────────────────────────────────────────

@@ -1,5 +1,8 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
 import type { Pattern } from '../../lib/pattern-engine/graph/Pattern.js';
+import type { SeamSpec } from '../../lib/cloth-engine/sim.js';
+
+export type { SeamSpec };
 
 export interface FoldObjectBase {
   /** Piece whose root region the object stands on. */
@@ -36,6 +39,11 @@ export interface FoldPreview3DProps {
   object?: FoldObject;
   /** Optional per-piece placements so separate pieces can be shown assembled (e.g. a card face over its back). */
   placements?: Record<string, PiecePlacement>;
+  /**
+   * Seams to sew in the cloth simulation (Stage 3): matched stitch lines in flat
+   * pattern coordinates, including closures (lid tip to face) as short seams.
+   */
+  seams?: SeamSpec[];
   /** Fold progress 0–1 to start at. Default 1 (folded). */
   initialProgress?: number;
   height?: number;

@@ -190,12 +190,12 @@ describe('folded-T — grid-aware single pouch', () => {
     expect(bboxFromPiece(body).width).toBeCloseTo((2.8 + 2 * 1.25 + 2 * 0.375) * IN, 4);
   });
 
-  it('the lid is derived from coverage, depth and reach: 6.0" on a 30-round AR mag', () => {
+  it('the lid is derived from coverage, depth and reach: 8.25" on a 30-round AR mag', () => {
     const r = buildPattern(base);
     const body = r.pattern.pieces.find((p) => p.id === 'body')!;
-    // front 5.25 + bottom 1.25 + back 5.25 + lid 6.0 + 2 × 0.375 SA
-    expect(bboxFromPiece(body).height).toBeCloseTo((5.25 + 1.25 + 5.25 + 6.0 + 0.75) * IN, 4);
-    expect(r.derived.flapLengthIn).toBeCloseTo(6.0, 9);
+    // front 5.25 + bottom 1.25 + back 5.25 + lid (2 × 2.25 + 1.25 + 2.5 = 8.25) + 2 × 0.375 SA
+    expect(bboxFromPiece(body).height).toBeCloseTo((5.25 + 1.25 + 5.25 + 8.25 + 0.75) * IN, 4);
+    expect(r.derived.flapLengthIn).toBeCloseTo(8.25, 9);
   });
 
   it('keeps the four mandatory step ids, in order, around the component steps', () => {

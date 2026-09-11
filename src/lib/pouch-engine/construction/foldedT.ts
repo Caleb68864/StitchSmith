@@ -1,11 +1,14 @@
 /**
  * Folded-T construction strategy.
  *
- * A single flat piece is cut in a landscape T/cross shape.  When folded:
- *   - The central vertical band becomes front panel → bottom → back panel.
- *   - The left and right wings fold around the sides to form gussets.
+ * A single flat piece is cut as a cross.  When folded:
+ *   - The central column becomes front panel → bottom band → back panel → lid.
+ *   - The wings on the front and back rows fold round the sides and overlap
+ *     each other to form the gussets; the front wing's outer edge is sewn to
+ *     the back wing's seam line on each side.
+ *   - The corner squares between wings and bottom band are cut away — they
+ *     cannot fold two ways — and the band and lid keep one SA of side.
  *
- * The center seam runs down the back panel, joining the two wing edges.
  * This strategy works best when `internal_depth ≤ internal_width / 2`; the
  * engine emits a warning when that constraint is violated.
  */
