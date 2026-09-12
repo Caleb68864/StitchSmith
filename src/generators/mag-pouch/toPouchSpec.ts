@@ -25,6 +25,8 @@ export function toCardParams(r: ResolvedMagPouch): PleatedCardParams {
     bottomStyle: r.bottomStyle,
     exposedHeight: inToMm(r.exposedHeightIn),
     objectDepth: inToMm(r.cellDepthIn),
+    pullChannelDepth: inToMm(r.pullChannelDepthIn),
+    hourglassInset: inToMm(r.hourglassInsetIn),
   };
 }
 

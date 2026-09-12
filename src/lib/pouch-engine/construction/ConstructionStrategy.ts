@@ -51,6 +51,10 @@ export interface PleatedCardParams {
   exposedHeight?: number;
   /** Object depth the lid wraps over the top, mm. Default 0. */
   objectDepth?: number;
+  /** Lid tip folded back on itself to form a finger pull channel, mm (included in flapLength). Default 0. */
+  pullChannelDepth?: number;
+  /** Hourglass aesthetic: extra side-seam inset per side, mm; the face is cut wider to match. Default 0. */
+  hourglassInset?: number;
 }
 
 /** Full specification passed to `buildPouch` and to each strategy. */

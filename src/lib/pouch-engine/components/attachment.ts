@@ -3,6 +3,8 @@
  *
  * Produces strap pieces and assembly steps for various attachment methods:
  * - pals / molle  : back PALS rows (1" webbing, 1" gaps) + vertical mount straps
+ * - malice        : the same back rows, bought MALICE clips instead of sewn straps
+ *                   (one clip per column; short clips to 2 rows, long above)
  * - belt_loop     : Single belt-loop piece sized per MOLLE+ convention
  * - alice         : Two clip-slot pieces for ALICE/LC-2 attachment
  * - velcro_panel  : Single loop-side panel piece
@@ -25,6 +27,7 @@ import type { Step } from '../../pattern-engine/instructions/Step.js';
 export type AttachmentStyle =
   | 'pals'
   | 'molle'
+  | 'malice'
   | 'belt_loop'
   | 'alice'
   | 'velcro_panel';
@@ -205,6 +208,34 @@ function buildPals(spec: AttachmentSpec): AttachmentResult {
   return { pieces: [rowPiece, strapPiece], steps, warnings };
 }
 
+/** MALICE clip size by the rows the clip must span (Tactical Tailor: short 3" to 2 rows, long 5" beyond). */
+export function maliceClipSize(rows: number): 'short' | 'long' {
+  return rows <= 2 ? 'short' : 'long';
+}
+
+function buildMalice(spec: AttachmentSpec): AttachmentResult {
+  // Same sewn back rows as PALS; the vertical straps are replaced by bought clips.
+  const pals = buildPals(spec);
+  const rows = palsRowCount(spec.finishedHeight_mm);
+  const backW = spec.finishedWidth_mm ?? 3 * IN;
+  const columns = spec.mountColumns ?? palsColumnCount(backW);
+  const pieces = pals.pieces.filter((p) => p.id !== 'pals-mount-strap');
+  const steps = pals.steps.filter((s) => s.id !== 'pals-mount-straps');
+  if (rows > 0) {
+    steps.push({
+      id: 'malice-clips',
+      title: `Mount with ${columns} ${maliceClipSize(rows)} MALICE clip${columns === 1 ? '' : 's'}`,
+      body:
+        `One clip per PALS column (${columns} on a ${(backW / IN).toFixed(2)}" back), ${maliceClipSize(rows)} clips for ${rows} row${rows === 1 ? '' : 's'}. ` +
+        'Weave each clip alternately through the host grid and the pouch rows and snap it closed at the bottom. Nothing is sewn: the clips are the bought alternative to mount straps, and the pouch moves between hosts without unpicking.',
+      dependsOn: ['pals-back-rows'],
+      refsPieces: [],
+      group: 'Attachment',
+    });
+  }
+  return { pieces, steps, warnings: pals.warnings.map((w) => w.replace('the mount straps', 'the clips')) };
+}
+
 function buildBeltLoop(spec: AttachmentSpec): AttachmentResult {
   const beltWidth_mm = spec.beltWidth_mm ?? 50.8; // default 2" MOLLE+ belt
   const pieceHeight_mm = 1.75 * 25.4; // 1.75 inches tall
@@ -330,6 +361,8 @@ export function buildAttachment(spec: AttachmentSpec): AttachmentResult {
     case 'pals':
     case 'molle':
       return buildPals(spec);
+    case 'malice':
+      return buildMalice(spec);
     case 'belt_loop':
       return buildBeltLoop(spec);
     case 'alice':

@@ -94,3 +94,10 @@ export const DEFAULT_SEAM_ALLOWANCE_MM = DEFAULT_SEAM_ALLOWANCE_IN * IN_TO_MM; /
 export const DEFAULT_HOOK_LENGTH_MM = DEFAULT_HOOK_LENGTH_IN * IN_TO_MM;   // 76.2
 export const DEFAULT_LOOP_LENGTH_MM = DEFAULT_LOOP_LENGTH_IN * IN_TO_MM;   // 101.6
 export const DEFAULT_CLOSURE_OVERLAP_MM = DEFAULT_CLOSURE_OVERLAP_IN * IN_TO_MM; // 63.5
+
+/** One-piece lid pull channel depth (rigs/subgun-lid-pull-channel.md): 1.5"; the 1" sample was too small gloved. */
+export const DEFAULT_PULL_CHANNEL_DEPTH_IN = 1.5;
+/** Minimum hook purchase a lid keeps at any adjustment (same note). */
+export const MIN_LID_PURCHASE_IN = 3.0;
+/** Hourglass aesthetic seam inset per side (mag-pouches/mag-pouch-hourglass-aesthetic.md). */
+export const HOURGLASS_INSET_IN = 0.25;

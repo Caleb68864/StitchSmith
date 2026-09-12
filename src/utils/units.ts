@@ -12,7 +12,8 @@ export function inchesToMm(value: number): number { return value * 25.4; }
 export function mmToInches(value: number): number { return value / 25.4; }
 
 export function getPaperSize(size: PrintPaperSize, orientation: PrintOrientation): { width: number; height: number } {
-  const p = PAPER_SIZES_MM[size];
+  // Unknown sizes (a hand-edited project file) fall back to Letter rather than reading `undefined.width`.
+  const p = PAPER_SIZES_MM[size] ?? PAPER_SIZES_MM.letter;
   return orientation === 'portrait'
     ? { width: p.width, height: p.height }
     : { width: p.height, height: p.width };

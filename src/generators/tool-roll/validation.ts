@@ -4,6 +4,8 @@ import { generateId } from '../../utils/ids.js';
 // ── Tool validation ────────────────────────────────────────────────────────
 
 const TOOL_NUMERIC_FIELDS = ['width', 'height', 'thickness', 'visibleAmount'] as const;
+/** A tool longer than 2 m is a typo, not a tool. */
+const TOOL_MAX_MAGNITUDE = 2000;
 
 export function validateTool(tool: ToolItem): PatternWarning[] {
   const warnings: PatternWarning[] = [];
@@ -16,6 +18,14 @@ export function validateTool(tool: ToolItem): PatternWarning[] {
         id: generateId('warn'),
         severity: 'error',
         message: `Tool ${field} must be a finite number`,
+        field,
+        toolId: tool.id,
+      });
+    } else if (Math.abs(tool[field]) > TOOL_MAX_MAGNITUDE) {
+      warnings.push({
+        id: generateId('warn'),
+        severity: 'error',
+        message: `Tool ${field} is out of range (${tool[field]}); a tool longer than ${TOOL_MAX_MAGNITUDE} mm will not fit any roll`,
         field,
         toolId: tool.id,
       });
@@ -72,7 +82,7 @@ export function validateTool(tool: ToolItem): PatternWarning[] {
     });
   }
 
-  if (tool.name.trim() === '') {
+  if (typeof tool.name !== 'string' || tool.name.trim() === '') {
     warnings.push({
       id: generateId('warn'),
       severity: 'warning',
@@ -93,17 +103,73 @@ const SETTINGS_NUMERIC_FIELDS = [
   'pocketHeightIncrement',
   'pocketHeightPercentage',
   'tileOverlap',
+  'groupHeightTolerance',
+  'groupMaxSize',
+  'sideGap',
+  'thicknessEaseFactor',
+  'pocketBottomAllowance',
+  'topHemAllowance',
+  'bottomHemAllowance',
+  'sideHemAllowance',
+  'pocketTopHemAllowance',
+  'bindingAllowance',
+  'topMargin',
+  'bottomMargin',
+  'flapHeight',
+  'flapOverlap',
+  'flapHemAllowance',
+  'flapSeamAllowance',
+  'tieWidth',
+  'tieLength',
+  'tiePositionX',
+  'printMargin',
 ] as const;
+
+/** Nothing on a tool roll is longer than 5 m / 200"; beyond this the layout allocates until it dies. */
+const SETTINGS_MAX_MAGNITUDE = 5000;
+
+const SETTINGS_ENUM_FIELDS: { [K in keyof ToolRollSettings]?: readonly string[] } = {
+  sortMode: ['manual', 'widthAscending', 'widthDescending', 'heightAscending', 'heightDescending', 'pocketDepthAscending', 'pocketDepthDescending'],
+  pocketTopStyle: ['stepped', 'sloped', 'smooth', 'arc'],
+  pocketHeightMode: ['individual', 'steppedToIncrement', 'sameAsTallest'],
+  pocketDepthMode: ['visibleAmount', 'heightPercentage'],
+  flapHeightMode: ['fixed', 'basedOnTallestTool', 'basedOnPocketDepth', 'shortestTool', 'matchPockets'],
+  flapTopStyle: ['stepped', 'sloped', 'smooth', 'arc'],
+  tiePlacementMode: ['centered', 'manual'],
+  labelMode: ['none', 'toolNames', 'toolNamesAndDimensions'],
+  printPaperSize: ['letter', 'a4'],
+  printOrientation: ['portrait', 'landscape'],
+};
 
 export function validateSettings(settings: ToolRollSettings): PatternWarning[] {
   const warnings: PatternWarning[] = [];
 
   for (const field of SETTINGS_NUMERIC_FIELDS) {
-    if (!Number.isFinite(settings[field])) {
+    const v = settings[field];
+    if (!Number.isFinite(v)) {
       warnings.push({
         id: generateId('warn'),
         severity: 'error',
         message: `${field} must be a finite number`,
+        field,
+      });
+    } else if (Math.abs(v) > SETTINGS_MAX_MAGNITUDE) {
+      warnings.push({
+        id: generateId('warn'),
+        severity: 'error',
+        message: `${field} is out of range (${v}); nothing on a tool roll is longer than ${SETTINGS_MAX_MAGNITUDE} mm`,
+        field,
+      });
+    }
+  }
+
+  for (const [field, allowed] of Object.entries(SETTINGS_ENUM_FIELDS) as [keyof ToolRollSettings, readonly string[]][]) {
+    const v = settings[field];
+    if (typeof v !== 'string' || !allowed.includes(v)) {
+      warnings.push({
+        id: generateId('warn'),
+        severity: 'error',
+        message: `${field} must be one of ${allowed.join(', ')}`,
         field,
       });
     }

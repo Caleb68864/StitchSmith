@@ -6,6 +6,8 @@ import type {
 } from './types.js';
 import { validateInputs, resolveInputs } from './inputs.js';
 import { buildBackPanel } from './modules/backPanel.js';
+import { buildTriZipBom } from './bom.js';
+import type { Hardware } from '../../lib/pattern-engine/materials/Hardware.js';
 import { buildFrontCenterPanel } from './modules/frontCenterPanel.js';
 import { buildFrontWing } from './modules/frontWing.js';
 import { buildPerimeterGusset } from './modules/perimeterGusset.js';
@@ -106,7 +108,7 @@ export function verifySharedSeams(pieces: Piece[]): Result<true, BuildPatternErr
   return { ok: true, value: true };
 }
 
-export function buildPattern(inputs: TriZipInputs, preset: StylePreset): Result<Pattern & { steps: Step[] }, BuildPatternError> {
+export function buildPattern(inputs: TriZipInputs, preset: StylePreset): Result<Pattern & { steps: Step[]; hardware: Hardware[] }, BuildPatternError> {
   const validation = validateInputs(inputs);
   if (!validation.ok) return validation;
 
@@ -141,7 +143,8 @@ export function buildPattern(inputs: TriZipInputs, preset: StylePreset): Result<
   collect(buildTopPanel(r));
 
   // Straps and accessories
-  collect(buildShoulderStraps(r));
+  const straps = buildShoulderStraps(r);
+  collect(straps);
   collect(buildSternumStrap(r));
   collect(buildHipBelt(r));
   collect(buildTopHandle(r));
@@ -164,5 +167,5 @@ export function buildPattern(inputs: TriZipInputs, preset: StylePreset): Result<
     units: r.units,
   };
 
-  return { ok: true, value: { ...pattern, steps: allSteps } };
+  return { ok: true, value: { ...pattern, steps: allSteps, hardware: buildTriZipBom(r, straps.hardware) } };
 }

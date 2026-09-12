@@ -84,10 +84,11 @@ describe('resolveMagPouch — face, heights, lid', () => {
     expect(r.exposedHeightIn).toBeCloseTo(2.25, 9);
   });
 
-  it('lid length = 2 × exposed height (up behind the mag, back down to the mouth) + cell depth + closure reach', () => {
+  it('lid length = 2 × exposed height (up behind the mag, back down to the mouth) + cell depth + closure reach + pull channel', () => {
     const r = resolveMagPouch(inputs());
-    // 2 × 2.25 + (1.0 + 0.25) + 2.5
-    expect(r.flapLengthIn).toBeCloseTo(8.25, 9);
+    // 2 × 2.25 + (1.0 + 0.25) + 2.5 wrap-and-purchase, + 1.5 one-piece pull channel on a Velcro lid
+    expect(r.flapLengthIn).toBeCloseTo(9.75, 9);
+    expect(resolveMagPouch(inputs({ pull_channel_depth: 0 })).flapLengthIn).toBeCloseTo(8.25, 9);
     expect(r.hasFlap).toBe(true);
   });
 

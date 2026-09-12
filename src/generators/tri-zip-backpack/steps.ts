@@ -13,7 +13,7 @@ export function backPanelSteps(): Step[] {
     {
       id: 'tri-zip.back-panel.attach-straps',
       title: 'Attach shoulder strap anchor points',
-      body: 'Bartack or box-stitch the strap attachment webbing loops to the back panel upper corners.',
+      body: 'Bartack or box-stitch the strap attachment webbing loops to the back panel upper corners. Keep every strap tack outboard of the bag-closing seam line in the load path (below or beside it, never only inside it): if the tack sits inboard, the closing seam becomes the single point of failure under load (packs/toolpod-shoulder-strap-provision.md).',
       dependsOn: ['tri-zip.back-panel.cut', 'tri-zip.shoulder-straps.cut'],
       refsPieces: ['back-panel', 'shoulder-strap'],
       group: 'Back Panel',

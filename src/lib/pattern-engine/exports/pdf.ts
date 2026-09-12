@@ -5,6 +5,7 @@ import { PDFDocument, rgb } from 'pdf-lib';
 import type { Piece } from '../graph/Piece.js';
 import { bboxFromPieceWithSa } from '../geometry/saBbox.js';
 import { computeSeamAllowancePolygon } from '../geometry/offset.js';
+import { isCutOutline } from './svg.js';
 
 const MM_TO_PT = 72 / 25.4;
 
@@ -28,7 +29,7 @@ function drawSeamAllowance(
   if (!piece.seamAllowances && defaultSa <= 0) return;
   const green = rgb(0.18, 0.49, 0.2);
   for (const path of piece.paths) {
-    if (!path.closed) continue;
+    if (!path.closed || !isCutOutline(path)) continue;
     const saResult = computeSeamAllowancePolygon(piece, path, defaultSa);
     if (!saResult.ok || !saResult.value) continue;
     const verts = saResult.value;

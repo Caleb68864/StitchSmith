@@ -1,4 +1,5 @@
 import type { Pattern } from '../graph/Pattern.js';
+import type { Piece } from '../graph/Piece.js';
 import type { Material } from '../materials/Material.js';
 import type { Hardware } from '../materials/Hardware.js';
 import { bboxFromPieceWithSa } from '../geometry/saBbox.js';
@@ -14,9 +15,62 @@ export interface HardwareBomEntry {
   count: number;
 }
 
+/**
+ * Strip stock (webbing, Velcro, binding, elastic) grouped by material and
+ * width: what to pull from which drawer. Lengths round up to SOE's standard
+ * pre-cut drawer lengths (3, 3.5, 6.5, 8, 10") when one fits, else to the
+ * next half inch (reference/soe-production-principles.md).
+ */
+export interface StripCutEntry {
+  materialId: string;
+  widthMm: number;
+  /** Each distinct cut length (mm) with its count and the drawer length that serves it. */
+  cuts: { lengthMm: number; quantity: number; drawerIn: number | null; pieces: string[] }[];
+  totalLengthMm: number;
+}
+
 export interface ExportCutList {
   byMaterial: MaterialCutEntry[];
   byHardware: HardwareBomEntry[];
+  /** Strip stock by material × width; empty when nothing is strip-like. */
+  strips: StripCutEntry[];
+}
+
+/** SOE's pre-cut drawer lengths, inches. */
+export const DRAWER_LENGTHS_IN = [3, 3.5, 6.5, 8, 10] as const;
+const STRIP_MATERIAL = /^(webbing|velcro|binding|elastic|grosgrain|cord|bungee|tape)(?![a-z])/i; // 'cord', not 'cordura'
+
+/** Nearest drawer length at or above `lengthMm` (null when longer than the longest drawer). */
+export function drawerLengthFor(lengthMm: number): number | null {
+  const inches = lengthMm / 25.4;
+  for (const d of DRAWER_LENGTHS_IN) if (inches <= d + 1e-6) return d;
+  return null;
+}
+
+/** True when a piece is strip stock: a strip-like material id or a rectangle at least 6× longer than wide. */
+export function isStripPiece(piece: Piece, bbox: { width: number; height: number }): boolean {
+  if (piece.materialId && STRIP_MATERIAL.test(piece.materialId)) return true;
+  const long = Math.max(bbox.width, bbox.height), short = Math.min(bbox.width, bbox.height);
+  return short > 0 && long / short >= 6 && piece.paths.length === 1;
+}
+
+export function stripSummary(pattern: Pattern): StripCutEntry[] {
+  const groups = new Map<string, StripCutEntry>();
+  for (const piece of pattern.pieces) {
+    const bbox = bboxFromPieceWithSa(piece, 0);
+    if (!isStripPiece(piece, bbox)) continue;
+    const widthMm = Math.round(Math.min(bbox.width, bbox.height) * 10) / 10;
+    const lengthMm = Math.round(Math.max(bbox.width, bbox.height) * 10) / 10;
+    const materialId = piece.materialId ?? 'unspecified';
+    const key = `${materialId}|${widthMm}`;
+    const entry = groups.get(key) ?? { materialId, widthMm, cuts: [], totalLengthMm: 0 };
+    const cut = entry.cuts.find((c) => Math.abs(c.lengthMm - lengthMm) < 0.05);
+    if (cut) { cut.quantity += piece.quantity; cut.pieces.push(piece.id); }
+    else entry.cuts.push({ lengthMm, quantity: piece.quantity, drawerIn: drawerLengthFor(lengthMm), pieces: [piece.id] });
+    entry.totalLengthMm += lengthMm * piece.quantity;
+    groups.set(key, entry);
+  }
+  return [...groups.values()].map((e) => ({ ...e, cuts: e.cuts.sort((a, b) => a.lengthMm - b.lengthMm) })).sort((a, b) => a.materialId.localeCompare(b.materialId) || a.widthMm - b.widthMm);
 }
 
 export interface CutListOptions {
@@ -64,7 +118,7 @@ export function exportCutList(
     count: hw.quantity,
   }));
 
-  return { byMaterial, byHardware };
+  return { byMaterial, byHardware, strips: stripSummary(pattern) };
 }
 
 /** RFC 4180 field quoting: wrap in quotes when the value contains , " or newlines. */
@@ -91,6 +145,15 @@ export function exportCutListCsv(
   lines.push('Hardware ID,Count');
   for (const entry of cutList.byHardware) {
     lines.push([entry.hardwareId, entry.count].map(csvField).join(','));
+  }
+  if (cutList.strips.length > 0) {
+    lines.push('');
+    lines.push('Strip Material,Width (mm),Length (mm),Quantity,Drawer (in),Pieces');
+    for (const strip of cutList.strips) {
+      for (const cut of strip.cuts) {
+        lines.push([strip.materialId, strip.widthMm, cut.lengthMm, cut.quantity, cut.drawerIn ?? 'cut to length', cut.pieces.join('; ')].map(csvField).join(','));
+      }
+    }
   }
   return lines.join('\n');
 }

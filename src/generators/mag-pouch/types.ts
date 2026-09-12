@@ -61,6 +61,7 @@ export type RetentionStyle =
 export type AttachmentStyle =
   | 'pals'
   | 'molle'
+  | 'malice'
   | 'belt_loop'
   | 'alice'
   | 'velcro_panel';
@@ -131,6 +132,18 @@ export interface MagPouchInputs {
   flap_length?: number;
   /** Grommet size identifier.  Default: '#0'. */
   grommet_size?: string;
+  /**
+   * One-piece lid pull channel: the lid tip folds back on itself to form a finger
+   * channel (inches, added to the lid length). Default 1.5" for a Velcro lid, 0 for
+   * other lids. 1" was the too-small sample (rigs/subgun-lid-pull-channel.md).
+   */
+  pull_channel_depth?: number;
+  /**
+   * Hourglass aesthetic: the side seams are inset an extra 1/4" per side so the
+   * empty pouch pinches in. Purely cosmetic and costs labour; default off
+   * (mag-pouches/mag-pouch-hourglass-aesthetic.md).
+   */
+  hourglass_aesthetic?: boolean;
 }
 
 // ─── BOM types ─────────────────────────────────────────────────────────────────

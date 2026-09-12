@@ -46,7 +46,7 @@ import {
   AK_THRESHOLD_HEIGHT_IN,
   AK_THRESHOLD_THICKNESS_IN,
 } from './unsupportedMagazines.js';
-import { PALS_PITCH_IN, R308_CELL_SPAN_IN } from './defaults.js';
+import { PALS_PITCH_IN, R308_CELL_SPAN_IN, DEFAULT_PULL_CHANNEL_DEPTH_IN, MIN_LID_PURCHASE_IN } from './defaults.js';
 import { PLATFORM_LABELS } from './magazines.js';
 
 // ─── AK profile detection ─────────────────────────────────────────────────────
@@ -117,6 +117,16 @@ export function resolvedWarnings(r: ResolvedMagPouch): string[] {
     w.push(
       `Cell span ${inTxt(r.cellSpanIn)} leaves under 0.2" of clearance on a ${inTxt(r.magIn.width)} magazine; the mag will bind. Add ease.`,
     );
+  }
+
+  if (r.hasFlap && r.pullChannelDepthIn > 0 && r.pullChannelDepthIn < DEFAULT_PULL_CHANNEL_DEPTH_IN) {
+    w.push(`Pull channel ${inTxt(r.pullChannelDepthIn)} is under the 1.5" SOE marks for a gloved finger; the 1" sample was the one he called too small (rigs/subgun-lid-pull-channel.md).`);
+  }
+  if (r.hasFlap && r.retention === 'flap_velcro' && r.closureOverlapIn < MIN_LID_PURCHASE_IN) {
+    w.push(`Lid purchase ${inTxt(r.closureOverlapIn)} is under the ${inTxt(MIN_LID_PURCHASE_IN)} of hook SOE keeps at every adjustment; a taller magazine will leave less. Raise closure_overlap or the loop length.`);
+  }
+  if (r.hourglassInsetIn > 0) {
+    w.push('Hourglass aesthetic is on: the side seams pinch in 1/4" per side. Purely cosmetic and it costs real labour — SOE dropped it from the 4-pack rifle card.');
   }
 
   if (r.retention === 'open_top_bungee') {

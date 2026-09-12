@@ -258,6 +258,25 @@ export function buildBom(
         },
       );
       break;
+    case 'malice':
+      materials.push({
+        id: 'pals-row-webbing',
+        name: '1" webbing (back PALS rows)',
+        type: 'webbing',
+        cutWidthMm: IN,
+        cutLengthMm: inToMm(backWidthIn + 1),
+        quantity: palsRows,
+        cutTag: 'trim-after-sew',
+        notes: `Cut 1" over the ${backWidthIn.toFixed(2)}" back, sear one end, trim flush after sewing.`,
+      });
+      hardware.push({
+        id: 'malice-clip',
+        name: `MALICE clip (${palsRows <= 2 ? 'short' : 'long'})`,
+        type: 'clip',
+        quantity: r.palsColumns,
+        notes: `One per PALS column; ${palsRows <= 2 ? 'short clips span up to 2 rows' : `long clips for ${palsRows} rows`}. Replaces the sewn mount straps.`,
+      });
+      break;
     case 'belt_loop':
       materials.push({
         id: 'attachment-webbing',

@@ -20,6 +20,35 @@ import {
   DEFAULT_CONSTRUCTION,
   DEFAULT_CELL_COUNT,
 } from './defaults.js';
+import { sweepInputs, stripNulls, unitsOf, type GuardSpec } from '../../utils/inputGuards.js';
+
+/** Type/range guard run before the generator's own rules (hardening pass H1). */
+const GUARD_SPEC: GuardSpec = {
+  magazine: { kind: 'object' },
+  retention: { kind: 'enum', allowed: ['flap_velcro', 'flap_snap', 'flap_fastex', 'open_top_bungee', 'velcro_dot', 'kydex_wedge', 'none'] },
+  attachment: { kind: 'enum', allowed: ['pals', 'molle', 'malice', 'belt_loop', 'alice', 'velcro_panel'] },
+  drainage: { kind: 'enum', allowed: ['open_corner', 'sewn_closed', 'grommet'] },
+  construction: { kind: 'enum', allowed: ['folded_t', 'pleated_card'] },
+  cell_count: { kind: 'count', max: 8 },
+  cell_span: { kind: 'length', max: 200 },
+  face_per_cell: { kind: 'length', max: 200 },
+  bottom_style: { kind: 'enum', allowed: ['cradle', 'pleat', 'open'] },
+  back_hem: { kind: 'length', max: 200 },
+  face_end_hem: { kind: 'length', max: 200 },
+  ak_face_hem: { kind: 'bool' },
+  face_pals: { kind: 'bool' },
+  interior_loop: { kind: 'bool' },
+  ease_width: { kind: 'length', max: 200 },
+  ease_depth: { kind: 'length', max: 200 },
+  exposed_percentage: { kind: 'ratio' },
+  hook_length: { kind: 'length', max: 200 },
+  loop_length: { kind: 'length', max: 200 },
+  closure_overlap: { kind: 'length', max: 200 },
+  flap_length: { kind: 'length', max: 200 },
+  grommet_size: { kind: 'enum', allowed: ['#0', '#1', '#2', '#4'] },
+  pull_channel_depth: { kind: 'length', max: 200 },
+  hourglass_aesthetic: { kind: 'bool' },
+};
 
 const VALID_SA: ReadonlySet<number> = new Set([0.25, 0.375, 0.5]);
 const VALID_CONSTRUCTION: ReadonlySet<MagPouchConstruction> = new Set(['folded_t', 'pleated_card']);
@@ -42,7 +71,17 @@ function finitePositive(v: unknown): v is number {
  * Multiple fields may fail simultaneously; all errors are collected.
  */
 export function validateInputs(inputs: MagPouchInputs): ValidationResult {
-  const errors: Record<string, string> = {};
+  inputs = stripNulls(inputs);
+  const guard = sweepInputs(inputs, GUARD_SPEC, unitsOf(inputs, 'in'));
+  // Type/range issues are collected, not returned early, so the generator's own rules below still
+  // report every other bad field at once (the settings panel highlights them all).
+  const errors: Record<string, string> = Object.fromEntries(guard.map((g) => [g.field, g.message]));
+  if (typeof inputs.magazine !== 'object' || inputs.magazine === null || !['predefined', 'custom'].includes((inputs.magazine as { mode?: unknown }).mode as string)) {
+    return { ok: false, errors: { ...errors, magazine: 'magazine must be an object with mode "predefined" or "custom".' } };
+  }
+  if (inputs.seamAllowance === undefined) {
+    errors['seamAllowance'] = 'seamAllowance is required: choose 0.25, 0.375 or 0.5.';
+  }
 
   // ── Magazine dimensions ──────────────────────────────────────────────────────
 
@@ -103,6 +142,10 @@ export function validateInputs(inputs: MagPouchInputs): ValidationResult {
     if (v !== undefined && (!Number.isFinite(v) || v < 0.25 || v > 2)) {
       errors[key] = `${key} must be between 0.25" and 2" (got ${v}).`;
     }
+  }
+
+  if (inputs.pull_channel_depth !== undefined && (!Number.isFinite(inputs.pull_channel_depth) || inputs.pull_channel_depth < 0 || inputs.pull_channel_depth > 4)) {
+    errors['pull_channel_depth'] = `pull_channel_depth must be between 0 and 4" (got ${inputs.pull_channel_depth}).`;
   }
 
   // ── Retention ────────────────────────────────────────────────────────────────

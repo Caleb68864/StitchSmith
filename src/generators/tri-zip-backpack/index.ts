@@ -2,3 +2,4 @@ export type { TriZipInputs, StylePreset, PresetName, ResolvedInputs, BuildPatter
 export { buildPattern, verifySharedSeams } from './buildPattern.js';
 export { STYLE_PRESETS, getPreset, urban_assault, tactical, hiking, camera, medical, minimalist } from './stylePresets.js';
 export { resolveInputs, validateInputs, computeVolumeLiters } from './inputs.js';
+export { buildTriZipBom, triZipZipperLengthMm } from './bom.js';

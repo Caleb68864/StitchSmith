@@ -1,4 +1,36 @@
 import type { TriZipInputs, ResolvedInputs, StylePreset, Result, BuildPatternError } from './types.js';
+import { sweepInputs, stripNulls, unitsOf, type GuardSpec } from '../../utils/inputGuards.js';
+
+/** Type/range guard run before the generator's own rules (hardening pass H1). */
+const GUARD_SPEC: GuardSpec = {
+  units: { kind: 'enum', allowed: ['mm', 'in'] },
+  height: { kind: 'length' },
+  width: { kind: 'length' },
+  depth: { kind: 'length' },
+  stylePreset: { kind: 'enum', allowed: ['urban_assault', 'tactical', 'hiking', 'camera', 'medical', 'minimalist'] },
+  strap_width: { kind: 'length', min: 1, max: 5000 },
+  foam_thickness: { kind: 'length', min: 0.5, max: 5000 },
+  curve_style: { kind: 'enum', allowed: ['straight', 'ergonomic', 's_curve'] },
+  back_panel_shape: { kind: 'enum', allowed: ['rounded', 'tactical', 'square'] },
+  compression_straps: { kind: 'enum', allowed: ['none', 'side', 'side_and_bottom'] },
+  hip_belt: { kind: 'enum', allowed: ['none', 'webbing', 'padded'] },
+  laptop_sleeve_attachment: { kind: 'enum', allowed: ['none', 'webbing-loop', 'seam-sewn'] },
+  sternum_strap: { kind: 'bool' },
+  y_split_height_percent: { kind: 'percent' },
+  center_panel_width_percent: { kind: 'percent' },
+  zipper_method: { kind: 'enum', allowed: ['direct', 'gusseted'] },
+  zipper_gusset_width: { kind: 'length', max: 5000 },
+  frame_sheet: { kind: 'enum', allowed: ['none', 'hdpe', 'foam'] },
+  frame_sheet_margin: { kind: 'length', max: 5000 },
+  split_gusset: { kind: 'bool' },
+  seam_allowance: { kind: 'length', max: 5000 },
+  hem_allowance: { kind: 'length', max: 5000 },
+  strap_architecture: { kind: 'enum', allowed: ['foam_sandwich_mesh', 'webbing_tacked_ends', 'webbing_through_quilted', 'crushable_sleeve', 'none'] },
+  strap_edge_finish: { kind: 'enum', allowed: ['bound', 'turned'] },
+  strap_webbing_width: { kind: 'length', max: 5000 },
+  strap_pad_length: { kind: 'length', min: 1, max: 5000 },
+  strap_hardware: { kind: 'enum', allowed: ['ladderlock', 'side_release', 'tri_glide'] },
+};
 
 const IN_TO_MM = 25.4;
 
@@ -7,6 +39,10 @@ export function toMm(value: number, units: 'mm' | 'in'): number {
 }
 
 export function validateInputs(inputs: TriZipInputs): Result<true, BuildPatternError> {
+  inputs = stripNulls(inputs);
+  const guard = sweepInputs(inputs, GUARD_SPEC, unitsOf(inputs, 'mm'));
+  if (guard.length) return { ok: false, error: { kind: 'invalid-inputs', message: guard[0].message, field: guard[0].field } };
+  if (inputs.stylePreset === undefined) return { ok: false, error: { kind: 'invalid-inputs', message: 'stylePreset is required (urban_assault, tactical, hiking, camera, medical or minimalist).', field: 'stylePreset' } };
   const { height, width, depth, units } = inputs;
   const hMm = toMm(height, units);
   const wMm = toMm(width, units);
@@ -48,6 +84,7 @@ export function validateInputs(inputs: TriZipInputs): Result<true, BuildPatternE
 }
 
 export function resolveInputs(inputs: TriZipInputs, preset: StylePreset): ResolvedInputs {
+  inputs = stripNulls(inputs);
   const hMm = toMm(inputs.height, inputs.units);
   const wMm = toMm(inputs.width, inputs.units);
   const dMm = toMm(inputs.depth, inputs.units);

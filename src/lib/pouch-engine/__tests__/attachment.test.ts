@@ -218,7 +218,7 @@ describe('buildAttachment velcro_panel', () => {
 // ─── All style combinations compile and return the right shape ────────────────
 
 describe('buildAttachment return shape', () => {
-  const styles: AttachmentStyle[] = ['pals', 'molle', 'belt_loop', 'alice', 'velcro_panel'];
+  const styles: AttachmentStyle[] = ['pals', 'molle', 'malice', 'belt_loop', 'alice', 'velcro_panel'];
 
   for (const style of styles) {
     it(`${style} returns { pieces, steps, warnings }`, () => {

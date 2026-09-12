@@ -68,7 +68,7 @@ export function pleatedCardGeometry(c: PleatedCardParams): PleatedCardGeometry {
     faceHemmedW,
     backCutW: backFinishedW + 2 * c.backHem,
     backCutH: c.cardHeight + 2 * c.backHem + c.flapLength,
-    faceCutW: faceHemmedW + 2 * c.faceEndHem,
+    faceCutW: faceHemmedW + 2 * c.faceEndHem + 2 * (c.hourglassInset ?? 0),
     faceCutH: 2 * c.cardHeight + c.faceBottomHem,
     puckerPerSide: (c.facePerCell - c.cellSpan) / 2,
     lidFoldY: c.flapLength > 0 ? c.backHem + c.flapLength : null,
@@ -137,6 +137,13 @@ function buildBackPanel(c: PleatedCardParams, g: PleatedCardGeometry): Piece {
 
   if (g.lidFoldY !== null) {
     paths.push(line(eid, 'fold', 'lid-fold', 0, g.lidFoldY, w, g.lidFoldY, 'Lid fold (0°) — lid continues behind the mags, creasing in use'));
+    const channel = c.pullChannelDepth ?? 0;
+    if (channel > 0 && channel < c.flapLength) {
+      // The lid tip (top hem edge) folds back on itself: the fold-back forms the finger channel.
+      const yChannel = c.backHem + channel;
+      paths.push(line(eid, 'fold', 'pull-channel-fold', 0, yChannel, w, yChannel,
+        `Pull channel — fold the ${fmtIn(channel)}" tip back on itself (180°), sew the sides, leave the channel open for a finger`));
+    }
     // Creases where the lid wraps a magazine standing proud: over the top, then down the face.
     const exposed = c.exposedHeight ?? 0;
     const objDepth = c.objectDepth ?? 0;
@@ -192,6 +199,14 @@ function buildFacePanel(c: PleatedCardParams, g: PleatedCardGeometry): Piece {
       `${fmtIn(c.faceEndHem)}" end hem — mark at ${fmtIn(2 * c.faceEndHem)}"`),
     line(eid, 'fold', 'hem-right', w - c.faceEndHem, 0, w - c.faceEndHem, h),
   ];
+
+  const hourglass = c.hourglassInset ?? 0;
+  if (hourglass > 0) {
+    // The outer side seams sit inboard of the hem by the inset so the empty pouch pinches in.
+    const xl = c.faceEndHem + hourglass, xr = w - c.faceEndHem - hourglass;
+    paths.push(line(eid, 'stitch', 'hourglass-left', xl, 0, xl, h, `Hourglass seam — ${fmtIn(hourglass)}" inboard of the hem (aesthetic only)`));
+    paths.push(line(eid, 'stitch', 'hourglass-right', xr, 0, xr, h));
+  }
 
   if (c.faceBottomHem > 0) {
     paths.push(line(eid, 'fold', 'bottom-hem', 0, c.faceBottomHem, w, c.faceBottomHem,
@@ -320,6 +335,9 @@ function buildSteps(c: PleatedCardParams, g: PleatedCardGeometry): Step[] {
       title: 'Close the outer sides',
       body:
         'Stitch the two outer face ends down the outside of the outer cells, catching the back hem. Leave the mouth open. ' +
+        ((c.hourglassInset ?? 0) > 0
+          ? `Hourglass: run these seams ${fmtIn(c.hourglassInset ?? 0)}" inboard of the hem on both sides so the empty pouch pinches in — cosmetic only, and it is the slow part of the build. `
+          : '') +
         `Finished card should measure ${dim(g.backFinishedW)} wide; Velcro and webbing draw fabric in, so trim any overhang after sewing, not before.`,
       dependsOn: [PC_STEP_JOIN_DIVISIONS],
       refsPieces: ['back', 'face'],
@@ -352,7 +370,10 @@ function buildSteps(c: PleatedCardParams, g: PleatedCardGeometry): Step[] {
       title: 'Fold the lid over and fit its closure',
       body:
         `The lid is the top ${dim(c.flapLength)} of the back panel folded forward at the lid fold line. Hook goes on the underside of the lid, loop on the face; ` +
-        'make the loop field longer than the hook by the adjustment you want — the loop field is the parametric piece.',
+        'make the loop field longer than the hook by the adjustment you want — the loop field is the parametric piece.' +
+        ((c.pullChannelDepth ?? 0) > 0
+          ? ` Fold the ${dim(c.pullChannelDepth ?? 0)} tip back on itself and sew its sides to form the pull channel: a gloved finger hooks the channel to rip the lid, and 550 cord or a spent case can go in it for a harder pull.`
+          : ''),
       dependsOn: [PC_STEP_BOTTOM],
       refsPieces: ['back'],
       group: 'Closure',

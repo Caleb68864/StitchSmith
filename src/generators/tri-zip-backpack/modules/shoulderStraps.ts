@@ -9,7 +9,7 @@
 
 import type { ResolvedInputs, ModuleResult } from '../types.js';
 import { buildPaddedStrap } from '../../../lib/strap-engine/index.js';
-import type { StrapCurve } from '../../../lib/strap-engine/types.js';
+import type { StrapCurve, StrapHardwareItem } from '../../../lib/strap-engine/types.js';
 
 const CURVE_MAP: Record<ResolvedInputs['curve_style'], StrapCurve> = {
   straight: 'straight',
@@ -17,7 +17,7 @@ const CURVE_MAP: Record<ResolvedInputs['curve_style'], StrapCurve> = {
   s_curve: 's_curve',
 };
 
-export function buildShoulderStraps(r: ResolvedInputs): ModuleResult & { warnings: string[] } {
+export function buildShoulderStraps(r: ResolvedInputs): ModuleResult & { warnings: string[]; hardware: StrapHardwareItem[] } {
   const result = buildPaddedStrap({
     padLength_mm: r.strap_pad_length,
     padWidth_mm: r.strap_width,
@@ -46,5 +46,5 @@ export function buildShoulderStraps(r: ResolvedInputs): ModuleResult & { warning
     last.body += ` Hardware: ${hardwareLine}.`;
   }
 
-  return { pieces: result.pieces, steps: result.steps, warnings: result.warnings };
+  return { pieces: result.pieces, steps: result.steps, warnings: result.warnings, hardware: result.hardware };
 }

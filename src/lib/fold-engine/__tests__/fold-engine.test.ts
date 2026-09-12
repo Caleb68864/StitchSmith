@@ -96,7 +96,7 @@ describe('buildFoldModel — folded-T body', () => {
     const total = model.regions.reduce((s, r) => s + r.area, 0);
     const sa = 0.375 * IN;
     const bodyW = (3 + 2 * 1.25 + 0.75) * IN;
-    const lid = 8.25 * IN;
+    const lid = 9.75 * IN; // 8.25 wrap + purchase, + 1.5 pull channel
     const bodyH = (5.25 + 1.25 + 5.25 + 0.75) * IN + lid;
     const wing = 1.25 * IN;
     const bandNotch = wing * (1.25 * IN);
@@ -168,9 +168,10 @@ describe('buildFoldModel — pleated card and straps', () => {
     });
     const back = buildFoldModel(r.pattern.pieces.find((p) => p.id === 'back')!)!;
     const face = buildFoldModel(r.pattern.pieces.find((p) => p.id === 'face')!)!;
-    expect(back.folds).toHaveLength(7);
+    // Four hems, the lid fold, the pull-channel fold-back at the tip, and the two wrap creases.
+    expect(back.folds).toHaveLength(8);
     expect(back.orphans).toEqual([]);
-    expect(defaultFoldAngles(back).map((a) => Math.round((a * 180) / Math.PI))).toEqual([180, 180, 180, 180, 0, 90, 90]);
+    expect(defaultFoldAngles(back).map((a) => Math.round((a * 180) / Math.PI))).toEqual([180, 180, 180, 180, 0, 180, 90, 90]);
     expect(face.folds).toHaveLength(3);
     // Mouth fold at 180° folds the face in half: both halves overlap, so the y-extent halves.
     const flat = foldedBounds(foldModel(face, defaultFoldAngles(face), 0));
@@ -268,7 +269,7 @@ describe('defaultFoldAngles heuristics and lid exclusion', () => {
     const { measureCavity, regionsUnderFolds, withoutRegions } = await import('../index.js');
     const inputs = { magazine: { mode: 'predefined' as const, presetId: 'ar15_30_round', units: 'in' as const }, construction: 'pleated_card' as const, cell_count: 3, retention: 'flap_velcro' as const, attachment: 'pals' as const, drainage: 'open_corner' as const, seamAllowance: 0.375 as const };
     const back = buildPattern(inputs).pattern.pieces.find((p) => p.id === 'back')!;
-    const backHem = IN, cardH = 5.25 * IN, flap = 8.25 * IN, cellCentreX = backHem + 3 * IN * 1.5;
+    const backHem = IN, cardH = 5.25 * IN, flap = 9.75 * IN, cellCentreX = backHem + 3 * IN * 1.5;
     const baseY = backHem + flap + cardH;
     const model = buildFoldModel(back, { rootPoint: { x: cellCentreX, y: baseY - 1 } })!;
     expect(model.root).toBe(regionAt(model, { x: cellCentreX, y: baseY - cardH / 2 }));

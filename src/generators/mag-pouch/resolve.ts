@@ -34,6 +34,9 @@ import {
   DEFAULT_FACE_END_HEM_IN,
   AK_FACE_HEM_IN,
   DEFAULT_BOTTOM_STYLE,
+  DEFAULT_PULL_CHANNEL_DEPTH_IN,
+  DEFAULT_SEAM_ALLOWANCE_IN,
+  HOURGLASS_INSET_IN,
 } from './defaults.js';
 
 export const IN_TO_MM = 25.4;
@@ -71,6 +74,10 @@ export interface ResolvedMagPouch {
   easeDepthIn: number;
   cellDepthIn: number;
   flapLengthIn: number;
+  /** Lid tip folded back to form the finger channel, inches (0 = none). Included in flapLengthIn. */
+  pullChannelDepthIn: number;
+  /** Extra side-seam inset per side for the hourglass look, inches (0 = off). */
+  hourglassInsetIn: number;
   hookLengthIn: number;
   loopLengthIn: number;
   closureOverlapIn: number;
@@ -166,9 +173,15 @@ export function resolveMagPouch(inputs: MagPouchInputs): ResolvedMagPouch {
   // A lid wrapping an object that stands proud climbs the exposed height behind it,
   // crosses the top, comes back DOWN the exposed height to the mouth, then overlaps
   // the face. (The 3D fold preview caught the missing second exposed height.)
-  const flapLengthIn = hasFlap
-    ? (inputs.flap_length ?? 2 * exposedHeightIn + cellDepthIn + closureOverlapIn)
+  // One-piece lid: the tip folds back on itself to form the pull channel, so the
+  // channel depth is cut on top of the wrap + purchase (rigs/subgun-lid-pull-channel.md).
+  const pullChannelDepthIn = hasFlap
+    ? (inputs.pull_channel_depth ?? (inputs.retention === 'flap_velcro' ? DEFAULT_PULL_CHANNEL_DEPTH_IN : 0))
     : 0;
+  const flapLengthIn = hasFlap
+    ? (inputs.flap_length ?? 2 * exposedHeightIn + cellDepthIn + closureOverlapIn + pullChannelDepthIn)
+    : 0;
+  const hourglassInsetIn = inputs.hourglass_aesthetic ? HOURGLASS_INSET_IN : 0;
 
   // ── Card-only knobs ───────────────────────────────────────────────────────
   const backHemIn = inputs.back_hem ?? DEFAULT_BACK_HEM_IN;
@@ -203,6 +216,8 @@ export function resolveMagPouch(inputs: MagPouchInputs): ResolvedMagPouch {
     easeDepthIn,
     cellDepthIn,
     flapLengthIn,
+    pullChannelDepthIn,
+    hourglassInsetIn,
     hookLengthIn,
     loopLengthIn,
     closureOverlapIn,
@@ -212,7 +227,7 @@ export function resolveMagPouch(inputs: MagPouchInputs): ResolvedMagPouch {
     bottomStyle,
     facePals,
     interiorLoop,
-    seamAllowanceIn: inputs.seamAllowance,
+    seamAllowanceIn: inputs.seamAllowance ?? DEFAULT_SEAM_ALLOWANCE_IN,
   };
 }
 

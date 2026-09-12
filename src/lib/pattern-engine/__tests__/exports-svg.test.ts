@@ -95,3 +95,28 @@ describe('patternToSvg', () => {
     expect(svg).toContain('stroke="#2e7d32"');
   });
 });
+
+describe('patternToSvg layout and annotations', () => {
+  it('wraps pieces into rows at maxRowWidth and grows the height', () => {
+    const pieces = Array.from({ length: 6 }, (_, i) => ({ ...makeSquarePiece(100), id: `sq${i}` }));
+    const one = patternToSvg({ id: 'r', name: 'R', pieces }, { maxRowWidth: Infinity, margin: 0, pieceGap: 0 });
+    const wrapped = patternToSvg({ id: 'r', name: 'R', pieces }, { maxRowWidth: 250, margin: 0, pieceGap: 0 });
+    const vb = (s: string) => s.match(/viewBox="0 0 ([\d.]+) ([\d.]+)"/)!.slice(1, 3).map(Number);
+    expect(vb(one)).toEqual([600, 100]);
+    expect(vb(wrapped)).toEqual([200, 300]);
+    expect(wrapped).toContain('translate(0,100)');
+  });
+  it('draws grain arrows, notch ticks and wrapped note text from annotations', () => {
+    const piece = makeSquarePiece(100);
+    piece.annotations = [
+      { kind: 'grain', label: 'grain', point: { x: 50, y: 50 }, angle: 90 },
+      { kind: 'notch', point: { x: 10, y: 0 } },
+      { kind: 'label', label: 'A long note that should be wrapped onto more than one line of small text under the piece label so it stays legible', point: { x: 50, y: 50 } },
+    ];
+    const svg = patternToSvg({ id: 'a', name: 'A', pieces: [piece] });
+    expect(svg).toContain('class="grain"');
+    expect(svg).toContain('class="notch"');
+    expect((svg.match(/<tspan/g) ?? []).length).toBeGreaterThan(3);
+    expect(patternToSvg({ id: 'a', name: 'A', pieces: [piece] }, { showAnnotations: false })).not.toContain('class="grain"');
+  });
+});
