@@ -10,6 +10,7 @@ import { useBookCoverProject } from '../state/useBookCoverProject.js';
 import { useZipPouchProject } from '../state/useZipPouchProject.js';
 import { useCircleSkirtProject } from '../state/useCircleSkirtProject.js';
 import { usePaddedStrapProject } from '../state/usePaddedStrapProject.js';
+import { useMicroRigProject } from '../state/useMicroRigProject.js';
 import { Toaster } from '../components/shared/Toaster.js';
 import { ErrorBoundary } from '../components/shared/ErrorBoundary.js';
 import type { PatternEntry } from './patternRegistry.js';
@@ -41,6 +42,9 @@ const CircleSkirtPage = lazy(() =>
 const PaddedStrapPage = lazy(() =>
   import('../components/padded-strap/PaddedStrapPage.js').then(m => ({ default: m.PaddedStrapPage }))
 );
+const MicroRigPage = lazy(() =>
+  import('../components/micro-rig/MicroRigPage.js').then(m => ({ default: m.MicroRigPage }))
+);
 
 // Tab title per view so users with multiple tabs can tell them apart.
 const VIEW_TITLES: Record<View, string> = {
@@ -53,6 +57,7 @@ const VIEW_TITLES: Record<View, string> = {
   'zip-pouch': 'StitchSmith — Zip Pouch',
   'circle-skirt': 'StitchSmith — Circle Skirt',
   'padded-strap': 'StitchSmith — Padded Strap',
+  'micro-rig': 'StitchSmith — Micro Rig',
 };
 
 type View = 'landing' | PatternEntry['route'];
@@ -67,6 +72,7 @@ export function App() {
   const zipPouchState = useZipPouchProject();
   const circleSkirtState = useCircleSkirtProject();
   const paddedStrapState = usePaddedStrapProject();
+  const microRigState = useMicroRigProject();
 
   useEffect(() => {
     document.title = VIEW_TITLES[view] ?? 'StitchSmith';
@@ -150,7 +156,7 @@ export function App() {
           >
             StitchSmith
           </button>
-          <span className="text-xs text-muted-foreground">{view === 'padded-strap' ? 'Padded Strap Generator' : 'Circle Skirt Generator'}</span>
+          <span className="text-xs text-muted-foreground">{view === 'padded-strap' ? 'Padded Strap Generator' : view === 'micro-rig' ? 'Micro Rig Generator' : 'Circle Skirt Generator'}</span>
         </header>
       )}
       <PageShell>
@@ -243,6 +249,14 @@ export function App() {
             updateInputs={paddedStrapState.updateInputs}
             resetProject={paddedStrapState.resetProject}
             importProject={paddedStrapState.importProject}
+          />
+        )}
+        {view === 'micro-rig' && (
+          <MicroRigPage
+            project={microRigState.project}
+            updateInputs={microRigState.updateInputs}
+            resetProject={microRigState.resetProject}
+            importProject={microRigState.importProject}
           />
         )}
         </Suspense>

@@ -53,6 +53,7 @@ const TARGETS: Record<string, Target> = {
     seed: { key: 'stitchsmith.padded-strap.project', project: { schemaVersion: 7, generatorId: 'padded-strap', projectName: 'E2E', ...stamp, inputs: { units: 'mm', mode: 'h_harness', pad_length: 400, pad_width: 63.5, cross_strap_height: 150, pad_spread: 150, drop_leg_length: 300, foam_thickness: 10 } } },
   },
   'circle skirt': { open: /Open Circle Skirt/i, seams: true, fitReport: false },
+  'micro rig': { open: /Open Micro Rig/i, seams: true, fitReport: true, maxStretch: 150 },
 };
 
 async function openAssemblyTab(page: Page, target: Target) {

@@ -107,15 +107,14 @@ Follow-ups: a torso block for the 3D preview so the J-curve and the H
 crossing can be checked; the LBV shoulder set variant (24" verticals, 12"
 drop, tension locks centred) as a third mode.
 
-### 2. Micro rig / chest rig platform
-The vault's centre of gravity (74 rig notes). The platform is a panel plus a
-suspension module; mag cards and admin pouches mount to it. Pieces: front
-panel sized by cell count and PALS columns, side-profile PALS (exempt from the
-seam-alignment check), split-front centre join, panel width budgeting.
-Reuses the pleated card (cells) and the strap engine (suspension).
-Evidence: strong. `rigs/micro-rig-common-platform.md`,
-`rigs/micro-rig-panel-platform.md`, `rigs/panel-width-budgeting.md`,
-`rigs/split-front-center-join.md`, `rigs/soe-covert-rig.md`.
+### 2. Micro rig / chest rig platform — DONE 2026-09-11
+`src/generators/micro-rig/`: the panel-as-pocket chassis (10.5"–19" wide,
+7" tall), pleated mag cells from the pouch engine, utility pocket, side
+PALS, bottom loops, dangler field, split front join, webbing or H-harness
+suspension, width budgeting, 3D assembly. Follow-ups: Stacked Micro
+individual slots + tear-off med pouch as a pocket set, shotshell / en-bloc /
+lever-gun card hosts, and the covert rig's elastic card
+(`rigs/soe-covert-rig.md`, `rigs/covert-elastic-mag-card.md`).
 
 ### 3. Padded two-point sling
 Turned Cordura tube over foam; foam_length = pad − 2 × 0.5" setback; tube

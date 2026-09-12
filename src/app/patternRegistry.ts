@@ -3,7 +3,7 @@ export interface PatternEntry {
   title: string;
   description: string;
   available: boolean;
-  route: 'tool-roll' | 'tri-zip' | 'roll-top' | 'mag-pouch' | 'book-cover' | 'zip-pouch' | 'circle-skirt' | 'padded-strap';
+  route: 'tool-roll' | 'tri-zip' | 'roll-top' | 'mag-pouch' | 'book-cover' | 'zip-pouch' | 'circle-skirt' | 'padded-strap' | 'micro-rig';
 }
 
 export const PATTERNS: PatternEntry[] = [
@@ -85,4 +85,13 @@ registerPattern({
   description: 'Padded shoulder strap pair (foam + mesh, tacked or quilted webbing; tail derived from torso and gusset depth) or the SOE-style H-harness: two pads, slotted cross strap with 8" of adjustment, four side-release corners, unsewn hydration channels and routing PALS.',
   available: true,
   route: 'padded-strap',
+});
+
+// Register the micro-rig entry (idempotent — safe to call multiple times)
+registerPattern({
+  id: 'micro-rig',
+  title: 'Micro Rig',
+  description: 'SOE-style micro rig platform: a 7" panel that is itself a pocket (10.5"–19" wide), pleated mag cells on the front, 6 × 6 × 3" utility pocket, side PALS, bottom loops, dangler field, optional split front, webbing straps or an H-harness.',
+  available: true,
+  route: 'micro-rig',
 });

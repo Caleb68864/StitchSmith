@@ -73,10 +73,12 @@ function layoutPieces(pattern: Pattern, allPieces: boolean, placements: Record<s
     const model = models[i];
     if (!model) return;
     const pl = placements[piece.id];
-    // By default show the pieces that actually fold (or every piece when none do), and in an
-    // assembled scene only the placed pieces and the object's host; loose strips only clutter.
+    // By default show the pieces that actually fold (or every piece when none do). In an
+    // assembled scene show only the placed pieces and the object's host: every other piece is
+    // a loose strip or pocket that would only clutter the sewn-up view.
     const isHost = base?.pieceId === piece.id;
-    if (!allPieces && (anyFolds || assembled) && model.folds.length === 0 && !pl?.keep && !isHost) return;
+    if (!allPieces && assembled && !pl && !isHost) return;
+    if (!allPieces && !assembled && anyFolds && model.folds.length === 0 && !pl?.keep) return;
     const bb = bboxFromPiece(piece);
     if (pl && (pl.dx !== undefined || pl.dy !== undefined || pl.dz !== undefined || pl.drape || pl.cone || pl.attach)) {
       // Placed pieces (offsets, a drape path, or riding on another piece) sit in the scene frame

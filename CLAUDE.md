@@ -18,7 +18,7 @@ Pieces are drawn at finished size and the engine adds the allowance.
   apply a uniform offset via `offsetPolygon` / per-edge SA helpers in `src/lib/pattern-engine/geometry/offset.ts`.
 - The SVG/PDF exports must render the SA-offset cut line distinctly from the body cut line.
 
-Used by: Tool Roll, Tri-Zip, Roll-Top Sack, Mag Pouch, Book Cover, Circle Skirt, Padded Strap (via the strap engine).
+Used by: Tool Roll, Tri-Zip, Roll-Top Sack, Mag Pouch, Book Cover, Circle Skirt, Padded Strap (via the strap engine), Micro Rig (panel and pocket pieces; its pleated face is the card's Convention B).
 
 ### Convention B — baked-in SA (documented exception)
 
@@ -155,7 +155,7 @@ numbers. Rules already encoded, with the note that justifies each:
 
 ## Engine usage
 
-All generators (Tool Roll, Tri-Zip, Roll-Top Sack, Mag Pouch, Book Cover, Zip Pouch, Circle Skirt, Padded Strap) consume `src/lib/pattern-engine/` for graph types (`Point`, `Edge`, `Path`, `Piece`, `Pattern`), geometry helpers (offset, arc, bbox), and exporters (SVG, PDF, DXF, project JSON). New generators must use the engine — do not fork geometry or export code into the generator directory.
+All generators (Tool Roll, Tri-Zip, Roll-Top Sack, Mag Pouch, Book Cover, Zip Pouch, Circle Skirt, Padded Strap, Micro Rig) consume `src/lib/pattern-engine/` for graph types (`Point`, `Edge`, `Path`, `Piece`, `Pattern`), geometry helpers (offset, arc, bbox), and exporters (SVG, PDF, DXF, project JSON). New generators must use the engine — do not fork geometry or export code into the generator directory.
 
 ## Project JSON envelope
 
@@ -169,6 +169,7 @@ All generators (Tool Roll, Tri-Zip, Roll-Top Sack, Mag Pouch, Book Cover, Zip Po
 - `schemaVersion: 5` → Zip Pouch
 - `schemaVersion: 6` → Circle Skirt
 - `schemaVersion: 7` → Padded Strap / H-harness
+- `schemaVersion: 8` → Micro Rig
 - These are sibling schemas, not an upgrade chain. Distinguish by `generatorId`
   (the source of truth is each hook's `isValid` guard in `src/state/use*Project.ts`).
 - Unknown future versions return a friendly error, not partial state.
