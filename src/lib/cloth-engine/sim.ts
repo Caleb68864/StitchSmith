@@ -328,12 +328,18 @@ export function seamResidual(world: ClothWorld): { max: number; mean: number } {
   return { max, mean: world.seams.length ? sum / world.seams.length : 0 };
 }
 
-/** Largest relative edge-length error, e.g. 0.02 = 2 % stretch. */
+/**
+ * Largest relative edge-length error, e.g. 0.02 = 2 % stretch. The error is
+ * taken over at least half a cell: the mesher leaves sliver edges where an arc
+ * or a diagonal clips a grid cell, and a millimetre on a sliver is not cloth
+ * stretched threefold.
+ */
 export function maxStretch(world: ClothWorld): number {
   let max = 0;
+  const floor = world.params.spacing / 2;
   for (const c of world.stretch) {
     if (c.rest < 1e-9) continue;
-    max = Math.max(max, Math.abs(d3(world.pos, c.i, c.j) / c.rest - 1));
+    max = Math.max(max, Math.abs(d3(world.pos, c.i, c.j) - c.rest) / Math.max(c.rest, floor));
   }
   return max;
 }

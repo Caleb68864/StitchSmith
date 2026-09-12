@@ -10,7 +10,8 @@ import { ConstructionSteps } from '../shared/ConstructionSteps.js';
 import { BookCoverSettingsPanel } from './BookCoverSettingsPanel.js';
 import { PatternPreview } from './PatternPreview.js';
 import { ExportPanel } from './ExportPanel.js';
-import { FoldPreview3D, type FoldObject } from '../shared/FoldPreview3D.js';
+import { FoldPreview3D, type FoldObject, type PiecePlacement, type SeamSpec } from '../shared/FoldPreview3D.js';
+import { mirrorPieceX } from '../../lib/fold-engine/index.js';
 import type { Pattern } from '../../lib/pattern-engine/graph/Pattern.js';
 
 type BookCoverPageProps = Pick<
@@ -116,10 +117,43 @@ export function BookCoverPage({
     return r.ok ? r.value : null;
   }, [project.inputs, engineValid]);
   const steps = built?.steps ?? [];
-  const pattern3d = useMemo<Pattern | null>(
-    () => (built ? { id: 'book-cover', name: 'Book Cover', pieces: built.pieces } : null),
-    [built],
-  );
+  // The two inner flaps are cut from one drawing (outer edge at x = 0); the right one is
+  // sewn mirrored, so the 3D assembly mirrors its geometry.
+  const pattern3d = useMemo<Pattern | null>(() => {
+    if (!built) return null;
+    const pieces = built.pieces.map((p) => (p.id === 'inner-flap-right' ? mirrorPieceX(p, p.id, p.name) : p));
+    return { id: 'book-cover', name: 'Book Cover', pieces };
+  }, [built]);
+
+  // Flaps ride on the cover they are sewn to: outer edge at SA between the hems, and the top and
+  // bottom edges caught along the hem fold lines (the hem strip itself folds over them).
+  const foldAssembly = useMemo<{ placements: Record<string, PiecePlacement>; seams: SeamSpec[] } | undefined>(() => {
+    if (!built || !built.pieces.some((p) => p.id === 'cover-panel')) return undefined;
+    try {
+      const r = resolveInputs(project.inputs);
+      const { coverW, cutWidth, cutHeight } = coverPanelDims(r);
+      const SA = r.seam_allowance;
+      const hem = r.top_bottom_hem;
+      const flapW = r.flap_depth + SA + hem;
+      const cover = 'cover-panel';
+      const line = (pieceId: string, from: { x: number; y: number }, to: { x: number; y: number }) => ({ pieceId, from, to });
+      const placements: Record<string, PiecePlacement> = {
+        'inner-flap-left': { dx: 0, dy: 0, dz: 1.2, keep: true, attach: { pieceId: cover, point: { x: SA + coverW / 2, y: cutHeight / 2 } } },
+        'inner-flap-right': { dx: cutWidth - flapW, dy: 0, dz: 1.2, keep: true, attach: { pieceId: cover, point: { x: cutWidth - SA - coverW / 2, y: cutHeight / 2 } } },
+      };
+      const seams: SeamSpec[] = [
+        { label: 'left flap outer edge', a: line('inner-flap-left', { x: SA, y: hem }, { x: SA, y: cutHeight - hem }), b: line(cover, { x: SA, y: hem }, { x: SA, y: cutHeight - hem }) },
+        { label: 'left flap top hem', a: line('inner-flap-left', { x: SA, y: hem }, { x: flapW - hem, y: hem }), b: line(cover, { x: SA, y: hem }, { x: flapW - hem, y: hem }) },
+        { label: 'left flap bottom hem', a: line('inner-flap-left', { x: SA, y: cutHeight - hem }, { x: flapW - hem, y: cutHeight - hem }), b: line(cover, { x: SA, y: cutHeight - hem }, { x: flapW - hem, y: cutHeight - hem }) },
+        { label: 'right flap outer edge', a: line('inner-flap-right', { x: flapW - SA, y: hem }, { x: flapW - SA, y: cutHeight - hem }), b: line(cover, { x: cutWidth - SA, y: hem }, { x: cutWidth - SA, y: cutHeight - hem }) },
+        { label: 'right flap top hem', a: line('inner-flap-right', { x: hem, y: hem }, { x: flapW - SA, y: hem }), b: line(cover, { x: cutWidth - flapW + hem, y: hem }, { x: cutWidth - SA, y: hem }) },
+        { label: 'right flap bottom hem', a: line('inner-flap-right', { x: hem, y: cutHeight - hem }, { x: flapW - SA, y: cutHeight - hem }), b: line(cover, { x: cutWidth - flapW + hem, y: cutHeight - hem }, { x: cutWidth - SA, y: cutHeight - hem }) },
+      ];
+      return { placements, seams };
+    } catch {
+      return undefined;
+    }
+  }, [built, project.inputs]);
 
   // 3D check: the closed book lies spine-down on the spine section; both covers fold up round it.
   // The cavity report then shows the ease across the spine and over the covers.
@@ -192,7 +226,7 @@ export function BookCoverPage({
       preview={
         <div className="space-y-3">
           <PatternPreview inputs={project.inputs} hasErrors={!engineValid} />
-          {pattern3d && <FoldPreview3D pattern={pattern3d} object={foldObject} />}
+          {pattern3d && <FoldPreview3D pattern={pattern3d} object={foldObject} placements={foldAssembly?.placements} seams={foldAssembly?.seams} />}
           <PatternEngineLegend />
           {steps.length > 0 && <ConstructionSteps steps={steps} />}
         </div>

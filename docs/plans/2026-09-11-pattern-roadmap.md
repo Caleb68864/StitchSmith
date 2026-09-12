@@ -280,12 +280,22 @@ roll-top: 11 %; book cover: 6 mm across-spine clearance on the hardcover
 default). Two-panel bags pin only the host panel under the contents
 (`FoldObject.pin: 'footprint'`).
 
+**Tri-Zip and Book Cover flaps (2026-09-11, later still):** placements can
+now rotate a piece and attach it to the folded region it is sewn to, and a
+mirrored piece becomes two instances (`mirrorPieceX`). The Book Cover's
+flaps ride inside their covers and seam at the outer edge and hems; the
+Tri-Zip body (`assembly3d.ts`) assembles wings, zip strips, centre, back
+and a gusset turned into its U round the finished block. That found the
+gusseted front 50 mm wider than the back (wings now give up the zip strip
+width) and left one open design gap: nothing closes the top of the pack —
+the gusset stops at the top corners and the front and back top edges are
+not joined. A top panel or a gusset that runs over the top is the next
+Tri-Zip design decision, and the check will confirm it.
+
 Still outside the check: Tool Roll (not on the pattern engine), Tri-Zip
-(one `seam:` path declared — `seamsFromSharedPaths` is ready for it once the
-back panel, wings and gusset carry `seam:` paths), the Zip Pouch's
-cross-bottom / gusset / multi-panel styles, Circle Skirt, and the Book
-Cover's inner flaps (shown flat beside the cover; seaming them to the cover
-edges is the next step for that page).
+with `split_gusset` or the direct zipper method (assembly returns null and
+the page falls back to the plain preview), the Zip Pouch's cross-bottom /
+gusset / multi-panel styles, and Circle Skirt.
 
 - **Stage 1 — fold preview (done, see status).** Every piece is flat panels
   joined at `fold` edges. Treat each region between fold lines as a rigid

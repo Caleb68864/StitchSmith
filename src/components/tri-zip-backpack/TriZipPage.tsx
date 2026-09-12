@@ -12,6 +12,8 @@ import { PatternPageShell } from '../shared/PatternPageShell.js';
 import { parseProjectJson, downloadProjectJson } from '../../export/projectEnvelopeIO.js';
 import { ValidationBanner } from '../shared/ValidationBanner.js';
 import { FoldPreview3D } from '../shared/FoldPreview3D.js';
+import { triZipAssembly } from '../../generators/tri-zip-backpack/assembly3d.js';
+import { resolveInputs } from '../../generators/tri-zip-backpack/inputs.js';
 import type { Pattern } from '../../lib/pattern-engine/graph/Pattern.js';
 
 type TriZipPageProps = Pick<
@@ -69,7 +71,16 @@ export function TriZipPage({ project, updateInputs, resetProject, importProject 
     return r.ok ? r.value : null;
   }, [project.inputs, engineValid]);
   const steps = built?.steps ?? [];
-  const pattern3d = useMemo<Pattern | null>(() => (built ? { id: built.id, name: built.name, pieces: built.pieces } : null), [built]);
+  // 3D: assemble the body (mirrored wing and zip-strip instances, gusset turned up) round a block of the finished size.
+  const assembly = useMemo(() => {
+    if (!built) return null;
+    try {
+      return triZipAssembly(built.pieces, resolveInputs(project.inputs, getPreset(project.inputs.stylePreset)));
+    } catch {
+      return null;
+    }
+  }, [built, project.inputs]);
+  const pattern3d = useMemo<Pattern | null>(() => (built ? { id: built.id, name: built.name, pieces: assembly?.pieces ?? built.pieces } : null), [built, assembly]);
 
   function handleReset() {
     if (window.confirm('Reset will discard all changes and restore default Tri-Zip settings. This cannot be undone — continue?')) {
@@ -114,7 +125,7 @@ export function TriZipPage({ project, updateInputs, resetProject, importProject 
           showLabels={showLabels}
           onShowLabelsChange={setShowLabels}
         />
-        {pattern3d && <FoldPreview3D pattern={pattern3d} />}
+        {pattern3d && <FoldPreview3D pattern={pattern3d} object={assembly?.object} placements={assembly?.placements} seams={assembly?.seams} />}
         </div>
       }
       sidebar={

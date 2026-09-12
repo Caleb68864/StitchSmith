@@ -14,6 +14,8 @@ export interface FoldedInitialOptions {
   t?: number;
   /** Flat-frame translation (dx, dy) and z offset applied after folding. */
   offset?: { dx?: number; dy?: number; dz?: number };
+  /** Extra placement applied last (a rotation, or riding on another piece's folded region). */
+  transform?: (v: Vec3) => Vec3;
 }
 
 /** Returns a function mapping a flat point of this piece to its rigid-folded 3D position. */
@@ -27,7 +29,8 @@ export function foldedInitial(opts: FoldedInitialOptions): (flat: Point) => Vec3
     let r = regionAt(opts.model, flat);
     if (r < 0) r = fallback;
     const p = transformFlatPoint(transforms[r], flat);
-    return [p[0] + dx, p[1] - dy, p[2] + dz];
+    const placed: Vec3 = [p[0] + dx, p[1] - dy, p[2] + dz];
+    return opts.transform ? opts.transform(placed) : placed;
   };
 }
 

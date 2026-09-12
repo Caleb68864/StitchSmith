@@ -341,3 +341,59 @@ describe('buildPattern', () => {
     }
   });
 });
+
+describe('buildPattern — front width and gusset turns (3D assembly)', () => {
+  it('gusseted method: wings give up the zip strip width so the front equals the back width', () => {
+    const result = buildPattern({ ...DEFAULT_INPUTS, zipper_method: 'gusseted', zipper_gusset_width: 25, center_panel_width_percent: 35 }, urban_assault);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const wing = findPieceById(result.value.pieces, 'front-wing')!;
+    const outline = wing.paths.find((p) => p.id === 'front-wing-outline')!;
+    const wingW = Math.max(...outline.edges.map((e) => e.end.x));
+    // (300 - 105) / 2 - 25
+    expect(wingW).toBeCloseTo(72.5, 5);
+    expect(2 * wingW + 2 * 25 + 105).toBeCloseTo(300, 5);
+  });
+
+  it('direct method: wings keep the full half-width', () => {
+    const result = buildPattern({ ...DEFAULT_INPUTS, zipper_method: 'direct', center_panel_width_percent: 35 }, urban_assault);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const wing = findPieceById(result.value.pieces, 'front-wing')!;
+    const outline = wing.paths.find((p) => p.id === 'front-wing-outline')!;
+    expect(Math.max(...outline.edges.map((e) => e.end.x))).toBeCloseTo(97.5, 5);
+    expect(wing.paths.some((p) => p.id === 'seam:wing-tzi')).toBe(false);
+  });
+
+  it('gusseted method: wing and zip strip share seam:wing-tzi of equal length', () => {
+    const result = buildPattern({ ...DEFAULT_INPUTS, zipper_method: 'gusseted' }, urban_assault);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const wing = findPieceById(result.value.pieces, 'front-wing')!;
+    const tzi = findPieceById(result.value.pieces, 'tri-zip-subsystem')!;
+    expect(wing.paths.some((p) => p.id === 'seam:wing-tzi')).toBe(true);
+    expect(tzi.paths.some((p) => p.id === 'seam:wing-tzi')).toBe(true);
+    expect(verifySharedSeams([wing, tzi]).ok).toBe(true);
+  });
+
+  it('perimeter gusset carries two 90° corner fold lines at height and height + width', () => {
+    const result = buildPattern(DEFAULT_INPUTS, urban_assault);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const gusset = findPieceById(result.value.pieces, 'perimeter-gusset')!;
+    const folds = gusset.paths.filter((p) => p.edges[0]?.role === 'fold');
+    expect(folds.map((p) => p.edges[0].start.x)).toEqual([510, 810]);
+    expect(folds.every((p) => /\(90°\)/.test(p.label ?? ''))).toBe(true);
+  });
+
+  it('split gusset halves each carry one corner fold', () => {
+    const result = buildPattern({ ...DEFAULT_INPUTS, split_gusset: true }, urban_assault);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const a = findPieceById(result.value.pieces, 'perimeter-gusset-a')!;
+    const b = findPieceById(result.value.pieces, 'perimeter-gusset-b')!;
+    expect(a.paths.filter((p) => p.edges[0]?.role === 'fold').map((p) => p.edges[0].start.x)).toEqual([510]);
+    // half length 660 − height 510
+    expect(b.paths.filter((p) => p.edges[0]?.role === 'fold').map((p) => p.edges[0].start.x)).toEqual([150]);
+  });
+});

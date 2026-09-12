@@ -7,9 +7,23 @@ import { frontWingSteps } from '../steps.js';
 
 function pt(x: number, y: number) { return { x, y }; }
 
-export function buildFrontWing(r: ResolvedInputs): ModuleResult {
+/**
+ * Finished width of one front wing. In the gusseted zipper method a zipper
+ * gusset strip sits between each wing and the centre panel, so the wings give
+ * up that width — otherwise the assembled front is 2 × gusset wider than the
+ * back panel and the perimeter gusset (the 3D cloth check could not close it).
+ */
+export function frontWingWidth(r: ResolvedInputs): number {
   const centerWidth = r.width * (r.center_panel_width_percent / 100);
-  const wingWidth = (r.width - centerWidth) / 2;
+  const zipGusset = r.zipper_method === 'gusseted' ? r.zipper_gusset_width : 0;
+  return (r.width - centerWidth) / 2 - zipGusset;
+}
+
+/** Shared seam id: wing interior edge ↔ zipper gusset strip outer edge (gusseted method). */
+export const WING_ZIP_SEAM_PATH_ID = 'seam:wing-tzi';
+
+export function buildFrontWing(r: ResolvedInputs): ModuleResult {
+  const wingWidth = frontWingWidth(r);
   const { height } = r;
 
   // y_split_height_percent measured from top
@@ -30,6 +44,15 @@ export function buildFrontWing(r: ResolvedInputs): ModuleResult {
   ];
 
   const path: Path = { id: 'front-wing-outline', edges, closed: true };
+  const paths: Path[] = [path];
+  if (r.zipper_method === 'gusseted') {
+    const seamEid = makeEdgeIdGen(WING_ZIP_SEAM_PATH_ID);
+    paths.push({
+      id: WING_ZIP_SEAM_PATH_ID,
+      edges: [{ kind: 'straight', id: seamEid(), role: 'seam', start: pt(0, 0), end: pt(0, height) }],
+      closed: false,
+    });
+  }
 
   // Expose the y-split coordinate as an annotation for testing / UI consumption.
   const piece: Piece = {
@@ -37,7 +60,7 @@ export function buildFrontWing(r: ResolvedInputs): ModuleResult {
     name: 'Front Wing',
     mirror: true,
     quantity: 2,
-    paths: [path],
+    paths,
     annotations: [
       { kind: 'notch', label: 'Y-split', point: pt(0, ySplit), angle: 0 },
       { kind: 'label', label: `Front Wing\n${Math.round(wingWidth)}×${height} mm` },

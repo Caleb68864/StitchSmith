@@ -7,6 +7,25 @@ import { perimeterGussetSteps } from '../steps.js';
 
 function pt(x: number, y: number) { return { x, y }; }
 
+/**
+ * Corner turn marks (the step says "notch at corners"): the gusset turns 90°
+ * where the bottom meets each side. Emitted as fold lines so the 3D preview
+ * bends the strip into its U; the angle is stated so the preview cannot guess.
+ */
+function cornerFolds(idPrefix: string, xs: number[], depth: number, length: number): Path[] {
+  return xs
+    .filter((x) => x > 0.5 && x < length - 0.5)
+    .map((x, i) => {
+      const eid = makeEdgeIdGen(`${idPrefix}-corner-${i}`);
+      return {
+        id: `${idPrefix}-corner-${i}`,
+        edges: [{ kind: 'straight', id: eid(), role: 'fold', start: pt(x, 0), end: pt(x, depth) } as Edge],
+        closed: false,
+        label: 'Corner — notch and turn up the side (90°)',
+      };
+    });
+}
+
 function makeGussetPath(id: string, length: number, depth: number): Path {
   const eid = makeEdgeIdGen(id);
   const seg = (sx: number, sy: number, ex: number, ey: number): Edge =>
@@ -39,7 +58,7 @@ export function buildPerimeterGusset(r: ResolvedInputs): ModuleResult {
       name: 'Perimeter Gusset A',
       mirror: false,
       quantity: 1,
-      paths: [pathA],
+      paths: [pathA, ...cornerFolds('gusset-a', [height], depth, halfLen)],
       annotations: [{ kind: 'label', label: `Gusset A\n${Math.round(halfLen)}×${depth} mm` }],
     });
     pieces.push({
@@ -47,7 +66,7 @@ export function buildPerimeterGusset(r: ResolvedInputs): ModuleResult {
       name: 'Perimeter Gusset B',
       mirror: false,
       quantity: 1,
-      paths: [pathB],
+      paths: [pathB, ...cornerFolds('gusset-b', [halfLen - height], depth, halfLen)],
       annotations: [{ kind: 'label', label: `Gusset B\n${Math.round(halfLen)}×${depth} mm` }],
     });
   } else {
@@ -57,7 +76,7 @@ export function buildPerimeterGusset(r: ResolvedInputs): ModuleResult {
       name: 'Perimeter Gusset',
       mirror: false,
       quantity: 1,
-      paths: [path],
+      paths: [path, ...cornerFolds('gusset', [height, height + width], depth, perimeterLength)],
       annotations: [{ kind: 'label', label: `Perimeter Gusset\n${Math.round(perimeterLength)}×${depth} mm` }],
     });
   }

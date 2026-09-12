@@ -5,6 +5,7 @@ import type { Piece } from '../../../lib/pattern-engine/graph/Piece.js';
 import type { ResolvedInputs, ModuleResult, SeamRef } from '../types.js';
 import { triZipSubsystemSteps } from '../steps.js';
 import { SHARED_SEAM_PATH_ID } from './frontCenterPanel.js';
+import { WING_ZIP_SEAM_PATH_ID } from './frontWing.js';
 
 function pt(x: number, y: number) { return { x, y }; }
 
@@ -35,12 +36,19 @@ export function buildTriZipSubsystem(r: ResolvedInputs): ModuleResult & { seamRe
       ],
       closed: true,
     };
+    // Outer edge of the strip joins the wing's interior edge — same length, checked by verifySharedSeams.
+    const wingSeamEid = makeEdgeIdGen(WING_ZIP_SEAM_PATH_ID);
+    const wingSeamPath: Path = {
+      id: WING_ZIP_SEAM_PATH_ID,
+      edges: [{ kind: 'straight', id: wingSeamEid(), role: 'seam', start: pt(zipper_gusset_width, 0), end: pt(zipper_gusset_width, height) }],
+      closed: false,
+    };
     pieces.push({
       id: 'tri-zip-subsystem',
       name: 'Tri-Zip Gusset Strip',
       mirror: true,
       quantity: 2,
-      paths: [gussetPath, sharedSeamPath],
+      paths: [gussetPath, sharedSeamPath, wingSeamPath],
       annotations: [
         { kind: 'label', label: `Zipper Gusset\n${zipper_gusset_width}×${height} mm` },
       ],

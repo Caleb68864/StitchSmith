@@ -12,6 +12,7 @@ import {
   withoutRegions,
   regionAt,
   onAnyFold,
+  makePlacer,
   type FoldModel,
   type FoldedModel,
   type CavityReport,
@@ -44,6 +45,7 @@ interface PieceEntry {
   offsetY: number;
   offsetZ: number;
   color: number;
+  placement?: PiecePlacement;
 }
 
 function layoutPieces(pattern: Pattern, allPieces: boolean, placements: Record<string, PiecePlacement>, base?: FoldPreview3DProps['object'] extends infer O ? (O extends { base?: infer B } ? B : never) : never): PieceEntry[] {
@@ -67,7 +69,7 @@ function layoutPieces(pattern: Pattern, allPieces: boolean, placements: Record<s
     const bb = bboxFromPiece(piece);
     if (pl && (pl.dx !== undefined || pl.dy !== undefined || pl.dz !== undefined)) {
       // Placed pieces sit in the first piece's frame instead of the side-by-side row.
-      entries.push({ model, offsetX: pl.dx ?? 0, offsetY: pl.dy ?? 0, offsetZ: pl.dz ?? 0, color: PALETTE[i % PALETTE.length] });
+      entries.push({ model, offsetX: pl.dx ?? 0, offsetY: pl.dy ?? 0, offsetZ: pl.dz ?? 0, color: PALETTE[i % PALETTE.length], placement: pl });
       return;
     }
     entries.push({ model, offsetX: x - bb.minX, offsetY: 0, offsetZ: 0, color: PALETTE[i % PALETTE.length] });
@@ -191,13 +193,17 @@ export function FoldViewer({ pattern, object, placements = NO_PLACEMENTS, seams 
       objectBox = { center: [centre.x, centre.y, centre.z], half: vertical ? [object.width / 2, object.height / 2, object.depth / 2] : [object.height / 2, object.width / 2, object.depth / 2], dir3 };
     }
 
+    const anglesOf = (entry: PieceEntry) => defaultFoldAngles(entry.model).map((a, i) => {
+      const key = `${entry.model.pieceId}:${i}`;
+      return key in angleOverrides ? angleOverrides[key] * DEG : a;
+    });
+    const t = showFlat ? 0 : progress;
+    const placer = makePlacer(entries, (e) => anglesOf(e as PieceEntry), t);
+
     for (const entry of entries) {
-      const angles = defaultFoldAngles(entry.model).map((a, i) => {
-        const key = `${entry.model.pieceId}:${i}`;
-        return key in angleOverrides ? angleOverrides[key] * DEG : a;
-      });
-      const raw = foldModel(entry.model, angles, showFlat ? 0 : progress);
-      const shift = (v: [number, number, number]): [number, number, number] => [v[0] + entry.offsetX, v[1] - entry.offsetY, v[2] + entry.offsetZ];
+      const angles = anglesOf(entry);
+      const raw = foldModel(entry.model, angles, t);
+      const shift = placer(entry);
       const folded: FoldedModel = {
         pieceId: raw.pieceId,
         panels: raw.panels.map((p) => ({ ...p, vertices: p.vertices.map(shift) })),
@@ -241,11 +247,7 @@ export function FoldViewer({ pattern, object, placements = NO_PLACEMENTS, seams 
       });
       const valid = clothMeshes.map((m, i) => (m ? { mesh: m, entry: entries[i] } : null)).filter((x): x is { mesh: NonNullable<typeof clothMeshes[number]>; entry: PieceEntry } => x !== null);
       if (valid.length > 0) {
-        const anglesOf = (entry: PieceEntry) => defaultFoldAngles(entry.model).map((a, i) => {
-          const key = `${entry.model.pieceId}:${i}`;
-          return key in angleOverrides ? angleOverrides[key] * DEG : a;
-        });
-        const inits = valid.map(({ entry }) => foldedInitial({ model: entry.model, angles: anglesOf(entry), t: progress, offset: { dx: entry.offsetX, dy: entry.offsetY, dz: entry.offsetZ } }));
+        const inits = valid.map(({ entry }) => foldedInitial({ model: entry.model, angles: anglesOf(entry), t: progress, transform: placer(entry) }));
         const creases = valid.map(({ entry }) => foldedCreaseRest({ model: entry.model, angles: anglesOf(entry), t: progress }));
         const hostId = object?.base?.pieceId ?? valid[0].entry.model.pieceId;
         const solids = object && showObject && objectBox ? [{ kind: 'box' as const, center: objectBox.center, half: objectBox.half }] : [];

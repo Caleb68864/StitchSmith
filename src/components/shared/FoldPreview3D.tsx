@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
 import type { Pattern } from '../../lib/pattern-engine/graph/Pattern.js';
 import type { SeamSpec } from '../../lib/cloth-engine/sim.js';
+import type { PiecePlacement } from '../../lib/fold-engine/index.js';
 
 export type { SeamSpec };
 
@@ -30,16 +31,7 @@ export interface FoldObject {
   pin?: 'root' | 'footprint';
 }
 
-/** Per-piece placement in the 3D scene, in flat pattern mm before folding (dz is applied after). */
-export interface PiecePlacement {
-  dx?: number;
-  dy?: number;
-  dz?: number;
-  /** Root the piece's hinge tree at this flat point instead of its label. */
-  rootPoint?: { x: number; y: number };
-  /** Show this piece even when it has no folds (strips are hidden by default). */
-  keep?: boolean;
-}
+export type { PiecePlacement };
 
 export interface FoldPreview3DProps {
   pattern: Pattern;

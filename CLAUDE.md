@@ -105,6 +105,15 @@ numbers. Rules already encoded, with the note that justifies each:
   object so the cloth holds only the host panel under the contents and lets
   the rest wrap to the seams; pieces whose other faces are hinged regions of
   the same piece (Mag Pouch) keep the default whole-root pin.
+- Placements (`PiecePlacement` in `src/lib/fold-engine/placement.ts`) can
+  rotate a piece about its x axis (`rx`, a gusset laid under the bag) and
+  `attach` it to the folded region of the piece it is sewn to (a flap on a
+  cover). A piece cut twice mirrored is one drawing; the assembly mirrors it
+  with `mirrorPieceX` into a second instance with its own id. Put the
+  assembly in the generator (`assembly3d.ts`, as Tri-Zip does) so the page
+  and the cloth test share it.
+- A zipper gusset strip set between panels takes its width from those panels:
+  the assembled front must equal the back panel's width.
 
 ## Engine usage
 

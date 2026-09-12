@@ -361,6 +361,21 @@ function to3(p: Point): Vec3 {
   return [p.x, -p.y, 0];
 }
 
+/** Apply a column-major 4×4 transform to a 3D point (exported for placed pieces in the viewer). */
+export function applyTransform(m: RegionTransform, v: Vec3): Vec3 {
+  return apply(m, v);
+}
+
+/** Rotation by `theta` radians about the axis through `p` along unit `u`, as a column-major 4×4. */
+export function rotationAboutLine(p: Vec3, u: Vec3, theta: number): RegionTransform {
+  return rotateAboutLine(p, u, theta);
+}
+
+/** a ∘ b — apply `b` first, then `a`. */
+export function composeTransforms(a: RegionTransform, b: RegionTransform): RegionTransform {
+  return multiply(a, b);
+}
+
 export interface FoldedPanel {
   region: number;
   vertices: Vec3[];
