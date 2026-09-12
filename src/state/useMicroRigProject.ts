@@ -3,7 +3,7 @@ import type { MicroRigInputs } from '../generators/micro-rig/types.js';
 import { makeProjectStorage } from '../storage/genericProjectStorage.js';
 import { isPlainObject } from '../utils/isPlainObject.js';
 
-const STORAGE_KEY = 'stitchsmith.micro-rig.project';
+export const STORAGE_KEY = 'stitchsmith.micro-rig.project';
 
 export interface MicroRigProject {
   schemaVersion: 8;

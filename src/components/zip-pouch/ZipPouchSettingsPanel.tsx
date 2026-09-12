@@ -1,10 +1,10 @@
+import { NumericField as SharedNumericField, type NumericFieldProps, UnitToggle } from '../shared/fields/index.js';
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import {
@@ -16,6 +16,10 @@ import {
 } from '@/components/ui/select';
 import type { ZipPouchInputs, ZipPouchPreset, ConstructionStyle, ZipperPosition } from '../../generators/zip-pouch/types.js';
 import { PRESET_DEFAULTS } from '../../generators/zip-pouch/defaults.js';
+
+/** Panel-local alias: a cleared box reports NaN so validation flags it rather than restoring the default. */
+const NumericField = ({ onChange, ...p }: Omit<NumericFieldProps, 'allowEmpty' | 'onChange'> & { onChange: (v: number) => void }) => <SharedNumericField allowEmpty={false} {...p} onChange={(v) => onChange(v as number)} />;
+
 
 // ─── Unit conversion helpers ─────────────────────────────────────────────────
 
@@ -95,46 +99,6 @@ interface Props {
   onChange: (changes: Partial<ZipPouchInputs>) => void;
 }
 
-function NumericField({
-  id,
-  label,
-  value,
-  error,
-  min,
-  step,
-  onChange,
-}: {
-  id: string;
-  label: string;
-  value: number | undefined;
-  error?: string;
-  min?: number;
-  step?: number;
-  onChange: (v: number) => void;
-}) {
-  return (
-    <div className="space-y-1">
-      <Label htmlFor={id} className="text-xs">
-        {label}
-      </Label>
-      <Input
-        id={id}
-        type="number"
-        min={min ?? 0}
-        step={step ?? 1}
-        value={value ?? ''}
-        onChange={e => onChange(parseFloat(e.target.value))}
-        className={`h-8 text-xs ${error ? 'border-destructive' : ''}`}
-        aria-describedby={error ? `${id}-error` : undefined}
-      />
-      {error && (
-        <p id={`${id}-error`} className="text-xs text-destructive">
-          {error}
-        </p>
-      )}
-    </div>
-  );
-}
 
 const CONSTRUCTION_STYLE_LABELS: Record<ConstructionStyle, string> = {
   boxed: 'Boxed corners (classic)',
@@ -198,27 +162,7 @@ export function ZipPouchSettingsPanel({ inputs, errors, onChange }: Props) {
                 </Select>
               </div>
 
-              <div className="space-y-1">
-                <Label className="text-xs">Units</Label>
-                <div className="flex gap-2">
-                  <Button
-                    variant={units === 'mm' ? 'default' : 'outline'}
-                    size="sm"
-                    className="h-7 text-xs px-3"
-                    onClick={() => handleUnitsChange('mm')}
-                  >
-                    mm
-                  </Button>
-                  <Button
-                    variant={units === 'in' ? 'default' : 'outline'}
-                    size="sm"
-                    className="h-7 text-xs px-3"
-                    onClick={() => handleUnitsChange('in')}
-                  >
-                    in
-                  </Button>
-                </div>
-              </div>
+              <UnitToggle value={units} onChange={handleUnitsChange} />
             </div>
           </AccordionContent>
         </AccordionItem>

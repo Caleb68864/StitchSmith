@@ -1,6 +1,33 @@
 import type { BookCoverInputs, ResolvedInputs, Result, BuildPatternError, ZipperGauge, ElasticTension, ClosureConfig, InterfacingKind, LiningConfig } from './types.js';
 import { DEFAULT_SEAM_ALLOWANCE_MM, DEFAULT_TOP_BOTTOM_HEM_MM, BOOK_PRESETS, FOLDOVER_PRESETS, ZIPPER_GAUGE_DEFAULTS, CLOSURE_DEFAULTS, LINING_DEFAULTS, CARD_SLOTS_DEFAULTS, BOOKMARK_RIBBON_DEFAULTS, INTERNAL_ZIP_POCKET_DEFAULTS, TACTICAL_DEFAULTS } from './defaults.js';
 import { toMm as engineToMm } from '../../lib/pattern-engine/geometry/units.js';
+import { sweepInputs, stripNulls, unitsOf, type GuardSpec } from '../../utils/inputGuards.js';
+
+/** Type/range guard run before the generator's own rules (hardening pass H1). */
+const GUARD_SPEC: GuardSpec = {
+  units: { kind: 'enum', allowed: ['mm', 'in'] },
+  book_height: { kind: 'length' },
+  book_width: { kind: 'length' },
+  spine_width: { kind: 'length' },
+  flap_depth: { kind: 'length' },
+  seam_allowance: { kind: 'length', max: 5000 },
+  top_bottom_hem: { kind: 'length', max: 5000 },
+  width_ease: { kind: 'length', max: 5000 },
+  spine_bulge: { kind: 'length', max: 5000 },
+  is_hardcover: { kind: 'bool' },
+  book_preset: { kind: 'string' },
+  foldover_preset: { kind: 'enum', allowed: ['tactical', 'civilian'] },
+  outer_pocket: { kind: 'object' },
+  inner_pocket: { kind: 'object' },
+  pen_holder: { kind: 'object' },
+  closure: { kind: 'object' },
+  lining: { kind: 'object' },
+  card_slots: { kind: 'object' },
+  bookmark_ribbon: { kind: 'object' },
+  internal_zip_pocket: { kind: 'object' },
+  mesh_pocket: { kind: 'object' },
+  tactical: { kind: 'object' },
+};
 
 // Re-export the engine's toMm narrowed to ('mm' | 'in') — the two units
 // BookCoverInputs accepts. The conversion math lives in pattern-engine
@@ -14,6 +41,9 @@ function isPositiveFinite(n: number): boolean {
 }
 
 export function validateInputs(inputs: BookCoverInputs): Result<true, BuildPatternError> {
+  inputs = stripNulls(inputs);
+  const guard = sweepInputs(inputs, GUARD_SPEC, unitsOf(inputs, 'mm'));
+  if (guard.length) return { ok: false, error: { kind: 'invalid-inputs', message: guard[0].message, field: guard[0].field } };
   const { units } = inputs;
 
   // Validate book_preset
@@ -238,6 +268,7 @@ export function validateInputs(inputs: BookCoverInputs): Result<true, BuildPatte
 }
 
 export function resolveInputs(inputs: BookCoverInputs): ResolvedInputs {
+  inputs = stripNulls(inputs);
   const { units } = inputs;
 
   const preset = inputs.book_preset ? BOOK_PRESETS.find(p => p.id === inputs.book_preset) : undefined;

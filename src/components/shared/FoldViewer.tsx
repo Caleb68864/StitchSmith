@@ -20,6 +20,8 @@ import {
   type CavityReport,
 } from '../../lib/fold-engine/index.js';
 import type { FoldPreview3DProps, PiecePlacement, SeamSpec } from './FoldPreview3D.js';
+import { validateSeams, clothSpacingFor, hasNonFinite, STAT_HELP } from './viewer/validate.js';
+import { ViewerLegend } from './viewer/Legend.js';
 import {
   buildClothMesh,
   createWorld,
@@ -107,6 +109,19 @@ function underObject(f: { x: number; y: number }, object: NonNullable<FoldPrevie
   return along > margin && along < object.height - margin && across < object.width / 2 - margin;
 }
 
+/** Remove and dispose everything in a group (geometries and materials both). */
+function disposeChildren(group: THREE.Group): void {
+  while (group.children.length) {
+    const c = group.children.pop()!;
+    c.traverse((o) => {
+      const m = o as THREE.Mesh;
+      m.geometry?.dispose?.();
+      const mat = m.material as THREE.Material | THREE.Material[] | undefined;
+      if (Array.isArray(mat)) mat.forEach((x) => x.dispose()); else mat?.dispose?.();
+    });
+  }
+}
+
 function fmtMm(v: number | null): string {
   return v === null ? 'open' : `${Math.round(v)} mm`;
 }
@@ -120,7 +135,7 @@ const NO_PINS: NonNullable<FoldPreview3DProps['pins']> = [];
 
 const NO_SOLIDS: Solid[] = [];
 
-export function FoldViewer({ pattern, object, placements = NO_PLACEMENTS, seams = NO_SEAMS, pins = NO_PINS, solids: extraSolids = NO_SOLIDS, gravity: gravityProp, selfCollision = true, initialProgress = 1, initialSimulate = false, height = 360 }: FoldPreview3DProps) {
+export function FoldViewer({ pattern, object, placements = NO_PLACEMENTS, seams: seamsProp = NO_SEAMS, pins = NO_PINS, solids: extraSolids = NO_SOLIDS, gravity: gravityProp, selfCollision = true, initialProgress = 1, initialSimulate = false, height = 360, caption }: FoldPreview3DProps) {
   const mountRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<{ scene: THREE.Scene; group: THREE.Group; renderer: THREE.WebGLRenderer; camera: THREE.PerspectiveCamera; controls: OrbitControls } | null>(null);
   const [progress, setProgress] = useState(initialProgress);
@@ -130,8 +145,13 @@ export function FoldViewer({ pattern, object, placements = NO_PLACEMENTS, seams 
   const [allPieces, setAllPieces] = useState(false);
   const [cavity, setCavity] = useState<(CavityReport & { floor: number | null; above: number | null }) | null>(null);
   const [simulate, setSimulate] = useState(initialSimulate);
-  const [simStats, setSimStats] = useState<{ steps: number; stretch: number; seam: number; pen: number; size: [number, number, number] } | null>(null);
+  const [simStats, setSimStats] = useState<{ steps: number; stretch: number; seam: number; pen: number; size: [number, number, number]; skipped: string[]; spacing: number; capped: boolean; diverged: boolean } | null>(null);
+  const [sceneError, setSceneError] = useState<string | null>(null);
   const clothRef = useRef<{ world: ClothWorld; geoms: THREE.BufferGeometry[]; raf: number } | null>(null);
+  // False after unmount: no state updates or uploads from a straggling animation frame.
+  const aliveRef = useRef(true);
+  useEffect(() => { aliveRef.current = true; return () => { aliveRef.current = false; }; }, []);
+  const [viewKey, setViewKey] = useState(0);
 
   const entries = useMemo(() => layoutPieces(pattern, allPieces, placements, object?.base), [pattern, allPieces, placements, object?.base]);
   const first = entries[0];
@@ -171,12 +191,21 @@ export function FoldViewer({ pattern, object, placements = NO_PLACEMENTS, seams 
       camera.updateProjectionMatrix();
     };
     window.addEventListener('resize', onResize);
+    // The canvas must never overflow a narrow column: follow the mount's width.
+    renderer.domElement.style.maxWidth = '100%';
+    renderer.domElement.style.display = 'block';
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(onResize) : null;
+    ro?.observe(mount);
     return () => {
       cancelAnimationFrame(raf);
+      if (clothRef.current) { cancelAnimationFrame(clothRef.current.raf); clothRef.current = null; }
       window.removeEventListener('resize', onResize);
+      ro?.disconnect();
+      disposeChildren(group);
       controls.dispose();
       renderer.dispose();
-      mount.removeChild(renderer.domElement);
+      renderer.forceContextLoss?.();
+      if (renderer.domElement.parentNode === mount) mount.removeChild(renderer.domElement);
       sceneRef.current = null;
     };
   }, [height]);
@@ -186,15 +215,9 @@ export function FoldViewer({ pattern, object, placements = NO_PLACEMENTS, seams 
     const s = sceneRef.current;
     if (!s) return;
     const { group } = s;
-    while (group.children.length) {
-      const c = group.children.pop()!;
-      c.traverse((o) => {
-        const m = o as THREE.Mesh;
-        m.geometry?.dispose?.();
-        const mat = m.material as THREE.Material | THREE.Material[] | undefined;
-        if (Array.isArray(mat)) mat.forEach((x) => x.dispose()); else mat?.dispose?.();
-      });
-    }
+    disposeChildren(group);
+    setSceneError(null);
+    try {
     const bounds = new THREE.Box3();
     const foldedModels: FoldedModel[] = [];
 
@@ -287,11 +310,18 @@ export function FoldViewer({ pattern, object, placements = NO_PLACEMENTS, seams 
     if (simulate && !showFlat) {
       // Drop the rigid panel meshes; keep hinge lines for orientation.
       for (const c of [...group.children]) if ((c as THREE.Mesh).isMesh) { group.remove(c); }
+      // Guards: seams onto pieces outside the scene or of zero length are skipped (and listed),
+      // and a huge pattern coarsens its mesh to stay inside the vertex budget.
+      const scenePieces = entries.map((e) => pattern.pieces.find((p) => p.id === e.model.pieceId)!).filter(Boolean);
+      const seamCheck = validateSeams(seamsProp, scenePieces.map((p) => p.id));
+      const seams = seamCheck.seams;
+      const budget = clothSpacingFor(scenePieces, CLOTH_SPACING);
+      const spacing = budget.spacing;
       const clothMeshes = entries.map((e) => {
         const piece = pattern.pieces.find((p) => p.id === e.model.pieceId)!;
         const seamXs = seams.flatMap((sm) => [sm.a, sm.b].filter((sd) => sd.pieceId === piece.id).flatMap((sd) => [sd.from.x, sd.to.x]));
         const seamYs = seams.flatMap((sm) => [sm.a, sm.b].filter((sd) => sd.pieceId === piece.id).flatMap((sd) => [sd.from.y, sd.to.y]));
-        return buildClothMesh(piece, { spacing: CLOTH_SPACING, extraX: seamXs, extraY: seamYs });
+        return buildClothMesh(piece, { spacing, extraX: seamXs, extraY: seamYs });
       });
       const valid = clothMeshes.map((m, i) => (m ? { mesh: m, entry: entries[i] } : null)).filter((x): x is { mesh: NonNullable<typeof clothMeshes[number]>; entry: PieceEntry } => x !== null);
       if (valid.length > 0) {
@@ -323,8 +353,9 @@ export function FoldViewer({ pattern, object, placements = NO_PLACEMENTS, seams 
             && (object?.pin !== 'footprint' || !object.base || underObject(f, object))),
           bendStiffnessOf: (mi) => materialBendStiffness(materialOf(mi), DEFAULT_CLOTH_PARAMS.bendStiffness),
           plateStiffnessOf: (mi) => materialPlateStiffness(materialOf(mi)),
-          params: { spacing: CLOTH_SPACING, selfCollision, gravity },
+          params: { spacing, selfCollision, gravity },
         });
+        const statsOf = (diverged = false) => ({ steps: world.steps, stretch: maxStretch(world), seam: seamResidual(world).mean, pen: maxPenetration(world), size: clothBounds(world).size, skipped: seamCheck.skipped, spacing, capped: budget.capped, diverged });
         const geoms: THREE.BufferGeometry[] = valid.map(({ mesh, entry }) => {
           const geom = new THREE.BufferGeometry();
           geom.setAttribute('position', new THREE.BufferAttribute(new Float32Array(mesh.vertexCount * 3), 3));
@@ -334,6 +365,7 @@ export function FoldViewer({ pattern, object, placements = NO_PLACEMENTS, seams 
           return geom;
         });
         const upload = () => {
+          if (!aliveRef.current) return;
           valid.forEach(({ mesh }, mi) => {
             const attr = geoms[mi].getAttribute('position') as THREE.BufferAttribute;
             const b = world.base[mi];
@@ -348,18 +380,21 @@ export function FoldViewer({ pattern, object, placements = NO_PLACEMENTS, seams 
         // Debug hook (used by the headless screenshot harness): run the remaining steps now.
         (window as unknown as { __stitchsmithFoldViewer?: { finish: () => void } }).__stitchsmithFoldViewer = {
           finish: () => {
-            while (world.steps < CLOTH_STEPS) clothStep(world);
+            while (world.steps < CLOTH_STEPS && !hasNonFinite(world.pos)) clothStep(world);
+            if (hasNonFinite(world.pos)) { setSimStats(statsOf(true)); return; }
             upload();
-            setSimStats({ steps: world.steps, stretch: maxStretch(world), seam: seamResidual(world).mean, pen: maxPenetration(world), size: clothBounds(world).size });
+            setSimStats(statsOf());
           },
         };
+        setSimStats(statsOf());
         const tick = () => {
+          if (!aliveRef.current) return;
           if (world.steps < CLOTH_STEPS) {
             for (let k = 0; k < CLOTH_STEPS_PER_FRAME; k++) clothStep(world);
+            // A diverged solve never reaches the GPU: stop, keep the last good frame, say so.
+            if (hasNonFinite(world.pos)) { setSimStats((prev) => ({ ...(prev ?? statsOf()), steps: world.steps, diverged: true })); return; }
             upload();
-            if (world.steps % 20 === 0 || world.steps >= CLOTH_STEPS) {
-              setSimStats({ steps: world.steps, stretch: maxStretch(world), seam: seamResidual(world).mean, pen: maxPenetration(world), size: clothBounds(world).size });
-            }
+            if (world.steps % 20 === 0 || world.steps >= CLOTH_STEPS) setSimStats(statsOf());
             clothRef.current = { world, geoms, raf: requestAnimationFrame(tick) };
           }
         };
@@ -443,8 +478,15 @@ export function FoldViewer({ pattern, object, placements = NO_PLACEMENTS, seams 
       s.controls.update();
     }
     if (!(object && showObject && first)) setCavity(null);
+    } catch (err) {
+      // Anything the fold engine or the cloth setup throws stays inside the panel.
+      disposeChildren(group);
+      setSimStats(null);
+      setCavity(null);
+      setSceneError(err instanceof Error ? err.message : String(err));
+    }
     return () => { if (clothRef.current) { cancelAnimationFrame(clothRef.current.raf); clothRef.current = null; } };
-  }, [entries, progress, showObject, showFlat, angleOverrides, object, first, simulate, seams, pins, extraSolids, gravityProp, selfCollision, pattern]);
+  }, [entries, progress, showObject, showFlat, angleOverrides, object, first, simulate, seamsProp, pins, extraSolids, gravityProp, selfCollision, pattern, viewKey]);
 
   const foldControls = entries.flatMap((e) =>
     e.model.folds.map((f, i) => {
@@ -454,30 +496,67 @@ export function FoldViewer({ pattern, object, placements = NO_PLACEMENTS, seams 
     }),
   );
 
+  const canSimulate = seamsProp.length > 0 || pins.length > 0 || object?.shape === 'torso' || extraSolids.length > 0;
+  const defaultCaption = object?.shape === 'torso'
+    ? 'The pieces draped on a medium body form and sewn; the stats say whether the straps reach and the cloth lies on the body.'
+    : object
+      ? `The pieces folded and sewn round a block of the finished contents (${object.label ?? 'object'}); the stats say whether they close round it.`
+      : 'The pieces folded at their fold lines and sewn together; the stats say whether the seams close.';
+  const running = simStats !== null && simStats.steps < CLOTH_STEPS && !simStats.diverged;
+  const legendEntries = entries.map((e) => ({ id: e.model.pieceId, name: e.model.pieceName, color: e.color }));
+
   return (
-    <div className="space-y-2">
-      <div ref={mountRef} className="w-full rounded bg-muted/30 overflow-hidden" style={{ height }} />
+    <div className="space-y-2 min-w-0">
+      <p className="text-xs text-muted-foreground" data-testid="viewer-caption">{caption ?? defaultCaption}</p>
+      <div ref={mountRef} className="w-full max-w-full rounded bg-muted/30 overflow-hidden relative" style={{ height }} aria-label="3D preview" role="img">
+        {running && (
+          <div className="absolute left-2 top-2 rounded bg-background/80 px-2 py-1 text-xs" role="status" aria-live="polite" data-testid="sim-progress">
+            <span>simulating… {Math.round((simStats.steps / CLOTH_STEPS) * 100)}%</span>
+            <progress className="ml-2 h-2 w-24 align-middle" value={simStats.steps} max={CLOTH_STEPS} />
+          </div>
+        )}
+      </div>
+      {sceneError && (
+        <div role="alert" data-testid="viewer-error" className="rounded border border-destructive/50 bg-destructive/5 p-2 text-xs">
+          <span className="font-semibold text-destructive">3D check failed:</span> {sceneError}
+        </div>
+      )}
       <div className="flex flex-wrap items-center gap-3 text-xs">
-        <label className="flex items-center gap-2 flex-1 min-w-[200px]">
+        <label className="flex items-center gap-2 flex-1 min-w-[200px]" htmlFor="fold-progress">
           <span className="whitespace-nowrap">Fold</span>
-          <input type="range" min={0} max={1} step={0.01} value={progress} aria-label="Fold progress"
+          <input id="fold-progress" type="range" min={0} max={1} step={0.01} value={progress} aria-label="Fold progress"
             onChange={(e) => setProgress(parseFloat(e.target.value))} className="flex-1 accent-primary" />
           <span className="w-10 text-right tabular-nums">{Math.round(progress * 100)}%</span>
         </label>
-        <label className="flex items-center gap-1"><input type="checkbox" checked={showFlat} onChange={(e) => setShowFlat(e.target.checked)} /> flat</label>
-        <label className="flex items-center gap-1"><input type="checkbox" checked={allPieces} onChange={(e) => setAllPieces(e.target.checked)} /> all pieces</label>
-        {(seams.length > 0 || pins.length > 0 || object?.shape === 'torso' || extraSolids.length > 0) && <label className="flex items-center gap-1"><input type="checkbox" checked={simulate} onChange={(e) => setSimulate(e.target.checked)} /> {seams.length > 0 ? 'simulate seams' : 'simulate cloth'}</label>}
-        {object && <label className="flex items-center gap-1"><input type="checkbox" checked={showObject} onChange={(e) => setShowObject(e.target.checked)} /> {object.label ?? 'object'}</label>}
+        <label className="flex items-center gap-1"><input type="checkbox" checked={showFlat} aria-label="Show flat" onChange={(e) => setShowFlat(e.target.checked)} /> flat</label>
+        <label className="flex items-center gap-1"><input type="checkbox" checked={allPieces} aria-label="Show all pieces" onChange={(e) => setAllPieces(e.target.checked)} /> all pieces</label>
+        {canSimulate && <label className="flex items-center gap-1"><input type="checkbox" checked={simulate} aria-label="Simulate cloth" onChange={(e) => setSimulate(e.target.checked)} /> {seamsProp.length > 0 ? 'simulate seams' : 'simulate cloth'}</label>}
+        {object && <label className="flex items-center gap-1"><input type="checkbox" checked={showObject} aria-label={`Show ${object.label ?? 'object'}`} onChange={(e) => setShowObject(e.target.checked)} /> {object.label ?? 'object'}</label>}
+        <button type="button" className="rounded border border-border px-2 py-0.5 hover:bg-muted/40" onClick={() => setViewKey((k) => k + 1)} title="Re-frame the camera on the whole scene">reset view</button>
         <span className="text-muted-foreground">drag to orbit, wheel to zoom</span>
       </div>
+      <ViewerLegend entries={legendEntries} />
       {simStats && (
-        <div className="text-xs rounded border border-border p-2 flex flex-wrap gap-3" data-testid="sim-stats">
-          <span><span className="text-muted-foreground">Cloth:</span> {simStats.steps}/{CLOTH_STEPS} steps</span>
-          <span><span className="text-muted-foreground">max stretch</span> {(simStats.stretch * 100).toFixed(1)}%</span>
-          <span><span className="text-muted-foreground">seam gap</span> {simStats.seam.toFixed(1)} mm</span>
-          <span><span className="text-muted-foreground">penetration</span> {simStats.pen.toFixed(1)} mm</span>
-          <span><span className="text-muted-foreground">envelope</span> {Math.round(simStats.size[0])} × {Math.round(simStats.size[1])} × {Math.round(simStats.size[2])} mm (w × h × d, slack cloth incl. allowances)</span>
-          <span className="text-muted-foreground">stretch includes allowance flaps and the one-cell shear beside any gathered seam</span>
+        <div className="text-xs rounded border border-border p-2 space-y-1" data-testid="sim-stats">
+          <div className="flex flex-wrap gap-3">
+            <span title={STAT_HELP.steps}><span className="text-muted-foreground">Cloth:</span> {simStats.steps}/{CLOTH_STEPS} steps</span>
+            <span title={STAT_HELP.stretch}><span className="text-muted-foreground">max stretch</span> {(simStats.stretch * 100).toFixed(1)}%</span>
+            <span title={STAT_HELP.seam}><span className="text-muted-foreground">seam gap</span> {simStats.seam.toFixed(1)} mm</span>
+            <span title={STAT_HELP.penetration}><span className="text-muted-foreground">penetration</span> {simStats.pen.toFixed(1)} mm</span>
+            <span title={STAT_HELP.envelope}><span className="text-muted-foreground">envelope</span> {Math.round(simStats.size[0])} × {Math.round(simStats.size[1])} × {Math.round(simStats.size[2])} mm (w × h × d, slack cloth incl. allowances)</span>
+          </div>
+          {simStats.diverged && <p role="alert" className="text-destructive font-semibold" data-testid="sim-diverged">simulation diverged — the last stable frame is shown; try fewer pins or a coarser mesh</p>}
+          {simStats.capped && <p className="text-muted-foreground">large pattern: mesh coarsened to {simStats.spacing} mm cells to stay within the vertex budget</p>}
+          {simStats.skipped.length > 0 && <p className="text-muted-foreground" data-testid="sim-skipped">{simStats.skipped.length} seam{simStats.skipped.length === 1 ? '' : 's'} skipped: {simStats.skipped.join('; ')}</p>}
+          <details>
+            <summary className="cursor-pointer select-none text-muted-foreground">what these numbers mean</summary>
+            <ul className="mt-1 space-y-0.5 text-muted-foreground">
+              <li><b>max stretch</b> — {STAT_HELP.stretch}</li>
+              <li><b>seam gap</b> — {STAT_HELP.seam}</li>
+              <li><b>penetration</b> — {STAT_HELP.penetration}</li>
+              <li><b>envelope</b> — {STAT_HELP.envelope}</li>
+            </ul>
+          </details>
         </div>
       )}
       {cavity && object && (

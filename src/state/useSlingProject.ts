@@ -3,7 +3,7 @@ import type { SlingInputs } from '../generators/sling/types.js';
 import { makeProjectStorage } from '../storage/genericProjectStorage.js';
 import { isPlainObject } from '../utils/isPlainObject.js';
 
-const STORAGE_KEY = 'stitchsmith.sling.project';
+export const STORAGE_KEY = 'stitchsmith.sling.project';
 
 export interface SlingProject {
   schemaVersion: 9;

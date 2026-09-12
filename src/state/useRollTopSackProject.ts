@@ -3,7 +3,7 @@ import type { RollTopSackInputs } from '../generators/roll-top-sack/types.js';
 import { makeProjectStorage } from '../storage/genericProjectStorage.js';
 import { isPlainObject } from '../utils/isPlainObject.js';
 
-const STORAGE_KEY = 'stitchsmith.roll-top-sack.project';
+export const STORAGE_KEY = 'stitchsmith.roll-top-sack.project';
 
 function isValidRollTopSackProject(value: unknown): value is RollTopSackProject {
   if (typeof value !== 'object' || value === null) return false;

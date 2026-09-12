@@ -15,7 +15,7 @@ import { toast } from '../lib/toast/toast.js';
 import { makeProjectStorage } from '../storage/genericProjectStorage.js';
 import { isPlainObject } from '../utils/isPlainObject.js';
 
-const STORAGE_KEY = 'stitchsmith.book-cover.project';
+export const STORAGE_KEY = 'stitchsmith.book-cover.project';
 
 function isValidBookCoverProject(value: unknown): value is BookCoverProject {
   if (typeof value !== 'object' || value === null) return false;

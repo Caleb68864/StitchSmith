@@ -364,3 +364,606 @@
 - Surfaces: src/generators/micro-rig/{types,defaults,inputs,buildPattern,assembly3d}.ts, src/components/micro-rig/{MicroRigSettingsPanel,MicroRigPage}.tsx, src/generators/micro-rig/__tests__/buildPattern.test.ts, src/lib/cloth-engine/__tests__/patterns.test.ts, e2e/3d-assembly.spec.ts.
 - Watch: the viewer holds one object, so only the rear magazine of column 1 is shown; the front pouch collapses onto the rear one with its wrap allowance slack. The cloth check needed two things the flat model lacks: the panel must be free to bow behind the magazines (only its top strip and margins are pinned — a 3.4" cell round a 2.9 × 1.1" magazine closes only because the panel bows ~10 mm at the divisions, the vault's "fatter than the arithmetic"), and the cell bottoms are seamed a magazine thickness apart because the cradle webbing spans them. The viewer's stretch figure runs high (~110 %) at the sliver where the pinned margin meets the bowing bottom row. The tear-off med pouch itself is not drawn (its zone and PALS are). The three conflicting total-width statements in the .308 video are not reconciled here — the width budget uses the arithmetic that closes (cells + med zone + margins).
 - Commit: <pending>
+
+## 2026-09-12 — Tactical organizer generator (roadmap #5)
+
+**Context.** The SOE pen/notebook organizer is the vault's exemplar note for
+hem-mark-at-double, interior-first sequencing and partial-coverage Velcro
+(`bags/soe-tactical-organizer.md`, `construction-hem-mark-at-double.md`,
+`construction-bellows-side-fold-math.md`, `velcro-partial-coverage.md`,
+`construction-side-folds-before-top-bottom.md`).
+
+**Decisions.**
+- `src/generators/organizer/` (schemaVersion 10, generatorId `organizer`,
+  storage `stitchsmith.organizer.project`). Convention B: cut = finished + hems,
+  explicit 0 seam allowance on every edge. Body cut = pouch width ×
+  2 × (pocket height + body hem) (12 × 5 as filmed); front panel cut = pouch
+  width + extra width by pocket height + panel hem (6¼ × 5¼).
+- Bellows math as the vault states it: flat centre = panel − 2 × side fold;
+  span loss per side = (body − flat centre) / 2; bellows depth = (side fold −
+  span loss) / 2 (5/16" on the defaults). The algebra reduces to half the
+  excess per side whatever the fold position, so the validator rejects a fold
+  smaller than half the excess (flat centre wider than the body — the panel
+  bags) rather than a "zero depth" that the fold alone cannot produce; depth
+  over 1/2" warns to use a real gusset. Side seam allowance is reported as
+  trading one for one against depth.
+- Velcro is two horizontal hook strips (the 4¾" as-filmed strips do not fit
+  the 4" clear height vertically); block height must fit `pocket_height −
+  body_hem`, length defaults to the clear width and the as-filmed 4¾" warns.
+  PALS rows replace it as a variation; opposing loop over the hook is a piece.
+- Steps follow the 13-step vault order; the front-panel bottom seam is a
+  separate step before the sides ("the forgotten step"), dividers are single
+  stitched hardest-to-see first, sides close last tight to the edge.
+- Variations: production mode (hems ≥ 1/2", panel grows to 5½"), bifold
+  (body twice as long, two panels, no 3D), name-tape loop, grommets, PALS back.
+- 3D: body hinged 180° at the bottom fold round a 3 × 5 notebook; the panel
+  sits over the folded front half without an `attach` (attaching to the front
+  half would apply its 180° transform and hang the panel below the fold);
+  the root annotations sit at a quarter of the body length, not on the fold
+  line, or the hinge tree roots on the wrong half. Seams: panel bottom, both
+  sides through all layers, pocket sides, dividers. Bellows show as the wider
+  panel standing off between the dividers.
+
+**Commit:** c094822
+
+## 2026-09-12 — Fanny pack generator (roadmap #6)
+
+**Context.** SOE's Tactical Fanny Pack 2.0 set (`bags/fanny-pack-lid-drop-tuning.md`,
+`fanny-pack-drawbridge-limiter.md`, `fanny-pack-drainage-grommets.md`,
+`construction-edge-tape-vs-fold.md`, `construction-edge-tape-color-matching.md`,
+`zipper-slider-locking-vs-not.md`, `process-iterate-on-camera.md`) gives rules
+and an iteration history, not a cut list; `edc-fanny-pack.md` adds the
+dual-mode (waist / sling) belt requirement.
+
+**Decisions.**
+- `src/generators/fanny-pack/` (schemaVersion 11, generatorId `fanny-pack`,
+  storage `stitchsmith.fanny-pack.project`). Convention B: cut sizes include the
+  seam allowance, explicit 0 on every cut edge, stitch lines drawn inset.
+- Body = back panel, front panel (the lid), a zipper panel in two halves that
+  runs across the top and down each side by the lid-drop extension, and a
+  rising gusset (bottom + lower sides). Equal zipper split (depth/2 per half).
+- Lid-drop rule as the vault states it: `lid_drop_target ∈ {closed, partial,
+  fully_open}`; extension heuristic = 0 / depth × angle/180 / depth, user
+  override `lid_extension`; the rising side loses exactly what the zipper
+  panel gains (`rising_side = height − extension`). An extension that eats the
+  whole side is rejected; a fully-open override shorter than the depth warns
+  that the side seams will pull the lid short (SOE v1.5 at 3"/side), and the
+  heuristic itself carries a mock-derived warning because lid stiffness moves it.
+- Zipper edge: `fold` adds the measured 1" lip to the zipper halves' cut
+  height (drawn as a `(0°)` fold so the preview does not crease it); `tape`
+  keeps the cut at finished + allowance and puts 2 × panel length of edge tape
+  on the BOM, black by default, with a colour-mismatch note for long visible runs.
+- Drawbridge limiter: bartacked 1" webbing loops on the lid and body
+  interiors, 1" below the top seam, left and right; cord per side = 2 × chord
+  at the target angle with the anchor radius = height − 1".
+- Grommets 0/2/4 evenly spaced along the bottom run, centred on the depth,
+  ≥ 1/2" clear of the seams (validated against depth), 1.5" 1000D patch under
+  each, pre-burn then press, batched while the gusset is flat and before the
+  hoop closes; dual use (drain + lash point) noted.
+- Belt: 1" or 1.5" webbing through tabs basted into the side seams at
+  mid-height; belt cut = longest setting + 6" tail; both settings are inputs
+  with mock-derived warnings. Zipper hardware: non-locking slider is fine
+  (horizontal, not load-bearing) — stated in the BOM.
+- Steps: cut → mark corners (label every mark) → flat work (grommets, cord
+  anchors, belt tabs) → zipper into the halves (fold or tape) → close the hoop
+  → back panel (opposite sew directions on the two sides) → front panel in
+  bites → turn, tie the loops, thread the belt.
+- 3D (`assembly3d.ts`): the zipper panel and rising gusset are assembled as one
+  hoop band (`fanny-hoop-3d`) with four 90° corner folds, rooted on its bottom
+  run (`rx −90`, zip-pouch gusset-strip pattern), the back panel as footprint-
+  pinned host and the front panel seamed to the other edge; the zipper is drawn
+  on the band where it runs and the top-centre join closes the band. Default
+  build: seam residual mean 0.03 mm / max 0.13 mm, stretch 3.6 % (harness),
+  2.0 % in the viewer, penetration 0, envelope ≈ finished block. The lid-open
+  state is not simulated (the band is continuous); the page says so.
+
+**Commit:** c094822
+
+## 2026-09-12 — Roadmap follow-ups: exporter layout, mag pouch lid/hourglass/MALICE, Tri-Zip BOM, PALS primitive
+
+**Context.** Roadmap "Mag pouch and strap follow-ups" #3, #5, #6, #8, #9 and
+the engine list's PALS field primitive, exporter row-wrap and annotations.
+
+**Decisions.**
+- `patternToSvg` wraps pieces into rows at `maxRowWidth` (default 1400 mm, a
+  cutting-table width; `Infinity` restores the single row) and draws piece
+  annotations: grain arrows (double-headed along `angle`), notch ticks and
+  wrapped note text under the piece label (`showAnnotations`, default on).
+  PDF is one piece per page and needs neither.
+- `src/lib/pattern-engine/primitives/palsField.ts`: one PALS field primitive
+  (rows × columns, 1" rows at 2" pitch, 1.5" columns, 1/4" margin, sewn /
+  fabricated / laser slots, rows cut 1" long) with the off-grid and non-spec
+  row-width warnings, for the clamshell, plate carrier and LBV generators.
+- Mag pouch one-piece lid (`rigs/subgun-lid-pull-channel.md`): the lid tip
+  folds back on itself to form a finger pull channel; `pull_channel_depth`
+  defaults to 1.5" on a Velcro lid (the 1" sample was too small gloved) and
+  adds to the derived lid length (AR-15 default lid 8.25" → 9.75"); a warning
+  when the hook purchase is under 3". Drawn as a `(180°)` fold on the card
+  back; the fold-engine and cloth tests carry the new length.
+- Hourglass aesthetic (`mag-pouches/mag-pouch-hourglass-aesthetic.md`):
+  opt-in, side seams inset 1/4" per side, face cut 1/2" wider, labour warning.
+- MALICE clip mount: the same sewn back rows, bought clips instead of mount
+  straps, one per column, short to 2 rows / long above; hardware on the BOM.
+- Tri-Zip hardware BOM (`src/generators/tri-zip-backpack/bom.ts`): zipper
+  tape length from the Y runs, three locking sliders (vertical, loaded —
+  `bags/zipper-slider-locking-vs-not.md`), strap-engine hardware, sternum
+  (production 18"/24" webbing), hip belt and compression hardware; the cut
+  list's hardware table now shows it. Load-path tack rule added to the
+  strap-anchor step (`packs/toolpod-shoulder-strap-provision.md`).
+- Not done, with reasons: pistol presets and the Kydex wedge sizes are Open
+  in the vault (no measured magazines); the folded-T mouth hem to the outside
+  needs a hemmed single-layer face the folded-T does not have (its mouth is
+  seam-allowanced) — carried as a note on the subgun rig follow-up.
+
+**Commit:** 9100d20
+
+## 2026-09-12 — Clamshell pack generator (roadmap #7)
+
+**Context.** SOE's fat clamshell medpack (11 × 16 × 6, three videos) and the
+tool pod pack share one construction: a zipper frame hoop round the top and
+both sides, dipping under the bottom corners so the face flays open, a bottom
+strip that closes the hoop last, panels sewn on last (`packs/medpack-overview.md`,
+`medpack-body-panels.md`, `medpack-zipper-lip-math.md`,
+`medpack-technique-alligator-mouth.md`, `toolpod-zipper-frame-construction.md`,
+`toolpod-pack-build.md`, `medpack-handle-construction.md`,
+`medpack-compression-straps.md`, `medpack-technique-pals-spacing.md`,
+`medpack-technique-fabricated-pals.md`, `medpack-pouch-system.md`,
+`toolpod-shoulder-strap-provision.md`, `medpack-shoulder-harness.md`,
+`toolpod-design-postmortem.md`, `reference/technique-stitch-shrinkage.md`).
+
+**Decisions.**
+- `src/generators/clamshell-pack/` (schemaVersion 12, generatorId
+  `clamshell-pack`, storage `stitchsmith.clamshell-pack.project`). Convention A:
+  panels and strips at finished size with per-edge `seamAllowances`; the
+  zipper lip and the bottom's fold-ins are fold regions on the piece (0
+  allowance on a folded edge). Pieces: face, back, base gusset, lid strip,
+  bottom strip, plus handle webbing and core, compression straps, six 3"
+  strap tabs, stow pocket, interior loop strips and the PALS rows.
+- **The frame is two strips split by the zipper.** The measured 2 1/2" lip
+  piece (1 1/2" visible) is read as the lid-side strip: `lid_depth` 1 1/2"
+  (Inferred → mock-derived warning), base gusset = depth − lid depth = 4 1/2".
+  That reproduces the note's own budget: base cut = 4 1/2" + 1" lip fold-over
+  + 1/2" allowance = **6" ("6-in piece")**, PALS 3 × 1 1/2" = 4 1/2" fills
+  the base exactly with zero zipper clearance (SOE sews to the tape; an info
+  warning carries the warranty caveat, and a clearance blows the budget with
+  the "make it back in the fold" warning). Tool pod: `equal_split` gives
+  3"/3". The frame's lip fold is drawn at the zipper edge of each strip so the
+  two zipper edges face each other in the assembly.
+- Hoop: finished 2 × height + width + 2 × underwrap = **46 1/2"** on the
+  medpack; cut = + 1/2" overcut = 47", marked "trim at the bottom join". The
+  on-camera 46" came up 1/2–3/4" short twice, which the hoop-shrink warning
+  says. `zipper_underwrap` 1 3/4" is inferred from the 8 1/2" bottom on the
+  11" bag (mock-derived) and is the opening-angle parameter.
+- Bottom (alligator mouth): depth + 2 × fold-in = **7"** wide, nominal
+  width − 2 × underwrap + 2 × fold-in = **8 1/2"** long, labelled and BOM'd
+  "cut after the hoop from the measured gap + 1"".
+- PALS through `buildPalsField`: side runs 7 rows × 3 columns on the 14 1/2"
+  work area (height − 1" edge offset − 1/2" seam zone), rows lying across the
+  strip (horizontal on the pack) and starting clear of the underwrap; face 5
+  rows × 6 columns; bottom 3 rows. Row webbing is one BOM piece cut 1" long.
+  Sewn / fabricated / laser styles.
+- Handle cut = footprint + 2" bow + 2 × 2" fold-under = 17" over an 11" 1"
+  core. Compression straps = depth + 6" (mock-derived; 12" on the 6" bag).
+  `depth ≠ 3"` raises the warning that every standard-cut-list wrap length is
+  short by the difference. Interior loop: 2" strips with a 1/2" gap, five per
+  wall on 16", cut +2". Strap provision: six 3" tabs 4" apart at the top,
+  lower anchors 1" up and kicked; `none` gets the tool-pod post-mortem note.
+- Steps follow the vault order: zipper frame flat first (outside edge, ride
+  the chain, lip lines), Velcro on the inside walls before anything, PALS and
+  handle on flat pieces, tabs from a shared datum, close the hoop with the
+  alligator mouth (measure the gap, then cut the bottom), back panel then face
+  in opposite directions and in bites.
+- 3D: the strips are simulated as their finished bands (no lip, fold-ins or
+  overcut — a hem that turns four corners tore the mesh at 150 % stretch) with
+  explicit `(-90°)` corner and underwrap folds; gusset rooted on its top run
+  with `rx −90`, lid strip stacked at `dz = base depth`, bottom under the
+  block, face at depth + 2. Test: seam residual mean 0.19 mm / max 2.8 mm,
+  stretch 19 %, penetration 0, gusset spans z 0–4 1/2", lid 4 1/2"–6", bottom
+  7 1/2" × 6".
+
+**Commit:** c094822
+
+## 2026-09-12 — Plate carrier generator (roadmap #8)
+
+**Context.** The vault's 26 plate-carrier notes are reference material (plate
+sizes, cut geometry, panel sandwich, loop field, cummerbund styles, binding,
+bartacks, materials), not a reconciled build. Plate sizes and the PALS spec are
+firm; everything else is a starting point.
+
+**Decisions.**
+- `src/generators/plate-carrier/` (schemaVersion 13, generatorId
+  `plate-carrier`, storage `stitchsmith.plate-carrier.project`). Convention A:
+  panels drawn finished; bound edges carry explicit 0 (binding adds nothing,
+  `construction-binding-edge.md`), turned edges carry the seam allowance.
+- Plate presets 8 × 10 / 10 × 12 / 11 × 14 / custom (`plate-sizes-standard.md`,
+  10 × 12 default). Pocket = plate + ease per side (0.375", vault 0.25–0.5",
+  under 0.25" rejected); shell = pocket + 0.5" oversize per side
+  (`panel-front-back-construction.md`). Cut outlines from
+  `plate-cut-{sapi,shooter,swimmer}.md`: SAPI clips 2" at 45°, shooter 2.75" at
+  50°, swimmer tapers the side from 3" down at 25° from vertical; bottom corners
+  square. One `plateOutline()` feeds plate, pocket and shell.
+- Front field: loop (6 × 6 default, box-stitched, ≥ 2" engagement warning),
+  sewn PALS, laser PALS, or loop over PALS; back field likewise or slick. Every
+  PALS field goes through `buildPalsField` (new primitive
+  `src/lib/pattern-engine/primitives/palsField.ts`); laser fields on 500D/1000D
+  warn that they need laminate.
+- Shoulder straps: padded through the strap engine (`foam_sandwich_mesh`,
+  strap width 2", pad 8", tri-glide) or slick webbing; span panel top to panel
+  top is an input (16" default, mock-derived) with Velcro adjustment (3").
+- Cummerbund: elastic band (4") cut at half the free girth (torso circumference
+  − both panel widths) + 2" of hook at each end; skeletal = laser-cut laminate
+  front section + 6" elastic rear (rear length Open, warned); side plate
+  pockets 6 × 6 / 6 × 8 on the inner face, warned when taller than the band;
+  QR buckle choice maps to hardware only (mount geometry is buckle-specific).
+- Reinforcement map on the shells: box-X where the straps land, bartacks at the
+  cummerbund sleeves (`construction-bartack-reinforcement.md`). Steps: fields
+  onto flat shells first, pocket hems, sleeves, stack, bind (or turn), cummerbund,
+  straps last with box-X in opposite directions, then the fit check
+  (`plate-size-fit-mapping.md`: plate top two finger widths below the sternal
+  notch; torso length and plate size are independent inputs).
+- 3D (`assembly3d.ts`): shells hung on the medium torso at the ride height,
+  display straps draped over the shoulders at the box-X positions and seamed to
+  both panel tops, display cummerbunds draped round the chest block's rounded
+  sides (along the corner arcs — a chord cuts the solid) and seamed into the
+  sleeves; ends pinned where the drape puts them so a span outside the strap's
+  range or a laminate cummerbund of the wrong length shows as a seam gap; an
+  elastic band is shown stretched up to a quarter of its cut length. The report
+  states the required over-shoulder span and side span for this torso and
+  whether the plate bottom clears the waist line.
+
+**Commit:** c094822
+
+## 2026-09-12 — Modular LBV generator (roadmap #9)
+
+**Context.** SOE's modular load-bearing vest: the 25-year-old LBV panel set
+(two mirrored zippered front panels, a bellowed back panel, every panel a
+foam pocket) carrying Velcro-faced 1.5" PALS rows instead of sewn pouches,
+a padded shoulder set with an angled cross piece and drag handle, 24"
+verticals through tension locks, three front straps and snap belt loops
+(`rigs/lbvmod-overview.md`, `lbvmod-panel-chassis.md`,
+`lbvmod-harness-geometry.md`, `lbvmod-adjustment-sizing.md`,
+`lbvmod-belt-loops.md`, `lbvmod-drag-handle.md`,
+`lbvmod-modular-interface.md`, `lbvmod-technique-pals-direction.md`,
+`lbvmod-308-mags.md`; the woodland `lbv-*.md` set for the buckle
+positions and build order).
+
+**Decisions.**
+- `src/generators/lbv/` (schemaVersion 14, generatorId `lbv`, storage
+  `stitchsmith.lbv.project`). Convention A: panels at finished size, every
+  edge-taped edge carries an explicit 0 and only the zipper edge of each
+  pocket layer carries `seam_allowance`; strips carry explicit 0.
+- No panel dimension is spoken in either video, so panel width/height, the
+  back panel, the bellows oversize, the row pitch, pad length/width, the
+  cross piece angle and spread, the front strap positions, the vertical
+  webbing width, the base chest and the drag handle cut are all inputs with
+  `mock-derived` warnings. The vault's absolute numbers are pinned by tests:
+  first PALS mark 2" (½" under tape + 1.5" row), 6.5" strips for 4 columns at
+  ¼" margins, 24" verticals − 2 × 1" tabs = 22" usable, 3 × 12" = 36" of
+  circumference (base 36" → 72", +3" with the locks outboard), pad tab 1.5"
+  marked → ¾" tuck, back panel 4 columns (5 "doesn't line up"), two loops per
+  panel never three, loop tape 1" off the bottom, 10" hydration webbing with
+  3.5"/3" pieces, 2" drag handle with the four-point dispersion stitch.
+- The PALS field comes from `buildPalsField` with `rowWidth 1.5"`; the
+  primitive's non-spec-row-width warning is kept as the vault's divergence
+  flag. Row pitch is 2.5" by default (1.5" row + the spec's 1" gap) because
+  the transcripts only say "middle row centred" — mock-derived. The front
+  column count stays flagged unresolved (6.5" strips read as 4; the 24-mag
+  claim needs more).
+- Shoulder pads come from the strap engine (`webbing_tacked_ends`, bound,
+  3/8" foam) with the tension lock marked on centre; verticals land on the
+  back panel's outer column lines so the 4-column field dictates their
+  spread (6"), matching the woodland LBV's 6" back strap spread.
+- Steps follow the vault order: rows onto flat faces (loop on the rows,
+  start at the lowest edge, bartack in one direction, ends raw for the tape)
+  → verticals with the 1" channel mouth and double 1/4" lines → top slot
+  strip and tabs → zippers pull-down → foam → close and edge tape (bellows
+  not tacked) → belt loops (750°F holes, post/stud/socket) → pads → locks on
+  centre → cross pieces at an angle → drag handle → lace the verticals →
+  straps with One-Wrap keepers.
+- 3D: front panels on the chest either side of a 2" closure gap, back panel
+  behind, all three held rigid (foam pockets); pads draped over the medium
+  torso pinned at both ends; four verticals draped from the panel landings
+  (1.5" sewn) kicking out to the pad lines and over the shoulders, pinned at
+  the crest, seamed to the panels. The back verticals must kick out: at the
+  6" spread a 1.5" strap runs into the neck form. The fit report says how much
+  of the 22" usable is left after reaching the tension lock at the highest
+  panel position (316 mm of 559 — funds the 12" drop) and whether the torso's
+  chest lies in the strap range.
+
+**Commit:** c094822
+
+## 2026-09-12 — Polishing passes: landing page and navigation, settings-panel primitives
+
+**Context.** Fifteen generators had outgrown a flat list of cards in
+registration order with paragraph descriptions, five copies of the same page
+header, and eleven near-identical local `NumericField` / `Choice` / `Toggle`
+helpers in the settings panels.
+
+**Decisions.**
+- Category model in `src/app/patternRegistry.ts`: `PatternCategory`
+  (`pouches | packs | rigs | straps | apparel`), `CATEGORIES` (order and
+  blurbs), and `PATTERN_META` (category, one-line summary, search tags per
+  id). `PatternEntry` gained optional `category`, `summary`, `tags` so a new
+  generator sets them on its entry; `patternCategory/Summary/Tags`,
+  `patternsByCategory` and `matchesPatternQuery` read either source. The
+  registry entries themselves are untouched (append-only stays true).
+- Landing page (`src/components/landing/`): category sections with an inline
+  SVG glyph per category (`CategoryGlyph`, no assets), one-line summaries with
+  the long description as the card tooltip, a search box matching title /
+  summary / description / tags, a "Recently opened" strip (`recent.ts`,
+  localStorage `stitchsmith.recent-patterns`, five entries, reads never
+  throw), and cards that are buttons named `Open <Title>` (the e2e and smoke
+  tests keep clicking them). `App.openPattern` records the recent entry.
+- Header: the five copied per-page headers collapsed into one that reads
+  `HEADER_SUBTITLES` (now covering every page), plus a `GeneratorSwitcher`
+  select grouped by category and an "All generators" link. Tool Roll keeps
+  its own `AppHeader`.
+- Field primitives in `src/components/shared/fields/`: `NumericField`
+  (label bound by id, units suffix once, help/error under the box with
+  `aria-describedby`, `mockDerived` adds the "measure and confirm" hint,
+  `allowEmpty` chooses undefined-on-clear (default) or NaN-on-clear),
+  `SelectField` (native select), `ChoiceField` (button group with
+  `aria-pressed`), `Toggle` (labelled checkbox with help), `UnitToggle`,
+  `SectionHeader`, `HelpText`.
+- Migrated: sling, organizer, fanny pack, LBV, clamshell pack, plate carrier,
+  micro rig, padded strap (local helpers deleted, unit block → `UnitToggle`);
+  circle skirt, roll-top, zip pouch, book cover (local `NumericField` deleted;
+  a one-line panel alias keeps their NaN-on-clear validation behaviour and
+  the `(v: number) => void` callbacks; unit blocks → `UnitToggle`). Mock-
+  derived fields on the sling, LBV and H-harness carry the hint.
+- Left as-is: Tool Roll (its `NumInput`/`Row` pair drives a Radix Select +
+  Switch table with its own a11y test), the mag pouch and Tri-Zip section
+  files (raw labelled inputs and Radix selects with per-field copy; every
+  control already has a bound label). They are candidates for a later
+  mechanical pass, not a blocker.
+- Test: `src/components/shared/__tests__/settingsPanels.a11y.test.tsx`
+  mounts all fifteen panels with their default inputs, opens collapsed
+  sections, and asserts every textbox / spinbutton / combobox / checkbox /
+  switch has an accessible name and React logged no warning.
+  `App.test.tsx` gained landing tests: category headings, search filtering,
+  the recent strip and the header switcher.
+
+**Commit:** 165e925
+
+## 2026-09-12 — Polishing passes: shared export panel, warnings and derived numbers
+
+**Context.** Fourteen generator pages carried sed-derived copies of
+`ExportPanel.tsx`, `CutListTable.tsx` and `PatternPreview.tsx` (about 3,000
+lines of near-identical code with drifting button labels: "Download PDF" on
+the Book Cover, "PDF" everywhere else, JSON cut lists on three pages, no
+tiled/PDF/DXF on the Zip Pouch and Roll-Top). Warnings and derived numbers
+were rendered five different ways.
+
+**Decisions.**
+- `src/components/shared/export/`: one `PatternExportPanel` driven by an
+  `ExportAdapter` — `{ generatorId, projectName, hasErrors, buildPattern(),
+  defaultSeamAllowance, steps?(), hardware?(), bom?() | renderBom?() }`. It
+  offers SVG (with "Piece labels" and "Notes and grain arrows" toggles that
+  map to the exporter's `showLabels` / `showAnnotations`), **Cut sheets by
+  material**, Tiled printable HTML, PDF, DXF, Cut List (+ CSV) and
+  Instructions (hidden when the adapter has no steps). Button labels are
+  now the same on every page: `SVG`, `PDF`, `DXF`, `Tiled printable HTML`,
+  `Cut List` / `Hide Cut List`, `CSV`, `Instructions`.
+- Per-material cut sheets download as ONE printable HTML page with an `<h2>`
+  and inline SVG per material (`patternToSvgByMaterial`), each section on
+  its own printed page: browsers block or prompt on multi-file downloads,
+  and a single page goes straight to the bench with foam, mesh and webbing
+  separated. The SVG for any one material can still be copied out of it.
+- The cut list panel shows the engine cut list (`EngineCutListTable`:
+  fabric by material, strip stock by material × width with SOE drawer
+  lengths, hardware) followed by the generator's BOM — `SimpleBomTable`
+  for the flat `{ description, quantity, unit }` rows, `StructuredBomTable`
+  for the Roll-Top / Book Cover `{ materials, hardware, notes }`, or a
+  custom renderer (the Mag Pouch keeps its cut-tag table). The Tri-Zip
+  passes its build's hardware into the engine list.
+- Shared `PatternPreview` takes a `Pattern | null`, a build error, the
+  allowance and an optional SA label; it owns label/annotation toggles in
+  the viewport toolbar unless the page passes `showLabels` (Tri-Zip shares
+  the toggle with its export panel). Header reads piece types, total to cut
+  and SA.
+- Every generator's `ExportPanel.tsx` and `PatternPreview.tsx` is now a
+  10–30 line adapter over the shared components (page props unchanged);
+  every `CutListTable.tsx` copy is deleted except the Mag Pouch's (its cut
+  tags are the BOM discipline the M14 test pins). The JSON cut-list download
+  on the Zip Pouch, Roll-Top and Book Cover is replaced by the CSV cut list;
+  those three pages gain tiled/PDF/DXF/instructions/per-material sheets.
+- `WarningsPanel` accepts plain strings or `{ id, severity, message,
+  field?, tag? }`, normalises a `[mock-derived]` prefix into the tag, shows
+  the tag as a "mock first" badge, groups by severity with counts, collapses
+  behind a one-line summary above six entries, and makes `[field]` a button
+  that scrolls to and focuses the matching control (`onFocusField` or a
+  default `[data-field] / #field / [name]` lookup).
+- `DerivedNumbers` (`src/components/shared/warnings/DerivedNumbers.tsx`)
+  renders label/value rows under `data-testid="derived-numbers"` (the Mag
+  Pouch keeps `derived-summary`); `inch()` / `fmtLength()` helpers ship
+  with it. Seven pages' ad-hoc grids now use it.
+- Sidebar order on every pattern-engine page: warnings → legend → export →
+  derived numbers → steps. The Zip Pouch, Roll-Top, Book Cover and Circle
+  Skirt gained a warnings panel (their generators already returned
+  warnings that were never shown); the Book Cover's legend and steps moved
+  from the preview column into the sidebar. Deviation: the Mag Pouch also
+  keeps its BOM open below the steps (cut tags are part of the build) and
+  the Tool Roll is not on the pattern engine and keeps its own panels.
+
+**Commit:** 165e925
+
+## 2026-09-12 — Hardening pass: input validation and persistence
+
+**Context.** Two of the five hardening passes. A generic fuzz harness
+(`src/generators/__tests__/validation-fuzz.test.ts`) feeds every documented
+input key of all 15 generators a matrix of garbage (NaN, −1, 0, 1e9, ±Infinity,
+'', null, undefined, 'garbage', [], {}, [NaN]) and asserts: `validateInputs`
+never throws; NaN / Infinity / 1e9 / strings on numeric keys, unknown strings
+on selects and non-arrays on list keys are rejected with a field-keyed
+message; and whenever validation accepts, `buildPattern` neither throws nor
+returns a non-finite coordinate. A persistence suite
+(`src/state/__tests__/persistence.test.ts`) drives every project hook through
+corrupted storage, export → parse → import round trips, `updateInputs`,
+`resetProject` and key uniqueness.
+
+**Bugs the fuzz found (all fixed in `inputs.ts` / owned files).**
+- Every generator except tool-roll accepted `NaN` or `1e9` (or both) on at
+  least one length: book-cover (`flap_depth`, `seam_allowance`, `spine_width`,
+  `top_bottom_hem`), circle-skirt (`waist_circumference`, `skirt_length`,
+  `band_height`, `elastic_width`, …), clamshell-pack (`width`, `zipper_lip`,
+  …), lbv (`panel_width`, `pad_length`, …), mag-pouch (`hook_length`,
+  `loop_length`), organizer (`pouch_width`, …), padded-strap (`pad_length`,
+  `foam_thickness`, …), plate-carrier (`strap_width`, `seam_allowance`, …),
+  roll-top-sack (all four lengths), sling (`seam_allowance`), tri-zip
+  (`height`, `width`), zip-pouch (`seam_allowance`, `grosgrain_width`).
+  Symptom: NaN geometry in the SVG, or (fanny-pack, micro-rig) an allocation
+  that killed the test worker.
+- Unknown select strings were accepted on `units` everywhere it exists and on
+  circle-skirt `closure` / `waistband_type` / `preset`, clamshell
+  `pocket_grid` / `pals_style` / `strap_provision`, lbv `male_side`,
+  mag-pouch `attachment` / `drainage` / `grommet_size`, padded-strap `mode`,
+  plate-carrier `shoulder_style` / `shell_material` / `pocket_opening`, sling
+  `third_piece` / `end_interface`, tri-zip `stylePreset` (a `null` preset
+  crashed the build with "reading 'strap_width'"). NaN on padded-strap /
+  tri-zip strap selects (`hardware`, `edge_finish`, `architecture`) passed
+  validation and threw inside the strap engine; plate-carrier `qr_buckle` NaN
+  threw `toUpperCase is not a function`.
+- `null` threw in book-cover (`outer_pocket`, `inner_pocket`, `pen_holder`,
+  `lining`, `tactical`: "Cannot read properties of null") and mag-pouch
+  (`magazine`); organizer `slot_widths = NaN` threw "filter is not a
+  function"; plate-carrier `side_plate = NaN` threw "is not iterable".
+- mag-pouch `seamAllowance = undefined` passed validation and produced a
+  NaN body outline (resolve.ts does not default it); tri-zip `hem_allowance =
+  ''` and `zipper_gusset_width = NaN` produced non-finite panels.
+
+**Decisions.**
+- One shared guard (`src/utils/inputGuards.ts`): `sweepInputs` runs a per-
+  generator `GUARD_SPEC` before the generator's own rules. Kinds: length
+  (finite, ≥ 0, ≤ 5 m / 200 in in the display unit, or an explicit mm
+  ceiling), count (integer with a ceiling), ratio, percent, angle, enum, bool,
+  numArray, object. `null` is stripped at the top of both `validateInputs`
+  and `resolveInputs` so a cleared field falls back to its default; `NaN`
+  and `Infinity` are rejected, not defaulted, because they mean a broken
+  file rather than a cleared field. Mag pouch accumulates guard issues with
+  its own so the panel highlights every bad field at once; mag pouch
+  `seamAllowance` is required (the resolver has no default for it) and
+  tri-zip `stylePreset` is required (the page cannot build without it).
+- `parseProjectJson` now rejects a future `schemaVersion` with a message
+  naming both versions, a non-integer version, and an empty `projectName`;
+  the version table (`KNOWN_SCHEMA_VERSIONS`) lives in the export module so
+  it stays a leaf, and `src/state/index.ts` (new `PROJECT_HOOKS` registry
+  with storage keys, versions, defaults, hooks and resets) is asserted equal
+  to it. Every hook exports its `STORAGE_KEY`.
+- `importProject` stays permissive: it stores a well-formed envelope whose
+  inputs may still fail validation, and the page shows the validation banner
+  (every page validates before building; H1 makes that validation total).
+  Rejecting at import would lose a user's file over one out-of-range field.
+- The fuzz harness skips the Tool Roll layout for values its validator does
+  not flag (see gaps) so the suite stays bounded.
+
+**Gaps outside this pass's files (repro for the owner of
+`src/generators/tool-roll/validation.ts` / `calculateToolRollLayout.ts`).**
+- `validateSettings` only checks `seamAllowance`, `minimumPocketWidth`,
+  `pocketHeightIncrement`, `pocketHeightPercentage`, `tileOverlap` for
+  finiteness and has no magnitude ceiling. `sideGap = Infinity` or `1e9`
+  passes and `calculateToolRollLayout(sampleTools, settings, 'mm')` allocates
+  until the heap dies; `flapHeight = NaN` passes; select settings are not
+  checked (`printPaperSize = -1` throws "reading 'width'" in the layout).
+- `validateTool` flags NaN/negative but not absurd magnitude (`width = 1e9`).
+- mag-pouch `resolve.ts` should default `seamAllowance` (worked around by
+  requiring it in validation).
+
+**Commit:** 165e925
+
+## Tests added
+- `src/generators/__tests__/validation-fuzz.test.ts` — 330 tests (one per
+  generator × input key, plus defaults and the Tool Roll settings/tool probes).
+- `src/state/__tests__/persistence.test.ts` — 14 hooks × 11 cases + registry
+  and Tool Roll storage checks (161 tests).
+- `src/export/projectEnvelopeIO.test.ts` — 4 more cases (future version, old
+  and missing versions, bad version type / empty name, table coverage).
+
+## 2026-09-12 — Hardening passes: viewer failure modes, export sweep, assembly sweep; viewer UX polish
+
+**Context.** Roadmap generators 1–9 are all in; before the UI polish passes the
+3D viewer, the exporters and every assembly were swept for failure modes.
+
+**Bugs found and fixed.**
+- Exporters drew a seam-allowance line round closed **stitch** paths (a Velcro
+  outline, a grommet patch, the fanny pack's belt tab marks) whenever a default
+  allowance was passed, because `computeSeamAllowancePolygon` falls back to
+  the default for edges without an entry. SVG and PDF now offset only cut
+  outlines (`isCutOutline` in `exports/svg.ts`); a closed mark never grows a
+  green line. Found by the export sweep on the fanny pack.
+- The viewer threw out of its geometry effect (and took the page's React tree
+  with it) when an assembly referenced a piece that was not in the scene, when
+  a seam had zero length, or when the fold engine rejected a piece. It now
+  validates seams (`viewer/validate.ts`: missing piece, non-finite, zero
+  length → skipped and listed in the stats panel), wraps the whole scene build
+  in a try/catch that shows "3D check failed: <reason>" in the panel, and
+  `FoldPreview3D` sits inside a `ViewerErrorBoundary` with a retry.
+- A diverged cloth solve (NaN positions) used to upload NaN geometry and keep
+  running. The tick now checks `hasNonFinite` after every batch, stops, keeps
+  the last stable frame and shows "simulation diverged"; the debug `finish()`
+  hook does the same.
+- Huge patterns: `clothSpacingFor` estimates the vertex count from the piece
+  bounding boxes and coarsens the mesh above 40 000 vertices, saying so in the
+  stats line.
+- Unmount during a simulation: an `aliveRef` guards every upload and state
+  update from a straggling animation frame; the scene teardown now cancels the
+  cloth frame, disposes every geometry and material in the group
+  (`disposeChildren`), disposes controls and renderer, forces the WebGL context
+  loss and disconnects the `ResizeObserver`. The no-WebGL path is covered by
+  a 20× mount/unmount test; the WebGL path cannot mount in jsdom and was
+  checked by reading the teardown.
+- LBV front panels were pinned over their whole area and floated flat in
+  front of the chest; they are now held by their top strip only and settle on
+  the body (sweep still 4.9 % stretch, 0.07 mm seam). The plate carrier front
+  is a plate pocket and stays flat by design.
+
+**Sweeps.** `src/lib/pattern-engine/__tests__/exports-sweep.test.ts` runs 25
+default-and-variant patterns from 14 generators (Tool Roll is not on the
+pattern engine) through SVG (plain, annotated, wrapped at 300 mm, per
+material), DXF, cut list + CSV and the real PDF exporter, asserting every
+piece group is present and that Convention B pieces draw no allowance line.
+`src/generators/__tests__/assembly-sweep.test.ts` assembles 18 cases (11
+generators with `assembly3d.ts` plus the e2e variants) with the shared
+harness, checks fold models for orphans and tiling, and relaxes 400 steps:
+
+| assembly | stretch | seam mean |
+|---|---|---|
+| tri-zip | 29.8 % | 0.05 mm |
+| tri-zip split/direct | 24.0 % | 0.04 mm |
+| zip pouch boxed / cross / gusset / multi | 9.6 / 7.6 / 1.2 / 2.6 % | ≤ 0.09 mm |
+| circle skirt | 10.7 % | 0.06 mm |
+| padded strap pair / H-harness | 1.1 / 10.7 % | 0.00 / 0.12 mm |
+| micro rig / .308 stacked | 94 / 116 % (gathered-seam shear, known) | 1.2 / 1.5 mm |
+| padded sling | 0.2 % | 0.00 mm |
+| tactical organizer | 49.5 % (flap outside the seam) | 0.5 mm |
+| fanny pack / closed-lid variant | 3.6 / 19.9 % | 0.03 / 0.10 mm |
+| clamshell pack | 17.5 % | 0.13 mm |
+| plate carrier | 5.0 % | 0.15 mm |
+| modular LBV | 4.9 % | 0.07 mm |
+
+Ceilings in the test are the measured values rounded up so a regression fails.
+Mag pouch, roll-top and book cover build their assemblies in their pages;
+`cloth-engine/__tests__/patterns.test.ts` reproduces them and stays their sweep.
+
+**Viewer UX (P5).** Colour legend (swatch → piece name, collapsed past eight
+pieces), a "reset view" button that re-frames the camera, a caption line
+(`FoldPreview3D.caption`, default derived from block / torso / none),
+tooltips on every stat plus a "what these numbers mean" block, a
+"simulating… N %" progress badge with a `<progress>` bar, ids/aria-labels on
+every control, and the canvas capped at the column width with a
+`ResizeObserver` so it never overflows on a narrow viewport. Existing
+`data-testid`s and the `window.__stitchsmithFoldViewer` hook are unchanged.
+
+**Commit:** 165e925
+
+## 2026-09-12 — Session close-out: tool-roll validation, e2e label fix, verification
+
+- Tool Roll `validateSettings` now covers every numeric setting with a 5 m
+  ceiling and every select field; `validateTool` caps tool dimensions at
+  2 m; `getPaperSize` falls back to Letter. The fuzz harness no longer skips
+  the tool roll. Mag pouch `resolve` defaults `seamAllowance`.
+- The viewer's simulate checkbox gained an `aria-label` ("Simulate cloth");
+  the e2e lookup is now case-insensitive.
+- Verified after all passes: tsc clean, vitest 137 files / 2577 tests, vite
+  build, Playwright 24/24.
+
+**Commit:** 165e925

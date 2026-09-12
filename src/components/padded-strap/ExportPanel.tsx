@@ -1,23 +1,7 @@
-import { useState } from 'react';
-import { Download, Printer, FileCode, List, BookOpen } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import type { PaddedStrapInputs } from '../../generators/padded-strap/types.js';
 import type { PaddedStrapProject } from '../../state/usePaddedStrapProject.js';
-import { buildPattern } from '../../generators/padded-strap/index.js';
-import { buildBom } from '../../generators/padded-strap/index.js';
-import { patternToSvg } from '../../lib/pattern-engine/exports/svg.js';
-import {
-  loadPdfExporter,
-  loadDxfExporter,
-  loadTiledHtmlExporter,
-} from '../../lib/pattern-engine/exports/lazy.js';
-import { runExport, printOrDownloadHtml } from '../shared/runExport.js';
-import { downloadTextFile } from '../../utils/download.js';
-import { renderHtml } from '../../lib/pattern-engine/instructions/compile.js';
-import { escapeHtml } from '../../utils/escapeHtml.js';
-import { CutListTable } from './CutListTable.js';
-import type { BomRow } from '../../generators/padded-strap/types.js';
-import type { Pattern } from '../../lib/pattern-engine/graph/Pattern.js';
+import { buildPattern, buildBom } from '../../generators/padded-strap/index.js';
+import { PatternExportPanel, type ExportAdapter } from '../shared/export/index.js';
 
 interface Props {
   inputs: PaddedStrapInputs;
@@ -25,188 +9,17 @@ interface Props {
   hasErrors: boolean;
 }
 
+/** Thin adapter over the shared export panel. */
 export function ExportPanel({ inputs, project, hasErrors }: Props) {
-  const [showCutList, setShowCutList] = useState(false);
-  const [bomData, setBomData] = useState<BomRow[] | null>(null);
-  const [pdfLoading, setPdfLoading] = useState(false);
-  const [dxfLoading, setDxfLoading] = useState(false);
-  const [tiledLoading, setTiledLoading] = useState(false);
-
-  function getPattern(): Pattern | null {
-    if (hasErrors) return null;
-    try {
-      const r = buildPattern(inputs);
-      if (!r.ok) return null;
-      return { id: 'padded-strap', name: project.projectName, pieces: r.value.pieces };
-    } catch {
-      return null;
-    }
-  }
-
-  function handleSvg() {
-    const pattern = getPattern();
-    if (!pattern) return;
-    const svg = patternToSvg(pattern, {
-      defaultSeamAllowance: inputs.seam_allowance ?? 10,
-      showLabels: true,
-    });
-    downloadTextFile(`${project.projectName}.svg`, svg, 'image/svg+xml');
-  }
-
-  async function handleTiledHtml() {
-    const pattern = getPattern();
-    if (!pattern) return;
-    await runExport('Tiled HTML', setTiledLoading, async () => {
-      const mod = await loadTiledHtmlExporter();
-      const html = mod.patternToTiledHtml(pattern);
-      printOrDownloadHtml(html, `${project.projectName}-tiled.html`);
-    });
-  }
-
-  async function handlePdf() {
-    const pattern = getPattern();
-    if (!pattern) return;
-    await runExport('PDF', setPdfLoading, async () => {
-      const mod = await loadPdfExporter();
-      const pdf = await mod.exportPatternToPdf(pattern, {
-        defaultSeamAllowance: inputs.seam_allowance ?? 10,
-      });
-      const blob = new Blob([pdf], { type: 'application/pdf' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${project.projectName}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    });
-  }
-
-  async function handleDxf() {
-    const pattern = getPattern();
-    if (!pattern) return;
-    await runExport('DXF', setDxfLoading, async () => {
-      const mod = await loadDxfExporter();
-      const dxf = mod.exportPatternToDxf(pattern);
-      downloadTextFile(`${project.projectName}.dxf`, dxf, 'application/dxf');
-    });
-  }
-
-  function handleInstructions() {
-    if (hasErrors) return;
-    let steps;
-    try {
-      const r = buildPattern(inputs);
-      if (!r.ok) return;
-      steps = r.value.steps;
-    } catch {
-      return;
-    }
-    const result = renderHtml(steps);
-    if (!result.ok) return;
-    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${escapeHtml(project.projectName)} — Assembly Instructions</title></head><body>${result.value}</body></html>`;
-    downloadTextFile(`${project.projectName}-instructions.html`, html, 'text/html');
-  }
-
-  function handleToggleCutList() {
-    if (hasErrors) return;
-    const bom = buildBom(inputs);
-    setBomData(bom);
-    setShowCutList(v => !v);
-  }
-
-  const disabled = hasErrors;
-
-  return (
-    <div className="rounded border border-border p-3 space-y-2">
-      <h2 className="text-xs font-semibold">Export</h2>
-
-      <div className="flex flex-col gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          className="w-full justify-start text-xs"
-          disabled={disabled}
-          onClick={handleSvg}
-          title="Download the pattern as a full-dimension SVG file."
-        >
-          <Download className="h-3 w-3 mr-2" />
-          SVG
-        </Button>
-
-        <Button
-          variant="outline"
-          size="sm"
-          className="w-full justify-start text-xs"
-          disabled={disabled || tiledLoading}
-          onClick={handleTiledHtml}
-          title="Open tiled layout for home printing."
-        >
-          <Printer className="h-3 w-3 mr-2" />
-          {tiledLoading ? 'Loading…' : 'Tiled printable HTML'}
-        </Button>
-
-        <Button
-          variant="outline"
-          size="sm"
-          className="w-full justify-start text-xs"
-          disabled={disabled || pdfLoading}
-          onClick={handlePdf}
-          title="Download a PDF file."
-        >
-          <FileCode className="h-3 w-3 mr-2" />
-          {pdfLoading ? 'Loading…' : 'PDF'}
-        </Button>
-
-        <Button
-          variant="outline"
-          size="sm"
-          className="w-full justify-start text-xs"
-          disabled={disabled || dxfLoading}
-          onClick={handleDxf}
-          title="Download a DXF file for CNC cutting machines."
-        >
-          <FileCode className="h-3 w-3 mr-2" />
-          {dxfLoading ? 'Loading…' : 'DXF'}
-        </Button>
-
-        <Button
-          variant="outline"
-          size="sm"
-          className="w-full justify-start text-xs"
-          disabled={disabled}
-          onClick={handleToggleCutList}
-          title="Toggle cut list / BOM table."
-        >
-          <List className="h-3 w-3 mr-2" />
-          {showCutList ? 'Hide Cut List' : 'Cut List'}
-        </Button>
-
-        {showCutList && bomData && (
-          <div className="rounded border border-border p-2 bg-muted/20">
-            <CutListTable bom={bomData} />
-          </div>
-        )}
-
-        <Button
-          variant="outline"
-          size="sm"
-          className="w-full justify-start text-xs"
-          disabled={disabled}
-          onClick={handleInstructions}
-          title="Download the assembly instructions as an HTML file."
-        >
-          <BookOpen className="h-3 w-3 mr-2" />
-          Instructions
-        </Button>
-      </div>
-
-      {disabled && (
-        <p className="text-xs text-muted-foreground">
-          Fix validation errors to enable exports.
-        </p>
-      )}
-    </div>
-  );
+  const build = () => { const r = buildPattern(inputs); return r.ok ? r.value : null; };
+  const adapter: ExportAdapter = {
+    generatorId: 'padded-strap',
+    projectName: project.projectName,
+    hasErrors,
+    defaultSeamAllowance: inputs.seam_allowance ?? 10,
+    buildPattern: () => { const r = build(); return r ? { id: 'padded-strap', name: project.projectName, pieces: r.pieces } : null; },
+    steps: () => build()?.steps ?? null,
+    bom: () => buildBom(inputs),
+  };
+  return <PatternExportPanel adapter={adapter} />;
 }

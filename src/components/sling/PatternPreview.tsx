@@ -1,48 +1,25 @@
 import { useMemo } from 'react';
 import type { SlingInputs } from '../../generators/sling/types.js';
 import { buildPattern } from '../../generators/sling/index.js';
-import { patternToSvg } from '../../lib/pattern-engine/exports/svg.js';
 import type { Pattern } from '../../lib/pattern-engine/graph/Pattern.js';
-import { PatternViewport } from '../shared/PatternViewport.js';
+import { PatternPreview as SharedPatternPreview } from '../shared/export/index.js';
 
 interface Props {
   inputs: SlingInputs;
   hasErrors: boolean;
 }
 
+/** Builds the pattern for the shared preview. */
 export function PatternPreview({ inputs, hasErrors }: Props) {
-  const result = useMemo<{ svg: string; pieceCount: number; buildError: string | null } | null>(() => {
-    if (hasErrors) return null;
+  const built = useMemo<{ pattern: Pattern | null; error: string | null }>(() => {
+    if (hasErrors) return { pattern: null, error: null };
     try {
       const r = buildPattern(inputs);
-      if (!r.ok) return { svg: '', pieceCount: 0, buildError: r.errors.map((e) => e.message).join('; ') };
-      const pattern: Pattern = { id: 'sling', name: 'Sling', pieces: r.value.pieces };
-      const svg = patternToSvg(pattern, { defaultSeamAllowance: 0, showLabels: true });
-      return { svg, pieceCount: r.value.pieces.length, buildError: null };
+      if (!r.ok) return { pattern: null, error: r.errors.map((e) => e.message).join('; ') };
+      return { pattern: { id: 'sling', name: 'Sling', pieces: r.value.pieces }, error: null };
     } catch (e) {
-      return { svg: '', pieceCount: 0, buildError: (e as Error).message };
+      return { pattern: null, error: (e as Error).message };
     }
   }, [inputs, hasErrors]);
-
-  if (!result) {
-    return (
-      <div className="rounded border border-dashed border-border p-6 flex items-center justify-center bg-muted/20 min-h-48">
-        <p className="text-xs text-muted-foreground">Fix the validation errors to preview the pattern.</p>
-      </div>
-    );
-  }
-  if (result.buildError) {
-    return (
-      <div className="rounded border border-destructive/50 bg-destructive/5 p-4 space-y-1">
-        <p className="text-xs font-semibold text-destructive">Pattern build failed</p>
-        <p className="text-xs text-destructive">{result.buildError}</p>
-      </div>
-    );
-  }
-  const header = (
-    <span>
-      <span className="font-medium text-foreground">{result.pieceCount}</span> piece type{result.pieceCount === 1 ? '' : 's'}
-    </span>
-  );
-  return <PatternViewport svg={result.svg} header={header} fitKey={result.svg.length} />;
+  return <SharedPatternPreview pattern={built.pattern} buildError={built.error} hasErrors={hasErrors} defaultSeamAllowance={0} />;
 }

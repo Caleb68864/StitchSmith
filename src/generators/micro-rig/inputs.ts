@@ -6,6 +6,39 @@ import {
   PALS_ROW_PITCH_MM, PALS_TOP_DROP_MM, PALS_COLUMN_PITCH_MM, FACE_EASE_MM, DEFAULT_SEAM_ALLOWANCE_MM, EDGE_MARGIN_MM, DEFAULT_MAGAZINE,
   STACK_EASE_MM, STACK_EASE_MIN_MM, WRAP_ALLOWANCE_MM, WRAP_ALLOWANCE_MIN_MM, STACK_COVERAGE, DIVIDER_LAYERS_MM, CRADLE_WIDTH_MM, CRADLE_END_MM, MED_ZONE_MM, PULL_TAB_MM, MAG_WEIGHT_LB,
 } from './defaults.js';
+import { sweepInputs, stripNulls, unitsOf, type GuardSpec } from '../../utils/inputGuards.js';
+
+/** Type/range guard run before the generator's own rules (hardening pass H1). */
+const GUARD_SPEC: GuardSpec = {
+  units: { kind: 'enum', allowed: ['mm', 'in'] },
+  panel_width_preset: { kind: 'enum', allowed: ['stacked_10_5', 'standard_13', 'r308_14', 'pals_16', 'pals_19', 'custom'] },
+  panel_width: { kind: 'length' },
+  panel_height: { kind: 'length' },
+  pocket_set: { kind: 'enum', allowed: ['mag_cells', 'stacked_cells', 'blank_pals'] },
+  magazine_preset_id: { kind: 'string' },
+  cell_count: { kind: 'count', max: 8 },
+  cell_span: { kind: 'length' },
+  face_per_cell: { kind: 'length' },
+  cell_height: { kind: 'length' },
+  utility_pocket: { kind: 'bool' },
+  cells_deep: { kind: 'count', max: 2 },
+  stack_ease: { kind: 'length' },
+  wrap_allowance: { kind: 'length' },
+  coverage: { kind: 'ratio' },
+  cradle_width: { kind: 'length' },
+  cradle_drop: { kind: 'length' },
+  med_zone: { kind: 'bool' },
+  pull_tab_length: { kind: 'length' },
+  side_pals_columns: { kind: 'count', max: 6 },
+  bottom_loop_count: { kind: 'count', max: 8 },
+  split_front: { kind: 'bool' },
+  gap_width: { kind: 'length' },
+  buckle_setback: { kind: 'length' },
+  suspension: { kind: 'enum', allowed: ['webbing_straps', 'h_harness'] },
+  dangler_field: { kind: 'bool' },
+  seam_allowance: { kind: 'length' },
+  edge_margin: { kind: 'length' },
+};
 
 const IN = 25.4;
 export function toMm(v: number, units: 'mm' | 'in'): number { return units === 'in' ? v * IN : v; }
@@ -16,6 +49,7 @@ export function snapUpToGrid(mm: number, pitch = PALS_COLUMN_PITCH_MM): number {
 }
 
 export function resolveInputs(inputs: MicroRigInputs): ResolvedInputs {
+  inputs = stripNulls(inputs);
   const units = inputs.units ?? DEFAULT_UNITS;
   const d = (v: number | undefined, fallbackMm: number) => (v === undefined || v === null || Number.isNaN(v) ? fallbackMm : toMm(v, units));
   const preset = inputs.panel_width_preset ?? 'standard_13';
@@ -111,6 +145,9 @@ export function resolveInputs(inputs: MicroRigInputs): ResolvedInputs {
 }
 
 export function validateInputs(inputs: MicroRigInputs): ValidationResult {
+  inputs = stripNulls(inputs);
+  const guard = sweepInputs(inputs, GUARD_SPEC, unitsOf(inputs, 'in'));
+  if (guard.length) return { ok: false, errors: guard };
   const errors: BuildPatternError[] = [];
   const r = resolveInputs(inputs);
   const pos = (field: keyof ResolvedInputs, label: string) => {

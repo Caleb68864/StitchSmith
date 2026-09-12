@@ -3,6 +3,29 @@
 // import/export (e.g. Tool Roll's SVG export) keep their own ExportPanel for
 // those; PatternPageShell's Import/Export buttons are project-JSON only.
 
+/**
+ * The schemaVersion each generator writes today (CLAUDE.md "Project JSON envelope").
+ * Kept here, not imported from the hooks, so this module stays a leaf; a test in
+ * src/state/__tests__ asserts it matches the hooks.
+ */
+export const KNOWN_SCHEMA_VERSIONS: Readonly<Record<string, number>> = Object.freeze({
+  'tool-roll': 1,
+  'roll-top-sack': 1,
+  'tri-zip-backpack': 2,
+  'mag-pouch': 3,
+  'book-cover': 4,
+  'zip-pouch': 5,
+  'circle-skirt': 6,
+  'padded-strap': 7,
+  'micro-rig': 8,
+  'sling': 9,
+  'organizer': 10,
+  'fanny-pack': 11,
+  'clamshell-pack': 12,
+  'plate-carrier': 13,
+  'lbv': 14,
+});
+
 interface ProjectEnvelope {
   generatorId: string;
   projectName: string;
@@ -32,6 +55,21 @@ export function parseProjectJson<T extends ProjectEnvelope>(
     throw new Error(
       `This file is a "${obj.generatorId ?? 'unknown'}" project, not a ${expectedGeneratorId} project.`,
     );
+  }
+  // A file written by a newer StitchSmith carries a schemaVersion this build does not know.
+  // Say so instead of loading half of it (CLAUDE.md: unknown future versions return a friendly error).
+  const known = KNOWN_SCHEMA_VERSIONS[expectedGeneratorId];
+  const sv = (obj as { schemaVersion?: unknown }).schemaVersion;
+  if (sv !== undefined && (typeof sv !== 'number' || !Number.isInteger(sv) || sv < 1)) {
+    throw new Error(`Invalid project file: schemaVersion must be a whole number (got ${JSON.stringify(sv)}).`);
+  }
+  if (known !== undefined && typeof sv === 'number' && sv > known) {
+    throw new Error(
+      `This ${expectedGeneratorId} project was saved by a newer StitchSmith (schemaVersion ${sv}; this build reads ${known}). Update StitchSmith to load it.`,
+    );
+  }
+  if (typeof obj.projectName !== 'string' || obj.projectName.trim() === '') {
+    throw new Error('Invalid project file: missing or empty "projectName".');
   }
   // Every generator page does `buildPattern(project.inputs)` straight after
   // import and the autosave effect persists whatever is in state, so a file

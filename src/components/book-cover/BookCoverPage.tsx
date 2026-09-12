@@ -7,6 +7,7 @@ import { PatternPageShell } from '../shared/PatternPageShell.js';
 import { parseProjectJson, downloadProjectJson } from '../../export/projectEnvelopeIO.js';
 import { PatternEngineLegend } from '../shared/PatternEngineLegend.js';
 import { ConstructionSteps } from '../shared/ConstructionSteps.js';
+import { WarningsPanel } from '../shared/WarningsPanel.js';
 import { BookCoverSettingsPanel } from './BookCoverSettingsPanel.js';
 import { PatternPreview } from './PatternPreview.js';
 import { ExportPanel } from './ExportPanel.js';
@@ -118,6 +119,7 @@ export function BookCoverPage({
     return r.ok ? r.value : null;
   }, [project.inputs, engineValid]);
   const steps = built?.steps ?? [];
+  const warnings = built?.warnings ?? [];
   // The two inner flaps are cut from one drawing (outer edge at x = 0); the right one is
   // sewn mirrored, so the 3D assembly mirrors its geometry.
   const pattern3d = useMemo<Pattern | null>(() => {
@@ -225,17 +227,18 @@ export function BookCoverPage({
         />
       }
       preview={
-        <div className="space-y-3">
-          <PreviewTabs
-            pattern={<PatternPreview inputs={project.inputs} hasErrors={!engineValid} />}
-            assembly={pattern3d ? <FoldPreview3D pattern={pattern3d} object={foldObject} placements={foldAssembly?.placements} seams={foldAssembly?.seams} initialSimulate height={560} /> : null}
-          />
-          <PatternEngineLegend />
-          {steps.length > 0 && <ConstructionSteps steps={steps} />}
-        </div>
+        <PreviewTabs
+          pattern={<PatternPreview inputs={project.inputs} hasErrors={!engineValid} />}
+          assembly={pattern3d ? <FoldPreview3D pattern={pattern3d} object={foldObject} placements={foldAssembly?.placements} seams={foldAssembly?.seams} initialSimulate height={560} /> : null}
+        />
       }
       sidebar={
-        <ExportPanel inputs={project.inputs} project={project} hasErrors={!engineValid} />
+        <>
+          <WarningsPanel warnings={warnings} />
+          <PatternEngineLegend />
+          <ExportPanel inputs={project.inputs} project={project} hasErrors={!engineValid} />
+          {steps.length > 0 && <ConstructionSteps steps={steps} title="Assembly Instructions" />}
+        </>
       }
     />
   );

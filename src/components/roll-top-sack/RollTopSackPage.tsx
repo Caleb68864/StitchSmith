@@ -8,6 +8,7 @@ import { PatternPreview } from './PatternPreview.js';
 import { ExportPanel } from './ExportPanel.js';
 import { PatternEngineLegend } from '../shared/PatternEngineLegend.js';
 import { ConstructionSteps } from '../shared/ConstructionSteps.js';
+import { WarningsPanel } from '../shared/WarningsPanel.js';
 import { PatternPageShell } from '../shared/PatternPageShell.js';
 import { parseProjectJson, downloadProjectJson } from '../../export/projectEnvelopeIO.js';
 import { ValidationBanner } from '../shared/ValidationBanner.js';
@@ -63,6 +64,7 @@ export function RollTopSackPage({ project, updateInputs, resetProject, importPro
     return r.ok ? r.value : null;
   }, [project.inputs, engineValid]);
   const steps = built?.steps ?? [];
+  const warnings = built?.warnings ?? [];
   // The body panel is cut twice; show both copies face to face in 3D, seamed down the sides and
   // across the bottom (French seams on the stitch lines), round a block the finished size.
   const BACK_ID = 'body-panel-back';
@@ -145,6 +147,7 @@ export function RollTopSackPage({ project, updateInputs, resetProject, importPro
       }
       sidebar={
         <>
+          <WarningsPanel warnings={warnings} />
           <PatternEngineLegend />
           <ExportPanel
             inputs={project.inputs}

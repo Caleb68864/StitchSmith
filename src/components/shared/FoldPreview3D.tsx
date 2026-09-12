@@ -3,6 +3,7 @@ import type { Pattern } from '../../lib/pattern-engine/graph/Pattern.js';
 import type { SeamSpec, Solid } from '../../lib/cloth-engine/sim.js';
 import type { PinSpec } from '../../lib/cloth-engine/pins.js';
 import type { PiecePlacement } from '../../lib/fold-engine/index.js';
+import { ViewerErrorBoundary } from './viewer/ViewerErrorBoundary.js';
 
 export type { SeamSpec };
 
@@ -69,6 +70,8 @@ export interface FoldPreview3DProps {
   /** Start with the cloth simulation running (the assembled view) instead of the rigid fold. */
   initialSimulate?: boolean;
   height?: number;
+  /** One sentence on what this page's check shows; a default is derived from the object. */
+  caption?: string;
 }
 
 const Viewer = lazy(() =>
@@ -108,9 +111,11 @@ export function FoldPreview3D(props: FoldPreview3DProps) {
         </p>
       )}
       {supported && (
-        <Suspense fallback={<div className="h-48 flex items-center justify-center text-xs text-muted-foreground">Loading 3D viewer…</div>}>
-          <Viewer {...props} />
-        </Suspense>
+        <ViewerErrorBoundary>
+          <Suspense fallback={<div className="h-48 flex items-center justify-center text-xs text-muted-foreground" role="status">Loading 3D viewer…</div>}>
+            <Viewer {...props} />
+          </Suspense>
+        </ViewerErrorBoundary>
       )}
     </div>
   );

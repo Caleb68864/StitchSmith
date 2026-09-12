@@ -34,7 +34,7 @@ describe('ExportPanel (book-cover) — export failures are surfaced, not swallow
     const got: string[] = [];
     const unsub = subscribe(m => { if (m.tone === 'error') got.push(m.title); });
     render(<ExportPanel {...makeProps()} />);
-    const btn = screen.getByRole('button', { name: /Download PDF/i });
+    const btn = screen.getByRole('button', { name: /^PDF$/i });
     fireEvent.click(btn);
     await waitFor(() => expect(got.length).toBe(1));
     unsub();
@@ -47,7 +47,7 @@ describe('ExportPanel (book-cover) — export failures are surfaced, not swallow
     const got: string[] = [];
     const unsub = subscribe(m => { if (m.tone === 'error') got.push(m.title); });
     render(<ExportPanel {...makeProps()} />);
-    fireEvent.click(screen.getByRole('button', { name: /Download DXF/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^DXF$/i }));
     await waitFor(() => expect(got.length).toBe(1));
     unsub();
     expect(got[0]).toMatch(/DXF/);

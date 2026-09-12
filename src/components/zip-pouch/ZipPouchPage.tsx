@@ -8,6 +8,7 @@ import { PatternPreview } from './PatternPreview.js';
 import { ExportPanel } from './ExportPanel.js';
 import { PatternEngineLegend } from '../shared/PatternEngineLegend.js';
 import { ConstructionSteps } from '../shared/ConstructionSteps.js';
+import { WarningsPanel } from '../shared/WarningsPanel.js';
 import { PatternPageShell } from '../shared/PatternPageShell.js';
 import { parseProjectJson, downloadProjectJson } from '../../export/projectEnvelopeIO.js';
 import { ValidationBanner } from '../shared/ValidationBanner.js';
@@ -47,11 +48,9 @@ export function ZipPouchPage({ project, updateInputs, resetProject, importProjec
   );
   const hasErrors = !validationResult.ok;
 
-  const built = useMemo(() => {
-    if (hasErrors) return null;
-    const r = buildPattern(project.inputs);
-    return r.ok ? r.value : null;
-  }, [project.inputs, hasErrors]);
+  const buildResult = useMemo(() => (hasErrors ? null : buildPattern(project.inputs)), [project.inputs, hasErrors]);
+  const built = buildResult?.ok ? buildResult.value : null;
+  const warnings = buildResult?.warnings ?? [];
   const steps = built?.steps ?? [];
   // 3D check for every construction style (see generators/zip-pouch/assembly3d.ts).
   const fold3d = useMemo(() => {
@@ -109,6 +108,7 @@ export function ZipPouchPage({ project, updateInputs, resetProject, importProjec
       }
       sidebar={
         <>
+          <WarningsPanel warnings={warnings} />
           <PatternEngineLegend />
           <ExportPanel
             inputs={project.inputs}

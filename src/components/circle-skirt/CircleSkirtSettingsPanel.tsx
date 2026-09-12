@@ -1,8 +1,12 @@
-import { Input } from '@/components/ui/input';
+import { NumericField as SharedNumericField, type NumericFieldProps, UnitToggle } from '../shared/fields/index.js';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import type { CircleSkirtInputs, CircleSkirtPreset, ClosureType, WaistbandType } from '../../generators/circle-skirt/types.js';
 import { convertLengthValues, inchesToMm, mmToInches, type UnitSystem } from '../../utils/units.js';
+
+/** Panel-local alias: a cleared box reports NaN so validation flags it rather than restoring the default. */
+const NumericField = ({ onChange, ...p }: Omit<NumericFieldProps, 'allowEmpty' | 'onChange'> & { onChange: (v: number) => void }) => <SharedNumericField allowEmpty={false} {...p} onChange={(v) => onChange(v as number)} />;
+
 
 // The fields the panel labels `(${units})`. Everything else (ease, seam/hem
 // allowance, band height, elastic width, fabric width) is always mm — see
@@ -15,46 +19,6 @@ interface Props {
   onChange: (changes: Partial<CircleSkirtInputs>) => void;
 }
 
-function NumericField({
-  id,
-  label,
-  value,
-  error,
-  min,
-  step,
-  onChange,
-}: {
-  id: string;
-  label: string;
-  value: number | undefined;
-  error?: string;
-  min?: number;
-  step?: number;
-  onChange: (v: number) => void;
-}) {
-  return (
-    <div className="space-y-1">
-      <Label htmlFor={id} className="text-xs">
-        {label}
-      </Label>
-      <Input
-        id={id}
-        type="number"
-        min={min ?? 0}
-        step={step ?? 1}
-        value={value ?? ''}
-        onChange={e => onChange(parseFloat(e.target.value))}
-        className={`h-8 text-xs ${error ? 'border-destructive' : ''}`}
-        aria-describedby={error ? `${id}-error` : undefined}
-      />
-      {error && (
-        <p id={`${id}-error`} className="text-xs text-destructive">
-          {error}
-        </p>
-      )}
-    </div>
-  );
-}
 
 const PRESETS: { value: CircleSkirtPreset; label: string }[] = [
   { value: 'quarter', label: 'Quarter Circle' },
@@ -170,27 +134,7 @@ export function CircleSkirtSettingsPanel({ inputs, errors, onChange }: Props) {
         />
       </div>
 
-      <div className="space-y-1">
-        <Label className="text-xs font-semibold">Units</Label>
-        <div className="flex gap-2">
-          <Button
-            variant={units === 'in' ? 'default' : 'outline'}
-            size="sm"
-            className="h-7 text-xs px-3"
-            onClick={() => handleUnitsChange('in')}
-          >
-            in
-          </Button>
-          <Button
-            variant={units === 'mm' ? 'default' : 'outline'}
-            size="sm"
-            className="h-7 text-xs px-3"
-            onClick={() => handleUnitsChange('mm')}
-          >
-            mm
-          </Button>
-        </div>
-      </div>
+      <UnitToggle value={units} onChange={handleUnitsChange} />
 
       <div className="space-y-1">
         <Label className="text-xs font-semibold">Closure</Label>

@@ -18,6 +18,11 @@ const ATTACHMENT_OPTIONS: { value: AttachmentStyle; label: string; description: 
     description: 'Same geometry as PALS — MOLLE is the platform name, PALS is the webbing spec.',
   },
   {
+    value: 'malice',
+    label: 'PALS rows + MALICE clips',
+    description: 'The same sewn back rows, with bought MALICE clips (one per column) instead of sewn mount straps. Moves between hosts without unpicking.',
+  },
+  {
     value: 'belt_loop',
     label: 'Belt loop',
     description: 'Single horizontal belt loop — fits belts up to 1.75".',

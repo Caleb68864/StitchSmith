@@ -3,7 +3,7 @@ import type { TriZipInputs, PresetName } from '../generators/tri-zip-backpack/ty
 import { makeProjectStorage } from '../storage/genericProjectStorage.js';
 import { isPlainObject } from '../utils/isPlainObject.js';
 
-const STORAGE_KEY = 'stitchsmith.tri-zip-backpack.project';
+export const STORAGE_KEY = 'stitchsmith.tri-zip-backpack.project';
 
 function isValidTriZipProject(value: unknown): value is TriZipProject {
   if (typeof value !== 'object' || value === null) return false;

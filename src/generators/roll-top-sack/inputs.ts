@@ -1,5 +1,16 @@
 import type { RollTopSackInputs, ResolvedInputs, Result, BuildPatternError } from './types.js';
 import { DEFAULT_COLLAR_HEIGHT_MM } from './defaults.js';
+import { sweepInputs, stripNulls, unitsOf, type GuardSpec } from '../../utils/inputGuards.js';
+
+/** Type/range guard run before the generator's own rules (hardening pass H1). */
+const GUARD_SPEC: GuardSpec = {
+  units: { kind: 'enum', allowed: ['mm', 'in'] },
+  bottom_length: { kind: 'length' },
+  bottom_width: { kind: 'length' },
+  height_when_rolled: { kind: 'length' },
+  collar_height: { kind: 'length' },
+  seam_allowance: { kind: 'length', max: 5000 },
+};
 
 const IN_TO_MM = 25.4;
 
@@ -8,6 +19,9 @@ export function toMm(value: number, units: 'mm' | 'in'): number {
 }
 
 export function validateInputs(inputs: RollTopSackInputs): Result<true, BuildPatternError> {
+  inputs = stripNulls(inputs);
+  const guard = sweepInputs(inputs, GUARD_SPEC, unitsOf(inputs, 'mm'));
+  if (guard.length) return { ok: false, error: { kind: 'invalid-inputs', message: guard[0].message } };
   const { bottom_length, bottom_width, height_when_rolled, units } = inputs;
 
   const lenMm = toMm(bottom_length, units);
@@ -39,6 +53,7 @@ export function validateInputs(inputs: RollTopSackInputs): Result<true, BuildPat
 }
 
 export function resolveInputs(inputs: RollTopSackInputs): ResolvedInputs {
+  inputs = stripNulls(inputs);
   const { units } = inputs;
   return {
     bottom_length: toMm(inputs.bottom_length, units),

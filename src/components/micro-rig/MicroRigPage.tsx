@@ -10,6 +10,7 @@ import { PatternPageShell } from '../shared/PatternPageShell.js';
 import { parseProjectJson, downloadProjectJson } from '../../export/projectEnvelopeIO.js';
 import { ValidationBanner } from '../shared/ValidationBanner.js';
 import { WarningsPanel, type UiWarning } from '../shared/WarningsPanel.js';
+import { DerivedNumbers } from '../shared/warnings/DerivedNumbers.js';
 import { FoldPreview3D } from '../shared/FoldPreview3D.js';
 import { PreviewTabs } from '../shared/PreviewTabs.js';
 import type { Pattern } from '../../lib/pattern-engine/graph/Pattern.js';
@@ -74,23 +75,20 @@ export function MicroRigPage({ project, updateInputs, resetProject, importProjec
           <WarningsPanel warnings={warnings} />
           <PatternEngineLegend />
           <ExportPanel inputs={project.inputs} project={project} hasErrors={hasErrors} />
-          {r && (
-            <div className="rounded border border-border p-3 space-y-1 text-xs" data-testid="derived-numbers">
-              <h2 className="font-semibold">Derived numbers</h2>
-              <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
-                <span className="text-muted-foreground">Panel</span><span>{inch(r.panel_width)} × {inch(r.panel_height)}"{r.split_front ? ` per half, ${inch(r.total_front_width)}" across the front` : ''}</span>
-                {r.pocket_set === 'mag_cells' && <><span className="text-muted-foreground">Cells</span><span>{r.cell_count} × {inch(r.cell_span)}" = {inch(r.mag_span)}"; face {inch(r.face_per_cell)}" per cell, pucker {inch(r.pucker_per_side)}"/side</span></>}
-                {r.pocket_set === 'stacked_cells' && <>
-                  <span className="text-muted-foreground">Stack</span><span>{r.cell_count} × {r.cells_deep} = {r.cell_count * r.cells_deep} mags; rear cell {inch(r.rear_cell_width)}" (depth + {inch(r.stack_ease)}"), front marks {inch(r.front_cell_mark)}"</span>
-                  <span className="text-muted-foreground">Depth</span><span>{inch(r.stack_depth)}" stack; pouch {inch(r.pouch_height)}" tall ({Math.round(r.coverage * 100)} %); {inch(r.mag_exposed_height)}" of mag proud</span>
-                  <span className="text-muted-foreground">Retention</span><span>{r.grommet_count} grommets in {inch(r.cradle_length)}" cradles, {r.cord_count} cords, {r.pull_tab_count} {r.split_pull ? 'split' : 'plain'} pulls; ≈ {Math.round(r.loaded_weight_lb)} lb loaded</span>
-                </>}
-                <span className="text-muted-foreground">Width used</span><span>{inch(r.width_needed)}" of {inch(r.panel_width)}"</span>
-                <span className="text-muted-foreground">Interior loop</span><span>3 × {inch(r.internal_velcro_length)}"</span>
-                <span className="text-muted-foreground">Shoulder buckles</span><span>{inch(r.buckle_edge_offset)}" in from each edge, {inch(r.buckle_spacing)}" apart</span>
-                <span className="text-muted-foreground">Side PALS</span><span>{r.side_pals_columns} column{r.side_pals_columns === 1 ? '' : 's'} × {r.side_pals_rows} rows each end</span>
-              </div>
-            </div>
+{r && (
+            <DerivedNumbers rows={[
+        { label: 'Panel', value: <>{inch(r.panel_width)} × {inch(r.panel_height)}"{r.split_front ? ` per half, ${inch(r.total_front_width)}" across the front` : ''}</> },
+        ...(r.pocket_set === 'mag_cells' ? [{ label: 'Cells', value: <>{r.cell_count} × {inch(r.cell_span)}" = {inch(r.mag_span)}"; face {inch(r.face_per_cell)}" per cell, pucker {inch(r.pucker_per_side)}"/side</> }] : []),
+        ...(r.pocket_set === 'stacked_cells' ? [
+      { label: 'Stack', value: <>{r.cell_count} × {r.cells_deep} = {r.cell_count * r.cells_deep} mags; rear cell {inch(r.rear_cell_width)}" (depth + {inch(r.stack_ease)}"), front marks {inch(r.front_cell_mark)}"</> },
+      { label: 'Depth', value: <>{inch(r.stack_depth)}" stack; pouch {inch(r.pouch_height)}" tall ({Math.round(r.coverage * 100)} %); {inch(r.mag_exposed_height)}" of mag proud</> },
+      { label: 'Retention', value: <>{r.grommet_count} grommets in {inch(r.cradle_length)}" cradles, {r.cord_count} cords, {r.pull_tab_count} {r.split_pull ? 'split' : 'plain'} pulls; ≈ {Math.round(r.loaded_weight_lb)} lb loaded</> },
+    ] : []),
+        { label: 'Width used', value: <>{inch(r.width_needed)}" of {inch(r.panel_width)}"</> },
+        { label: 'Interior loop', value: <>3 × {inch(r.internal_velcro_length)}"</> },
+        { label: 'Shoulder buckles', value: <>{inch(r.buckle_edge_offset)}" in from each edge, {inch(r.buckle_spacing)}" apart</> },
+        { label: 'Side PALS', value: <>{r.side_pals_columns} column{r.side_pals_columns === 1 ? '' : 's'} × {r.side_pals_rows} rows each end</> },
+            ]} />
           )}
           {steps.length > 0 && <ConstructionSteps steps={steps} title="Assembly Instructions" />}
         </>

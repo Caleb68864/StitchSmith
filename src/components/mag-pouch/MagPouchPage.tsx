@@ -10,13 +10,14 @@ import { FoldPreview3D, type SeamSpec } from '../shared/FoldPreview3D.js';
 import { PreviewTabs } from '../shared/PreviewTabs.js';
 import { resolveMagPouch, inToMm } from '../../generators/mag-pouch/resolve.js';
 import { ExportPanel } from './ExportPanel.js';
-import { CutListTable } from './CutListTable.js';
 import { ConstructionSteps } from '../shared/ConstructionSteps.js';
 import { PatternEngineLegend } from '../shared/PatternEngineLegend.js';
 import { PatternPageShell } from '../shared/PatternPageShell.js';
 import { ValidationBanner } from '../shared/ValidationBanner.js';
 import { parseProjectJson, downloadProjectJson } from '../../export/projectEnvelopeIO.js';
 import { WarningsPanel, type UiWarning } from '../shared/WarningsPanel.js';
+import { DerivedNumbers } from '../shared/warnings/DerivedNumbers.js';
+import { CutListTable } from './CutListTable.js';
 
 interface Props {
   project: MagPouchProject;
@@ -43,21 +44,7 @@ function DerivedSummary({ d }: { d: MagPouchDerived }) {
     ['Worst stack', `${d.maxLayers} layers — sew forward only, turn the work`],
     ...(d.caliberLocked ? [['Caliber', 'Locked by bungee retention'] as [string, string]] : []),
   ];
-  return (
-    <div className="rounded border border-border p-3 space-y-2" data-testid="derived-summary">
-      <h3 className="text-xs font-semibold">Derived numbers</h3>
-      <table className="w-full text-xs">
-        <tbody>
-          {rows.map(([k, v]) => (
-            <tr key={k} className="border-b border-border/50">
-              <td className="py-1 pr-2 text-muted-foreground whitespace-nowrap align-top">{k}</td>
-              <td className="py-1 tabular-nums">{v}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
+  return <DerivedNumbers testId="derived-summary" rows={rows.map(([label, value]) => ({ label, value }))} />;
 }
 
 export function MagPouchPage({ project, updateInputs, resetProject, importProject }: Props) {
@@ -215,12 +202,7 @@ export function MagPouchPage({ project, updateInputs, resetProject, importProjec
     }
   }, [inputs, result]);
 
-  const banner = (
-    <>
-      <ValidationBanner errors={errors} />
-      {allWarnings.length > 0 && <WarningsPanel warnings={allWarnings} />}
-    </>
-  );
+  const banner = <ValidationBanner errors={errors} />;
 
   function handleImport(jsonText: string) {
     const parsed = parseProjectJson<MagPouchProject>(jsonText, 'mag-pouch');
@@ -260,6 +242,7 @@ export function MagPouchPage({ project, updateInputs, resetProject, importProjec
       }
       sidebar={
         <>
+          <WarningsPanel warnings={allWarnings} />
           <PatternEngineLegend />
           <ExportPanel
             inputs={inputs}
@@ -270,6 +253,7 @@ export function MagPouchPage({ project, updateInputs, resetProject, importProjec
           />
           {result && <DerivedSummary d={result.derived} />}
           <ConstructionSteps steps={result?.steps ?? []} title="Assembly Instructions" />
+          {/* The mag pouch keeps its BOM open on the page: the cut tags (cut long, trim after; mock first) are part of the build. */}
           {result && (
             <div className="rounded border border-border p-3 space-y-2">
               <h3 className="text-xs font-semibold">Cut list & bill of materials</h3>

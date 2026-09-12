@@ -3,7 +3,7 @@ import type { PaddedStrapInputs } from '../generators/padded-strap/types.js';
 import { makeProjectStorage } from '../storage/genericProjectStorage.js';
 import { isPlainObject } from '../utils/isPlainObject.js';
 
-const STORAGE_KEY = 'stitchsmith.padded-strap.project';
+export const STORAGE_KEY = 'stitchsmith.padded-strap.project';
 
 export interface PaddedStrapProject {
   schemaVersion: 7;

@@ -3,11 +3,33 @@ import {
   DEFAULT_UNITS, FOAM_SETBACK_MM, TUCK_DEPTH_MM, TURNING_EASE_MM, DEFAULT_SEAM_ALLOWANCE_MM, WEBBING_WIDTH_MM, PAD_LENGTH_MM, PAD_GIRTH_MM,
   FOAM_THICKNESS_MM, FOAM_WIDTH_MM, REAR_TAIL_MM, ADJUST_WEBBING_MM, ANCHOR_STRAP_MM, ROD_TURN_MIN_FLAT_WIDTH_MM, HARDWARE_WRAP_MM,
 } from './defaults.js';
+import { sweepInputs, stripNulls, unitsOf, type GuardSpec } from '../../utils/inputGuards.js';
+
+/** Type/range guard run before the generator's own rules (hardening pass H1). */
+const GUARD_SPEC: GuardSpec = {
+  units: { kind: 'enum', allowed: ['mm', 'in'] },
+  webbing_width: { kind: 'length' },
+  pad_finished_length: { kind: 'length' },
+  pad_girth: { kind: 'length' },
+  foam_thickness: { kind: 'length' },
+  foam_width: { kind: 'length' },
+  foam_setback: { kind: 'length' },
+  tuck_depth: { kind: 'length' },
+  turning_ease: { kind: 'length' },
+  seam_allowance: { kind: 'length', max: 5000 },
+  rear_tail_length: { kind: 'length' },
+  adjustment_webbing_length: { kind: 'length' },
+  third_piece: { kind: 'enum', allowed: ['anchor_strap', 'separate_adjust'] },
+  anchor_strap_length: { kind: 'length' },
+  end_interface: { kind: 'enum', allowed: ['bare_triglide', 'buckle_qd', 'direct_sewn'] },
+  route_through_both_slots: { kind: 'bool' },
+};
 
 const IN = 25.4;
 export function toMm(v: number, units: 'mm' | 'in'): number { return units === 'in' ? v * IN : v; }
 
 export function resolveInputs(inputs: SlingInputs): ResolvedInputs {
+  inputs = stripNulls(inputs);
   const units = inputs.units ?? DEFAULT_UNITS;
   const d = (v: number | undefined, fallbackMm: number) => (v === undefined || v === null || Number.isNaN(v) ? fallbackMm : toMm(v, units));
   const webbing_width = inputs.webbing_width ?? WEBBING_WIDTH_MM;
@@ -51,6 +73,9 @@ export function resolveInputs(inputs: SlingInputs): ResolvedInputs {
 }
 
 export function validateInputs(inputs: SlingInputs): ValidationResult {
+  inputs = stripNulls(inputs);
+  const guard = sweepInputs(inputs, GUARD_SPEC, unitsOf(inputs, 'in'));
+  if (guard.length) return { ok: false, errors: guard };
   const errors: BuildPatternError[] = [];
   const r = resolveInputs(inputs);
   const pos = (field: keyof ResolvedInputs, label: string) => {

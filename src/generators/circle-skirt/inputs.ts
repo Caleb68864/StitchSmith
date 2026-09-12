@@ -39,6 +39,25 @@ import {
   DEFAULT_PRESET,
   getPresetSweepAngle,
 } from './defaults.js';
+import { sweepInputs, stripNulls, unitsOf, type GuardSpec } from '../../utils/inputGuards.js';
+
+/** Type/range guard run before the generator's own rules (hardening pass H1). */
+const GUARD_SPEC: GuardSpec = {
+  units: { kind: 'enum', allowed: ['mm', 'in'] },
+  waist_circumference: { kind: 'length' },
+  skirt_length: { kind: 'length' },
+  sweep_angle_deg: { kind: 'angle', max: 720 },
+  waist_ease: { kind: 'length', max: 5000 },
+  closure: { kind: 'enum', allowed: ['side-zip', 'back-zip', 'elastic'] },
+  waistband_type: { kind: 'enum', allowed: ['straight', 'elastic-casing'] },
+  band_height: { kind: 'length', max: 5000 },
+  elastic_width: { kind: 'length', max: 5000 },
+  seam_allowance: { kind: 'length', max: 5000 },
+  hem_allowance: { kind: 'length', max: 5000 },
+  fabric_width: { kind: 'length', max: 5000 },
+  preset: { kind: 'enum', allowed: ['quarter', 'half', 'full', 'double', 'custom'] },
+  hip_circumference: { kind: 'length' },
+};
 
 const MM_PER_INCH = 25.4;
 
@@ -49,6 +68,7 @@ const MM_PER_INCH = 25.4;
  * Does NOT run validation — call `validateInputs` separately as needed.
  */
 export function resolveInputs(inputs: CircleSkirtInputs): ResolvedInputs {
+  inputs = stripNulls(inputs);
   const preset = inputs.preset ?? DEFAULT_PRESET;
 
   const presetSweep = getPresetSweepAngle(preset);
@@ -132,6 +152,9 @@ export function resolveInputs(inputs: CircleSkirtInputs): ResolvedInputs {
  * Errors are hard failures; warnings are advisory and do not block export.
  */
 export function validateInputs(inputs: CircleSkirtInputs): ValidationResult {
+  inputs = stripNulls(inputs);
+  const guard = sweepInputs(inputs, GUARD_SPEC, unitsOf(inputs, 'in'));
+  if (guard.length) return { ok: false, errors: guard, warnings: [] };
   const resolved = resolveInputs(inputs);
   const errors: BuildPatternError[] = [];
   const warnings: string[] = [];

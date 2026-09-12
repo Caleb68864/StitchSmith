@@ -10,6 +10,7 @@ import { PatternPageShell } from '../shared/PatternPageShell.js';
 import { parseProjectJson, downloadProjectJson } from '../../export/projectEnvelopeIO.js';
 import { ValidationBanner } from '../shared/ValidationBanner.js';
 import { WarningsPanel, type UiWarning } from '../shared/WarningsPanel.js';
+import { DerivedNumbers } from '../shared/warnings/DerivedNumbers.js';
 import { FoldPreview3D } from '../shared/FoldPreview3D.js';
 import { PreviewTabs } from '../shared/PreviewTabs.js';
 import type { Pattern } from '../../lib/pattern-engine/graph/Pattern.js';
@@ -61,18 +62,15 @@ export function SlingPage({ project, updateInputs, resetProject, importProject }
           <WarningsPanel warnings={warnings} />
           <PatternEngineLegend />
           <ExportPanel inputs={project.inputs} project={project} hasErrors={hasErrors} />
-          {r && (
-            <div className="rounded border border-border p-3 space-y-1 text-xs" data-testid="derived-numbers">
-              <h2 className="font-semibold">Derived numbers</h2>
-              <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
-                <span className="text-muted-foreground">Tube cut</span><span>{inch(r.tube_cut_width)} × {inch(r.tube_cut_length)}" (girth + {inch(r.turning_ease)}" ease + allowance)</span>
-                <span className="text-muted-foreground">Pad flat</span><span>{inch(r.pad_flat_width)}" wide, turned on a {r.turn_method === 'rod' ? 'rod' : '550 cord'}</span>
-                <span className="text-muted-foreground">Foam</span><span>{inch(r.foam_width)} × {inch(r.foam_length)}" ({inch(r.foam_setback)}" setback each end)</span>
-                <span className="text-muted-foreground">Engagement</span><span>{inch(r.webbing_engagement)}" of webbing in the closing stitch</span>
-                <span className="text-muted-foreground">Adjustment</span><span>≈ {inch(r.adjustment_range)}" travel</span>
-                <span className="text-muted-foreground">Webbing</span><span>{inch(r.total_webbing)}" total</span>
-              </div>
-            </div>
+{r && (
+            <DerivedNumbers rows={[
+        { label: 'Tube cut', value: <>{inch(r.tube_cut_width)} × {inch(r.tube_cut_length)}" (girth + {inch(r.turning_ease)}" ease + allowance)</> },
+        { label: 'Pad flat', value: <>{inch(r.pad_flat_width)}" wide, turned on a {r.turn_method === 'rod' ? 'rod' : '550 cord'}</> },
+        { label: 'Foam', value: <>{inch(r.foam_width)} × {inch(r.foam_length)}" ({inch(r.foam_setback)}" setback each end)</> },
+        { label: 'Engagement', value: <>{inch(r.webbing_engagement)}" of webbing in the closing stitch</> },
+        { label: 'Adjustment', value: <>≈ {inch(r.adjustment_range)}" travel</> },
+        { label: 'Webbing', value: <>{inch(r.total_webbing)}" total</> },
+            ]} />
           )}
           {steps.length > 0 && <ConstructionSteps steps={steps} title="Assembly Instructions" />}
         </>

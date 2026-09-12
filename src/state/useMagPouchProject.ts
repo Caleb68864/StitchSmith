@@ -3,7 +3,7 @@ import { useState, useCallback, useEffect } from 'react';
 import type { MagPouchInputs, RetentionStyle, AttachmentStyle, DrainageStyle, SeamAllowance } from '../generators/mag-pouch/types.js';
 import { makeProjectStorage } from '../storage/genericProjectStorage.js';
 
-const STORAGE_KEY = 'stitchsmith.mag-pouch.project';
+export const STORAGE_KEY = 'stitchsmith.mag-pouch.project';
 
 function isValidMagPouchProject(value: unknown): value is MagPouchProject {
   if (typeof value !== 'object' || value === null) return false;

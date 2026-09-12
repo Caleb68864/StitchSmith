@@ -7,6 +7,7 @@ import { PatternPreview } from './PatternPreview.js';
 import { ExportPanel } from './ExportPanel.js';
 import { PatternEngineLegend } from '../shared/PatternEngineLegend.js';
 import { ConstructionSteps } from '../shared/ConstructionSteps.js';
+import { WarningsPanel } from '../shared/WarningsPanel.js';
 import { PatternPageShell } from '../shared/PatternPageShell.js';
 import { parseProjectJson, downloadProjectJson } from '../../export/projectEnvelopeIO.js';
 import { ValidationBanner } from '../shared/ValidationBanner.js';
@@ -62,6 +63,7 @@ export function CircleSkirtPage({ project, updateInputs, resetProject, importPro
     }
   }, [project.inputs, engineValid]);
   const steps = built?.steps ?? [];
+  const warnings = useMemo(() => { const v = engineValid ? validateInputs(project.inputs) : null; return v?.warnings ?? []; }, [project.inputs, engineValid]);
   // 3D: panels wrapped onto a cone from the waist, seamed, and draped by gravity over a hip form.
   const assembly = useMemo(() => {
     if (!built) return null;
@@ -114,6 +116,7 @@ export function CircleSkirtPage({ project, updateInputs, resetProject, importPro
       }
       sidebar={
         <>
+          <WarningsPanel warnings={warnings} />
           <PatternEngineLegend />
           <ExportPanel
             inputs={project.inputs}

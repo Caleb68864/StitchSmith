@@ -74,23 +74,23 @@ Engines: `pattern-engine` (graph, geometry, exporters), `pouch-engine`
 2. **Stacked (two-deep) cells.** `rigs/stacked-mag-cell-geometry.md` carries a
    full parametric block with a .308 test case (mag_depth 2.9, thick 1.1,
    length 5.75 must reproduce its table). Add `cells_deep` to the card.
-3. **One-piece lid with pull channel** (`rigs/subgun-lid-pull-channel.md`):
+3. DONE 2026-09-12 — **One-piece lid with pull channel** (`rigs/subgun-lid-pull-channel.md`):
    lid_cut = wrap + 1.5" channel + velcro overrun; overrun ≥ tallest-mag delta
    + 3" purchase. Replace the derived lid with this when a lid is chosen.
 4. **Mouth hem to the outside** for lugged magazines
    (`rigs/subgun-hem-to-outside-mag-mouth.md`): 1" hem, cell loses the hem from
    its cut height.
-5. **Hourglass aesthetic** (`mag-pouches/mag-pouch-hourglass-aesthetic.md`):
+5. DONE 2026-09-12 — **Hourglass aesthetic** (`mag-pouches/mag-pouch-hourglass-aesthetic.md`):
    optional, default off, +0.25" per side, labor-cost note.
-6. **MALICE clip alternative** in the mount options (clip count = columns,
+6. DONE 2026-09-12 — **MALICE clip alternative** in the mount options (clip count = columns,
    size by rows) instead of sewn mount straps.
 7. **Kydex wedge dimensions per platform** — Open in the vault; add when a
    wedge is measured.
-8. **Tri-Zip hardware BOM.** The strap engine returns hardware; Tri-Zip has no
+8. DONE 2026-09-12 (BOM; hip belt/sternum still drawn by the module) — **Tri-Zip hardware BOM.** The strap engine returns hardware; Tri-Zip has no
    BOM structure, so it is folded into step text. Add a BOM to Tri-Zip and
    route hip belt and sternum strap through the strap engine too
    (sternum production lengths 18" and 24", `packs/medpack-shoulder-harness.md`).
-9. **Load-path tack rule in back-panel steps**: strap tacks must sit outboard
+9. DONE 2026-09-12 — **Load-path tack rule in back-panel steps**: strap tacks must sit outboard
    of the bag-closing seam (`packs/toolpod-shoulder-strap-provision.md`).
 10. **Prototype vs final cut sheet labelling** and a per-pattern change log
     (`mag-pouches/construction-prototype-in-solid.md`,
@@ -130,42 +130,58 @@ stop with grommets, bungee over the top, split vs plain pulls, weight
 warning. The .308 test case reproduces the vault table. Left: the tear-off
 med pouch piece and a second magazine in the 3D view.
 
-### 5. Tactical organizer / pen-and-notebook organizer
-The exemplar note; hems marked at double, tack hem ends, sew side folds before
-top and bottom, partial-coverage Velcro. A flat panel with pockets — cheap to
-build on the pattern engine.
-Evidence: strong. `bags/soe-tactical-organizer.md`, `bags/construction-hem-mark-at-double.md`,
-`bags/construction-sew-side-folds-first.md`, `bags/velcro-partial-coverage.md`.
+### 5. Tactical organizer / pen-and-notebook organizer — DONE 2026-09-12
+`src/generators/organizer/`: folded body with hems marked at double, split
+horizontal hook Velcro (or PALS) on the back, oversized front panel whose
+side folds become bellows (span-loss math, gusset warning), pen-slot dividers
+from the side seam, 13-step vault order with the panel-bottom seam before
+the sides, production mode, bifold / grommets / name tape / loop-over-hook
+variations, 3D assembly round a 3 × 5 notebook. Follow-up: the admin face as
+a pocket-set on the modular back (pouch line item 4).
 
-### 6. Fanny pack
-Lid drop tuning, drawbridge cord limiter, bottom drainage grommets, bellows
-side folds (span vs depth math).
-Evidence: good. `bags/fanny-pack-lid-drop-tuning.md`,
-`bags/fanny-pack-drawbridge-cord-limiter.md`, `bags/fanny-pack-drainage-grommets.md`,
-`bags/bellows-side-folds.md`.
+### 6. Fanny pack — DONE 2026-09-12
+`src/generators/fanny-pack/`: back and front panels on a hoop of two zipper
+halves plus a rising gusset; the lid-drop rule (zipper panel extended down the
+sides by ≈ depth, taken off the rising sides, override + mock-derived
+warning), tape-or-fold zipper edge (+1" lip), drawbridge cord limiter with
+cord = 2 × chord at the target angle, 0/2/4 bottom drainage grommets with
+patches set while flat, dual-mode belt with measured settings, non-locking
+slider in the BOM, 3D hoop-and-panels check. Body sizes are starting points
+(the vault has no cut list). Follow-ups: simulate the open lid (split the 3D
+band at the zipper and let the front fall), a front PALS/loop face.
 
-### 7. Clamshell pack (medpack / tool pod)
-Zipper frame construction, alligator-mouth hoop closing, bowed rigid top
-handle, fabricated PALS from Cordura, zipper-lip fold-over math on a PALS
-gusset, removable slick straps via the strap engine. Wrap-around strap lengths
-are a function of gusset depth — the cut list must carry the gusset.
-Evidence: good, one known bug to design around (straps 3" short).
-`packs/medpack-overview.md`, `packs/zipper-frame-construction.md`,
-`packs/medpack-technique-alligator-mouth.md`, `packs/toolpod-pack-build.md`.
+### 7. Clamshell pack (medpack / tool pod) — DONE 2026-09-12
+`src/generators/clamshell-pack/`: zipper frame hoop as two strips split by
+the zipper (base gusset + lid strip, 1" lip fold-over, cut long and trimmed),
+alligator-mouth bottom cut from the measured gap, PALS fields on sides, face
+and bottom through the shared `buildPalsField` primitive, bowed handle,
+depth-scaled compression straps, removable-strap tabs and stow pocket,
+interior loop walls, pocket-grid footprints, 3D hoop assembly round the
+block. Follow-ups: padded straps through the strap engine terminating in the
+same male-buckle spec; drainage grommet / seam-slot port; hydration port.
 
-### 8. Plate carrier
-Front/back panels, cummerbund, shoulder straps (strap engine), PALS field
-(sewn webbing or laser-cut laminate), loop Velcro fields, plate-size fit
-mapping, binding edges.
-Evidence: 26 notes, mostly reference-grade rather than build-reconciled;
-plate sizes are tabulated. Biggest scope; do after 1–2 have hardened the
-PALS-field and strap primitives. `plate-carriers/*.md`.
+### 8. Plate carrier — DONE 2026-09-12
+`src/generators/plate-carrier/`: plate presets and cuts (SAPI / shooter /
+swimmer), pocket + shell envelopes, loop or PALS fields on both faces (via the
+new PALS field primitive), strap-engine padded straps or slick webbing,
+elastic or skeletal cummerbund with side plate pockets and QR buckle choice,
+bound or turned edges, bartack map, 3D fit on the medium torso with strap and
+cummerbund span verdicts. The vault is reference-grade here: four inputs carry
+mock-derived warnings. Follow-ups: SAPI XS–XL nomenclature as presets,
+QR-buckle mount drawings, a removable back pad piece with its Velcro, and the
+loop field's edge-under-binding variant.
 
-### 9. Modular LBV
-Panel chassis with zippered pockets, Velcro-faced PALS rows, shoulder set,
-snap belt loops, drag handle with the four-point dispersion stitch.
-Evidence: good on construction, geometry partly Open (pad width, cross angle).
-`rigs/lbvmod-*.md`.
+### 9. Modular LBV — DONE 2026-09-12
+`src/generators/lbv/`: three zippered foam-pocket panels (back bellowed),
+Velcro-faced 1.5" PALS rows on the shared PALS primitive with the row-width
+divergence flagged, verticals at the 4" marks with the 22"-usable / 12"-drop
+arithmetic, strap-engine shoulder pads with centred tension locks, angled
+cross pieces, four-point-dispersion drag handle, three front straps (males
+right), 36" of circumference adjustment with the outboard-lock escalation,
+snap belt loops capped at two, 3D fit on the torso with a written report.
+Every number the transcripts never state is a mock-derived input. Left: the
+front column count (count bartacks on a video frame), the butt pack and
+hydration carrier interfaces as pieces, laser-cut slotted shoulder straps.
 
 ### 10. Shelter, sleep, apparel
 87 notes but almost all reference material (LearnMYOG, materials), not
@@ -342,7 +358,7 @@ which (the tri-zip `seam:` path convention is the seed).
 
 ## Engine work that unlocks several patterns
 
-- **PALS field primitive** on any panel: rows × columns, bartack map, laser-cut
+- DONE 2026-09-12 (`src/lib/pattern-engine/primitives/palsField.ts`) — **PALS field primitive** on any panel: rows × columns, bartack map, laser-cut
   variant, edge margin ≥ 0.25". Needed by 2, 5, 7, 8, 9.
   `plate-carriers/pals-spec-1in-spacing.md`, `plate-carriers/pals-laser-cut-laminate.md`.
 - **Hem primitive**: per-edge hem depth, mark-at-double line, cut = finished +
@@ -356,9 +372,9 @@ which (the tri-zip `seam:` path convention is the seed).
 - **Stitch-shrinkage compensation**: pucker per taped edge 0.25", Velcro
   over-cut 2", trim-after-sew tags everywhere Velcro or long webbing runs.
   `reference/technique-stitch-shrinkage.md`.
-- **Exporter layout**: pieces currently lay out in one row; a multi-cell card
+- DONE 2026-09-12 (`maxRowWidth`, default 1400 mm) — **Exporter layout**: pieces currently lay out in one row; a multi-cell card
   with twelve strips is very wide. Row-wrap by a page width.
-- **Annotations in exports**: `PieceAnnotation` labels are not drawn by the SVG
+- DONE 2026-09-12 (grain arrows, notch ticks, wrapped notes in SVG) — **Annotations in exports**: `PieceAnnotation` labels are not drawn by the SVG
   exporter (only the piece name). Draw grain arrows and notch marks.
 - **Foam / mesh on separate cut sheets** (different blade) — `materialId` is
   set; the exporters need a per-material split.

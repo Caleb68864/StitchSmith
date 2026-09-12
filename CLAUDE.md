@@ -43,7 +43,7 @@ A generator using this convention MUST:
 Consequence: no SA-offset cut line is drawn, because the cut line *is* the
 outer line. That is expected under this convention, not a defect.
 
-Used by: **Zip Pouch** (see `src/generators/zip-pouch/dimensions.ts`), the **Padded Sling** (tube cut with allowance and turning ease included) and the
+Used by: **Zip Pouch** (see `src/generators/zip-pouch/dimensions.ts`), the **Padded Sling** (tube cut with allowance and turning ease included), the **Tactical Organizer** (hems marked at double, baked into the cut), the **Fanny Pack** (allowance and, for the fold finish, the zipper lip baked in) and the
 **Mag Pouch pleated card** construction (`src/lib/pouch-engine/construction/pleatedCard.ts`,
 dimensions resolved in `src/generators/mag-pouch/resolve.ts`). The card is
 hemmed, not seam-allowanced: cut = finished + hems, hem folds are `fold`-role
@@ -82,6 +82,12 @@ numbers. Rules already encoded, with the note that justifies each:
   mark = rear cell + wrap allowance (1/4"–mag thickness, unsettled — mock it),
   stack depth = deep × thickness + 1/8", pouch = coverage × length; the cradle
   is the depth stop and the bungee anchor; no elastic that cannot be replaced.
+- One-piece lids fold their tip back into a 1.5" pull channel (the 1" sample
+  was too small gloved) and keep ≥ 3" of hook purchase at every adjustment
+  (`rigs/subgun-lid-pull-channel.md`); the channel adds to the lid length.
+- PALS fields come from `src/lib/pattern-engine/primitives/palsField.ts`
+  (1" rows, 2" pitch, 1.5" columns, 1/4" margin, rows cut 1" long); do not
+  draw a field by hand. Non-spec row widths (the LBV's 1.5") keep the warning.
 - When a note marks a number Open / Inferred, carry it forward as an input or
   a warning tagged `mock-derived`, never as a hard default.
 - H-harness (`rigs/harness-h-geometry.md`): 1.5" webbing full pad length and
@@ -90,6 +96,57 @@ numbers. Rules already encoded, with the note that justifies each:
   add), corner tails never cut, hydration channels are unsewn crossings (the
   sew map whitelists them). Pad length/width, foam, crossing height, spread
   and drop legs are Open — inputs with mock-derived warnings.
+
+- Fanny pack lid drop (`bags/fanny-pack-lid-drop-tuning.md`): a lid hinged
+  along its zipper falls open only if the zipper panel runs down each side by
+  about the bag depth, and that length comes off the rising sides one for one;
+  SOE's +3"/side did not open, +4" did. The heuristic is mock-derived; the
+  override is the real input.
+- A folded zipper lip consumes 1" beyond the finished edge
+  (`bags/construction-edge-tape-vs-fold.md`, `packs/medpack-zipper-lip-math.md`);
+  edge tape instead keeps the cut at finished size and goes on the cut list.
+- Grommets sit ≥ 1/2" from any seam over a reinforcement patch and are set
+  while the piece is flat, pre-burnt at 750°F, batched into one press visit
+  (`bags/fanny-pack-drainage-grommets.md`, `reference/technique-grommet-setting.md`).
+- Horizontal, non-load-bearing pouch zippers take a non-locking slider;
+  vertical or loaded ones lock (`bags/zipper-slider-locking-vs-not.md`).
+
+- Clamshell frames (`packs/medpack-zipper-lip-math.md`,
+  `toolpod-zipper-frame-construction.md`): a folded zipper lip consumes 1"
+  beyond the finished lip; the frame is two strips split by the zipper and
+  the PALS budget on the gusset is `cols × 1.5" + clearance ≤ gusset depth`.
+  Hoops are cut long and trimmed at the bottom join; the closing piece is cut
+  last from the measured gap + 2 × fold-in (`medpack-technique-alligator-mouth.md`).
+- Every wrap-around length on a clamshell (compression straps, harness tails,
+  Velcro runs) scales with the gusset depth; a depth change invalidates the
+  standard cut list (`packs/medpack-compression-straps.md`).
+- PALS fields on any panel come from `src/lib/pattern-engine/primitives/palsField.ts`
+  (rows cut 1" long, off-grid spans warn); side-gusset rows lie across the
+  strip and start clear of the zipper underwrap (`medpack-technique-pals-spacing.md`).
+
+- Plate carrier (`plate-carriers/*.md`): plate pocket = plate + 0.25–0.5" ease
+  per side, shell = pocket + 0.5" oversize; binding adds no allowance (explicit
+  0), turning needs SA; loop field ≥ ~2" of engagement; laser-cut PALS needs
+  laminate; plate size and torso length are independent inputs (the plate
+  top rides two finger widths below the sternal notch); every other number in
+  those notes is reference grade — inputs with mock-derived warnings.
+- PALS fields everywhere go through `buildPalsField`
+  (`src/lib/pattern-engine/primitives/palsField.ts`): 1" rows at a 2" pitch,
+  1.5" columns, 1/4" edge margin, rows cut 1" long; `rowWidth` carries the
+  LBV's 1.5" divergence with its warning.
+
+- Modular LBV (`rigs/lbvmod-*.md`): PALS rows are 1.5" scuba webbing at the
+  1.5" column pitch (slots taller than spec — the divergence warning stays);
+  first mark = ½" tape concealment + row width; strips = cols × 1.5" + 2 × ¼";
+  rows go on before edge tape, bartacked in one direction; verticals 24" with
+  1" tabs (22" usable) at the 4" marks, contiguous shoulder → panel → belt;
+  3 × 12" of circumference, +3" with the tension locks outboard; two belt
+  loops per panel, never three; loop on any face that gets sewn through.
+  Panel outline, row pitch, pad size, cross piece angle and front strap
+  positions are never stated — inputs with mock-derived warnings.
+- Straps that must run beside the neck on the torso form kick out from
+  their panel landing to the shoulder line (`overShoulder(..., xStart)` in
+  the LBV assembly); a strap drawn long in x drapes with `along: 'x'`.
 
 ## 3D preview conventions
 
@@ -160,7 +217,7 @@ numbers. Rules already encoded, with the note that justifies each:
 
 ## Engine usage
 
-All generators (Tool Roll, Tri-Zip, Roll-Top Sack, Mag Pouch, Book Cover, Zip Pouch, Circle Skirt, Padded Strap, Micro Rig, Padded Sling) consume `src/lib/pattern-engine/` for graph types (`Point`, `Edge`, `Path`, `Piece`, `Pattern`), geometry helpers (offset, arc, bbox), and exporters (SVG, PDF, DXF, project JSON). New generators must use the engine — do not fork geometry or export code into the generator directory.
+All generators (Tool Roll, Tri-Zip, Roll-Top Sack, Mag Pouch, Book Cover, Zip Pouch, Circle Skirt, Padded Strap, Micro Rig, Padded Sling, Tactical Organizer, Fanny Pack, Clamshell Pack, Plate Carrier, Modular LBV) consume `src/lib/pattern-engine/` for graph types (`Point`, `Edge`, `Path`, `Piece`, `Pattern`), geometry helpers (offset, arc, bbox), and exporters (SVG, PDF, DXF, project JSON). New generators must use the engine — do not fork geometry or export code into the generator directory.
 
 ## Project JSON envelope
 
@@ -176,6 +233,35 @@ All generators (Tool Roll, Tri-Zip, Roll-Top Sack, Mag Pouch, Book Cover, Zip Po
 - `schemaVersion: 7` → Padded Strap / H-harness
 - `schemaVersion: 8` → Micro Rig
 - `schemaVersion: 9` → Padded Sling
+- `schemaVersion: 10` → Tactical Organizer
+- `schemaVersion: 14` → Modular LBV
+- `schemaVersion: 13` → Plate Carrier
+- `schemaVersion: 12` → Clamshell Pack
+- `schemaVersion: 11` → Fanny Pack
 - These are sibling schemas, not an upgrade chain. Distinguish by `generatorId`
   (the source of truth is each hook's `isValid` guard in `src/state/use*Project.ts`).
 - Unknown future versions return a friendly error, not partial state.
+
+## UI conventions
+- Settings panels use the shared field primitives in
+  `src/components/shared/fields/` (`NumericField`, `SelectField`,
+  `ChoiceField`, `Toggle`, `UnitToggle`, `SectionHeader`, `HelpText`) — no
+  new local `NumericField`. Every input has a label bound by id, units once,
+  help under the field, and `mockDerived` on vault-Open numbers. A new
+  generator registers with a `category`, a one-line `summary` and `tags`
+  (or adds itself to `PATTERN_META`) so it lands in the right landing group
+  and is searchable.
+- New generators do not copy export or preview code: the page supplies an
+  `ExportAdapter` to `PatternExportPanel` and a built `Pattern` to the shared
+  `PatternPreview` (`src/components/shared/export/`), shows warnings through
+  `WarningsPanel` (strings or `{ severity, message, field, tag }`) and derived
+  numbers through `DerivedNumbers` (`src/components/shared/warnings/`), in the
+  sidebar order warnings → legend → export → derived numbers → steps.
+- Only closed **cut** outlines take a seam allowance in exports; a closed
+  stitch/fold mark (Velcro outline, grommet patch) never gets an SA line, so a
+  generator may draw closed marks freely.
+- The viewer skips (and lists) seams onto pieces outside the scene and zero-
+  length seams, coarsens meshes above 40 000 vertices, stops on a diverged
+  solve, and reports any scene-build error in its own panel. New assemblies
+  should still pass `src/generators/__tests__/assembly-sweep.test.ts` (add a
+  case with a measured ceiling) and new generators the export sweep.

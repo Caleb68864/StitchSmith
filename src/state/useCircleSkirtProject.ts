@@ -3,7 +3,7 @@ import type { CircleSkirtInputs } from '../generators/circle-skirt/types.js';
 import { makeProjectStorage } from '../storage/genericProjectStorage.js';
 import { isPlainObject } from '../utils/isPlainObject.js';
 
-const STORAGE_KEY = 'stitchsmith.circle-skirt.project';
+export const STORAGE_KEY = 'stitchsmith.circle-skirt.project';
 
 export interface CircleSkirtProject {
   schemaVersion: 6;

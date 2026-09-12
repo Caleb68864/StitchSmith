@@ -1,6 +1,5 @@
-import { Input } from '@/components/ui/input';
+import { NumericField, ChoiceField, Toggle, UnitToggle } from '../shared/fields/index.js';
 import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
 import type { MicroRigInputs, PanelWidthPreset, PocketSet, Suspension } from '../../generators/micro-rig/types.js';
 import { MAGAZINE_IDS, getMagazine, PLATFORM_LABELS } from '../../generators/mag-pouch/magazines.js';
 import { convertLengthValues, type UnitSystem } from '../../utils/units.js';
@@ -13,41 +12,8 @@ interface Props {
   onChange: (changes: Partial<MicroRigInputs>) => void;
 }
 
-function NumericField({ id, label, value, error, min, step, placeholder, onChange }: {
-  id: string; label: string; value: number | undefined; error?: string; min?: number; step?: number; placeholder?: string; onChange: (v: number | undefined) => void;
-}) {
-  return (
-    <div className="space-y-1">
-      <Label htmlFor={id} className="text-xs">{label}</Label>
-      <Input id={id} type="number" min={min ?? 0} step={step ?? 1} value={value ?? ''} placeholder={placeholder}
-        onChange={e => onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))}
-        className={`h-8 text-xs ${error ? 'border-destructive' : ''}`} aria-describedby={error ? `${id}-error` : undefined} />
-      {error && <p id={`${id}-error`} className="text-xs text-destructive">{error}</p>}
-    </div>
-  );
-}
 
-function Choice<T extends string>({ label, value, options, onChange }: { label: string; value: T; options: { value: T; label: string }[]; onChange: (v: T) => void }) {
-  return (
-    <div className="space-y-1">
-      <Label className="text-xs font-semibold">{label}</Label>
-      <div className="flex flex-wrap gap-1">
-        {options.map(o => (
-          <Button key={o.value} variant={value === o.value ? 'default' : 'outline'} size="sm" className="h-7 text-xs px-2" onClick={() => onChange(o.value)}>{o.label}</Button>
-        ))}
-      </div>
-    </div>
-  );
-}
 
-function Toggle({ label, value, onChange }: { label: string; value: boolean; onChange: (v: boolean) => void }) {
-  return (
-    <label className="flex items-center gap-2 text-xs">
-      <input type="checkbox" checked={value} onChange={e => onChange(e.target.checked)} />
-      {label}
-    </label>
-  );
-}
 
 const WIDTHS: { value: PanelWidthPreset; label: string }[] = [
   { value: 'stacked_10_5', label: '10.5" (Stacked)' },
@@ -78,7 +44,7 @@ export function MicroRigSettingsPanel({ inputs, errors, onChange }: Props) {
   }
   return (
     <div className="rounded border border-border p-3 space-y-4">
-      <Choice label="Panel width" value={preset} options={WIDTHS} onChange={v => onChange({ panel_width_preset: v })} />
+      <ChoiceField label="Panel width" value={preset} options={WIDTHS} onChange={v => onChange({ panel_width_preset: v })} />
       <div className="grid grid-cols-2 gap-3">
         {preset === 'custom' && <NumericField id="panel-width" label={`Panel width (${units})`} value={inputs.panel_width} error={errors['panel_width']} step={step} onChange={v => onChange({ panel_width: v })} />}
         <NumericField id="panel-height" label={`Panel height (${units})`} value={inputs.panel_height} error={errors['panel_height']} step={step} placeholder={units === 'in' ? '7' : '178'} onChange={v => onChange({ panel_height: v })} />
@@ -86,7 +52,7 @@ export function MicroRigSettingsPanel({ inputs, errors, onChange }: Props) {
         <NumericField id="edge-margin" label={`Edge margin (${units})`} value={inputs.edge_margin} error={errors['edge_margin']} step={step} placeholder={units === 'in' ? '0.5' : '12.7'} onChange={v => onChange({ edge_margin: v })} />
       </div>
 
-      <Choice label="Front" value={pocket} options={POCKETS} onChange={v => onChange({ pocket_set: v })} />
+      <ChoiceField label="Front" value={pocket} options={POCKETS} onChange={v => onChange({ pocket_set: v })} />
       {pocket === 'mag_cells' && (
         <>
           <div className="space-y-1">
@@ -142,15 +108,8 @@ export function MicroRigSettingsPanel({ inputs, errors, onChange }: Props) {
         </div>
       )}
 
-      <Choice label="Suspension" value={inputs.suspension ?? 'webbing_straps'} options={SUSPENSIONS} onChange={v => onChange({ suspension: v })} />
-
-      <div className="space-y-1">
-        <Label className="text-xs font-semibold">Units</Label>
-        <div className="flex gap-2">
-          <Button variant={units === 'in' ? 'default' : 'outline'} size="sm" className="h-7 text-xs px-3" onClick={() => handleUnitsChange('in')}>in</Button>
-          <Button variant={units === 'mm' ? 'default' : 'outline'} size="sm" className="h-7 text-xs px-3" onClick={() => handleUnitsChange('mm')}>mm</Button>
-        </div>
-      </div>
+      <ChoiceField label="Suspension" value={inputs.suspension ?? 'webbing_straps'} options={SUSPENSIONS} onChange={v => onChange({ suspension: v })} />
+      <UnitToggle value={units} onChange={handleUnitsChange} />
     </div>
   );
 }

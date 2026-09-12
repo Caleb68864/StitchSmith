@@ -16,7 +16,8 @@ const CLOSURE_LABELS: Record<RetentionStyle, string> = {
   none: 'Open top, friction only',
 };
 
-export function ClosureSection({ inputs, errors: _errors, onChange: _onChange }: Props) {
+export function ClosureSection({ inputs, errors, onChange }: Props) {
+  const hasLid = inputs.retention === 'flap_velcro' || inputs.retention === 'flap_snap' || inputs.retention === 'flap_fastex';
   return (
     <div className="space-y-3">
       <div className="space-y-1">
@@ -52,6 +53,30 @@ export function ClosureSection({ inputs, errors: _errors, onChange: _onChange }:
           by the adjustment you want — the loop is the parametric piece. Hook goes on last in the build.
         </div>
       )}
+
+      {hasLid && (
+        <div className="space-y-1">
+          <label htmlFor="pull-channel-depth" className="text-xs font-medium">Pull channel depth (in)</label>
+          <input
+            id="pull-channel-depth"
+            type="number"
+            min={0}
+            step={0.25}
+            value={inputs.pull_channel_depth ?? (inputs.retention === 'flap_velcro' ? 1.5 : 0)}
+            onChange={(e) => onChange({ pull_channel_depth: e.target.value === '' ? undefined : parseFloat(e.target.value) })}
+            className={`h-8 w-full rounded border bg-background px-2 text-xs ${errors['pull_channel_depth'] ? 'border-destructive' : 'border-input'}`}
+          />
+          <p className="text-xs text-muted-foreground">
+            One-piece lid: the tip folds back on itself into a finger channel. SOE marks 1.5&quot;; the 1&quot; sample was too small for a gloved hand. 0 = no channel.
+          </p>
+          {errors['pull_channel_depth'] && <p className="text-xs text-destructive">{errors['pull_channel_depth']}</p>}
+        </div>
+      )}
+
+      <label className="flex items-center gap-2 text-xs">
+        <input type="checkbox" checked={inputs.hourglass_aesthetic ?? false} onChange={(e) => onChange({ hourglass_aesthetic: e.target.checked })} />
+        Hourglass aesthetic — side seams inset 1/4&quot; per side (cosmetic, slower to sew)
+      </label>
 
       {inputs.retention === 'open_top_bungee' && (
         <div className="rounded border border-muted p-2 text-xs text-muted-foreground">

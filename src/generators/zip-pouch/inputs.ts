@@ -22,6 +22,23 @@ import {
   DEFAULT_ZIPPER_POSITION,
   getPresetDimensions,
 } from './defaults.js';
+import { sweepInputs, stripNulls, unitsOf, type GuardSpec } from '../../utils/inputGuards.js';
+
+/** Type/range guard run before the generator's own rules (hardening pass H1). */
+const GUARD_SPEC: GuardSpec = {
+  units: { kind: 'enum', allowed: ['mm', 'in'] },
+  finished_length: { kind: 'length' },
+  finished_width: { kind: 'length' },
+  finished_depth: { kind: 'length' },
+  seam_allowance: { kind: 'length', max: 5000 },
+  zip_gauge: { kind: 'enum', allowed: ['#3', '#5'] },
+  grosgrain_width: { kind: 'length', max: 5000 },
+  pull_loops: { kind: 'bool' },
+  preset: { kind: 'enum', allowed: ['pencil', 'edc', 'toiletry', 'custom'] },
+  construction_style: { kind: 'enum', allowed: ['boxed', 'cross-bottom', 'gusset-strip', 'multi-panel'] },
+  zipper_position: { kind: 'enum', allowed: ['top', 'front'] },
+  zip_from_top: { kind: 'length', max: 5000 },
+};
 
 const VALID_ZIP_GAUGES = new Set(['#3', '#5']);
 
@@ -45,6 +62,7 @@ const MM_PER_INCH = 25.4;
  * beside 4.72-unit panels, and the BOM labelled inch numbers "mm".
  */
 export function resolveInputs(inputs: ZipPouchInputs): ResolvedInputs {
+  inputs = stripNulls(inputs);
   const preset = inputs.preset ?? DEFAULT_PRESET;
   const presetDims = getPresetDimensions(preset);
   const units = inputs.units ?? DEFAULT_UNITS;
@@ -84,6 +102,9 @@ export function resolveInputs(inputs: ZipPouchInputs): ResolvedInputs {
  * Returns `{ ok: true, warnings }` or `{ ok: false, errors, warnings }`.
  */
 export function validateInputs(inputs: ZipPouchInputs): ValidationResult {
+  inputs = stripNulls(inputs);
+  const guard = sweepInputs(inputs, GUARD_SPEC, unitsOf(inputs, 'mm'));
+  if (guard.length) return { ok: false, errors: guard, warnings: [] };
   const resolved = resolveInputs(inputs);
   const errors: BuildPatternError[] = [];
   const warnings: string[] = [];

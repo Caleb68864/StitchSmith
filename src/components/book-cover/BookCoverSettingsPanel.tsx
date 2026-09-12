@@ -1,6 +1,6 @@
+import { NumericField as SharedNumericField, type NumericFieldProps } from '../shared/fields/index.js';
 import { useState } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -8,6 +8,10 @@ import type { BookCoverProjectInputs } from '../../state/useBookCoverProject.js'
 import { BOOK_PRESETS, FOLDOVER_PRESETS, ZIPPER_GAUGE_DEFAULTS } from '../../generators/book-cover/defaults.js';
 import type { ZipperGauge, InterfacingKind } from '../../generators/book-cover/types.js';
 import { convertLengthValues, type UnitSystem } from '../../utils/units.js';
+
+/** Panel-local alias: a cleared box reports NaN so validation flags it rather than restoring the default. */
+const NumericField = ({ onChange, ...p }: Omit<NumericFieldProps, 'allowEmpty' | 'onChange'> & { onChange: (v: number) => void }) => <SharedNumericField allowEmpty={false} {...p} onChange={(v) => onChange(v as number)} />;
+
 
 // Top-level fields the panel labels `(${inputs.units})`. Seam allowance, hems,
 // ease and the zipper corner radius are stored in mm regardless of the toggle.
@@ -53,61 +57,6 @@ function getSpineBulgeAuto(inputs: BookCoverProjectInputs): boolean {
   return inputs.is_hardcover ?? preset?.is_hardcover ?? false;
 }
 
-function NumericField({
-  id,
-  label,
-  value,
-  error,
-  disabled,
-  min,
-  placeholder,
-  help,
-  onChange,
-}: {
-  id: string;
-  label: string;
-  value: number | undefined;
-  error?: string;
-  disabled?: boolean;
-  min?: number;
-  placeholder?: string;
-  /**
-   * Optional one-line help text displayed below the input. Use for advanced
-   * fields where the right value isn't obvious (ease, bulge, tactical mode).
-   */
-  help?: string;
-  onChange: (v: number) => void;
-}) {
-  const describedBy = error ? `${id}-error` : help ? `${id}-help` : undefined;
-  return (
-    <div className="space-y-1">
-      <Label htmlFor={id} className={`text-xs ${disabled ? 'text-muted-foreground' : ''}`}>
-        {label}
-      </Label>
-      <Input
-        id={id}
-        type="number"
-        min={min ?? 0}
-        step="any"
-        value={value ?? ''}
-        disabled={disabled}
-        placeholder={placeholder}
-        onChange={e => onChange(parseFloat(e.target.value))}
-        className={`h-8 text-xs ${error ? 'border-destructive' : ''} ${disabled ? 'opacity-50' : ''}`}
-        aria-describedby={describedBy}
-      />
-      {error ? (
-        <p id={`${id}-error`} className="text-xs text-destructive">
-          {error}
-        </p>
-      ) : help ? (
-        <p id={`${id}-help`} className="text-[10px] text-muted-foreground leading-snug">
-          {help}
-        </p>
-      ) : null}
-    </div>
-  );
-}
 
 function CollapsibleSection({
   title,

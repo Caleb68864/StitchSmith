@@ -1,8 +1,10 @@
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
+import { NumericField as SharedNumericField, type NumericFieldProps, UnitToggle } from '../shared/fields/index.js';
 import type { RollTopSackInputs } from '../../generators/roll-top-sack/types.js';
 import { convertLengthValues, type UnitSystem } from '../../utils/units.js';
+
+/** Panel-local alias: a cleared box reports NaN so validation flags it rather than restoring the default. */
+const NumericField = ({ onChange, ...p }: Omit<NumericFieldProps, 'allowEmpty' | 'onChange'> & { onChange: (v: number) => void }) => <SharedNumericField allowEmpty={false} {...p} onChange={(v) => onChange(v as number)} />;
+
 
 // The fields the panel labels `(${inputs.units})`; seam_allowance is always mm.
 const DISPLAY_UNIT_FIELDS = ['bottom_length', 'bottom_width', 'height_when_rolled', 'collar_height'] as const;
@@ -13,42 +15,6 @@ interface Props {
   onChange: (changes: Partial<RollTopSackInputs>) => void;
 }
 
-function NumericField({
-  id,
-  label,
-  value,
-  error,
-  onChange,
-}: {
-  id: string;
-  label: string;
-  value: number | undefined;
-  error?: string;
-  onChange: (v: number) => void;
-}) {
-  return (
-    <div className="space-y-1">
-      <Label htmlFor={id} className="text-xs">
-        {label}
-      </Label>
-      <Input
-        id={id}
-        type="number"
-        min={0}
-        step="any"
-        value={value ?? ''}
-        onChange={e => onChange(parseFloat(e.target.value))}
-        className={`h-8 text-xs ${error ? 'border-destructive' : ''}`}
-        aria-describedby={error ? `${id}-error` : undefined}
-      />
-      {error && (
-        <p id={`${id}-error`} className="text-xs text-destructive">
-          {error}
-        </p>
-      )}
-    </div>
-  );
-}
 
 export function RollTopSackSettingsPanel({ inputs, errors, onChange }: Props) {
   function handleUnitsChange(next: UnitSystem) {
@@ -91,27 +57,7 @@ export function RollTopSackSettingsPanel({ inputs, errors, onChange }: Props) {
         />
       </div>
 
-      <div className="space-y-1">
-        <Label className="text-xs">Units</Label>
-        <div className="flex gap-2">
-          <Button
-            variant={inputs.units === 'mm' ? 'default' : 'outline'}
-            size="sm"
-            className="h-7 text-xs px-3"
-            onClick={() => handleUnitsChange('mm')}
-          >
-            mm
-          </Button>
-          <Button
-            variant={inputs.units === 'in' ? 'default' : 'outline'}
-            size="sm"
-            className="h-7 text-xs px-3"
-            onClick={() => handleUnitsChange('in')}
-          >
-            in
-          </Button>
-        </div>
-      </div>
+      <UnitToggle value={inputs.units} onChange={handleUnitsChange} />
     </div>
   );
 }

@@ -5,6 +5,33 @@ import {
   H_WEBBING_MM, H_CHEST_ADJUST_MM, H_SLOT_PITCH_MM, H_HYDRATION_CHANNELS, H_FRONT_PALS_ROWS,
   H_PAD_LENGTH_MM, H_PAD_WIDTH_MM, H_FOAM_MM, H_CROSS_STRAP_HEIGHT_MM, H_PAD_SPREAD_MM, H_DROP_LEG_MM,
 } from './defaults.js';
+import { sweepInputs, stripNulls, unitsOf, type GuardSpec } from '../../utils/inputGuards.js';
+
+/** Type/range guard run before the generator's own rules (hardening pass H1). */
+const GUARD_SPEC: GuardSpec = {
+  units: { kind: 'enum', allowed: ['mm', 'in'] },
+  mode: { kind: 'enum', allowed: ['pack_pair', 'h_harness'] },
+  pad_length: { kind: 'length' },
+  pad_width: { kind: 'length' },
+  foam_thickness: { kind: 'length', max: 5000 },
+  curve: { kind: 'enum', allowed: ['straight', 'j_curve', 's_curve'] },
+  architecture: { kind: 'enum', allowed: ['foam_sandwich_mesh', 'webbing_tacked_ends', 'webbing_through_quilted', 'crushable_sleeve', 'none'] },
+  edge_finish: { kind: 'enum', allowed: ['bound', 'turned'] },
+  webbing_width: { kind: 'length', max: 5000 },
+  hardware: { kind: 'enum', allowed: ['ladderlock', 'side_release', 'tri_glide'] },
+  seam_allowance: { kind: 'length', max: 5000 },
+  torso_length: { kind: 'length' },
+  gusset_depth: { kind: 'length' },
+  tail_length: { kind: 'length' },
+  cross_strap_height: { kind: 'length' },
+  pad_spread: { kind: 'length' },
+  chest_adjust_range: { kind: 'length' },
+  slot_pitch: { kind: 'length' },
+  drop_leg_length: { kind: 'length' },
+  hydration_channels: { kind: 'count', max: 4 },
+  front_pals_rows: { kind: 'count', max: 12 },
+  routing_side: { kind: 'enum', allowed: ['left', 'right', 'both', 'none'] },
+};
 
 const IN = 25.4;
 
@@ -23,6 +50,7 @@ export function deriveTailLength(torsoMm: number, padLengthMm: number, gussetMm:
 }
 
 export function resolveInputs(inputs: PaddedStrapInputs): ResolvedInputs {
+  inputs = stripNulls(inputs);
   const units = inputs.units ?? DEFAULT_UNITS;
   const mode = inputs.mode ?? DEFAULT_MODE;
   const h = mode === 'h_harness';
@@ -75,6 +103,9 @@ export function resolveInputs(inputs: PaddedStrapInputs): ResolvedInputs {
 }
 
 export function validateInputs(inputs: PaddedStrapInputs): ValidationResult {
+  inputs = stripNulls(inputs);
+  const guard = sweepInputs(inputs, GUARD_SPEC, unitsOf(inputs, 'in'));
+  if (guard.length) return { ok: false, errors: guard };
   const errors: BuildPatternError[] = [];
   const r = resolveInputs(inputs);
   const pos = (field: keyof ResolvedInputs, label: string) => {

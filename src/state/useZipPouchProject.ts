@@ -3,7 +3,7 @@ import type { ZipPouchInputs } from '../generators/zip-pouch/types.js';
 import { makeProjectStorage } from '../storage/genericProjectStorage.js';
 import { isPlainObject } from '../utils/isPlainObject.js';
 
-const STORAGE_KEY = 'stitchsmith.zip-pouch.project';
+export const STORAGE_KEY = 'stitchsmith.zip-pouch.project';
 
 function isValidZipPouchProject(value: unknown): value is ZipPouchProject {
   if (typeof value !== 'object' || value === null) return false;
