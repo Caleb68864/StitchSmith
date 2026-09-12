@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest';
 import type { Piece } from '../../pattern-engine/graph/Piece.js';
-import { buildClothMesh, nearestVertex, createWorld, relax, seamResidual, maxStretch, maxPenetration, vertexPosition, foldedInitial, foldedCreaseRest } from '../index.js';
+import { buildClothMesh, nearestVertex, createWorld, relax, seamResidual, maxStretch, maxPenetration, vertexPosition, foldedInitial, foldedCreaseRest, solidDistance, torsoForm, shoulderPath, TORSO_MEDIUM, clothBounds } from '../index.js';
 import { buildFoldModel, defaultFoldAngles, regionAt } from '../../fold-engine/index.js';
 import { buildPattern } from '../../../generators/mag-pouch/buildPattern.js';
 
@@ -147,6 +147,7 @@ describe('folded-T mag pouch cloth', () => {
     const lidTip = { x: w / 2, y: h - sa - hook / 2 };                 // hook strip centre on the lid
     const vi = nearestVertex(mesh, lidTip), vj = nearestVertex(mesh, closureOnFace);
     world.seams.push({ i: vi, j: vj, rest: world.params.thickness, initial: Math.hypot(...([0, 1, 2].map((k) => world.pos[3 * vj + k] - world.pos[3 * vi + k]) as [number, number, number])) });
+    world.params.selfCollision = true;
     relax(world, 400);
     expect(maxPenetration(world)).toBeLessThan(world.params.thickness);
     expect(maxStretch(world)).toBeLessThan(0.12);
@@ -164,6 +165,12 @@ describe('folded-T mag pouch cloth', () => {
     // The hook has met the loop.
     const loop = vertexPosition(world, 0, nearestVertex(mesh, closureOnFace));
     expect(Math.hypot(tip[0] - loop[0], tip[1] - loop[1], tip[2] - loop[2])).toBeLessThan(6);
+    // Self-collision: the lid lies ON the face down its whole overlap, never inside it.
+    for (const dy of [0.5 * IN, 1 * IN, 1.5 * IN, 2 * IN]) {
+      const onLid = vertexPosition(world, 0, nearestVertex(mesh, { x: w / 2, y: h - sa - dy }));
+      const onFace = vertexPosition(world, 0, nearestVertex(mesh, { x: w / 2, y: sa + 2.5 * IN - dy }));
+      expect(onLid[2]).toBeGreaterThan(onFace[2] - 0.3);
+    }
   });
 });
 
@@ -220,5 +227,93 @@ describe('pleated card cloth — pucker emerges', () => {
     expect(mid - div).toBeGreaterThan(8);
     // And the face clears the magazine in the first cell.
     expect(mid).toBeGreaterThan(magD);
+    // Vault (mag-pouch-4pack-single-dimensions.md): the 4 7/8" face over a 3" span wraps a mag
+    // ~2 1/2" wide with ~15/16" of pucker each side, so the face at mid-cell stands about one
+    // magazine thickness off the card — not a loose bag twice that deep.
+    expect(mid).toBeLessThan(magD + 15);
+    // The back stays the card's finished width (12" ÷ 4 = 3" per cell — here 2 cells = 6").
+    const backW = clothBounds(world, 0, (_id, f) => f.x >= backHem && f.x <= backHem + cells * span).size[0];
+    expect(Math.abs(backW - cells * span)).toBeLessThan(world.params.spacing);
+  });
+});
+
+describe('body solids', () => {
+  it('capsule and rounded box report signed distance and an outward normal', () => {
+    const cap = { kind: 'capsule' as const, a: [0, 0, 0] as [number, number, number], b: [100, 0, 0] as [number, number, number], radius: 10 };
+    expect(solidDistance(cap, [50, 25, 0]).dist).toBeCloseTo(15, 6);
+    expect(solidDistance(cap, [50, 25, 0]).normal).toEqual([0, 1, 0]);
+    expect(solidDistance(cap, [50, 5, 0]).dist).toBeCloseTo(-5, 6);
+    expect(solidDistance(cap, [130, 0, 0]).dist).toBeCloseTo(20, 6);
+    const rb = { kind: 'rounded_box' as const, center: [0, 0, 0] as [number, number, number], half: [50, 30, 20] as [number, number, number], radius: 8 };
+    expect(solidDistance(rb, [0, 45, 0]).dist).toBeCloseTo(15, 6);
+    expect(solidDistance(rb, [0, 45, 0]).normal).toEqual([0, 1, 0]);
+    expect(solidDistance(rb, [0, 0, 0]).dist).toBeLessThan(0);
+    // Corner: rounded, so the distance along the diagonal is more than the face distance.
+    const corner = solidDistance(rb, [60, 40, 30]);
+    expect(corner.dist).toBeCloseTo(Math.hypot(60 - 42, 40 - 22, 30 - 12) - 8, 6);
+  });
+
+  it('a torso form has a chest, a shoulder line and a neck; a strap crests the shoulder at its top', () => {
+    const f = torsoForm(TORSO_MEDIUM);
+    expect(f.solids.map((s) => s.kind)).toEqual(['rounded_box', 'capsule', 'capsule']);
+    expect(f.topY).toBeCloseTo(TORSO_MEDIUM.torsoLength, 6);
+    expect(f.shoulderTop.right[0]).toBeGreaterThan(0);
+    expect(f.shoulderTop.left[0]).toBeCloseTo(-f.shoulderTop.right[0], 6);
+    // The shoulder crest is on the surface of the shoulder capsule.
+    const cap = f.solids[1];
+    expect(cap.kind).toBe('capsule');
+    if (cap.kind === 'capsule') expect(solidDistance(cap, f.shoulderTop.right).dist).toBeCloseTo(0, 6);
+    // A shoulder path runs from the back, over the top, to the front.
+    const path = shoulderPath(TORSO_MEDIUM, 'right', f.topY - 60);
+    expect(path[0][2]).toBeLessThan(0);
+    expect(path[path.length - 1][2]).toBeGreaterThan(0);
+    expect(Math.max(...path.map((p) => p[1]))).toBeGreaterThan(f.topY);
+    expect(path.every((p) => Math.abs(p[0] - f.shoulderTop.right[0]) < 1e-9)).toBe(true);
+  });
+
+  it('cloth pushed against a capsule settles outside it', () => {
+    const piece = rect('sheet', 100, 100);
+    const mesh = buildClothMesh(piece, { spacing: 10 })!;
+    const cap = { kind: 'capsule' as const, a: [-200, 0, 0] as [number, number, number], b: [200, 0, 0] as [number, number, number], radius: 30 };
+    // Sheet starts flat through the capsule's axis (z = 0, y from 0 to −100 → straddles y = 0).
+    const world = createWorld({ meshes: [mesh], initial: (_m, _v, f) => [f.x - 50, -f.y + 50, 0], solids: [cap], params: { spacing: 10 } });
+    expect(maxPenetration(world)).toBeGreaterThan(20);
+    relax(world, 200);
+    expect(maxPenetration(world)).toBeLessThan(world.params.thickness);
+    expect(maxStretch(world)).toBeLessThan(0.15);
+  });
+});
+
+describe('self-collision', () => {
+  it('two sheets started almost coincident settle one thickness apart; without it they stay merged', () => {
+    const a = rect('a', 80, 80);
+    const b = rect('b', 80, 80);
+    const build = (selfCollision: boolean) => createWorld({
+      meshes: [buildClothMesh(a, { spacing: 10 })!, buildClothMesh(b, { spacing: 10 })!],
+      initial: (mi, _v, f) => [f.x, -f.y, mi === 0 ? 0 : 0.2],
+      // Hold sheet a; sheet b is free.
+      pinned: (mi) => mi === 0,
+      params: { spacing: 10, selfCollision },
+    });
+    const off = build(false);
+    relax(off, 60);
+    expect(clothBounds(off, 1).lo[2]).toBeLessThan(0.5);
+    const on = build(true);
+    relax(on, 60);
+    const zb = clothBounds(on, 1);
+    expect(zb.lo[2]).toBeGreaterThan(on.params.thickness * 0.8);
+    expect(maxStretch(on)).toBeLessThan(0.02);
+  });
+
+  it('reports assembly and per-piece bounds', () => {
+    const a = rect('a', 80, 40);
+    const world = createWorld({ meshes: [buildClothMesh(a, { spacing: 10 })!], initial: (_m, _v, f) => [f.x + 5, -f.y, 3], params: { spacing: 10 } });
+    const b = clothBounds(world);
+    expect(b.lo).toEqual([5, -40, 3]);
+    expect(b.size).toEqual([80, 40, 0]);
+    const hi = clothBounds(world, 0).hi;
+    expect(hi[0]).toBeCloseTo(85, 9); expect(hi[1]).toBeCloseTo(0, 9); expect(hi[2]).toBeCloseTo(3, 9);
+    // Restricting to an interior region excludes the outer 10 mm.
+    expect(clothBounds(world, 0, (_id, f) => f.x >= 10 && f.x <= 70).size[0]).toBe(60);
   });
 });

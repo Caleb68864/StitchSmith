@@ -26,6 +26,65 @@ export interface BoxSolid {
   half: Vec3;
 }
 
+/** Line segment a–b swept by a sphere: a limb, a neck, a shoulder line. */
+export interface CapsuleSolid {
+  kind: 'capsule';
+  a: Vec3;
+  b: Vec3;
+  radius: number;
+}
+
+/** Box with rounded edges (radius r): a chest or a foam block. `half` is the outer half-extent. */
+export interface RoundedBoxSolid {
+  kind: 'rounded_box';
+  center: Vec3;
+  half: Vec3;
+  radius: number;
+}
+
+export type Solid = BoxSolid | CapsuleSolid | RoundedBoxSolid;
+
+/**
+ * Signed distance and outward normal from a point to a solid's surface.
+ * Boxes are handled by the continuous face push-out in `collide`; this covers
+ * the smooth shapes a body is made of.
+ */
+export function solidDistance(s: CapsuleSolid | RoundedBoxSolid, p: Vec3): { dist: number; normal: Vec3 } {
+  if (s.kind === 'capsule') {
+    const ab: Vec3 = [s.b[0] - s.a[0], s.b[1] - s.a[1], s.b[2] - s.a[2]];
+    const ap: Vec3 = [p[0] - s.a[0], p[1] - s.a[1], p[2] - s.a[2]];
+    const l2 = ab[0] * ab[0] + ab[1] * ab[1] + ab[2] * ab[2];
+    const t = l2 > 0 ? Math.max(0, Math.min(1, (ap[0] * ab[0] + ap[1] * ab[1] + ap[2] * ab[2]) / l2)) : 0;
+    const q: Vec3 = [p[0] - (s.a[0] + ab[0] * t), p[1] - (s.a[1] + ab[1] * t), p[2] - (s.a[2] + ab[2] * t)];
+    const d = Math.hypot(q[0], q[1], q[2]);
+    const normal: Vec3 = d > 1e-9 ? [q[0] / d, q[1] / d, q[2] / d] : [0, 0, 1];
+    return { dist: d - s.radius, normal };
+  }
+  // Rounded box: distance to the inner box shrunk by r, minus r.
+  const q: Vec3 = [
+    Math.abs(p[0] - s.center[0]) - (s.half[0] - s.radius),
+    Math.abs(p[1] - s.center[1]) - (s.half[1] - s.radius),
+    Math.abs(p[2] - s.center[2]) - (s.half[2] - s.radius),
+  ];
+  const o: Vec3 = [Math.max(q[0], 0), Math.max(q[1], 0), Math.max(q[2], 0)];
+  const outside = Math.hypot(o[0], o[1], o[2]);
+  const inside = Math.min(Math.max(q[0], q[1], q[2]), 0);
+  const dist = outside + inside - s.radius;
+  let normal: Vec3;
+  if (outside > 1e-9) {
+    normal = [o[0] / outside, o[1] / outside, o[2] / outside];
+  } else {
+    // Inside the inner box: push out through the nearest face.
+    const axis = q[0] >= q[1] && q[0] >= q[2] ? 0 : q[1] >= q[2] ? 1 : 2;
+    normal = [0, 0, 0];
+    normal[axis] = 1;
+  }
+  const sx = Math.sign(p[0] - s.center[0]) || 1;
+  const sy = Math.sign(p[1] - s.center[1]) || 1;
+  const sz = Math.sign(p[2] - s.center[2]) || 1;
+  return { dist, normal: [normal[0] * sx, normal[1] * sy, normal[2] * sz] };
+}
+
 export interface SeamSide {
   pieceId: string;
   /** Straight stitch line in that piece's flat coordinates (ignored when `points` is given). */
@@ -97,6 +156,14 @@ export interface ClothParams {
    * the fabric follows at the stretch constraints' pace. Default spacing / 4.
    */
   maxSeamCorrection?: number;
+  /**
+   * Cloth-to-cloth collision: vertices are kept one thickness off every triangle
+   * they are not part of (own mesh and others), so a lid rests on a face and a
+   * folded double layer stays two layers. Vertex–triangle, spatial-hashed, run
+   * every `selfCollisionEvery` steps.
+   */
+  selfCollision: boolean;
+  selfCollisionEvery: number;
 }
 
 export const DEFAULT_CLOTH_PARAMS: ClothParams = {
@@ -109,6 +176,8 @@ export const DEFAULT_CLOTH_PARAMS: ClothParams = {
   gravity: [0, 0, 0],
   thickness: 1.2,
   seamRampSteps: 120,
+  selfCollision: false,
+  selfCollisionEvery: 2,
 };
 
 interface DistanceConstraint {
@@ -130,8 +199,12 @@ export interface ClothWorld {
   stretch: DistanceConstraint[];
   bend: DistanceConstraint[];
   seams: DistanceConstraint[];
-  solids: BoxSolid[];
+  solids: Solid[];
   params: ClothParams;
+  /** Global triangle vertex indices, 3 per triangle (all meshes). */
+  tris: Uint32Array;
+  /** For each global vertex, its 1-ring neighbours (global indices) — excluded from self-collision. */
+  ring: Uint32Array[];
   steps: number;
 }
 
@@ -140,7 +213,7 @@ export interface CreateWorldOptions {
   /** Initial 3D position for (mesh index, vertex index, flat point) — normally from the rigid fold. */
   initial: (meshIndex: number, vertex: number, flat: Point) => Vec3;
   seams?: SeamSpec[];
-  solids?: BoxSolid[];
+  solids?: Solid[];
   /** Vertices to pin: (mesh index, vertex index) → true. */
   pinned?: (meshIndex: number, vertex: number, flat: Point) => boolean;
   /**
@@ -233,7 +306,136 @@ export function createWorld(opts: CreateWorldOptions): ClothWorld {
     }
   }
 
-  return { meshes, base, n, pos, prev, invMass, stretch, bend, seams, solids: opts.solids ?? [], params, steps: 0 };
+  const triList: number[] = [];
+  const ringSets: Set<number>[] = Array.from({ length: n }, () => new Set<number>());
+  meshes.forEach((m, mi) => {
+    for (let t = 0; t < m.triangles.length; t += 3) triList.push(base[mi] + m.triangles[t], base[mi] + m.triangles[t + 1], base[mi] + m.triangles[t + 2]);
+    for (const [i, j] of m.edges) { ringSets[base[mi] + i].add(base[mi] + j); ringSets[base[mi] + j].add(base[mi] + i); }
+  });
+  const ring = ringSets.map((set) => Uint32Array.from(set));
+
+  return { meshes, base, n, pos, prev, invMass, stretch, bend, seams, solids: opts.solids ?? [], params, steps: 0, tris: Uint32Array.from(triList), ring };
+}
+
+/** Closest point on triangle (a, b, c) to p — Ericson, Real-Time Collision Detection 5.1.5. */
+function closestOnTriangle(p: Vec3, a: Vec3, b: Vec3, c: Vec3): Vec3 {
+  const ab: Vec3 = [b[0] - a[0], b[1] - a[1], b[2] - a[2]];
+  const ac: Vec3 = [c[0] - a[0], c[1] - a[1], c[2] - a[2]];
+  const ap: Vec3 = [p[0] - a[0], p[1] - a[1], p[2] - a[2]];
+  const d1 = ab[0] * ap[0] + ab[1] * ap[1] + ab[2] * ap[2];
+  const d2 = ac[0] * ap[0] + ac[1] * ap[1] + ac[2] * ap[2];
+  if (d1 <= 0 && d2 <= 0) return a;
+  const bp: Vec3 = [p[0] - b[0], p[1] - b[1], p[2] - b[2]];
+  const d3 = ab[0] * bp[0] + ab[1] * bp[1] + ab[2] * bp[2];
+  const d4 = ac[0] * bp[0] + ac[1] * bp[1] + ac[2] * bp[2];
+  if (d3 >= 0 && d4 <= d3) return b;
+  const vc = d1 * d4 - d3 * d2;
+  if (vc <= 0 && d1 >= 0 && d3 <= 0) { const v = d1 / (d1 - d3); return [a[0] + ab[0] * v, a[1] + ab[1] * v, a[2] + ab[2] * v]; }
+  const cp: Vec3 = [p[0] - c[0], p[1] - c[1], p[2] - c[2]];
+  const d5 = ab[0] * cp[0] + ab[1] * cp[1] + ab[2] * cp[2];
+  const d6 = ac[0] * cp[0] + ac[1] * cp[1] + ac[2] * cp[2];
+  if (d6 >= 0 && d5 <= d6) return c;
+  const vb = d5 * d2 - d1 * d6;
+  if (vb <= 0 && d2 >= 0 && d6 <= 0) { const w = d2 / (d2 - d6); return [a[0] + ac[0] * w, a[1] + ac[1] * w, a[2] + ac[2] * w]; }
+  const va = d3 * d6 - d5 * d4;
+  if (va <= 0 && d4 - d3 >= 0 && d5 - d6 >= 0) { const w = (d4 - d3) / (d4 - d3 + (d5 - d6)); return [b[0] + (c[0] - b[0]) * w, b[1] + (c[1] - b[1]) * w, b[2] + (c[2] - b[2]) * w]; }
+  const denom = 1 / (va + vb + vc);
+  const v = vb * denom;
+  const w = vc * denom;
+  return [a[0] + ab[0] * v + ac[0] * w, a[1] + ab[1] * v + ac[1] * w, a[2] + ab[2] * v + ac[2] * w];
+}
+
+/**
+ * Keep every vertex at least `margin` from every triangle it does not belong to
+ * (nor its 1-ring). Triangles are hashed by bounding box into cells of `cell`;
+ * each vertex checks its cell and the 26 around it.
+ */
+function selfCollide(world: ClothWorld, margin: number, cell: number): void {
+  const { pos, invMass, n, tris, ring } = world;
+  const hash = new Map<string, number[]>();
+  const key = (x: number, y: number, z: number) => `${x},${y},${z}`;
+  const triCount = tris.length / 3;
+  for (let t = 0; t < triCount; t++) {
+    const a = tris[3 * t], b = tris[3 * t + 1], c = tris[3 * t + 2];
+    let lo = [Infinity, Infinity, Infinity], hi = [-Infinity, -Infinity, -Infinity];
+    for (const v of [a, b, c]) for (let k = 0; k < 3; k++) { lo[k] = Math.min(lo[k], pos[3 * v + k]); hi[k] = Math.max(hi[k], pos[3 * v + k]); }
+    const c0 = lo.map((x) => Math.floor(x / cell)), c1 = hi.map((x) => Math.floor(x / cell));
+    for (let x = c0[0]; x <= c1[0]; x++) for (let y = c0[1]; y <= c1[1]; y++) for (let z = c0[2]; z <= c1[2]; z++) {
+      const k = key(x, y, z);
+      const list = hash.get(k);
+      if (list) list.push(t); else hash.set(k, [t]);
+    }
+  }
+  const m2 = margin * margin;
+  for (let g = 0; g < n; g++) {
+    const p: Vec3 = [pos[3 * g], pos[3 * g + 1], pos[3 * g + 2]];
+    const cx = Math.floor(p[0] / cell), cy = Math.floor(p[1] / cell), cz = Math.floor(p[2] / cell);
+    const list = hash.get(key(cx, cy, cz));
+    if (!list) continue;
+    const nb = ring[g];
+    for (const t of list) {
+      const a = tris[3 * t], b = tris[3 * t + 1], c = tris[3 * t + 2];
+      if (a === g || b === g || c === g) continue;
+      let skip = false;
+      for (let k = 0; k < nb.length; k++) if (nb[k] === a || nb[k] === b || nb[k] === c) { skip = true; break; }
+      if (skip) continue;
+      const pa: Vec3 = [pos[3 * a], pos[3 * a + 1], pos[3 * a + 2]];
+      const pb: Vec3 = [pos[3 * b], pos[3 * b + 1], pos[3 * b + 2]];
+      const pc: Vec3 = [pos[3 * c], pos[3 * c + 1], pos[3 * c + 2]];
+      const q = closestOnTriangle(p, pa, pb, pc);
+      const dx = p[0] - q[0], dy = p[1] - q[1], dz = p[2] - q[2];
+      const d2 = dx * dx + dy * dy + dz * dz;
+      if (d2 >= m2) continue;
+      const dist = Math.sqrt(d2);
+      let nx: number, ny: number, nz: number;
+      if (dist > 1e-6) { nx = dx / dist; ny = dy / dist; nz = dz / dist; }
+      else {
+        // On the plane: use the triangle normal, on the side the vertex came from.
+        const e1: Vec3 = [pb[0] - pa[0], pb[1] - pa[1], pb[2] - pa[2]], e2: Vec3 = [pc[0] - pa[0], pc[1] - pa[1], pc[2] - pa[2]];
+        nx = e1[1] * e2[2] - e1[2] * e2[1]; ny = e1[2] * e2[0] - e1[0] * e2[2]; nz = e1[0] * e2[1] - e1[1] * e2[0];
+        const nl = Math.hypot(nx, ny, nz) || 1; nx /= nl; ny /= nl; nz /= nl;
+        const side = (world.prev[3 * g] - q[0]) * nx + (world.prev[3 * g + 1] - q[1]) * ny + (world.prev[3 * g + 2] - q[2]) * nz;
+        if (side < 0) { nx = -nx; ny = -ny; nz = -nz; }
+      }
+      const pen = margin - dist;
+      const wv = invMass[g];
+      const wt = (invMass[a] + invMass[b] + invMass[c]) / 3;
+      const wsum = wv + wt;
+      if (wsum === 0) continue;
+      const sv = (pen * wv) / wsum;
+      const st = (pen * wt) / wsum / 3;
+      pos[3 * g] += nx * sv; pos[3 * g + 1] += ny * sv; pos[3 * g + 2] += nz * sv;
+      p[0] += nx * sv; p[1] += ny * sv; p[2] += nz * sv;
+      for (const v of [a, b, c]) {
+        if (invMass[v] === 0) continue;
+        pos[3 * v] -= nx * st; pos[3 * v + 1] -= ny * st; pos[3 * v + 2] -= nz * st;
+      }
+    }
+  }
+}
+
+/**
+ * Axis-aligned bounds of one mesh's particles, or of the whole assembly when
+ * `meshIndex` is omitted. `inside` restricts the measure to vertices whose flat
+ * point passes (e.g. inside the stitch lines, so seam allowances and hems do
+ * not count toward a finished size).
+ */
+export function clothBounds(world: ClothWorld, meshIndex?: number, inside?: (pieceId: string, flat: Point) => boolean): { lo: Vec3; hi: Vec3; size: Vec3 } {
+  const lo: Vec3 = [Infinity, Infinity, Infinity];
+  const hi: Vec3 = [-Infinity, -Infinity, -Infinity];
+  world.meshes.forEach((m, mi) => {
+    if (meshIndex !== undefined && mi !== meshIndex) return;
+    for (let v = 0; v < m.vertexCount; v++) {
+      if (inside && !inside(m.pieceId, { x: m.flat[2 * v], y: m.flat[2 * v + 1] })) continue;
+      const g = world.base[mi] + v;
+      for (let k = 0; k < 3; k++) {
+        const c = world.pos[3 * g + k];
+        if (c < lo[k]) lo[k] = c;
+        if (c > hi[k]) hi[k] = c;
+      }
+    }
+  });
+  return { lo, hi, size: [hi[0] - lo[0], hi[1] - lo[1], hi[2] - lo[2]] };
 }
 
 function project(pos: Float64Array, invMass: Float64Array, c: DistanceConstraint, k: number, maxMove = Infinity): void {
@@ -259,8 +461,20 @@ function project(pos: Float64Array, invMass: Float64Array, c: DistanceConstraint
  * pushed back out through THAT face, so a seam cannot drag cloth through the
  * object — the lid slides over the magazine top instead of tunnelling.
  */
-function collide(pos: Float64Array, prev: Float64Array, invMass: Float64Array, n: number, solids: BoxSolid[], margin: number): void {
+function collide(pos: Float64Array, prev: Float64Array, invMass: Float64Array, n: number, solids: Solid[], margin: number): void {
   for (const s of solids) {
+    if (s.kind !== 'box') {
+      // Smooth solids: push out along the surface normal by the penetration.
+      for (let g = 0; g < n; g++) {
+        if (invMass[g] === 0) continue;
+        const p: Vec3 = [pos[3 * g], pos[3 * g + 1], pos[3 * g + 2]];
+        const { dist, normal } = solidDistance(s, p);
+        const pen = margin - dist;
+        if (pen <= 0) continue;
+        pos[3 * g] += normal[0] * pen; pos[3 * g + 1] += normal[1] * pen; pos[3 * g + 2] += normal[2] * pen;
+      }
+      continue;
+    }
     const h = [s.half[0] + margin, s.half[1] + margin, s.half[2] + margin];
     for (let g = 0; g < n; g++) {
       if (invMass[g] === 0) continue;
@@ -309,6 +523,10 @@ export function step(world: ClothWorld): void {
     }
     collide(pos, prev, invMass, n, world.solids, margin);
   }
+  if (params.selfCollision && world.steps % Math.max(1, params.selfCollisionEvery) === 0) {
+    selfCollide(world, params.thickness, params.spacing);
+    collide(pos, prev, invMass, n, world.solids, margin);
+  }
   world.steps++;
 }
 
@@ -329,17 +547,41 @@ export function seamResidual(world: ClothWorld): { max: number; mean: number } {
 }
 
 /**
- * Largest relative edge-length error, e.g. 0.02 = 2 % stretch. The error is
+ * Largest relative edge elongation, e.g. 0.02 = 2 % stretch. The error is
  * taken over at least half a cell: the mesher leaves sliver edges where an arc
  * or a diagonal clips a grid cell, and a millimetre on a sliver is not cloth
  * stretched threefold.
  */
-export function maxStretch(world: ClothWorld): number {
+export function maxStretch(world: ClothWorld, inside?: (pieceId: string, flat: Point) => boolean): number {
+  let max = 0;
+  const floor = world.params.spacing / 2;
+  const keep = inside ? insideMask(world, inside) : null;
+  for (const c of world.stretch) {
+    if (c.rest < 1e-9) continue;
+    if (keep && !(keep[c.i] && keep[c.j])) continue;
+    // Elongation only: fabric cannot stretch, but it buckles freely, and on a coarse mesh a
+    // wrinkle shorter than two cells shows up as a compressed edge, which is slack, not a fault.
+    max = Math.max(max, (d3(world.pos, c.i, c.j) - c.rest) / Math.max(c.rest, floor));
+  }
+  return max;
+}
+
+/** Vertices whose flat point passes `inside` (e.g. within the stitch lines, leaving out allowance flaps). */
+function insideMask(world: ClothWorld, inside: (pieceId: string, flat: Point) => boolean): Uint8Array {
+  const mask = new Uint8Array(world.n);
+  world.meshes.forEach((m, mi) => {
+    for (let v = 0; v < m.vertexCount; v++) if (inside(m.pieceId, { x: m.flat[2 * v], y: m.flat[2 * v + 1] })) mask[world.base[mi] + v] = 1;
+  });
+  return mask;
+}
+
+/** Largest relative edge compression (wrinkling), for information; see `maxStretch`. */
+export function maxCompression(world: ClothWorld): number {
   let max = 0;
   const floor = world.params.spacing / 2;
   for (const c of world.stretch) {
     if (c.rest < 1e-9) continue;
-    max = Math.max(max, Math.abs(d3(world.pos, c.i, c.j) - c.rest) / Math.max(c.rest, floor));
+    max = Math.max(max, (c.rest - d3(world.pos, c.i, c.j)) / Math.max(c.rest, floor));
   }
   return max;
 }
@@ -348,6 +590,13 @@ export function maxStretch(world: ClothWorld): number {
 export function maxPenetration(world: ClothWorld): number {
   let max = 0;
   for (const s of world.solids) {
+    if (s.kind !== 'box') {
+      for (let g = 0; g < world.n; g++) {
+        const pen = -solidDistance(s, [world.pos[3 * g], world.pos[3 * g + 1], world.pos[3 * g + 2]]).dist;
+        if (pen > max) max = pen;
+      }
+      continue;
+    }
     for (let g = 0; g < world.n; g++) {
       const dx = Math.abs(world.pos[3 * g] - s.center[0]);
       const dy = Math.abs(world.pos[3 * g + 1] - s.center[1]);

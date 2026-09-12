@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import type { UsePaddedStrapProjectReturn } from '../../state/usePaddedStrapProject.js';
-import { validateInputs, buildPattern } from '../../generators/padded-strap/index.js';
+import { validateInputs, buildPattern, resolveInputs } from '../../generators/padded-strap/index.js';
+import { paddedStrapAssembly } from '../../generators/padded-strap/assembly3d.js';
 import { PaddedStrapSettingsPanel } from './PaddedStrapSettingsPanel.js';
 import { PatternPreview } from './PatternPreview.js';
 import { ExportPanel } from './ExportPanel.js';
@@ -53,7 +54,16 @@ export function PaddedStrapPage({ project, updateInputs, resetProject, importPro
   }, [project.inputs, hasErrors]);
   const steps = built?.steps ?? [];
   const warnings = useMemo<UiWarning[]>(() => (built?.warnings ?? []).map((w) => ({ id: w.id, severity: w.severity, message: w.message, field: w.field })), [built]);
-  const pattern3d = useMemo<Pattern | null>(() => (built ? { id: 'padded-strap', name: 'Padded Strap', pieces: built.pieces } : null), [built]);
+  // 3D: pads draped over a medium torso, ends held; the H cross strap seamed across the back.
+  const assembly = useMemo(() => {
+    if (!built) return null;
+    try {
+      return paddedStrapAssembly(built.pieces, resolveInputs(project.inputs));
+    } catch {
+      return null;
+    }
+  }, [built, project.inputs]);
+  const pattern3d = useMemo<Pattern | null>(() => (built ? { id: 'padded-strap', name: 'Padded Strap', pieces: assembly?.pieces ?? built.pieces } : null), [built, assembly]);
   const isH = (project.inputs.mode ?? 'pack_pair') === 'h_harness';
 
   function handleReset() {
@@ -81,7 +91,13 @@ export function PaddedStrapPage({ project, updateInputs, resetProject, importPro
       preview={
         <div className="space-y-3">
           <PatternPreview inputs={project.inputs} hasErrors={hasErrors} />
-          {pattern3d && <FoldPreview3D pattern={pattern3d} />}
+          {pattern3d && <FoldPreview3D pattern={pattern3d} object={assembly?.object} placements={assembly?.placements} pins={assembly?.pins} seams={assembly?.seams} />}
+          {assembly && assembly.report.length > 0 && (
+            <div className="text-xs rounded border border-border p-2 space-y-1" data-testid="torso-fit">
+              <div className="text-muted-foreground">Fit on a medium torso (360 × 230 mm chest, 480 mm torso, 440 mm shoulders)</div>
+              {assembly.report.map((line, i) => <div key={i} className={assembly.fit && !assembly.fit.ok ? 'text-destructive' : ''}>{line}</div>)}
+            </div>
+          )}
         </div>
       }
       sidebar={

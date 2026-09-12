@@ -120,6 +120,18 @@ numbers. Rules already encoded, with the note that justifies each:
   and the cloth test share it.
 - A zipper gusset strip set between panels takes its width from those panels:
   the assembled front must equal the back panel's width.
+- Body forms: `torsoForm` / `shoulderPath` in the cloth engine give a rounded
+  chest, shoulder line and neck; a page passes `object.shape: 'torso'` and
+  drapes pads along a shoulder path (`PiecePlacement.drape`) with their ends
+  held (`FoldPreview3D.pins`). Put the assembly in the generator's
+  `assembly3d.ts` and report fit findings in words (the padded strap's cross
+  strap range check is the model).
+- Cloth-to-cloth collision is on in the viewer and the pattern tests; layers
+  stay one thickness apart. `maxStretch` counts elongation only (a coarse
+  mesh shows wrinkles as compressed edges) and takes an `inside` filter so
+  seam-allowance flaps do not count; `clothBounds` measures a finished
+  envelope the same way. Unfilled cloth pillows: a boxed pouch measures
+  between its finished length and its seam-to-seam width, and the tests say so.
 
 ## Engine usage
 

@@ -31,7 +31,15 @@ export interface ClothMesh {
 }
 
 function refine(values: number[], spacing: number): number[] {
-  const sorted = [...new Set(values.map((v) => Math.round(v * 1000) / 1000))].sort((a, b) => a - b);
+  const raw = [...new Set(values.map((v) => Math.round(v * 1000) / 1000))].sort((a, b) => a - b);
+  // Grid lines closer than a quarter cell make sliver triangles that bend and stretch badly;
+  // merge them (a seam endpoint moves under a quarter cell, which nearestVertex absorbs).
+  const sorted: number[] = [];
+  for (const v of raw) {
+    if (sorted.length && v - sorted[sorted.length - 1] < spacing * 0.25 && sorted.length > 1) continue;
+    if (sorted.length === 1 && v - sorted[0] < spacing * 0.25) { sorted.push(v); continue; }
+    sorted.push(v);
+  }
   const out: number[] = [];
   for (let i = 0; i < sorted.length; i++) {
     out.push(sorted[i]);

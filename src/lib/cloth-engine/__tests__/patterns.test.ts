@@ -6,8 +6,11 @@
  */
 import { describe, it, expect } from 'vitest';
 import type { Piece } from '../../pattern-engine/graph/Piece.js';
-import { buildClothMesh, nearestVertex, createWorld, relax, seamResidual, maxStretch, maxPenetration, vertexPosition, foldedInitial, foldedCreaseRest, type SeamSpec } from '../index.js';
-import { buildFoldModel, defaultFoldAngles, regionAt, onAnyFold, makePlacer, mirrorPieceX, type PlacedEntry, type PiecePlacement } from '../../fold-engine/index.js';
+import { buildClothMesh, nearestVertex, createWorld, relax, seamResidual, maxStretch, maxPenetration, vertexPosition, foldedInitial, foldedCreaseRest, torsoForm, clothBounds, type SeamSpec, type Solid, type Vec3 } from '../index.js';
+import { buildFoldModel, defaultFoldAngles, regionAt, onAnyFold, makePlacer, mirrorPieceX, drapePoint, type PlacedEntry, type PiecePlacement } from '../../fold-engine/index.js';
+import { buildPattern as buildStrap, resolveInputs as resolveStrap } from '../../../generators/padded-strap/index.js';
+import { paddedStrapAssembly, PAD_LEFT_ID } from '../../../generators/padded-strap/assembly3d.js';
+import { PAD_PIECE_ID, CROSS_STRAP_PIECE_ID } from '../../../generators/padded-strap/buildPattern.js';
 import type { Point } from '../../pattern-engine/graph/Point.js';
 import { buildPattern as buildTriZip } from '../../../generators/tri-zip-backpack/index.js';
 import { resolveInputs as resolveTriZip } from '../../../generators/tri-zip-backpack/inputs.js';
@@ -25,19 +28,23 @@ import { buildPattern as buildRoll } from '../../../generators/roll-top-sack/ind
 
 interface AssemblyObject {
   width: number; depth: number; height: number; pin?: 'root' | 'footprint';
-  base: { pieceId: string; point: Point; direction: Point };
+  base?: { pieceId: string; point: Point; direction: Point };
+  shape?: 'box' | 'torso';
+  torso?: { shoulderWidth: number; neckRadius: number };
+  at?: Vec3;
 }
+type Pin = { pieceId: string; point: Point; radius: number };
 
 /**
  * The viewer's assembly, without the viewer: fold each piece, place it (rotation,
  * offsets, riding on a host region), mesh it, seam it, and stand the object's box
  * on the host. Mirrors FoldViewer's simulate mode so a page and its test agree.
  */
-function assemble(pieces: Piece[], placements: Record<string, PiecePlacement>, seams: SeamSpec[], object: AssemblyObject, spacing: number) {
+function assemble(pieces: Piece[], placements: Record<string, PiecePlacement>, seams: SeamSpec[], object: AssemblyObject, spacing: number, pins: Pin[] = []) {
   const entries: (PlacedEntry & { piece: Piece })[] = pieces.map((piece) => {
     const pl = placements[piece.id];
     let rootPoint = pl?.rootPoint;
-    if (!rootPoint && object.base.pieceId === piece.id) rootPoint = { x: object.base.point.x + object.base.direction.x, y: object.base.point.y + object.base.direction.y };
+    if (!rootPoint && object.base && object.base.pieceId === piece.id) rootPoint = { x: object.base.point.x + object.base.direction.x, y: object.base.point.y + object.base.direction.y };
     const model = buildFoldModel(piece, { rootPoint })!;
     return { piece, model, offsetX: pl?.dx ?? 0, offsetY: pl?.dy ?? 0, offsetZ: pl?.dz ?? 0, placement: pl };
   });
@@ -48,31 +55,42 @@ function assemble(pieces: Piece[], placements: Record<string, PiecePlacement>, s
     extraX: seams.flatMap((sm) => [sm.a, sm.b].filter((x) => x.pieceId === e.piece.id).flatMap((x) => [x.from.x, x.to.x])),
     extraY: seams.flatMap((sm) => [sm.a, sm.b].filter((x) => x.pieceId === e.piece.id).flatMap((x) => [x.from.y, x.to.y])),
   })!);
-  const inits = entries.map((e) => foldedInitial({ model: e.model, angles: anglesOf(e), transform: placer(e) }));
-  const creases = entries.map((e) => foldedCreaseRest({ model: e.model, angles: anglesOf(e) }));
-  const host = entries.find((e) => e.piece.id === object.base.pieceId)!;
-  const b = object.base;
-  const dir = [b.direction.x, -b.direction.y] as const;
-  const centre: [number, number, number] = [
-    b.point.x + host.offsetX + dir[0] * (object.height / 2 + 1.5),
-    -b.point.y - host.offsetY + dir[1] * (object.height / 2 + 1.5),
-    host.offsetZ + object.depth / 2 + 0.6,
-  ];
-  const under = (f: Point) => {
-    const rx = f.x - b.point.x, ry = f.y - b.point.y;
-    const along = rx * b.direction.x + ry * b.direction.y;
-    const across = Math.abs(-rx * b.direction.y + ry * b.direction.x);
-    return along > spacing - 2 && along < object.height - spacing + 2 && across < object.width / 2 - spacing + 2;
-  };
+  const inits = entries.map((e) => {
+    const drape = e.placement?.drape;
+    return foldedInitial({ model: e.model, angles: anglesOf(e), transform: placer(e), drape: drape ? (f) => drapePoint(drape, f) : undefined });
+  });
+  const creases = entries.map((e) => (e.placement?.drape ? null : foldedCreaseRest({ model: e.model, angles: anglesOf(e) })));
+  let solids: Solid[];
+  let pinnedHost: (mi: number, f: Point) => boolean = () => false;
+  if (object.shape === 'torso') {
+    solids = torsoForm({ chestWidth: object.width, chestDepth: object.depth, torsoLength: object.height, shoulderWidth: object.torso?.shoulderWidth ?? object.width * 1.2, neckRadius: object.torso?.neckRadius ?? 65 }, object.at ?? [0, 0, 0]).solids;
+  } else {
+    const b = object.base!;
+    const host = entries.find((e) => e.piece.id === b.pieceId)!;
+    const dir = [b.direction.x, -b.direction.y] as const;
+    const centre: [number, number, number] = [
+      b.point.x + host.offsetX + dir[0] * (object.height / 2 + 1.5),
+      -b.point.y - host.offsetY + dir[1] * (object.height / 2 + 1.5),
+      host.offsetZ + object.depth / 2 + 0.6,
+    ];
+    const under = (f: Point) => {
+      const rx = f.x - b.point.x, ry = f.y - b.point.y;
+      const along = rx * b.direction.x + ry * b.direction.y;
+      const across = Math.abs(-rx * b.direction.y + ry * b.direction.x);
+      return along > spacing - 2 && along < object.height - spacing + 2 && across < object.width / 2 - spacing + 2;
+    };
+    solids = [{ kind: 'box', center: centre, half: [object.width / 2, object.height / 2, object.depth / 2] }];
+    pinnedHost = (mi, f) => pins.length === 0 && entries[mi].piece.id === b.pieceId && regionAt(entries[mi].model, f) === entries[mi].model.root
+      && !onAnyFold(entries[mi].model, f, 1.5) && (object.pin !== 'footprint' || under(f));
+  }
   const world = createWorld({
     meshes,
     initial: (mi, _v, f) => inits[mi](f),
-    bendRest: (mi, k, l, i, j) => creases[mi](k, l, i, j),
+    bendRest: (mi, k, l, i, j) => { const c = creases[mi]; return c ? c(k, l, i, j) : Math.hypot(l.x - k.x, l.y - k.y); },
     seams,
-    solids: [{ kind: 'box', center: centre, half: [object.width / 2, object.height / 2, object.depth / 2] }],
-    pinned: (mi, _v, f) => entries[mi].piece.id === object.base.pieceId && regionAt(entries[mi].model, f) === entries[mi].model.root
-      && !onAnyFold(entries[mi].model, f, 1.5) && (object.pin !== 'footprint' || under(f)),
-    params: { spacing },
+    solids,
+    pinned: (mi, _v, f) => pins.some((p) => p.pieceId === entries[mi].piece.id && Math.hypot(f.x - p.point.x, f.y - p.point.y) <= p.radius) || pinnedHost(mi, f),
+    params: { spacing, selfCollision: true },
   });
   const ids = entries.map((e) => e.piece.id);
   const bounds = (id: string) => {
@@ -125,9 +143,10 @@ function twoPanelBag(opts: {
     // too little fabric to reach the seams — exactly the fault the first run showed.
     pinned: (mi, _v, f) => mi === 1 && (opts.pinBack ?? true) && regionAt(bm, f) === bm.root && !onAnyFold(bm, f, 1.5)
       && f.x > side.left + depth / 2 + 6 && f.x < side.right - depth / 2 - 6 && f.y > side.top + 1 && f.y < side.bottom - depth / 2 - 6,
-    params: { spacing: 8 },
+    params: { spacing: 8, selfCollision: true },
   });
-  return { world, fMesh, bMesh, dz };
+  const inside = (_id: string, f: Point) => f.x >= side.left && f.x <= side.right && f.y >= side.top && f.y <= side.bottom;
+  return { world, fMesh, bMesh, dz, inside };
 }
 
 describe('zip pouch (boxed) cloth', () => {
@@ -149,13 +168,14 @@ describe('zip pouch (boxed) cloth', () => {
     expect(stitch.edges.some((e) => e.start.x === sa && e.end.x === sa)).toBe(true);
     expect(stitch.edges.some((e) => e.start.y === H - sa && e.end.y === H - sa)).toBe(true);
     const depth = res.finished_depth;
-    const { world, fMesh, dz } = twoPanelBag({
+    const { world, fMesh, dz, inside } = twoPanelBag({
       front, back, depth, side,
       box: { cx: (side.left + side.right) / 2, halfW: res.finished_length / 2, halfH: res.finished_width / 2, baseY: side.bottom - depth / 2 },
     });
     relax(world, 400);
     expect(seamResidual(world).mean).toBeLessThan(3);
-    expect(maxStretch(world)).toBeLessThan(0.12);
+    // Inside the stitch lines; the allowance flaps outside them crumple at the corners (they are clipped in construction).
+    expect(maxStretch(world, inside)).toBeLessThan(0.12);
     expect(maxPenetration(world)).toBeLessThan(world.params.thickness);
     // The front face lies just outside the contents; the bottom seam has moved to mid-depth (boxed corner).
     const faceMid = vertexPosition(world, 0, nearestVertex(fMesh, { x: (side.left + side.right) / 2, y: side.bottom - depth / 2 - res.finished_width / 2 }));
@@ -164,6 +184,18 @@ describe('zip pouch (boxed) cloth', () => {
     const bottomMid = vertexPosition(world, 0, nearestVertex(fMesh, { x: (side.left + side.right) / 2, y: side.bottom }));
     expect(bottomMid[2]).toBeLessThan(dz / 2 + 12);
     expect(bottomMid[2]).toBeGreaterThan(dz - 5);
+    // Finished envelope of the relaxed pouch, measured inside the stitch lines. Unfilled cloth
+    // pillows, so the width lies between the finished length and the seam-to-seam width
+    // (finished length + depth); the depth is the block's; the height is the finished width
+    // plus up to half a depth where the base has not fully squared.
+    const size = clothBounds(world, undefined, inside).size;
+    expect(size[0]).toBeGreaterThan(res.finished_length - 4);
+    expect(size[0]).toBeLessThan(res.finished_length + res.finished_depth + 4);
+    // Depth pillows by about a third of a depth on an unfilled pouch.
+    expect(size[2]).toBeGreaterThan(res.finished_depth - 2);
+    expect(size[2]).toBeLessThan(res.finished_depth + 14);
+    expect(size[1]).toBeGreaterThan(res.finished_width - 4);
+    expect(size[1]).toBeLessThan(res.finished_width + res.finished_depth / 2 + 4);
   });
 });
 
@@ -181,19 +213,27 @@ describe('roll-top sack cloth', () => {
     const collar = body.paths.find((p) => p.id === 'body-panel-collar-fold')!.edges[0];
     const side = { left: left.start.x, right: right.start.x, bottom: bottom.start.y, top: collar.start.y };
     const depth = inputs.bottom_width!;
-    const { world, fMesh, dz } = twoPanelBag({
+    const { world, fMesh, dz, inside } = twoPanelBag({
       front: body, back, depth, side,
       box: { cx: (side.left + side.right) / 2, halfW: inputs.bottom_length! / 2, halfH: inputs.height_when_rolled! / 2, baseY: side.bottom - depth / 2 },
     });
     relax(world, 400);
     expect(seamResidual(world).mean).toBeLessThan(3);
-    expect(maxStretch(world)).toBeLessThan(0.12);
+    expect(maxStretch(world, inside)).toBeLessThan(0.12);
     expect(maxPenetration(world)).toBeLessThan(world.params.thickness);
     const bottomMid = vertexPosition(world, 0, nearestVertex(fMesh, { x: (side.left + side.right) / 2, y: side.bottom }));
     expect(bottomMid[2]).toBeLessThan(dz / 2 + 12);
     // The collar above the fold is unseamed and stays roughly where the front panel is.
     const collarMid = vertexPosition(world, 0, nearestVertex(fMesh, { x: (side.left + side.right) / 2, y: side.top / 2 }));
     expect(collarMid[2]).toBeGreaterThan(dz);
+    // Finished: 200 wide × 100 deep inside the stitch lines, below the collar fold.
+    const size = clothBounds(world, undefined, inside).size;
+    expect(size[0]).toBeGreaterThan(inputs.bottom_length! - 4);
+    expect(size[0]).toBeLessThan(inputs.bottom_length! + depth + 4);
+    expect(size[2]).toBeGreaterThan(depth - 2);
+    expect(size[2]).toBeLessThan(depth + 16);
+    expect(size[1]).toBeGreaterThan(inputs.height_when_rolled! - 6);
+    expect(size[1]).toBeLessThan(inputs.height_when_rolled! + depth / 2 + 6);
   });
 });
 
@@ -238,6 +278,12 @@ describe('tri-zip backpack cloth', () => {
     const t = bounds('top-panel');
     expect(t.lo[1]).toBeGreaterThan(-12);
     expect(t.hi[2] - t.lo[2]).toBeGreaterThan(r.depth - 8);
+    // Finished: the inputs' 300 × 450 × 150, within a cloth thickness or two (front and back sit one gap off the block).
+    const size = clothBounds(world).size;
+    expect(Math.abs(size[0] - r.width)).toBeLessThan(25);
+    expect(Math.abs(size[1] - r.height)).toBeLessThan(25);
+    // The front bows out a little between its seams (a stuffed pack pillows the same way).
+    expect(Math.abs(size[2] - (r.depth + 2))).toBeLessThan(25);
   });
 });
 
@@ -284,5 +330,59 @@ describe('book cover cloth', () => {
     expect(seamResidual(world).max).toBeLessThan(1);
     expect(maxStretch(world)).toBeLessThan(0.05);
     expect(maxPenetration(world)).toBeLessThan(world.params.thickness);
+  });
+});
+
+describe('padded strap on a torso', () => {
+  it('a J-curve pack pad drapes over the shoulder with its ends held, clear of the body and under 12 % stretch', () => {
+    const inputs = { units: 'mm' as const, mode: 'pack_pair' as const, pad_length: 400, pad_width: 60, torso_length: 500, gusset_depth: 150 };
+    const built = buildStrap(inputs);
+    expect(built.ok).toBe(true);
+    if (!built.ok) return;
+    const asm = paddedStrapAssembly(built.value.pieces, resolveStrap(inputs));
+    expect(asm).not.toBeNull();
+    if (!asm) return;
+    const pads = asm.pieces.filter((p) => p.id === PAD_PIECE_ID || p.id === PAD_LEFT_ID);
+    const { world, bounds } = assemble(pads, asm.placements, asm.seams, asm.object, 8, asm.pins);
+    // Draped start: the right pad crests above the torso top, on the right shoulder.
+    const r0 = bounds(PAD_PIECE_ID);
+    expect(r0.hi[1]).toBeGreaterThan(asm.object.height);
+    expect(r0.lo[0]).toBeGreaterThan(0);
+    expect(maxPenetration(world)).toBeLessThan(1);
+    relax(world, 300);
+    expect(maxPenetration(world)).toBeLessThan(world.params.thickness);
+    expect(maxStretch(world)).toBeLessThan(0.12);
+    // Still on the shoulder, both ends where they were pinned.
+    const r1 = bounds(PAD_PIECE_ID);
+    expect(r1.hi[1]).toBeGreaterThan(asm.object.height - 5);
+  });
+
+  it('H-harness: the cross strap reaches both pads only when the spread matches the torso', () => {
+    const base = { units: 'mm' as const, mode: 'h_harness' as const, pad_length: 400, pad_width: 63.5, cross_strap_height: 150, drop_leg_length: 300, foam_thickness: 10 };
+    const run = (pad_spread: number) => {
+      const inputs = { ...base, pad_spread };
+      const built = buildStrap(inputs);
+      expect(built.ok).toBe(true);
+      if (!built.ok) throw new Error('build');
+      const asm = paddedStrapAssembly(built.value.pieces, resolveStrap(inputs))!;
+      const body = asm.pieces.filter((p) => [PAD_PIECE_ID, PAD_LEFT_ID, CROSS_STRAP_PIECE_ID].includes(p.id));
+      expect(body).toHaveLength(3);
+      const { world } = assemble(body, asm.placements, asm.seams, asm.object, 10, asm.pins);
+      relax(world, 300);
+      return { seam: seamResidual(world), pen: maxPenetration(world), stretch: maxStretch(world) };
+    };
+    // Medium torso: the pads' inner edges are about 180 mm apart at the crossing.
+    const fits = run(150);
+    expect(fits.seam.mean).toBeLessThan(3);
+    expect(fits.pen).toBeLessThan(1.2);
+    expect(fits.stretch).toBeLessThan(0.15);
+    // The fit report compares the torso's pad gap with the range the slots cover.
+    const asmOk = paddedStrapAssembly(buildStrap({ ...base, pad_spread: 150 }).ok ? (buildStrap({ ...base, pad_spread: 150 }) as { ok: true; value: { pieces: Piece[] } }).value.pieces : [], resolveStrap({ ...base, pad_spread: 150 }))!;
+    expect(asmOk.fit?.ok).toBe(true);
+    expect(asmOk.fit!.padGap).toBeGreaterThan(150);
+    expect(asmOk.fit!.padGap).toBeLessThan(150 + 203.2);
+    const asmWide = paddedStrapAssembly(asmOk.pieces, resolveStrap({ ...base, pad_spread: 300 }))!;
+    expect(asmWide.fit?.ok).toBe(false);
+    expect(asmWide.report[0]).toMatch(/reduce the spread/);
   });
 });

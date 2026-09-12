@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import type { Pattern } from '../../lib/pattern-engine/graph/Pattern.js';
 import { bboxFromPiece } from '../../lib/pattern-engine/geometry/bbox.js';
 import {
@@ -13,6 +14,7 @@ import {
   regionAt,
   onAnyFold,
   makePlacer,
+  drapePoint,
   type FoldModel,
   type FoldedModel,
   type CavityReport,
@@ -25,9 +27,12 @@ import {
   seamResidual,
   maxStretch,
   maxPenetration,
+  clothBounds,
   foldedInitial,
   foldedCreaseRest,
+  torsoForm,
   type ClothWorld,
+  type Solid,
 } from '../../lib/cloth-engine/index.js';
 
 const CLOTH_SPACING = 8;
@@ -60,15 +65,18 @@ function layoutPieces(pattern: Pattern, allPieces: boolean, placements: Record<s
     return buildFoldModel(piece, { rootPoint });
   });
   const anyFolds = models.some((m) => m && m.folds.length > 0);
+  const assembled = Object.keys(placements).length > 0;
   pattern.pieces.forEach((piece, i) => {
     const model = models[i];
     if (!model) return;
     const pl = placements[piece.id];
-    // By default show the pieces that actually fold (or every piece when none do); strips only clutter.
-    if (!allPieces && anyFolds && model.folds.length === 0 && !pl?.keep) return;
+    // By default show the pieces that actually fold (or every piece when none do), and in an
+    // assembled scene only the placed pieces; loose strips only clutter.
+    if (!allPieces && (anyFolds || assembled) && model.folds.length === 0 && !pl?.keep) return;
     const bb = bboxFromPiece(piece);
-    if (pl && (pl.dx !== undefined || pl.dy !== undefined || pl.dz !== undefined)) {
-      // Placed pieces sit in the first piece's frame instead of the side-by-side row.
+    if (pl && (pl.dx !== undefined || pl.dy !== undefined || pl.dz !== undefined || pl.drape || pl.attach)) {
+      // Placed pieces (offsets, a drape path, or riding on another piece) sit in the scene frame
+      // instead of the side-by-side row.
       entries.push({ model, offsetX: pl.dx ?? 0, offsetY: pl.dy ?? 0, offsetZ: pl.dz ?? 0, color: PALETTE[i % PALETTE.length], placement: pl });
       return;
     }
@@ -101,7 +109,9 @@ function fmtMm(v: number | null): string {
 const NO_PLACEMENTS: Record<string, PiecePlacement> = {};
 const NO_SEAMS: SeamSpec[] = [];
 
-export function FoldViewer({ pattern, object, placements = NO_PLACEMENTS, seams = NO_SEAMS, initialProgress = 1, height = 360 }: FoldPreview3DProps) {
+const NO_PINS: NonNullable<FoldPreview3DProps['pins']> = [];
+
+export function FoldViewer({ pattern, object, placements = NO_PLACEMENTS, seams = NO_SEAMS, pins = NO_PINS, initialProgress = 1, height = 360 }: FoldPreview3DProps) {
   const mountRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<{ scene: THREE.Scene; group: THREE.Group; renderer: THREE.WebGLRenderer; camera: THREE.PerspectiveCamera; controls: OrbitControls } | null>(null);
   const [progress, setProgress] = useState(initialProgress);
@@ -111,7 +121,7 @@ export function FoldViewer({ pattern, object, placements = NO_PLACEMENTS, seams 
   const [allPieces, setAllPieces] = useState(false);
   const [cavity, setCavity] = useState<(CavityReport & { floor: number | null; above: number | null }) | null>(null);
   const [simulate, setSimulate] = useState(false);
-  const [simStats, setSimStats] = useState<{ steps: number; stretch: number; seam: number; pen: number } | null>(null);
+  const [simStats, setSimStats] = useState<{ steps: number; stretch: number; seam: number; pen: number; size: [number, number, number] } | null>(null);
   const clothRef = useRef<{ world: ClothWorld; geoms: THREE.BufferGeometry[]; raf: number } | null>(null);
 
   const entries = useMemo(() => layoutPieces(pattern, allPieces, placements, object?.base), [pattern, allPieces, placements, object?.base]);
@@ -181,7 +191,14 @@ export function FoldViewer({ pattern, object, placements = NO_PLACEMENTS, seams 
 
     // Object placement (used by both the box and the cloth solids).
     let objectBox: { center: [number, number, number]; half: [number, number, number]; dir3: THREE.Vector3 } | null = null;
-    if (object && first) {
+    let torsoSolids: Solid[] = [];
+    if (object && object.shape === 'torso') {
+      const at = object.at ?? [0, 0, 0];
+      torsoSolids = torsoForm({ chestWidth: object.width, chestDepth: object.depth, torsoLength: object.height, shoulderWidth: object.torso?.shoulderWidth ?? object.width * 1.2, neckRadius: object.torso?.neckRadius ?? 65 }, at).solids;
+    } else if (object && object.at) {
+      const c = object.at;
+      objectBox = { center: [c[0], c[1] + object.height / 2, c[2]], half: [object.width / 2, object.height / 2, object.depth / 2], dir3: new THREE.Vector3(0, 1, 0) };
+    } else if (object && first) {
       const host = object.base ? entries.find((e) => e.model.pieceId === object.base!.pieceId) ?? first : first;
       const root = host.model.regions[host.model.root];
       const dirFlat = object.base?.direction ?? { x: 0, y: -1 };
@@ -201,6 +218,28 @@ export function FoldViewer({ pattern, object, placements = NO_PLACEMENTS, seams 
     const placer = makePlacer(entries, (e) => anglesOf(e as PieceEntry), t);
 
     for (const entry of entries) {
+      const drape = entry.placement?.drape;
+      if (drape) {
+        // A draped piece has no rigid fold: mesh it and lay it along its path.
+        const piece = pattern.pieces.find((p) => p.id === entry.model.pieceId)!;
+        const cm = buildClothMesh(piece, { spacing: CLOTH_SPACING });
+        if (cm) {
+          const geom = new THREE.BufferGeometry();
+          const pos = new Float32Array(cm.vertexCount * 3);
+          for (let v = 0; v < cm.vertexCount; v++) {
+            const q = drapePoint(drape, { x: cm.flat[2 * v], y: cm.flat[2 * v + 1] });
+            pos[3 * v] = q[0]; pos[3 * v + 1] = q[1]; pos[3 * v + 2] = q[2];
+          }
+          geom.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+          geom.setIndex(Array.from(cm.triangles));
+          geom.computeVertexNormals();
+          const mesh = new THREE.Mesh(geom, new THREE.MeshStandardMaterial({ color: entry.color, side: THREE.DoubleSide, roughness: 0.85, metalness: 0 }));
+          group.add(mesh);
+          bounds.expandByObject(mesh);
+        }
+        foldedModels.push({ pieceId: entry.model.pieceId, panels: [], hinges: [] });
+        continue;
+      }
       const angles = anglesOf(entry);
       const raw = foldModel(entry.model, angles, t);
       const shift = placer(entry);
@@ -247,24 +286,29 @@ export function FoldViewer({ pattern, object, placements = NO_PLACEMENTS, seams 
       });
       const valid = clothMeshes.map((m, i) => (m ? { mesh: m, entry: entries[i] } : null)).filter((x): x is { mesh: NonNullable<typeof clothMeshes[number]>; entry: PieceEntry } => x !== null);
       if (valid.length > 0) {
-        const inits = valid.map(({ entry }) => foldedInitial({ model: entry.model, angles: anglesOf(entry), t: progress, transform: placer(entry) }));
-        const creases = valid.map(({ entry }) => foldedCreaseRest({ model: entry.model, angles: anglesOf(entry), t: progress }));
+        const inits = valid.map(({ entry }) => {
+          const drape = entry.placement?.drape;
+          return foldedInitial({ model: entry.model, angles: anglesOf(entry), t: progress, transform: placer(entry), drape: drape ? (f) => drapePoint(drape, f) : undefined });
+        });
+        const creases = valid.map(({ entry }) => (entry.placement?.drape ? null : foldedCreaseRest({ model: entry.model, angles: anglesOf(entry), t: progress })));
         const hostId = object?.base?.pieceId ?? valid[0].entry.model.pieceId;
-        const solids = object && showObject && objectBox ? [{ kind: 'box' as const, center: objectBox.center, half: objectBox.half }] : [];
+        const solids: Solid[] = !(object && showObject) ? [] : torsoSolids.length ? torsoSolids : objectBox ? [{ kind: 'box' as const, center: objectBox.center, half: objectBox.half }] : [];
+        const pinnedByList = (pieceId: string, f: { x: number; y: number }) => pins.some((p) => p.pieceId === pieceId && Math.hypot(f.x - p.point.x, f.y - p.point.y) <= p.radius);
         const world = createWorld({
           meshes: valid.map((v) => v.mesh),
           initial: (mi, _v, f) => inits[mi](f),
-          bendRest: (mi, k, l, i, j) => creases[mi](k, l, i, j),
+          bendRest: (mi, k, l, i, j) => { const c = creases[mi]; return c ? c(k, l, i, j) : Math.hypot(l.x - k.x, l.y - k.y); },
           seams,
           solids,
           // Pin the host panel's interior; its fold-line vertices stay free so the hinges can flex.
           // With `pin: 'footprint'` only the area behind the object is held, leaving the rest of
           // the host free to wrap round to the seams.
-          pinned: (mi, _v, f) => valid[mi].entry.model.pieceId === hostId
+          pinned: (mi, _v, f) => pinnedByList(valid[mi].entry.model.pieceId, f) || (pins.length === 0 && valid[mi].entry.model.pieceId === hostId
+            && !valid[mi].entry.placement?.drape
             && regionAt(valid[mi].entry.model, f) === valid[mi].entry.model.root
             && !onAnyFold(valid[mi].entry.model, f, 1.5)
-            && (object?.pin !== 'footprint' || !object.base || underObject(f, object)),
-          params: { spacing: CLOTH_SPACING },
+            && (object?.pin !== 'footprint' || !object.base || underObject(f, object))),
+          params: { spacing: CLOTH_SPACING, selfCollision: true },
         });
         const geoms: THREE.BufferGeometry[] = valid.map(({ mesh, entry }) => {
           const geom = new THREE.BufferGeometry();
@@ -291,7 +335,7 @@ export function FoldViewer({ pattern, object, placements = NO_PLACEMENTS, seams 
           finish: () => {
             while (world.steps < CLOTH_STEPS) clothStep(world);
             upload();
-            setSimStats({ steps: world.steps, stretch: maxStretch(world), seam: seamResidual(world).mean, pen: maxPenetration(world) });
+            setSimStats({ steps: world.steps, stretch: maxStretch(world), seam: seamResidual(world).mean, pen: maxPenetration(world), size: clothBounds(world).size });
           },
         };
         const tick = () => {
@@ -299,7 +343,7 @@ export function FoldViewer({ pattern, object, placements = NO_PLACEMENTS, seams 
             for (let k = 0; k < CLOTH_STEPS_PER_FRAME; k++) clothStep(world);
             upload();
             if (world.steps % 20 === 0 || world.steps >= CLOTH_STEPS) {
-              setSimStats({ steps: world.steps, stretch: maxStretch(world), seam: seamResidual(world).mean, pen: maxPenetration(world) });
+              setSimStats({ steps: world.steps, stretch: maxStretch(world), seam: seamResidual(world).mean, pen: maxPenetration(world), size: clothBounds(world).size });
             }
             clothRef.current = { world, geoms, raf: requestAnimationFrame(tick) };
           }
@@ -313,7 +357,26 @@ export function FoldViewer({ pattern, object, placements = NO_PLACEMENTS, seams 
     // Object box. Its base sits on the root region (which stays flat), so flat
     // pattern coordinates map straight to 3D: (x, −y, 0).
     let up = new THREE.Vector3(0, 1, 0);
-    if (object && showObject && first && objectBox) {
+    if (object && showObject && torsoSolids.length) {
+      const mat = new THREE.MeshStandardMaterial({ color: 0x8a7a6a, transparent: true, opacity: 0.55, roughness: 0.7 });
+      for (const sd of torsoSolids) {
+        if (sd.kind === 'rounded_box') {
+          const m = new THREE.Mesh(new RoundedBoxGeometry(sd.half[0] * 2, sd.half[1] * 2, sd.half[2] * 2, 4, sd.radius), mat);
+          m.position.set(sd.center[0], sd.center[1], sd.center[2]);
+          group.add(m);
+          bounds.expandByObject(m);
+        } else if (sd.kind === 'capsule') {
+          const len = Math.hypot(sd.b[0] - sd.a[0], sd.b[1] - sd.a[1], sd.b[2] - sd.a[2]);
+          const m = new THREE.Mesh(new THREE.CapsuleGeometry(sd.radius, len, 6, 16), mat);
+          m.position.set((sd.a[0] + sd.b[0]) / 2, (sd.a[1] + sd.b[1]) / 2, (sd.a[2] + sd.b[2]) / 2);
+          // CapsuleGeometry runs along +y; align it with a → b.
+          m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(sd.b[0] - sd.a[0], sd.b[1] - sd.a[1], sd.b[2] - sd.a[2]).normalize());
+          group.add(m);
+          bounds.expandByObject(m);
+        }
+      }
+      setCavity(null);
+    } else if (object && showObject && first && objectBox) {
       const dir3 = objectBox.dir3;
       const box = new THREE.Mesh(
         new THREE.BoxGeometry(object.width, object.height, object.depth),
@@ -365,7 +428,7 @@ export function FoldViewer({ pattern, object, placements = NO_PLACEMENTS, seams 
     }
     if (!(object && showObject && first)) setCavity(null);
     return () => { if (clothRef.current) { cancelAnimationFrame(clothRef.current.raf); clothRef.current = null; } };
-  }, [entries, progress, showObject, showFlat, angleOverrides, object, first, simulate, seams, pattern]);
+  }, [entries, progress, showObject, showFlat, angleOverrides, object, first, simulate, seams, pins, pattern]);
 
   const foldControls = entries.flatMap((e) =>
     e.model.folds.map((f, i) => {
@@ -387,7 +450,7 @@ export function FoldViewer({ pattern, object, placements = NO_PLACEMENTS, seams 
         </label>
         <label className="flex items-center gap-1"><input type="checkbox" checked={showFlat} onChange={(e) => setShowFlat(e.target.checked)} /> flat</label>
         <label className="flex items-center gap-1"><input type="checkbox" checked={allPieces} onChange={(e) => setAllPieces(e.target.checked)} /> all pieces</label>
-        {seams.length > 0 && <label className="flex items-center gap-1"><input type="checkbox" checked={simulate} onChange={(e) => setSimulate(e.target.checked)} /> simulate seams</label>}
+        {(seams.length > 0 || pins.length > 0 || object?.shape === 'torso') && <label className="flex items-center gap-1"><input type="checkbox" checked={simulate} onChange={(e) => setSimulate(e.target.checked)} /> {seams.length > 0 ? 'simulate seams' : 'simulate cloth'}</label>}
         {object && <label className="flex items-center gap-1"><input type="checkbox" checked={showObject} onChange={(e) => setShowObject(e.target.checked)} /> {object.label ?? 'object'}</label>}
         <span className="text-muted-foreground">drag to orbit, wheel to zoom</span>
       </div>
@@ -397,6 +460,7 @@ export function FoldViewer({ pattern, object, placements = NO_PLACEMENTS, seams 
           <span><span className="text-muted-foreground">max stretch</span> {(simStats.stretch * 100).toFixed(1)}%</span>
           <span><span className="text-muted-foreground">seam gap</span> {simStats.seam.toFixed(1)} mm</span>
           <span><span className="text-muted-foreground">penetration</span> {simStats.pen.toFixed(1)} mm</span>
+          <span><span className="text-muted-foreground">envelope</span> {Math.round(simStats.size[0])} × {Math.round(simStats.size[1])} × {Math.round(simStats.size[2])} mm (w × h × d, slack cloth incl. allowances)</span>
           <span className="text-muted-foreground">gathered seams are not modelled yet</span>
         </div>
       )}

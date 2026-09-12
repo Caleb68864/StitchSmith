@@ -298,6 +298,16 @@ with `split_gusset` or the direct zipper method (assembly returns null and
 the page falls back to the plain preview), the Zip Pouch's cross-bottom /
 gusset / multi-panel styles, and Circle Skirt.
 
+**Round two (2026-09-11, later):** body forms (torso = rounded chest +
+shoulder capsule + neck), draped placements and pins, so the padded strap
+pair and the H-harness are checked on a medium torso with a written fit
+verdict; vertex–triangle self-collision so layers stack; finished-envelope
+measurement (`clothBounds`) with the vault's pleated-card wrap and the zip,
+roll-top and Tri-Zip envelopes asserted in tests; stretch counts elongation
+only and is measured inside the stitch lines. Remaining from the enhancement
+list: gathered seams (item 3), stiffness by material (5), gravity (6),
+coverage (7), and torso sizes beyond medium.
+
 - **Stage 1 — fold preview (done, see status).** Every piece is flat panels
   joined at `fold` edges. Treat each region between fold lines as a rigid
   panel, hinge them at the fold angles the construction implies (a folded-T is

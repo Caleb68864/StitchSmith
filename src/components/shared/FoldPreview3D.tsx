@@ -20,6 +20,15 @@ export interface FoldObject {
   depth: number;
   height: number;
   label?: string;
+  /**
+   * `box` (default) is a block of the contents. `torso` is a body form (`torsoForm` in the cloth
+   * engine) standing at `at` with +y up and chest facing +z; width/depth/height then mean chest
+   * width, chest depth and torso length, and `torso` carries the rest.
+   */
+  shape?: 'box' | 'torso';
+  torso?: { shoulderWidth: number; neckRadius: number };
+  /** Absolute scene position of the object's base centre (waist for a torso). Overrides `base`. */
+  at?: [number, number, number];
   /** Where the object stands. Without it the object is centred on the first piece's root region. */
   base?: FoldObjectBase;
   /**
@@ -43,6 +52,8 @@ export interface FoldPreview3DProps {
    * pattern coordinates, including closures (lid tip to face) as short seams.
    */
   seams?: SeamSpec[];
+  /** Cloth vertices held still: every vertex of `pieceId` within `radius` of flat `point`. */
+  pins?: { pieceId: string; point: { x: number; y: number }; radius: number }[];
   /** Fold progress 0–1 to start at. Default 1 (folded). */
   initialProgress?: number;
   height?: number;

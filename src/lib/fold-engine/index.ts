@@ -5,5 +5,5 @@ export type { RegionTransform } from './model.js';
 export type { CavityAxis, CavityReport } from './model.js';
 export type { Poly, Line } from './polygon.js';
 export { pathToPolygon, splitPolygon, splitPolygonMulti, triangulate, area, centroid, pointInPolygon } from './polygon.js';
-export { makePlacer } from './placement.js';
+export { makePlacer, drapePoint, pointAlongPath } from './placement.js';
 export type { PiecePlacement, PlacedEntry } from './placement.js';

@@ -23,6 +23,39 @@ export interface PiecePlacement {
    * piece moves with the host region containing `point` — a flap sewn to a cover follows the cover.
    */
   attach?: { pieceId: string; point: Point };
+  /**
+   * Drape the piece along a 3D polyline instead of folding it: flat y becomes arc length along
+   * `path` (from `path[0]`), flat x runs along `across` from `x0`. A strap laid over a shoulder,
+   * webbing run round a bag. Folds are ignored for a draped piece.
+   */
+  drape?: { path: Vec3[]; across: Vec3; x0?: number; along?: 'x' | 'y' };
+}
+
+/** Point at arc length `s` along a polyline (clamped to its ends), and the unit tangent there. */
+export function pointAlongPath(path: Vec3[], s: number): { p: Vec3; t: Vec3 } {
+  let remaining = Math.max(0, s);
+  for (let i = 1; i < path.length; i++) {
+    const a = path[i - 1], b = path[i];
+    const seg: Vec3 = [b[0] - a[0], b[1] - a[1], b[2] - a[2]];
+    const len = Math.hypot(seg[0], seg[1], seg[2]);
+    if (remaining <= len || i === path.length - 1) {
+      const u = len > 0 ? Math.min(1, remaining / len) : 0;
+      const t: Vec3 = len > 0 ? [seg[0] / len, seg[1] / len, seg[2] / len] : [0, -1, 0];
+      return { p: [a[0] + seg[0] * u, a[1] + seg[1] * u, a[2] + seg[2] * u], t };
+    }
+    remaining -= len;
+  }
+  return { p: path[0], t: [0, -1, 0] };
+}
+
+/** Flat point → 3D for a draped piece: arc length along the path for y, `across` for x. */
+export function drapePoint(drape: NonNullable<PiecePlacement['drape']>, flat: Point): Vec3 {
+  const alongX = drape.along === 'x';
+  const { p } = pointAlongPath(drape.path, alongX ? flat.x : flat.y);
+  const dx = (alongX ? flat.y : flat.x) - (drape.x0 ?? 0);
+  const a = drape.across;
+  const al = Math.hypot(a[0], a[1], a[2]) || 1;
+  return [p[0] + (a[0] / al) * dx, p[1] + (a[1] / al) * dx, p[2] + (a[2] / al) * dx];
 }
 
 export interface PlacedEntry {

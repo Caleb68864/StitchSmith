@@ -16,6 +16,8 @@ export interface FoldedInitialOptions {
   offset?: { dx?: number; dy?: number; dz?: number };
   /** Extra placement applied last (a rotation, or riding on another piece's folded region). */
   transform?: (v: Vec3) => Vec3;
+  /** Replace the fold entirely: flat point → 3D (a piece draped along a path). `transform` still applies. */
+  drape?: (flat: Point) => Vec3;
 }
 
 /** Returns a function mapping a flat point of this piece to its rigid-folded 3D position. */
@@ -26,6 +28,10 @@ export function foldedInitial(opts: FoldedInitialOptions): (flat: Point) => Vec3
   const dz = opts.offset?.dz ?? 0;
   const fallback = opts.model.root;
   return (flat: Point) => {
+    if (opts.drape) {
+      const q = opts.drape(flat);
+      return opts.transform ? opts.transform(q) : q;
+    }
     let r = regionAt(opts.model, flat);
     if (r < 0) r = fallback;
     const p = transformFlatPoint(transforms[r], flat);
