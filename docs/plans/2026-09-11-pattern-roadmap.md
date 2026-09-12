@@ -116,14 +116,12 @@ individual slots + tear-off med pouch as a pocket set, shotshell / en-bloc /
 lever-gun card hosts, and the covert rig's elastic card
 (`rigs/soe-covert-rig.md`, `rigs/covert-elastic-mag-card.md`).
 
-### 3. Padded two-point sling
-Turned Cordura tube over foam; foam_length = pad − 2 × 0.5" setback; tube
-girth cut loose, tightened at the second pass; tension adapter must be a
-one-way lock; hardware slot width = webbing width. The strap engine's
-`crushable_sleeve` path is the starting point.
-Evidence: construction strong, **no default lengths** — every length is an
-input. `accessories/sling-pad-construction.md`,
-`accessories/sling-two-point-padded-build.md`, `accessories/sling-hardware-interface.md`.
+### 3. Padded two-point sling — DONE 2026-09-11
+`src/generators/sling/`: turned tube with turning ease, foam setback,
+webbing tuck and engagement rule, rod vs cord turn, one-way adapter anchored
+in the closing stitch, tri-glide / QD / sewn ends. No vault lengths: every
+length is an input with a mock-derived placeholder and the cord mock-up is
+step one.
 
 ### 4. .308 stacked micro rig (tandem-depth cells)
 Depth stacking removes `cells_deep` from the width equation; cradle depth stop;

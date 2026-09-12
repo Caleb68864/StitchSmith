@@ -11,6 +11,7 @@ import { useZipPouchProject } from '../state/useZipPouchProject.js';
 import { useCircleSkirtProject } from '../state/useCircleSkirtProject.js';
 import { usePaddedStrapProject } from '../state/usePaddedStrapProject.js';
 import { useMicroRigProject } from '../state/useMicroRigProject.js';
+import { useSlingProject } from '../state/useSlingProject.js';
 import { Toaster } from '../components/shared/Toaster.js';
 import { ErrorBoundary } from '../components/shared/ErrorBoundary.js';
 import type { PatternEntry } from './patternRegistry.js';
@@ -45,6 +46,9 @@ const PaddedStrapPage = lazy(() =>
 const MicroRigPage = lazy(() =>
   import('../components/micro-rig/MicroRigPage.js').then(m => ({ default: m.MicroRigPage }))
 );
+const SlingPage = lazy(() =>
+  import('../components/sling/SlingPage.js').then(m => ({ default: m.SlingPage }))
+);
 
 // Tab title per view so users with multiple tabs can tell them apart.
 const VIEW_TITLES: Record<View, string> = {
@@ -58,6 +62,7 @@ const VIEW_TITLES: Record<View, string> = {
   'circle-skirt': 'StitchSmith — Circle Skirt',
   'padded-strap': 'StitchSmith — Padded Strap',
   'micro-rig': 'StitchSmith — Micro Rig',
+  'sling': 'StitchSmith — Padded Sling',
 };
 
 type View = 'landing' | PatternEntry['route'];
@@ -73,6 +78,7 @@ export function App() {
   const circleSkirtState = useCircleSkirtProject();
   const paddedStrapState = usePaddedStrapProject();
   const microRigState = useMicroRigProject();
+  const slingState = useSlingProject();
 
   useEffect(() => {
     document.title = VIEW_TITLES[view] ?? 'StitchSmith';
@@ -156,7 +162,7 @@ export function App() {
           >
             StitchSmith
           </button>
-          <span className="text-xs text-muted-foreground">{view === 'padded-strap' ? 'Padded Strap Generator' : view === 'micro-rig' ? 'Micro Rig Generator' : 'Circle Skirt Generator'}</span>
+          <span className="text-xs text-muted-foreground">{view === 'padded-strap' ? 'Padded Strap Generator' : view === 'micro-rig' ? 'Micro Rig Generator' : view === 'sling' ? 'Padded Sling Generator' : 'Circle Skirt Generator'}</span>
         </header>
       )}
       <PageShell>
@@ -257,6 +263,14 @@ export function App() {
             updateInputs={microRigState.updateInputs}
             resetProject={microRigState.resetProject}
             importProject={microRigState.importProject}
+          />
+        )}
+        {view === 'sling' && (
+          <SlingPage
+            project={slingState.project}
+            updateInputs={slingState.updateInputs}
+            resetProject={slingState.resetProject}
+            importProject={slingState.importProject}
           />
         )}
         </Suspense>

@@ -3,7 +3,7 @@ export interface PatternEntry {
   title: string;
   description: string;
   available: boolean;
-  route: 'tool-roll' | 'tri-zip' | 'roll-top' | 'mag-pouch' | 'book-cover' | 'zip-pouch' | 'circle-skirt' | 'padded-strap' | 'micro-rig';
+  route: 'tool-roll' | 'tri-zip' | 'roll-top' | 'mag-pouch' | 'book-cover' | 'zip-pouch' | 'circle-skirt' | 'padded-strap' | 'micro-rig' | 'sling';
 }
 
 export const PATTERNS: PatternEntry[] = [
@@ -94,4 +94,13 @@ registerPattern({
   description: 'SOE-style micro rig platform: a 7" panel that is itself a pocket (10.5"–19" wide), pleated mag cells on the front, 6 × 6 × 3" utility pocket, side PALS, bottom loops, dangler field, optional split front, webbing straps or an H-harness.',
   available: true,
   route: 'micro-rig',
+});
+
+// Register the sling entry (idempotent — safe to call multiple times)
+registerPattern({
+  id: 'sling',
+  title: 'Padded Sling',
+  description: 'SOE-style padded two-point sling: a turned Cordura tube over foam, webbing tucked into each pad end, a one-way tension adapter and bare tri-glide ends. Every length is yours to measure; the vault gives the method.',
+  available: true,
+  route: 'sling',
 });

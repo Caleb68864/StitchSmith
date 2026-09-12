@@ -43,7 +43,7 @@ A generator using this convention MUST:
 Consequence: no SA-offset cut line is drawn, because the cut line *is* the
 outer line. That is expected under this convention, not a defect.
 
-Used by: **Zip Pouch** (see `src/generators/zip-pouch/dimensions.ts`) and the
+Used by: **Zip Pouch** (see `src/generators/zip-pouch/dimensions.ts`), the **Padded Sling** (tube cut with allowance and turning ease included) and the
 **Mag Pouch pleated card** construction (`src/lib/pouch-engine/construction/pleatedCard.ts`,
 dimensions resolved in `src/generators/mag-pouch/resolve.ts`). The card is
 hemmed, not seam-allowanced: cut = finished + hems, hem folds are `fold`-role
@@ -155,7 +155,7 @@ numbers. Rules already encoded, with the note that justifies each:
 
 ## Engine usage
 
-All generators (Tool Roll, Tri-Zip, Roll-Top Sack, Mag Pouch, Book Cover, Zip Pouch, Circle Skirt, Padded Strap, Micro Rig) consume `src/lib/pattern-engine/` for graph types (`Point`, `Edge`, `Path`, `Piece`, `Pattern`), geometry helpers (offset, arc, bbox), and exporters (SVG, PDF, DXF, project JSON). New generators must use the engine — do not fork geometry or export code into the generator directory.
+All generators (Tool Roll, Tri-Zip, Roll-Top Sack, Mag Pouch, Book Cover, Zip Pouch, Circle Skirt, Padded Strap, Micro Rig, Padded Sling) consume `src/lib/pattern-engine/` for graph types (`Point`, `Edge`, `Path`, `Piece`, `Pattern`), geometry helpers (offset, arc, bbox), and exporters (SVG, PDF, DXF, project JSON). New generators must use the engine — do not fork geometry or export code into the generator directory.
 
 ## Project JSON envelope
 
@@ -170,6 +170,7 @@ All generators (Tool Roll, Tri-Zip, Roll-Top Sack, Mag Pouch, Book Cover, Zip Po
 - `schemaVersion: 6` → Circle Skirt
 - `schemaVersion: 7` → Padded Strap / H-harness
 - `schemaVersion: 8` → Micro Rig
+- `schemaVersion: 9` → Padded Sling
 - These are sibling schemas, not an upgrade chain. Distinguish by `generatorId`
   (the source of truth is each hook's `isValid` guard in `src/state/use*Project.ts`).
 - Unknown future versions return a friendly error, not partial state.

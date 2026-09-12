@@ -54,6 +54,7 @@ const TARGETS: Record<string, Target> = {
   },
   'circle skirt': { open: /Open Circle Skirt/i, seams: true, fitReport: false },
   'micro rig': { open: /Open Micro Rig/i, seams: true, fitReport: true, maxStretch: 150 },
+  'padded sling': { open: /Open Padded Sling/i, seams: false, fitReport: false },
 };
 
 async function openAssemblyTab(page: Page, target: Target) {

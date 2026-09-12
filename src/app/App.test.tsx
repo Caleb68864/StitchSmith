@@ -155,6 +155,7 @@ describe('App integration', () => {
     { open: /Open Circle Skirt/i, subtitle: /Circle Skirt Generator/i },
     { open: /Open Padded Strap/i, subtitle: /Padded Strap Generator/i },
     { open: /Open Micro Rig/i, subtitle: /Micro Rig Generator/i },
+    { open: /Open Padded Sling/i, subtitle: /Padded Sling Generator/i },
   ] as const;
 
   for (const { open, subtitle } of SMOKE_TARGETS) {

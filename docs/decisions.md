@@ -350,3 +350,10 @@
 - Surfaces: src/generators/micro-rig/**, src/state/useMicroRigProject.ts, src/components/micro-rig/**, src/app/{App,patternRegistry,App.test}.tsx|ts, e2e/3d-assembly.spec.ts, CLAUDE.md.
 - Watch: panel height 7" is nominal (PALS variants 6.5") and the side-PALS top drop of 1 1/2" is garbled in the video — both carry mock-derived notes. The strap adjustment lengths (54" shoulder, 48" waist) are working defaults, not vault numbers. Not modelled: the Stacked Micro's individual slots and tear-off med pouch, the shotshell / en-bloc / lever-gun card hosts, and the front-buckle interference with the internal pocket beyond a warning.
 - Commit: <pending>
+
+## 2026-09-11 — Padded two-point sling generator (roadmap pattern #3)
+- Symptom: the vault documents SOE's padded sling build in detail (turned tube, foam setback, webbing tuck, one-way adapter, tri-glide ends) but gives no lengths; nothing in the app carried the method.
+- Fix: `src/generators/sling/` (schemaVersion 9, generatorId `sling`, Convention B). Tube cut = girth + turning ease + 2 × SA wide, pad length + 2 × SA long, with the long seam and both end closures drawn and the tuck/setback marks; foam = pad − 2 × 1/2" setback; webbing engagement = tuck − setback (must be > 0, bartack under 1"); turn method flips to a 550-cord pull under 1.5" flat width; adjustment travel reported as approximate; the video's ambiguous third webbing piece is an input (anchor strap or separate tail); end interface bare tri-glide / QD buckle / sewn; every hardware slot equals the webbing width and the adapter must be a one-way lock. Every length left at its placeholder carries a mock-derived warning and the first step is the cord mock-up. 3D: the finished pad draped over a medium torso's shoulder. Page, registry, smoke and e2e targets.
+- Surfaces: src/generators/sling/**, src/state/useSlingProject.ts, src/components/sling/**, src/app/{App,patternRegistry,App.test}.tsx|ts, e2e/3d-assembly.spec.ts, CLAUDE.md.
+- Watch: the placeholders (16" pad, 4" girth, 1.5" × 6 mm foam, 30"/24"/4" webbing, 1.25" webbing) are not vault numbers. The pad's 3D check has no webbing or adapter and no rifle.
+- Commit: <pending>
