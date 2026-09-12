@@ -55,6 +55,15 @@ const TARGETS: Record<string, Target> = {
   'circle skirt': { open: /Open Circle Skirt/i, seams: true, fitReport: false },
   'micro rig': { open: /Open Micro Rig/i, seams: true, fitReport: true, maxStretch: 150 },
   'padded sling': { open: /Open Padded Sling/i, seams: false, fitReport: false },
+  'tactical organizer': { open: /Open Tactical Organizer/i, seams: true, fitReport: true },
+  'fanny pack': { open: /Open Fanny Pack/i, seams: true, fitReport: true },
+  'fanny pack (closed lid, grommets, drawbridge)': {
+    open: /Open Fanny Pack/i, seams: true, fitReport: true,
+    seed: { key: 'stitchsmith.fanny-pack.project', project: { schemaVersion: 11, generatorId: 'fanny-pack', projectName: 'E2E', ...stamp, inputs: { units: 'in', width: 9, height: 5, depth: 2.5, seam_allowance: 0.5, lid_drop_target: 'partial', lid_angle_deg: 90, zipper_edge_finish: 'tape', drawbridge_limiter: true, bottom_grommets: 2, belt_webbing: 1, belt_min: 30, belt_max: 48 } } },
+  },
+  'clamshell pack': { open: /Open Clamshell Pack/i, seams: true, fitReport: true },
+  'plate carrier': { open: /Open Plate Carrier/i, seams: true, fitReport: false },
+  'modular lbv': { open: /Open Modular LBV/i, seams: true, fitReport: false },
   'micro rig (.308 stacked)': {
     open: /Open Micro Rig/i, seams: true, fitReport: true, maxStretch: 150,
     seed: { key: 'stitchsmith.micro-rig.project', project: { schemaVersion: 8, generatorId: 'micro-rig', projectName: 'E2E', ...stamp, inputs: { units: 'in', panel_width_preset: 'r308_14', pocket_set: 'stacked_cells', magazine_preset_id: 'pmag_308_20', cell_count: 2, cells_deep: 2 } } },
@@ -118,7 +127,7 @@ for (const [name, target] of Object.entries(TARGETS)) {
     await preview.getByLabel('flat').uncheck();
 
     // Untick simulate: the rigid fold, and (with contents) the Stage 2 fit report.
-    const simulate = preview.getByLabel(/simulate/);
+    const simulate = preview.getByLabel(/simulate/i);
     await simulate.uncheck();
     await expect(page.getByTestId('sim-stats')).toHaveCount(0);
     if (target.fitReport) {

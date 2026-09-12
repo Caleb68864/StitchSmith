@@ -156,6 +156,11 @@ describe('App integration', () => {
     { open: /Open Padded Strap/i, subtitle: /Padded Strap Generator/i },
     { open: /Open Micro Rig/i, subtitle: /Micro Rig Generator/i },
     { open: /Open Padded Sling/i, subtitle: /Padded Sling Generator/i },
+    { open: /Open Tactical Organizer/i, subtitle: /Tactical Organizer Generator/i },
+    { open: /Open Modular LBV/i, subtitle: /Modular LBV Generator/i },
+    { open: /Open Plate Carrier/i, subtitle: /Plate Carrier Generator/i },
+    { open: /Open Clamshell Pack/i, subtitle: /Clamshell Pack Generator/i },
+    { open: /Open Fanny Pack/i, subtitle: /Fanny Pack Generator/i },
   ] as const;
 
   for (const { open, subtitle } of SMOKE_TARGETS) {
@@ -176,6 +181,34 @@ describe('App integration', () => {
       expect(screen.getAllByRole('button', { name: /export/i }).length).toBeGreaterThan(0);
     });
   }
+});
+
+describe('landing page navigation', () => {
+  it('groups generators by category and filters them by search', () => {
+    render(<App />);
+    expect(screen.getByRole('heading', { name: /Pouches/i })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: /Rigs and carriers/i })).toBeTruthy();
+    fireEvent.change(screen.getByRole('searchbox', { name: /Find a generator/i }), { target: { value: 'sling' } });
+    expect(screen.getByRole('button', { name: /Open Padded Sling/i })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /Open Zip Pouch/i })).toBeNull();
+    fireEvent.change(screen.getByRole('searchbox', { name: /Find a generator/i }), { target: { value: 'nothing-like-this' } });
+    expect(screen.getByText(/Nothing matches/i)).toBeTruthy();
+  });
+
+  it('remembers recently opened generators and offers a switcher in the page header', async () => {
+    render(<App />);
+    fireEvent.click(screen.getByRole('button', { name: /Open Zip Pouch/i }));
+    await waitFor(() => expect(screen.getAllByRole('button', { name: /reset/i }).length).toBeGreaterThan(0), { timeout: LAZY_TIMEOUT });
+    // Header switcher jumps straight to another generator.
+    fireEvent.change(screen.getByRole('combobox', { name: /Switch generator/i }), { target: { value: 'sling' } });
+    await waitFor(() => expect(screen.getAllByText(/Padded Sling Generator/i).length).toBeGreaterThan(0), { timeout: LAZY_TIMEOUT });
+    fireEvent.click(screen.getByRole('button', { name: /All generators/i }));
+    // Both opened generators show in the recent strip, newest first.
+    const recent = screen.getByRole('heading', { name: /Recently opened/i }).parentElement!;
+    const names = Array.from(recent.querySelectorAll('button')).map((b) => b.getAttribute('aria-label'));
+    expect(names).toEqual(['Open Padded Sling', 'Open Zip Pouch']);
+    expect(JSON.parse(localStorage.getItem('stitchsmith.recent-patterns') ?? '[]')).toEqual(['sling', 'zip-pouch']);
+  });
 });
 
 // ─── Construction styles → SVG integration ──────────────────────────────────
