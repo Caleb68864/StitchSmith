@@ -52,6 +52,6 @@ export default defineConfig({
     passWithNoTests: true,
     // Agent worktrees under .claude/ contain full repo copies; keep them out of
     // the test run so their tests don't inflate/pollute results.
-    exclude: ['**/node_modules/**', '**/dist/**', '.claude/**'],
+    exclude: ['**/node_modules/**', '**/dist/**', '.claude/**', 'e2e/**'],
   },
 })

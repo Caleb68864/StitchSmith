@@ -48,7 +48,7 @@ export function zipPouchAssembly(pieces: Piece[], r: ResolvedInputs): ZipPouchAs
     return {
       pieces,
       object: { width: L, depth: D, height: Wd, label: 'contents', pin: 'footprint', base: { pieceId: 'back', point: { x: cutWidth / 2, y: side.bottom - D / 2 }, direction: { x: 0, y: -1 } } },
-      placements: { front: { dx: 0, dy: 0, dz: D + 2 } },
+      placements: { back: { dx: 0, dy: 0, dz: 0 }, front: { dx: 0, dy: 0, dz: D + 2 } },
       seams: [
         { label: 'left side', a: line('front', { x: side.left, y: side.top }, { x: side.left, y: side.bottom }), b: line('back', { x: side.left, y: side.top }, { x: side.left, y: side.bottom }) },
         { label: 'right side', a: line('front', { x: side.right, y: side.top }, { x: side.right, y: side.bottom }), b: line('back', { x: side.right, y: side.top }, { x: side.right, y: side.bottom }) },

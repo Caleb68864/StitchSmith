@@ -75,3 +75,7 @@ docs/
 
 # Machine-local Claude Code settings (hooks point at per-machine paths)
 .claude/settings.local.json
+
+# Playwright
+playwright-report/
+test-results/

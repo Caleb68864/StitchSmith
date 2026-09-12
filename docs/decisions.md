@@ -335,3 +335,11 @@
 - Surfaces: src/components/shared/{PreviewTabs,FoldPreview3D,FoldViewer}.tsx, src/components/*/…Page.tsx.
 - Watch: the tab strip is one component, so a page whose assembly returns null (unsupported style) shows the explanation instead of an empty tab. Simulation starts on tab open, so switching tabs restarts it.
 - Commit: <pending>
+
+## 2026-09-11 — Playwright end-to-end suite for the 3D assembly tab
+- Symptom: the 3D viewer had only been exercised by hand through a scratch screenshot harness; nothing in CI opened a real browser with WebGL, clicked the tab, ran the cloth to the end and read the numbers back.
+- Fix: `@playwright/test` with `playwright.config.ts` (builds, serves the production bundle on 4173, headless Chromium with SwiftShader WebGL) and `e2e/3d-assembly.spec.ts`: for every pattern page and the variants that have their own assembly (both mag pouch constructions, all four zip styles, split-gusset/direct Tri-Zip, strap pair and H-harness, circle skirt) it opens the tab, checks WebGL is up, drives the cloth to 360 steps through the viewer's debug hook, asserts penetration, seam gap and stretch, proves the canvas repaints, unticks simulate for the rigid fold and its fit report, and fails on any page error. Also: the tab choice persists across pages; Tool Roll's tab is disabled with a reason. `npm run test:e2e`; vitest excludes `e2e/`.
+- Found on the first run: the boxed zip pouch's back panel had no placement, so the new "hide loose strips in assembled scenes" rule hid the host itself and the canvas was blank. Fixed in both the assembly (back placed at the origin) and the viewer (the object's host is always kept).
+- Surfaces: playwright.config.ts, e2e/3d-assembly.spec.ts, package.json, vite.config.ts, .gitignore, src/generators/zip-pouch/assembly3d.ts, src/components/shared/FoldViewer.tsx.
+- Watch: the suite takes about three and a half minutes on software WebGL; it is not wired into `npm test`. The pleated card's global stretch figure is bounded at 150 % because it includes the gathered row's shear.
+- Commit: <pending>
