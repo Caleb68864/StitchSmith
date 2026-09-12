@@ -18,7 +18,7 @@ export default defineConfig({
       manifest: {
         name: 'StitchSmith',
         short_name: 'StitchSmith',
-        description: 'Pattern generator for sewists and crafters',
+        description: 'Parametric sewing patterns: pouches, packs, rigs and straps, checked in 3D and exported to SVG, PDF and DXF.',
         theme_color: '#18181b',
         background_color: '#18181b',
         display: 'standalone',

@@ -9,6 +9,7 @@
     "typecheck": "tsc --noEmit",
     "preview": "vite preview",
     "test": "vitest",
+    "test:run": "vitest run",
     "test:engine": "vitest --run src/lib/pattern-engine",
     "test:e2e": "playwright test"
   },
