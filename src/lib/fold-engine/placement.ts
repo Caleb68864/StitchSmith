@@ -29,6 +29,32 @@ export interface PiecePlacement {
    * webbing run round a bag. Folds are ignored for a draped piece.
    */
   drape?: { path: Vec3[]; across: Vec3; x0?: number; along?: 'x' | 'y' };
+  /** Rotation about the piece's z axis (through its flat origin) in degrees, applied after rx and before dx/dy/dz. 180 turns a piece upside down. */
+  rz?: number;
+  /**
+   * Wrap the piece into a cone: flat polar coordinates about `apex` (mm, radians) become a cone
+   * of half-angle `halfAngle` hanging from `apex3` with its axis down −y. Flat angle θ maps to
+   * cone angle `angle0 + θ · angleScale` (a half-circle sweep needs scale 2 to close). Skirt panels.
+   */
+  cone?: { apex: Point; apex3: Vec3; halfAngle: number; angleScale: number; angle0: number };
+}
+
+/** Flat point → 3D for a cone-wrapped piece. */
+export function conePoint(cone: NonNullable<PiecePlacement['cone']>, flat: Point): Vec3 {
+  const dx = flat.x - cone.apex.x;
+  const dy = flat.y - cone.apex.y;
+  const r = Math.hypot(dx, dy);
+  const theta = cone.angle0 + Math.atan2(dy, dx) * cone.angleScale;
+  const rho = r * Math.sin(cone.halfAngle);
+  const h = r * Math.cos(cone.halfAngle);
+  return [cone.apex3[0] + rho * Math.cos(theta), cone.apex3[1] - h, cone.apex3[2] + rho * Math.sin(theta)];
+}
+
+/** The direct flat→3D map of a draped or cone-wrapped placement, or null when the piece folds normally. */
+export function placementMap(pl: PiecePlacement | undefined): ((flat: Point) => Vec3) | null {
+  if (pl?.drape) { const dr = pl.drape; return (f) => drapePoint(dr, f); }
+  if (pl?.cone) { const c = pl.cone; return (f) => conePoint(c, f); }
+  return null;
 }
 
 /** Point at arc length `s` along a polyline (clamped to its ends), and the unit tangent there. */
@@ -77,6 +103,7 @@ export function makePlacer(entries: PlacedEntry[], anglesOf: (entry: PlacedEntry
   return (entry: PlacedEntry): ((v: Vec3) => Vec3) => {
     const pl = entry.placement;
     const rx = pl?.rx ? rotationAboutLine([0, 0, 0], [1, 0, 0], pl.rx * DEG) : null;
+    const rz = pl?.rz ? rotationAboutLine([0, 0, 0], [0, 0, 1], pl.rz * DEG) : null;
     const host = pl?.attach ? entries.find((e) => e.model.pieceId === pl.attach!.pieceId && !e.placement?.attach) : undefined;
     let hostRegion: RegionTransform | null = null;
     if (host && pl?.attach) {
@@ -85,6 +112,7 @@ export function makePlacer(entries: PlacedEntry[], anglesOf: (entry: PlacedEntry
     }
     return (v) => {
       let p: Vec3 = rx ? applyTransform(rx, v) : v;
+      if (rz) p = applyTransform(rz, p);
       p = [p[0] + entry.offsetX, p[1] - entry.offsetY, p[2] + entry.offsetZ];
       if (host && hostRegion) {
         p = applyTransform(hostRegion, p);

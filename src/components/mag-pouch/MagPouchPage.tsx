@@ -90,7 +90,8 @@ export function MagPouchPage({ project, updateInputs, resetProject, importProjec
         // Back panel: hem, then lid, then the card. The mag stands on the card's bottom hem fold and grows toward the lid (−y in pattern coords).
         const cellCentreX = inToMm(r.backHemIn) + inToMm(r.cellSpanIn) * (Math.ceil(r.cellCount / 2) - 0.5);
         const baseY = inToMm(r.backHemIn) + inToMm(r.flapLengthIn) + inToMm(r.pouchHeightIn);
-        return { ...mag, base: { pieceId: 'back', point: { x: cellCentreX, y: baseY }, direction: { x: 0, y: -1 } } };
+        // The magazine stands on the gathered face bottom (two layers and their lips), ~5 mm up.
+        return { ...mag, lift: 5, base: { pieceId: 'back', point: { x: cellCentreX, y: baseY }, direction: { x: 0, y: -1 } } };
       }
       // Folded-T body: SA | front | bottom band | back | lid (pattern y increases downward). The mag stands on the
       // bottom-band/back fold and grows along +y over the back toward the lid.
@@ -149,7 +150,6 @@ export function MagPouchPage({ project, updateInputs, resetProject, importProjec
         const faceCutH = 2 * cardH + akHem;
         const cardBottomY = backHem + flap + cardH;
         // Divisions and outer sides: face root half to the card, running the card height.
-        // The face bottom gathers under the magazine and is not modelled as a seam.
         for (let k = 0; k <= cells; k++) {
           const xf = faceEndHem + k * fpc;
           const xb = backHem + k * span;
@@ -159,6 +159,16 @@ export function MagPouchPage({ project, updateInputs, resetProject, importProjec
           seams.push(
             { label: name, a: { pieceId: 'face', from: { x: xf, y: faceCutH }, to: { x: xf, y: faceCutH - cardH } }, b: { pieceId: 'back', from: { x: xb, y: cardBottomY }, to: { x: xb, y: cardBottomY - cardH } } },
             { label: `${name} (outer layer)`, a: { pieceId: 'face', from: { x: xf, y: akHem }, to: { x: xf, y: akHem + cardH } }, b: { pieceId: 'back', from: { x: xb, y: cardBottomY }, to: { x: xb, y: cardBottomY - cardH } }, gap: 2.4 },
+          );
+        }
+        // Face bottom, per cell, both layers: 4 7/8" of face onto 3" of card. The seam samples by
+        // the shorter side, so the face's extra length gathers into the lips under the magazine.
+        for (let k = 0; k < cells; k++) {
+          const xf0 = faceEndHem + k * fpc, xf1 = xf0 + fpc;
+          const xb0 = backHem + k * span, xb1 = xb0 + span;
+          seams.push(
+            { label: `bottom gather ${k + 1}`, a: { pieceId: 'face', from: { x: xf0, y: faceCutH }, to: { x: xf1, y: faceCutH } }, b: { pieceId: 'back', from: { x: xb0, y: cardBottomY }, to: { x: xb1, y: cardBottomY } } },
+            { label: `bottom gather ${k + 1} (outer layer)`, a: { pieceId: 'face', from: { x: xf0, y: akHem }, to: { x: xf1, y: akHem } }, b: { pieceId: 'back', from: { x: xb0, y: cardBottomY }, to: { x: xb1, y: cardBottomY } }, gap: 2.4 },
           );
         }
         if (r.hasFlap) {

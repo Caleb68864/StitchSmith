@@ -11,6 +11,10 @@ import { PatternPageShell } from '../shared/PatternPageShell.js';
 import { parseProjectJson, downloadProjectJson } from '../../export/projectEnvelopeIO.js';
 import { ValidationBanner } from '../shared/ValidationBanner.js';
 import type { CircleSkirtInputs } from '../../generators/circle-skirt/types.js';
+import { resolveInputs } from '../../generators/circle-skirt/inputs.js';
+import { circleSkirtAssembly } from '../../generators/circle-skirt/assembly3d.js';
+import { FoldPreview3D } from '../shared/FoldPreview3D.js';
+import type { Pattern } from '../../lib/pattern-engine/graph/Pattern.js';
 
 type CircleSkirtPageProps = Pick<
   UseCircleSkirtProjectReturn,
@@ -48,15 +52,25 @@ export function CircleSkirtPage({ project, updateInputs, resetProject, importPro
     return r.ok;
   }, [project.inputs, hasErrors]);
 
-  const steps = useMemo(() => {
-    if (!engineValid) return [];
+  const built = useMemo(() => {
+    if (!engineValid) return null;
     try {
-      const r = buildPattern(project.inputs);
-      return r.steps;
+      return buildPattern(project.inputs);
     } catch {
-      return [];
+      return null;
     }
   }, [project.inputs, engineValid]);
+  const steps = built?.steps ?? [];
+  // 3D: panels wrapped onto a cone from the waist, seamed, and draped by gravity over a hip form.
+  const assembly = useMemo(() => {
+    if (!built) return null;
+    try {
+      return circleSkirtAssembly(built.pieces, resolveInputs(project.inputs));
+    } catch {
+      return null;
+    }
+  }, [built, project.inputs]);
+  const pattern3d = useMemo<Pattern | null>(() => (assembly ? { id: 'circle-skirt', name: 'Circle Skirt', pieces: assembly.pieces } : null), [assembly]);
 
   function handleReset() {
     if (window.confirm('Reset will discard all changes and restore default Circle Skirt settings. Continue?')) {
@@ -91,7 +105,12 @@ export function CircleSkirtPage({ project, updateInputs, resetProject, importPro
           onChange={updateInputs}
         />
       }
-      preview={<PatternPreview inputs={project.inputs} hasErrors={!engineValid} />}
+      preview={
+        <div className="space-y-3">
+          <PatternPreview inputs={project.inputs} hasErrors={!engineValid} />
+          {pattern3d && assembly && <FoldPreview3D pattern={pattern3d} placements={assembly.placements} pins={assembly.pins} seams={assembly.seams} solids={assembly.solids} gravity={assembly.gravity} />}
+        </div>
+      }
       sidebar={
         <>
           <PatternEngineLegend />

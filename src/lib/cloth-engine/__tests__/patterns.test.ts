@@ -6,10 +6,14 @@
  */
 import { describe, it, expect } from 'vitest';
 import type { Piece } from '../../pattern-engine/graph/Piece.js';
-import { buildClothMesh, nearestVertex, createWorld, relax, seamResidual, maxStretch, maxPenetration, vertexPosition, foldedInitial, foldedCreaseRest, torsoForm, clothBounds, type SeamSpec, type Solid, type Vec3 } from '../index.js';
-import { buildFoldModel, defaultFoldAngles, regionAt, onAnyFold, makePlacer, mirrorPieceX, drapePoint, type PlacedEntry, type PiecePlacement } from '../../fold-engine/index.js';
+import { buildClothMesh, nearestVertex, createWorld, relax, seamResidual, maxStretch, maxPenetration, vertexPosition, foldedInitial, foldedCreaseRest, torsoForm, clothBounds, materialBendStiffness, materialPlateStiffness, DEFAULT_CLOTH_PARAMS, type SeamSpec, type Solid, type Vec3 } from '../index.js';
+import { buildFoldModel, defaultFoldAngles, regionAt, onAnyFold, makePlacer, mirrorPieceX, placementMap, type PlacedEntry, type PiecePlacement } from '../../fold-engine/index.js';
 import { buildPattern as buildStrap, resolveInputs as resolveStrap } from '../../../generators/padded-strap/index.js';
 import { paddedStrapAssembly, PAD_LEFT_ID } from '../../../generators/padded-strap/assembly3d.js';
+import { zipPouchAssembly } from '../../../generators/zip-pouch/assembly3d.js';
+import { buildPattern as buildCircleSkirt, resolveInputs as resolveCircleSkirt } from '../../../generators/circle-skirt/index.js';
+import { circleSkirtAssembly } from '../../../generators/circle-skirt/assembly3d.js';
+import { makeDefaultCircleSkirtProject } from '../../../state/useCircleSkirtProject.js';
 import { PAD_PIECE_ID, CROSS_STRAP_PIECE_ID } from '../../../generators/padded-strap/buildPattern.js';
 import type { Point } from '../../pattern-engine/graph/Point.js';
 import { buildPattern as buildTriZip } from '../../../generators/tri-zip-backpack/index.js';
@@ -40,11 +44,11 @@ type Pin = { pieceId: string; point: Point; radius: number };
  * offsets, riding on a host region), mesh it, seam it, and stand the object's box
  * on the host. Mirrors FoldViewer's simulate mode so a page and its test agree.
  */
-function assemble(pieces: Piece[], placements: Record<string, PiecePlacement>, seams: SeamSpec[], object: AssemblyObject, spacing: number, pins: Pin[] = []) {
+function assemble(pieces: Piece[], placements: Record<string, PiecePlacement>, seams: SeamSpec[], object: AssemblyObject | null, spacing: number, pins: Pin[] = [], gravity?: Vec3, extraSolids: Solid[] = [], selfCollision = true) {
   const entries: (PlacedEntry & { piece: Piece })[] = pieces.map((piece) => {
     const pl = placements[piece.id];
     let rootPoint = pl?.rootPoint;
-    if (!rootPoint && object.base && object.base.pieceId === piece.id) rootPoint = { x: object.base.point.x + object.base.direction.x, y: object.base.point.y + object.base.direction.y };
+    if (!rootPoint && object?.base && object.base.pieceId === piece.id) rootPoint = { x: object.base.point.x + object.base.direction.x, y: object.base.point.y + object.base.direction.y };
     const model = buildFoldModel(piece, { rootPoint })!;
     return { piece, model, offsetX: pl?.dx ?? 0, offsetY: pl?.dy ?? 0, offsetZ: pl?.dz ?? 0, placement: pl };
   });
@@ -55,15 +59,19 @@ function assemble(pieces: Piece[], placements: Record<string, PiecePlacement>, s
     extraX: seams.flatMap((sm) => [sm.a, sm.b].filter((x) => x.pieceId === e.piece.id).flatMap((x) => [x.from.x, x.to.x])),
     extraY: seams.flatMap((sm) => [sm.a, sm.b].filter((x) => x.pieceId === e.piece.id).flatMap((x) => [x.from.y, x.to.y])),
   })!);
-  const inits = entries.map((e) => {
-    const drape = e.placement?.drape;
-    return foldedInitial({ model: e.model, angles: anglesOf(e), transform: placer(e), drape: drape ? (f) => drapePoint(drape, f) : undefined });
-  });
-  const creases = entries.map((e) => (e.placement?.drape ? null : foldedCreaseRest({ model: e.model, angles: anglesOf(e) })));
-  let solids: Solid[];
+  const inits = entries.map((e) => foldedInitial({ model: e.model, angles: anglesOf(e), transform: placer(e), drape: placementMap(e.placement) ?? undefined }));
+  const creases = entries.map((e) => (placementMap(e.placement) ? null : foldedCreaseRest({ model: e.model, angles: anglesOf(e) })));
+  let solids: Solid[] = [...extraSolids];
   let pinnedHost: (mi: number, f: Point) => boolean = () => false;
-  if (object.shape === 'torso') {
-    solids = torsoForm({ chestWidth: object.width, chestDepth: object.depth, torsoLength: object.height, shoulderWidth: object.torso?.shoulderWidth ?? object.width * 1.2, neckRadius: object.torso?.neckRadius ?? 65 }, object.at ?? [0, 0, 0]).solids;
+  if (!object) {
+    // nothing to stand on: pins alone hold the assembly
+  } else if (object.shape === 'torso') {
+    solids = [...solids, ...torsoForm({ chestWidth: object.width, chestDepth: object.depth, torsoLength: object.height, shoulderWidth: object.torso?.shoulderWidth ?? object.width * 1.2, neckRadius: object.torso?.neckRadius ?? 65 }, object.at ?? [0, 0, 0]).solids];
+  } else if (object.at) {
+    const c = object.at;
+    solids.push({ kind: 'box', center: [c[0], c[1] + object.height / 2, c[2]], half: [object.width / 2, object.height / 2, object.depth / 2] });
+    // Host = first piece, whole root region, as the viewer does without a base.
+    pinnedHost = (mi, f) => pins.length === 0 && mi === 0 && !placementMap(entries[0].placement) && regionAt(entries[0].model, f) === entries[0].model.root && !onAnyFold(entries[0].model, f, 1.5);
   } else {
     const b = object.base!;
     const host = entries.find((e) => e.piece.id === b.pieceId)!;
@@ -79,7 +87,7 @@ function assemble(pieces: Piece[], placements: Record<string, PiecePlacement>, s
       const across = Math.abs(-rx * b.direction.y + ry * b.direction.x);
       return along > spacing - 2 && along < object.height - spacing + 2 && across < object.width / 2 - spacing + 2;
     };
-    solids = [{ kind: 'box', center: centre, half: [object.width / 2, object.height / 2, object.depth / 2] }];
+    solids.push({ kind: 'box', center: centre, half: [object.width / 2, object.height / 2, object.depth / 2] });
     pinnedHost = (mi, f) => pins.length === 0 && entries[mi].piece.id === b.pieceId && regionAt(entries[mi].model, f) === entries[mi].model.root
       && !onAnyFold(entries[mi].model, f, 1.5) && (object.pin !== 'footprint' || under(f));
   }
@@ -90,7 +98,9 @@ function assemble(pieces: Piece[], placements: Record<string, PiecePlacement>, s
     seams,
     solids,
     pinned: (mi, _v, f) => pins.some((p) => p.pieceId === entries[mi].piece.id && Math.hypot(f.x - p.point.x, f.y - p.point.y) <= p.radius) || pinnedHost(mi, f),
-    params: { spacing, selfCollision: true },
+    bendStiffnessOf: (mi) => materialBendStiffness(entries[mi].piece.materialId, DEFAULT_CLOTH_PARAMS.bendStiffness),
+    plateStiffnessOf: (mi) => materialPlateStiffness(entries[mi].piece.materialId),
+    params: { spacing, selfCollision, gravity: gravity ?? [0, 0, 0] },
   });
   const ids = entries.map((e) => e.piece.id);
   const bounds = (id: string) => {
@@ -384,5 +394,115 @@ describe('padded strap on a torso', () => {
     const asmWide = paddedStrapAssembly(asmOk.pieces, resolveStrap({ ...base, pad_spread: 300 }))!;
     expect(asmWide.fit?.ok).toBe(false);
     expect(asmWide.report[0]).toMatch(/reduce the spread/);
+  });
+});
+
+describe('tri-zip variants', () => {
+  const run = (overrides: Record<string, unknown>) => {
+    const proj = makeDefaultTriZipProject();
+    const inputs = { ...proj.inputs, ...overrides };
+    const preset = getPreset(inputs.stylePreset);
+    const r = resolveTriZip(inputs, preset);
+    const built = buildTriZip(inputs, preset);
+    expect(built.ok).toBe(true);
+    if (!built.ok) throw new Error('build');
+    const asm = triZipAssembly(built.value.pieces, r);
+    expect(asm).not.toBeNull();
+    const body = asm!.pieces.filter((p) => p.id in asm!.placements);
+    const { world, bounds } = assemble(body, asm!.placements, asm!.seams, asm!.object, 12);
+    relax(world, 500);
+    return { r, world, bounds, body };
+  };
+  it('split gusset: the two halves meet at the bottom centre and close round the block', () => {
+    const { r, world, bounds, body } = run({ split_gusset: true });
+    expect(body.some((p) => p.id === 'perimeter-gusset-a') && body.some((p) => p.id === 'perimeter-gusset-b')).toBe(true);
+    expect(seamResidual(world).mean).toBeLessThan(1.5);
+    expect(maxPenetration(world)).toBeLessThan(world.params.thickness);
+    const a = bounds('perimeter-gusset-a'), b = bounds('perimeter-gusset-b');
+    // Each half spans from its side to the bottom centre (allowance flaps flare a little).
+    expect(Math.abs(a.lo[0])).toBeLessThan(15);
+    expect(Math.abs(b.hi[0] - r.width)).toBeLessThan(15);
+    expect(a.hi[0]).toBeGreaterThan(r.width / 2 - 5);
+    expect(b.lo[0]).toBeLessThan(r.width / 2 + 5);
+  });
+  it('direct zips: wings meet the centre panel and the front still equals the back width', () => {
+    const { r, world, bounds, body } = run({ zipper_method: 'direct' });
+    expect(body.some((p) => p.id === 'tri-zip-subsystem')).toBe(false);
+    expect(seamResidual(world).mean).toBeLessThan(1.5);
+    expect(maxPenetration(world)).toBeLessThan(world.params.thickness);
+    const wl = bounds('front-wing-left'), wr = bounds('front-wing');
+    expect(Math.abs(wl.lo[0])).toBeLessThan(3);
+    expect(Math.abs(wr.hi[0] - r.width)).toBeLessThan(3);
+  });
+});
+
+describe('zip pouch styles', () => {
+  const run = (overrides: Record<string, unknown>) => {
+    const inputs = { ...makeDefaultZipPouchProject().inputs, ...overrides };
+    const built = buildZip(inputs);
+    expect(built.ok).toBe(true);
+    if (!built.ok) throw new Error('build');
+    const r = resolveZip(inputs);
+    const asm = zipPouchAssembly(built.value.pieces, r);
+    expect(asm).not.toBeNull();
+    const body = asm!.pieces.filter((p) => p.id in asm!.placements || p.id === asm!.object.base?.pieceId);
+    const { world, bounds } = assemble(body, asm!.placements, asm!.seams, asm!.object, 8, asm!.pins ?? [], undefined, [], asm!.selfCollision ?? true);
+    relax(world, 400);
+    return { r, world, bounds, asm: asm! };
+  };
+  it('gusset strip: the U band seams to both panels round the block', () => {
+    const { r, world, bounds } = run({ construction_style: 'gusset-strip' });
+    expect(seamResidual(world).mean).toBeLessThan(1.5);
+    expect(maxPenetration(world)).toBeLessThan(world.params.thickness);
+    const g = bounds('gusset-strip');
+    expect(g.hi[2] - g.lo[2]).toBeGreaterThan(r.finished_depth - 4);
+    expect(g.hi[0] - g.lo[0]).toBeGreaterThan(r.finished_length - 4);
+  });
+  it('multi-panel: bottom under, ends on edge, all six seams close', () => {
+    const { r, world, bounds } = run({ construction_style: 'multi-panel' });
+    expect(seamResidual(world).mean).toBeLessThan(1.5);
+    expect(maxPenetration(world)).toBeLessThan(world.params.thickness);
+    const bottom = bounds('bottom-panel');
+    // Flat under the block; its seam allowance flaps turn up at the edges.
+    expect(bottom.hi[1] - bottom.lo[1]).toBeLessThan(2 * r.seam_allowance + 8);
+    const endL = bounds('end-panel-left');
+    expect(endL.hi[0] - endL.lo[0]).toBeLessThan(12);
+    expect(endL.hi[2] - endL.lo[2]).toBeGreaterThan(r.finished_depth - 4);
+  });
+  it('cross-bottom: bands and arms fold toward each other round the block (corner cutouts left open)', () => {
+    const { r, world, bounds } = run({ construction_style: 'cross-bottom' });
+    expect(seamResidual(world).mean).toBeLessThan(2);
+    expect(maxStretch(world, (_id, f) => f.x > r.seam_allowance && f.x < 2 * r.finished_length && f.y > r.seam_allowance)).toBeLessThan(0.3);
+    expect(maxPenetration(world)).toBeLessThan(world.params.thickness);
+    const back = bounds('cross-panel-back'), front = bounds('cross-panel');
+    // Zipper edges at the top, block between the two faces.
+    expect(back.hi[1]).toBeGreaterThan(r.finished_width - 5);
+    expect(front.hi[2] - back.lo[2]).toBeGreaterThan(r.finished_depth);
+  });
+});
+
+describe('circle skirt cloth', () => {
+  it('panels wrap into a cone from the waist, seam to their neighbours and hang over the hips', () => {
+    const inputs = makeDefaultCircleSkirtProject().inputs;
+    const built = buildCircleSkirt(inputs);
+    const r = resolveCircleSkirt(inputs);
+    const asm = circleSkirtAssembly(built.pieces, r);
+    expect(asm).not.toBeNull();
+    if (!asm) return;
+    const { world, bounds } = assemble(asm.pieces, asm.placements, asm.seams, null, 16, asm.pins, asm.gravity, asm.solids);
+    // Waist ring starts at the apex height; hem below it.
+    const all0 = clothBounds(world);
+    expect(all0.hi[1]).toBeLessThan(1);
+    expect(maxPenetration(world)).toBeLessThan(1);
+    relax(world, 400);
+    expect(maxPenetration(world)).toBeLessThan(world.params.thickness);
+    expect(seamResidual(world).mean).toBeLessThan(2.5);
+    expect(maxStretch(world)).toBeLessThan(0.15);
+    const all = clothBounds(world);
+    // Hangs well down (a flared skirt's hem sits above a plumb drop) and wider than the hips.
+    expect(-all.lo[1]).toBeGreaterThan(0.65 * r.skirt_length);
+    const hipR = (r.hip_circumference / (2 * Math.PI)) * 1.05;
+    expect(all.hi[0] - all.lo[0]).toBeGreaterThan(2 * hipR);
+    void bounds;
   });
 });

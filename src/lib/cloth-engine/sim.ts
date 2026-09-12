@@ -122,10 +122,9 @@ export interface SeamSpec {
   /** Rest distance between matched points; defaults to the fabric thickness. */
   gap?: number;
   /**
-   * Number of attachment points along the seam. Default: one per mesh spacing.
-   * Use a few for a gathered seam (a long edge sewn to a short one): the fabric
-   * between tacks stays free instead of being compressed, which a coarse mesh
-   * cannot pleat.
+   * Number of attachment points along the seam. Default: one per mesh cell of
+   * the shorter side, so a gathered seam (a long edge sewn to a short one)
+   * leaves the long side's extra fabric free to buckle between attachments.
    */
   samples?: number;
   label?: string;
@@ -186,6 +185,43 @@ interface DistanceConstraint {
   rest: number;
   /** Seams only: distance at creation, ramped down to `rest` over `seamRampSteps`. */
   initial?: number;
+  /** Per-constraint stiffness override (bending by material). */
+  k?: number;
+}
+
+/**
+ * Isometric bending constraint (Bergou 2006 / Bender 2014) over the two
+ * triangles sharing edge x0–x1 with opposite vertices x2, x3. Q comes from the
+ * FLAT pattern, so a flat sheet has zero energy and any curvature is resisted —
+ * a real plate stiffness, which distance bends (second-order) cannot give.
+ */
+interface PlateConstraint {
+  v: [number, number, number, number];
+  q: number[];
+  k: number;
+}
+
+/** Plate (isometric bending) stiffness by material id: foam and webbing resist curvature; cloth barely. */
+export function materialPlateStiffness(materialId: string | undefined): number {
+  if (!materialId) return 0;
+  if (materialId.startsWith('foam')) return 0.35;
+  if (materialId.startsWith('webbing')) return 0.5;
+  if (materialId.startsWith('cordura')) return 0.02;
+  return 0;
+}
+
+/**
+ * Bending stiffness by material id (per-iteration fraction). Closed-cell foam
+ * and webbing are near-rigid plates and bands; spacer mesh is floppier than
+ * Cordura. Unknown materials get the default cloth stiffness.
+ */
+export function materialBendStiffness(materialId: string | undefined, fallback: number): number {
+  if (!materialId) return fallback;
+  if (materialId.startsWith('foam')) return 1;
+  if (materialId.startsWith('webbing') || materialId === 'velcro-hook' || materialId === 'velcro-loop') return 0.9;
+  if (materialId === 'spacer-mesh') return 0.15;
+  if (materialId.startsWith('cordura')) return Math.max(fallback, 0.45);
+  return fallback;
 }
 
 export interface ClothWorld {
@@ -205,6 +241,8 @@ export interface ClothWorld {
   tris: Uint32Array;
   /** For each global vertex, its 1-ring neighbours (global indices) — excluded from self-collision. */
   ring: Uint32Array[];
+  /** Isometric bending constraints for materials with plate stiffness (foam, webbing). */
+  plates: PlateConstraint[];
   steps: number;
 }
 
@@ -222,6 +260,10 @@ export interface CreateWorldOptions {
    * distance across fold lines so pressed folds are remembered — see `foldedCreaseRest`.
    */
   bendRest?: (meshIndex: number, k: Point, l: Point, i: Point, j: Point) => number;
+  /** Bending stiffness per mesh (e.g. from the piece's material via `materialBendStiffness`); default `params.bendStiffness`. */
+  bendStiffnessOf?: (meshIndex: number) => number | undefined;
+  /** Plate stiffness per mesh (`materialPlateStiffness`); 0 or undefined = none. */
+  plateStiffnessOf?: (meshIndex: number) => number | undefined;
   params?: Partial<ClothParams>;
 }
 
@@ -254,6 +296,7 @@ export function createWorld(opts: CreateWorldOptions): ClothWorld {
 
   const stretch: DistanceConstraint[] = [];
   const bend: DistanceConstraint[] = [];
+  const plates: PlateConstraint[] = [];
   // A rigid start is discontinuous wherever three panels meet (a wing, a band and
   // its side strip): edges torn at initialisation mark their vertices, and no
   // crease is trusted there — the fabric wants flat and the seams decide.
@@ -275,7 +318,13 @@ export function createWorld(opts: CreateWorldOptions): ClothWorld {
       const flatRest = Math.hypot(m.flat[2 * l] - m.flat[2 * k], m.flat[2 * l + 1] - m.flat[2 * k + 1]);
       const anyTorn = torn[gk] || torn[gl] || torn[base[mi] + i] || torn[base[mi] + j];
       const rest = opts.bendRest && !anyTorn ? opts.bendRest(mi, fp(k), fp(l), fp(i), fp(j)) : flatRest;
-      bend.push({ i: gk, j: gl, rest });
+      const k2 = opts.bendStiffnessOf?.(mi);
+      bend.push(k2 === undefined ? { i: gk, j: gl, rest } : { i: gk, j: gl, rest, k: k2 });
+      const kp = opts.plateStiffnessOf?.(mi) ?? 0;
+      if (kp > 0 && !anyTorn) {
+        const q = plateMatrix(fp(i), fp(j), fp(k), fp(l));
+        if (q) plates.push({ v: [base[mi] + i, base[mi] + j, gk, gl], q, k: kp });
+      }
     }
   });
 
@@ -287,7 +336,10 @@ export function createWorld(opts: CreateWorldOptions): ClothWorld {
     if (ma < 0 || mb < 0) continue;
     const la = sideLength(s.a);
     const lb = sideLength(s.b);
-    const count = Math.max(2, s.samples ?? Math.ceil(Math.max(la, lb) / params.spacing) + 1);
+    // One attachment per mesh cell of the SHORTER side. A longer side sewn to a shorter one
+    // (the pleated face bottom onto the card) then keeps free vertices between attachments,
+    // and its extra length buckles into gathers instead of being crushed along the seam.
+    const count = Math.max(2, s.samples ?? Math.ceil(Math.min(la, lb) / params.spacing) + 1);
     const gap = s.gap ?? params.thickness;
     for (let k = 0; k < count; k++) {
       const t = k / (count - 1);
@@ -314,7 +366,49 @@ export function createWorld(opts: CreateWorldOptions): ClothWorld {
   });
   const ring = ringSets.map((set) => Uint32Array.from(set));
 
-  return { meshes, base, n, pos, prev, invMass, stretch, bend, seams, solids: opts.solids ?? [], params, steps: 0, tris: Uint32Array.from(triList), ring };
+  return { meshes, base, n, pos, prev, invMass, stretch, bend, seams, solids: opts.solids ?? [], params, steps: 0, tris: Uint32Array.from(triList), ring, plates };
+}
+
+/** Bending matrix Q (4×4, row-major) from the flat quad x0–x1 shared edge, x2 and x3 opposite. */
+function plateMatrix(x0: Point, x1: Point, x2: Point, x3: Point): number[] | null {
+  const e = (a: Point, b: Point) => ({ x: b.x - a.x, y: b.y - a.y });
+  const cot = (a: { x: number; y: number }, b: { x: number; y: number }) => {
+    const crossZ = a.x * b.y - a.y * b.x;
+    if (Math.abs(crossZ) < 1e-9) return null;
+    return (a.x * b.x + a.y * b.y) / Math.abs(crossZ);
+  };
+  const e0 = e(x0, x1), e1 = e(x0, x2), e2 = e(x0, x3), e3 = e(x1, x2), e4 = e(x1, x3);
+  const ne0 = { x: -e0.x, y: -e0.y };
+  const c01 = cot(e0, e1), c02 = cot(e0, e2), c03 = cot(ne0, e3), c04 = cot(ne0, e4);
+  if (c01 === null || c02 === null || c03 === null || c04 === null) return null;
+  const area = 0.5 * (Math.abs(e0.x * e1.y - e0.y * e1.x) + Math.abs(e0.x * e2.y - e0.y * e2.x));
+  if (area < 1e-9) return null;
+  const K = [c03 + c04, c01 + c02, -c01 - c03, -c02 - c04];
+  const q: number[] = new Array(16);
+  for (let a = 0; a < 4; a++) for (let b = 0; b < 4; b++) q[4 * a + b] = (3 / area) * K[a] * K[b];
+  return q;
+}
+
+/** Project the isometric bending constraint C = ½ Σ Q_ab x_a·x_b toward zero (flat). */
+function projectPlate(pos: Float64Array, invMass: Float64Array, c: PlateConstraint): void {
+  const x: Vec3[] = c.v.map((g) => [pos[3 * g], pos[3 * g + 1], pos[3 * g + 2]] as Vec3);
+  let energy = 0;
+  const grad: Vec3[] = [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]];
+  for (let a = 0; a < 4; a++) for (let b = 0; b < 4; b++) {
+    const qab = c.q[4 * a + b];
+    energy += 0.5 * qab * (x[a][0] * x[b][0] + x[a][1] * x[b][1] + x[a][2] * x[b][2]);
+    grad[a][0] += qab * x[b][0]; grad[a][1] += qab * x[b][1]; grad[a][2] += qab * x[b][2];
+  }
+  if (Math.abs(energy) < 1e-12) return;
+  let denom = 0;
+  for (let a = 0; a < 4; a++) denom += invMass[c.v[a]] * (grad[a][0] * grad[a][0] + grad[a][1] * grad[a][1] + grad[a][2] * grad[a][2]);
+  if (denom < 1e-12) return;
+  const lambda = -c.k * energy / denom;
+  for (let a = 0; a < 4; a++) {
+    const g = c.v[a], w = invMass[g];
+    if (w === 0) continue;
+    pos[3 * g] += w * lambda * grad[a][0]; pos[3 * g + 1] += w * lambda * grad[a][1]; pos[3 * g + 2] += w * lambda * grad[a][2];
+  }
 }
 
 /** Closest point on triangle (a, b, c) to p — Ericson, Real-Time Collision Detection 5.1.5. */
@@ -516,7 +610,8 @@ export function step(world: ClothWorld): void {
   const maxSeam = params.maxSeamCorrection ?? params.spacing / 4;
   for (let it = 0; it < params.iterations; it++) {
     for (const c of world.stretch) project(pos, invMass, c, params.stretchStiffness);
-    for (const c of world.bend) project(pos, invMass, c, params.bendStiffness);
+    for (const c of world.bend) project(pos, invMass, c, c.k ?? params.bendStiffness);
+    for (const c of world.plates) projectPlate(pos, invMass, c);
     for (const c of world.seams) {
       const target = c.initial === undefined ? c.rest : c.rest + (c.initial - c.rest) * (1 - ramp);
       project(pos, invMass, { i: c.i, j: c.j, rest: target }, params.seamStiffness, maxSeam);

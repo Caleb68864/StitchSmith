@@ -304,9 +304,16 @@ pair and the H-harness are checked on a medium torso with a written fit
 verdict; vertex–triangle self-collision so layers stack; finished-envelope
 measurement (`clothBounds`) with the vault's pleated-card wrap and the zip,
 roll-top and Tri-Zip envelopes asserted in tests; stretch counts elongation
-only and is measured inside the stitch lines. Remaining from the enhancement
-list: gathered seams (item 3), stiffness by material (5), gravity (6),
-coverage (7), and torso sizes beyond medium.
+only and is measured inside the stitch lines.
+
+**Round three (2026-09-11, later):** gathered seams (sample by the shorter
+side; the pleated face bottom is now sewn and the magazine rides 1" up on
+the gathers, matching the vault), material stiffness (isometric plate
+constraint for foam and webbing), gravity, and coverage: Zip Pouch
+gusset-strip / multi-panel / cross-bottom, Tri-Zip split gusset and direct
+zips, and the Circle Skirt (cone-wrapped panels hung over a hip form).
+Left: gusset-strip with a front zipper, torso sizes beyond medium, the
+Tri-Zip's shaped top corners, and a finer mesh for gathers.
 
 - **Stage 1 — fold preview (done, see status).** Every piece is flat panels
   joined at `fold` edges. Treat each region between fold lines as a rigid

@@ -1,7 +1,8 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest';
 import type { Piece } from '../../pattern-engine/graph/Piece.js';
-import { buildClothMesh, nearestVertex, createWorld, relax, seamResidual, maxStretch, maxPenetration, vertexPosition, foldedInitial, foldedCreaseRest, solidDistance, torsoForm, shoulderPath, TORSO_MEDIUM, clothBounds } from '../index.js';
+import type { Point } from '../../pattern-engine/graph/Point.js';
+import { buildClothMesh, nearestVertex, createWorld, relax, seamResidual, maxStretch, maxPenetration, vertexPosition, foldedInitial, foldedCreaseRest, solidDistance, torsoForm, shoulderPath, TORSO_MEDIUM, clothBounds, materialBendStiffness, materialPlateStiffness } from '../index.js';
 import { buildFoldModel, defaultFoldAngles, regionAt } from '../../fold-engine/index.js';
 import { buildPattern } from '../../../generators/mag-pouch/buildPattern.js';
 
@@ -195,30 +196,45 @@ describe('pleated card cloth — pucker emerges', () => {
     const creaseBack = foldedCreaseRest({ model: backModel, angles: defaultFoldAngles(backModel) });
     const creaseFace = foldedCreaseRest({ model: faceModel, angles: defaultFoldAngles(faceModel) });
     const seams = [] as import('../index.js').SeamSpec[];
-    // Bottom: the face's raw bottom edge (root half bottom) to the card bottom.
-    // The face bottom is longer than the back's and gathers into "alligator lips" under the
-    // magazine; a coarse mesh cannot pleat, so the bottom is held only where the division
-    // seams already pin it (see roadmap: gathered seams are Stage 3 follow-up work).
     // Divisions and outer sides, running the card height, through both face layers.
     for (let k = 0; k <= cells; k++) {
       const xf = faceEndHem + k * fpc, xb = backHem + k * span;
       seams.push({ a: { pieceId: 'face', from: { x: xf, y: faceCutH }, to: { x: xf, y: faceCutH - cardH } }, b: { pieceId: 'back', from: { x: xb, y: cardBottomY }, to: { x: xb, y: cardBottomY - cardH } } });
       seams.push({ a: { pieceId: 'face', from: { x: xf, y: 0 }, to: { x: xf, y: cardH } }, b: { pieceId: 'back', from: { x: xb, y: cardBottomY }, to: { x: xb, y: cardBottomY - cardH } }, gap: 2.4 });
     }
-    // The magazine sits on the seam, one fabric thickness above the card bottom.
-    const magCentre: [number, number, number] = [backHem + span / 2, -(cardBottomY - 2) + 3.75 * IN, magD / 2 + 0.6];
+    // Bottom, per cell, both layers: 4 7/8" of face onto 3" of card — a gathered seam. The seam
+    // samples by the shorter side so the face's extra length buckles into the "alligator lips".
+    for (let k = 0; k < cells; k++) {
+      const xf0 = faceEndHem + k * fpc, xb0 = backHem + k * span;
+      seams.push({ a: { pieceId: 'face', from: { x: xf0, y: faceCutH }, to: { x: xf0 + fpc, y: faceCutH } }, b: { pieceId: 'back', from: { x: xb0, y: cardBottomY }, to: { x: xb0 + span, y: cardBottomY } } });
+      seams.push({ a: { pieceId: 'face', from: { x: xf0, y: 0 }, to: { x: xf0 + fpc, y: 0 } }, b: { pieceId: 'back', from: { x: xb0, y: cardBottomY }, to: { x: xb0 + span, y: cardBottomY } }, gap: 2.4 });
+    }
+    // The magazine rides on the gathered face bottom. The vault's ride-height demo puts a
+    // pleated bottom about 1–1.5" higher than a cradle (mag-cell-bottom-flat-vs-cradle.md);
+    // the cloth agrees — below ~1" the face has no fabric left to wrap under the magazine.
+    const magCentre: [number, number, number] = [backHem + span / 2, -(cardBottomY - 1 * IN) + 3.75 * IN, magD / 2 + 0.6];
     const world = createWorld({
       meshes: [backMesh, faceMesh],
       initial: (mi, _v, f) => (mi === 0 ? initBack(f) : initFace(f)),
       seams,
-      solids: [{ kind: 'box', center: magCentre, half: [1.275 * IN, 3.75 * IN, magD / 2] }],
+      // A magazine has rounded edges; a sharp box corner pulls the face tight round it.
+      solids: [{ kind: 'rounded_box', center: magCentre, half: [1.275 * IN, 3.75 * IN, magD / 2], radius: 4 }],
       pinned: (mi, _v, f) => mi === 0 && regionAt(backModel, f) === backModel.root,
       bendRest: (mi, k, l, i, j) => (mi === 0 ? creaseBack : creaseFace)(k, l, i, j),
-      params: { spacing: 8 },
+      params: { spacing: 8, selfCollision: true },
     });
     relax(world, 400);
-    expect(maxStretch(world)).toBeLessThan(0.08);
+    // Away from the gathered rows: a 4 7/8" edge sewn onto 3" shears the last cell above the
+    // seam (the gathers' transition zone), which the 8 mm mesh renders as one elongated row.
+    // With the bottom gathered the face is taut, and its crease at each division line falls
+    // inside one 8 mm cell (no vertex on the crease), which reads as ~20 % on that edge.
+    const awayFromGathers = (id: string, f: Point) => id !== 'face' || (f.y > 12 && f.y < faceCutH - 12);
+    expect(maxStretch(world, awayFromGathers)).toBeLessThan(0.25);
+    expect(maxStretch(world)).toBeLessThan(0.45);
     expect(seamResidual(world).mean).toBeLessThan(4);
+    // The gathered bottom is attached along the whole card bottom of every cell.
+    const bottomSeams = world.seams.filter((c) => Math.abs(faceMesh.flat[2 * (c.i - world.base[1]) + 1] - faceCutH) < 0.5 || Math.abs(faceMesh.flat[2 * (c.j - world.base[1]) + 1] - faceCutH) < 0.5);
+    expect(bottomSeams.length).toBeGreaterThan(cells * 8);
     expect(maxPenetration(world)).toBeLessThan(world.params.thickness);
     // Pucker: mid-cell face sits proud of the division lines by a clear margin.
     const zAt = (x: number) => vertexPosition(world, 1, nearestVertex(faceMesh, { x, y: faceCutH - cardH / 2 }))[2];
@@ -315,5 +331,38 @@ describe('self-collision', () => {
     expect(hi[0]).toBeCloseTo(85, 9); expect(hi[1]).toBeCloseTo(0, 9); expect(hi[2]).toBeCloseTo(3, 9);
     // Restricting to an interior region excludes the outer 10 mm.
     expect(clothBounds(world, 0, (_id, f) => f.x >= 10 && f.x <= 70).size[0]).toBe(60);
+  });
+});
+
+describe('gravity and material stiffness', () => {
+  it('a strip pinned at one end hangs under gravity: cloth curls, a foam strip stays straight', () => {
+    // Drop of the strip's centre line at five stations along it.
+    const profile = (materialId: string | undefined) => {
+      const strip = rect('strip', 40, 200);
+      const mesh = buildClothMesh(strip, { spacing: 10 })!;
+      const world = createWorld({
+        meshes: [mesh],
+        // Horizontal strip along +x (flat y → x), clamped over its first 25 mm.
+        initial: (_m, _v, f) => [f.y, 0, f.x],
+        pinned: (_m, _v, f) => f.y < 25,
+        bendStiffnessOf: () => materialBendStiffness(materialId, 0.35),
+        plateStiffnessOf: () => materialPlateStiffness(materialId),
+        params: { spacing: 10, gravity: [0, -0.02, 0] },
+      });
+      relax(world, 300);
+      const drops: number[] = [];
+      for (let st = 0; st <= 200; st += 50) drops.push(-vertexPosition(world, 0, nearestVertex(mesh, { x: 20, y: st }))[1]);
+      return drops;
+    };
+    const cloth = profile(undefined);
+    const foam = profile('foam-closed-cell');
+    expect(cloth[4]).toBeGreaterThan(40);
+    // Curvature: how far the mid-station sits from the root–tip chord, as a fraction of the tip drop.
+    const bow = (p: number[]) => (p[2] - p[4] / 2) / p[4];
+    expect(bow(cloth)).toBeGreaterThan(0.12);
+    expect(Math.abs(bow(foam))).toBeLessThan(0.1);
+    expect(materialBendStiffness('webbing-38', 0.35)).toBe(0.9);
+    expect(materialBendStiffness('spacer-mesh', 0.35)).toBe(0.15);
+    expect(materialPlateStiffness('foam-closed-cell')).toBeGreaterThan(materialPlateStiffness('cordura-500'));
   });
 });

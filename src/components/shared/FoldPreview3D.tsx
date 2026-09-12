@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
 import type { Pattern } from '../../lib/pattern-engine/graph/Pattern.js';
-import type { SeamSpec } from '../../lib/cloth-engine/sim.js';
+import type { SeamSpec, Solid } from '../../lib/cloth-engine/sim.js';
 import type { PiecePlacement } from '../../lib/fold-engine/index.js';
 
 export type { SeamSpec };
@@ -29,6 +29,8 @@ export interface FoldObject {
   torso?: { shoulderWidth: number; neckRadius: number };
   /** Absolute scene position of the object's base centre (waist for a torso). Overrides `base`. */
   at?: [number, number, number];
+  /** How far the object stands off its base seam along `base.direction`, mm. Default 1.5 (one fabric layer); a gathered bottom under it needs ~5. */
+  lift?: number;
   /** Where the object stands. Without it the object is centred on the first piece's root region. */
   base?: FoldObjectBase;
   /**
@@ -54,6 +56,12 @@ export interface FoldPreview3DProps {
   seams?: SeamSpec[];
   /** Cloth vertices held still: every vertex of `pieceId` within `radius` of flat `point`. */
   pins?: { pieceId: string; point: { x: number; y: number }; radius: number }[];
+  /** Extra colliders (a hip form, a tabletop) besides the object. */
+  solids?: Solid[];
+  /** Gravity per step for the cloth (default: 0.01 mm/step² along −up). */
+  gravity?: [number, number, number];
+  /** Cloth-to-cloth collision (default true). Off where allowance flaps must cross to close a seam. */
+  selfCollision?: boolean;
   /** Fold progress 0–1 to start at. Default 1 (folded). */
   initialProgress?: number;
   height?: number;

@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import type { UseZipPouchProjectReturn } from '../../state/useZipPouchProject.js';
 import { validateInputs, resolveInputs } from '../../generators/zip-pouch/inputs.js';
-import { computeCutDimensions } from '../../generators/zip-pouch/bom.js';
+import { zipPouchAssembly } from '../../generators/zip-pouch/assembly3d.js';
 import { buildPattern } from '../../generators/zip-pouch/buildPattern.js';
 import { ZipPouchSettingsPanel } from './ZipPouchSettingsPanel.js';
 import { PatternPreview } from './PatternPreview.js';
@@ -11,7 +11,7 @@ import { ConstructionSteps } from '../shared/ConstructionSteps.js';
 import { PatternPageShell } from '../shared/PatternPageShell.js';
 import { parseProjectJson, downloadProjectJson } from '../../export/projectEnvelopeIO.js';
 import { ValidationBanner } from '../shared/ValidationBanner.js';
-import { FoldPreview3D, type FoldObject, type PiecePlacement, type SeamSpec } from '../shared/FoldPreview3D.js';
+import { FoldPreview3D } from '../shared/FoldPreview3D.js';
 import type { Pattern } from '../../lib/pattern-engine/graph/Pattern.js';
 import type { BuildPatternError } from '../../generators/zip-pouch/types.js';
 
@@ -52,38 +52,20 @@ export function ZipPouchPage({ project, updateInputs, resetProject, importProjec
     return r.ok ? r.value : null;
   }, [project.inputs, hasErrors]);
   const steps = built?.steps ?? [];
-  const pattern3d = useMemo<Pattern | null>(
-    () => (built ? { id: 'zip-pouch', name: 'Zip Pouch', pieces: built.pieces } : null),
-    [built],
-  );
-
-  // 3D check: the two panels face to face round a block the finished size, seamed down both
-  // sides and across the bottom. Boxing the corners takes half the depth from each side and
-  // from the bottom, so the block stands half a depth above the bottom seam.
-  const fold3d = useMemo<{ object: FoldObject; placements: Record<string, PiecePlacement>; seams: SeamSpec[] } | null>(() => {
-    if (!built || !built.pieces.some((p) => p.id === 'front') || !built.pieces.some((p) => p.id === 'back')) return null;
+  // 3D check for every construction style (see generators/zip-pouch/assembly3d.ts).
+  const fold3d = useMemo(() => {
+    if (!built) return null;
     try {
-      const r = resolveInputs(project.inputs);
-      const { cutWidth, cutHeight } = computeCutDimensions(r);
-      const sa = r.seam_allowance;
-      const side = { left: sa, right: cutWidth - sa, bottom: cutHeight - sa, top: 0 };
-      const line = (pieceId: string, from: { x: number; y: number }, to: { x: number; y: number }) => ({ pieceId, from, to });
-      return {
-        object: {
-          width: r.finished_length, depth: r.finished_depth, height: r.finished_width, label: 'contents', pin: 'footprint',
-          base: { pieceId: 'back', point: { x: cutWidth / 2, y: side.bottom - r.finished_depth / 2 }, direction: { x: 0, y: -1 } },
-        },
-        placements: { front: { dx: 0, dy: 0, dz: r.finished_depth + 2 } },
-        seams: [
-          { label: 'left side', a: line('front', { x: side.left, y: side.top }, { x: side.left, y: side.bottom }), b: line('back', { x: side.left, y: side.top }, { x: side.left, y: side.bottom }) },
-          { label: 'right side', a: line('front', { x: side.right, y: side.top }, { x: side.right, y: side.bottom }), b: line('back', { x: side.right, y: side.top }, { x: side.right, y: side.bottom }) },
-          { label: 'bottom', a: line('front', { x: side.left, y: side.bottom }, { x: side.right, y: side.bottom }), b: line('back', { x: side.left, y: side.bottom }, { x: side.right, y: side.bottom }) },
-        ],
-      };
+      return zipPouchAssembly(built.pieces, resolveInputs(project.inputs));
     } catch {
       return null;
     }
   }, [built, project.inputs]);
+  const pattern3d = useMemo<Pattern | null>(
+    () => (built ? { id: 'zip-pouch', name: 'Zip Pouch', pieces: fold3d?.pieces ?? built.pieces } : null),
+    [built, fold3d],
+  );
+
 
   function handleReset() {
     if (window.confirm('Reset will discard all changes and restore default Zip Pouch settings. Continue?')) {
@@ -121,7 +103,7 @@ export function ZipPouchPage({ project, updateInputs, resetProject, importProjec
       preview={
         <div className="space-y-3">
           <PatternPreview inputs={project.inputs} hasErrors={hasErrors} />
-          {pattern3d && <FoldPreview3D pattern={pattern3d} object={fold3d?.object} placements={fold3d?.placements} seams={fold3d?.seams} />}
+          {pattern3d && <FoldPreview3D pattern={pattern3d} object={fold3d?.object} placements={fold3d?.placements} seams={fold3d?.seams} pins={fold3d?.pins} selfCollision={fold3d?.selfCollision ?? true} />}
         </div>
       }
       sidebar={

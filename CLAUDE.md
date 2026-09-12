@@ -132,6 +132,22 @@ numbers. Rules already encoded, with the note that justifies each:
   seam-allowance flaps do not count; `clothBounds` measures a finished
   envelope the same way. Unfilled cloth pillows: a boxed pouch measures
   between its finished length and its seam-to-seam width, and the tests say so.
+- Gathered seams: a seam samples by its SHORTER side, so a long edge sewn to
+  a short one keeps free vertices that buckle into gathers (the pleated
+  face bottom onto the card). The row above a gather shears; measure stretch
+  away from it. A pleated bottom lifts the magazine ~1" (vault ride height).
+- Materials: `materialBendStiffness` and `materialPlateStiffness` map a
+  piece's `materialId` to bending; foam and webbing get an isometric plate
+  constraint so they stay straight where cloth curls. Gravity is on in the
+  viewer (0.01 mm/step² along −up; a page may pass its own).
+- Placements also take `rz` (turn a piece upside down) and `cone` (skirt
+  panels wrapped from an apex); `placementMap` gives the direct flat→3D map
+  for draped or cone pieces. Pages may pass extra `solids` (a hip form).
+- Do not draw fold lines that run along an outline edge (the cross-bottom
+  cutouts): they cannot hinge in the rigid preview and their pressed-crease
+  rests fight the seams in the cloth; the cloth folds such panels through
+  the seams alone. Where allowance flaps must cross to close a seam (arms
+  meeting edge to edge), pass `selfCollision: false` for that assembly.
 
 ## Engine usage
 

@@ -569,6 +569,10 @@ function buildCrossBottomPieces(r: ResolvedInputs): Piece[] {
       label: `Corner: ${fmt(C)} × ${fmt(C)} mm cutout — sew these two edges together`,
     };
 
+    // No fold lines are drawn between the band, face and arms: they run along the cutout edges,
+    // where the rigid preview cannot hinge and a pressed-crease rest only fights the seams.
+    // The cloth check folds the band and arms round the contents through the seams.
+
     return {
       id,
       name,
@@ -631,13 +635,20 @@ function buildGussetStripPieces(r: ResolvedInputs): Piece[] {
       makeStraightEdge(edgeId(), 'notch', x, H, x, H * 0.75),
     ]);
     const notchPath: Path = { id: `${id}:notch`, edges: notchEdges, closed: false };
+    // The band turns 90° at each corner; drawn as folds so the 3D preview bends it into its U.
+    const cornerFolds: Path[] = cornerXs.map((x, i) => ({
+      id: `${id}:corner-${i}`,
+      edges: [makeStraightEdge(edgeId(), 'fold', x, 0, x, H)],
+      closed: false,
+      label: 'Corner — turn here (90°)',
+    }));
 
     return {
       id,
       name,
       mirror: false,
       quantity: 1,
-      paths: [cutPath, stitchPath, notchPath],
+      paths: [cutPath, stitchPath, notchPath, ...cornerFolds],
       // Baked-in SA convention: cut dims already include SA — zero outward offsets.
       seamAllowances: {
         [`${id}:e0`]: 0,
