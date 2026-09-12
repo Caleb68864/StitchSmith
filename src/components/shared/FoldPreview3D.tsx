@@ -21,6 +21,13 @@ export interface FoldObject {
   label?: string;
   /** Where the object stands. Without it the object is centred on the first piece's root region. */
   base?: FoldObjectBase;
+  /**
+   * Which part of the host panel the cloth simulation holds still. `root` (default) pins the
+   * whole root region — right when the other faces are hinged regions of the same piece.
+   * `footprint` pins only the area under the object's back face, for two-panel bags whose
+   * host panel must wrap half the depth round to the side and bottom seams (boxed corners).
+   */
+  pin?: 'root' | 'footprint';
 }
 
 /** Per-piece placement in the 3D scene, in flat pattern mm before folding (dz is applied after). */

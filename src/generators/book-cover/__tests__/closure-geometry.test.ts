@@ -12,7 +12,7 @@ const BASE: BookCoverInputs = {
 
 const SA = 9.5;
 const TOP_BOTTOM_HEM = 12;
-const CUT_WIDTH = 2 * 150 + 25 + 2 * SA; // 344
+const CUT_WIDTH = 2 * (150 + 12.5 / 2) + 25 + 2 * SA; // 356.5 — default width_ease 12.5 split across covers
 const CUT_HEIGHT = 200 + 2 * TOP_BOTTOM_HEM; // 224
 
 describe('closure: none — identical to no closure', () => {
@@ -141,14 +141,14 @@ describe('closure: flap-buckle — strap piece', () => {
     expect(result.value.pieces.some(p => p.id === 'flap-buckle-strap')).toBe(true);
   });
 
-  it('strap outline width = book_width + spine_width + 2*SA', () => {
+  it('strap outline width = book_width + ease/2 + spine_width + 2*SA', () => {
     const result = buildPattern({ ...BASE, closure: { kind: 'flap-buckle', strap_width: 25.4 } });
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     const strap = result.value.pieces.find(p => p.id === 'flap-buckle-strap')!;
     const outline = strap.paths.find(p => p.id === 'flap-buckle-strap-outline')!;
     const maxX = Math.max(...outline.edges.flatMap(e => [e.start.x, e.end.x]));
-    expect(maxX).toBeCloseTo(150 + 25 + 2 * SA, 5);
+    expect(maxX).toBeCloseTo(156.25 + 25 + 2 * SA, 5);
   });
 
   it('strap outline height = strap_width + 2*SA', () => {

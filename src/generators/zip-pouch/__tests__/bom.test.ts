@@ -20,9 +20,9 @@ const REF: ResolvedInputs = {
 // ─── computeCutDimensions ─────────────────────────────────────────────────────
 
 describe('computeCutDimensions', () => {
-  it('cut_width = finished_length + 2×SA', () => {
+  it('cut_width = finished_length + finished_depth + 2×SA (boxed corners consume the depth)', () => {
     const { cutWidth } = computeCutDimensions(REF);
-    expect(cutWidth).toBe(200); // 180 + 2×10
+    expect(cutWidth).toBe(240); // 180 + 40 + 2×10
   });
 
   it('cut_height = finished_width + depth/2 + SA', () => {
@@ -30,9 +30,9 @@ describe('computeCutDimensions', () => {
     expect(cutHeight).toBe(130); // 100 + 20 + 10
   });
 
-  it('SA=0 produces finished_length as cut_width', () => {
+  it('SA=0 produces finished_length + depth as cut_width', () => {
     const r = { ...REF, seam_allowance: 0 };
-    expect(computeCutDimensions(r).cutWidth).toBe(180);
+    expect(computeCutDimensions(r).cutWidth).toBe(220);
   });
 });
 
@@ -58,11 +58,11 @@ describe('buildBom — descriptions', () => {
 // ─── buildBom — zipper length ─────────────────────────────────────────────────
 
 describe('buildBom — zipper length', () => {
-  it('zipper quantity = 250 mm for reference inputs', () => {
+  it('zipper quantity = 300 mm for reference inputs', () => {
     const bom = buildBom(REF);
     const row = bom.find((r) => r.description.includes('YKK coil zipper'));
     expect(row).toBeDefined();
-    expect(row!.quantity).toBe(250); // cut_width 200 + 25 = 225 → 250
+    expect(row!.quantity).toBe(300); // cut_width 240 + 25 = 265 → 300
   });
 
   it('zipper unit is mm', () => {
@@ -79,10 +79,10 @@ describe('buildBom — zipper length', () => {
   });
 
   it('larger pouch produces longer zipper', () => {
-    // finished_length 250, SA 10 → cut_width 270; 270 + 25 = 295 → 300
+    // finished_length 250, depth 40, SA 10 → cut_width 310; 310 + 25 = 335 → 350
     const bom = buildBom({ ...REF, finished_length: 250 });
     const row = bom.find((r) => r.description.includes('YKK coil zipper'));
-    expect(row!.quantity).toBe(300);
+    expect(row!.quantity).toBe(350);
   });
 });
 

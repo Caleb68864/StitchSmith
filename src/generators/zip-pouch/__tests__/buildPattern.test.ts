@@ -73,15 +73,15 @@ describe('buildPattern — structural', () => {
 // ─── Panel dimension tests ───────────────────────────────────────────────────
 
 describe('buildPattern — panel dimensions', () => {
-  it('cut_width = finished_length + 2×seam_allowance = 200', () => {
-    // 180 + 2×10 = 200
+  it('cut_width = finished_length + finished_depth + 2×seam_allowance = 240', () => {
+    // 180 + 40 + 2×10 = 240 — boxing the corners takes the depth back off the bottom
     const { pieces } = getCanonicalResult();
     const front = pieces.find((p) => p.id === 'front')!;
     // Find the cut path boundary box
     const cutPath = front.paths.find((p) => p.id === 'front:cut')!;
     const allX = cutPath.edges.flatMap((e) => [e.start.x, e.end.x]);
     const width = Math.max(...allX) - Math.min(...allX);
-    expect(width).toBeCloseTo(200, 0);
+    expect(width).toBeCloseTo(240, 0);
   });
 
   it('cut_height = finished_width + depth/2 + seam_allowance = 130', () => {
@@ -94,7 +94,7 @@ describe('buildPattern — panel dimensions', () => {
     expect(height).toBeCloseTo(130, 0);
   });
 
-  it('bounding box of front piece is 200×130 (±1 mm)', () => {
+  it('bounding box of front piece is 240×130 (±1 mm)', () => {
     const { pieces } = getCanonicalResult();
     const front = pieces.find((p) => p.id === 'front')!;
     const cutPath = front.paths.find((p) => p.id === 'front:cut')!;
@@ -102,7 +102,7 @@ describe('buildPattern — panel dimensions', () => {
     const allY = cutPath.edges.flatMap((e) => [e.start.y, e.end.y]);
     const w = Math.max(...allX) - Math.min(...allX);
     const h = Math.max(...allY) - Math.min(...allY);
-    expect(w).toBeCloseTo(200, 0);
+    expect(w).toBeCloseTo(240, 0);
     expect(h).toBeCloseTo(130, 0);
   });
 
@@ -163,9 +163,9 @@ describe('buildPattern — path roles', () => {
 
 describe('buildPattern — boxing stitch lines', () => {
   // Boxing lines are SHORT HORIZONTAL marks at the bottom corners.
-  // For EDC: stitchOffset=20, cutHeight=130, cutWidth=200.
+  // For EDC: stitchOffset=20, cutHeight=130, cutWidth=240.
   // Left:  y=110 (130-20), x from 0 to 40
-  // Right: y=110,          x from 160 (200-40) to 200
+  // Right: y=110,          x from 200 (240-40) to 240
 
   it('fold-left is a horizontal line at y = cutHeight - stitchOffset = 110', () => {
     const { pieces } = getCanonicalResult();
@@ -183,12 +183,12 @@ describe('buildPattern — boxing stitch lines', () => {
     expect(foldLeft.edges[0].end.x).toBeCloseTo(40, 0);
   });
 
-  it('fold-right spans x from cutWidth-2×stitchOffset=160 to cutWidth=200', () => {
+  it('fold-right spans x from cutWidth-2×stitchOffset=200 to cutWidth=240', () => {
     const { pieces } = getCanonicalResult();
     const front = pieces.find((p) => p.id === 'front')!;
     const foldRight = front.paths.find((p) => p.id === 'front:fold-right')!;
-    expect(foldRight.edges[0].start.x).toBeCloseTo(160, 0);
-    expect(foldRight.edges[0].end.x).toBeCloseTo(200, 0);
+    expect(foldRight.edges[0].start.x).toBeCloseTo(200, 0);
+    expect(foldRight.edges[0].end.x).toBeCloseTo(240, 0);
     expect(foldRight.edges[0].start.y).toBeCloseTo(110, 0);
   });
 });

@@ -11,7 +11,8 @@ const BASE: BookCoverInputs = {
   units: 'mm',
 };
 
-// Body cut width = 2*book_width + spine_width + 2*SA = 2*150 + 25 + 2*9.5 = 344
+// width_ease defaults to max(6.35, spine_width/2) = 12.5 and is split across the two covers.
+// Body cut width = 2*(book_width + ease/2) + spine_width + 2*SA = 2*156.25 + 25 + 2*9.5 = 356.5
 // Body cut height = book_height + 2*top_bottom_hem = 200 + 2*12 = 224
 // Inner flap cut width = flap_depth + SA + top_bottom_hem = 70 + 9.5 + 12 = 91.5
 // Inner flap cut height = body cut height = 224
@@ -21,7 +22,7 @@ describe('buildPattern — body panel cut dimensions', () => {
     expect(buildPattern(BASE).ok).toBe(true);
   });
 
-  it('body outline width = 2*150 + 25 + 2*9.5 = 344 mm (no flap_depth)', () => {
+  it('body outline width = 2*156.25 + 25 + 2*9.5 = 356.5 mm (no flap_depth)', () => {
     const result = buildPattern(BASE);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -30,7 +31,7 @@ describe('buildPattern — body panel cut dimensions', () => {
     const outline = panel!.paths.find(p => p.id === 'cover-panel-outline');
     const maxX = Math.max(...outline!.edges.flatMap(e => [e.start.x, e.end.x]));
     const minX = Math.min(...outline!.edges.flatMap(e => [e.start.x, e.end.x]));
-    expect(maxX - minX).toBeCloseTo(344, 5);
+    expect(maxX - minX).toBeCloseTo(356.5, 5);
   });
 
   it('body outline height = 200 + 2*12 = 224 mm', () => {
@@ -44,14 +45,14 @@ describe('buildPattern — body panel cut dimensions', () => {
     expect(maxY - minY).toBeCloseTo(224, 5);
   });
 
-  it('SA=0: body outline width = 2*150 + 25 = 325 mm', () => {
+  it('SA=0: body outline width = 2*156.25 + 25 = 337.5 mm', () => {
     const result = buildPattern({ ...BASE, seam_allowance: 0 });
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     const panel = result.value.pieces.find(p => p.id === 'cover-panel');
     const outline = panel!.paths.find(p => p.id === 'cover-panel-outline');
     const maxX = Math.max(...outline!.edges.flatMap(e => [e.start.x, e.end.x]));
-    expect(maxX).toBeCloseTo(325, 5);
+    expect(maxX).toBeCloseTo(337.5, 5);
   });
 
   it('SA=0: SA-offset seam path is omitted', () => {
@@ -77,7 +78,7 @@ describe('buildPattern — body panel fold lines', () => {
     });
   });
 
-  it('vertical fold x-coords: SA+book_width, SA+book_width+spine_width', () => {
+  it('vertical fold x-coords: SA+book_width+ease/2, then +spine_width', () => {
     const SA = 9.5;
     const result = buildPattern(BASE);
     expect(result.ok).toBe(true);
@@ -87,8 +88,8 @@ describe('buildPattern — body panel fold lines', () => {
       .filter(p => p.id.startsWith('cover-panel-fold-v'))
       .sort((a, b) => a.edges[0].start.x - b.edges[0].start.x)
       .map(p => p.edges[0].start.x);
-    expect(foldXs[0]).toBeCloseTo(SA + 150, 5);
-    expect(foldXs[1]).toBeCloseTo(SA + 150 + 25, 5);
+    expect(foldXs[0]).toBeCloseTo(SA + 156.25, 5);
+    expect(foldXs[1]).toBeCloseTo(SA + 156.25 + 25, 5);
   });
 
   it('top hem fold at y = 12', () => {
@@ -332,7 +333,7 @@ describe('buildPattern — closure modes', () => {
     expect(result.value.pieces).toHaveLength(4);
   });
 
-  it('flap-buckle strap width = book_width + spine_width + 2*SA', () => {
+  it('flap-buckle strap width = book_width + ease/2 + spine_width + 2*SA', () => {
     const SA = 9.5;
     const result = buildPattern({ ...BASE, closure: { kind: 'flap-buckle', strap_width: 25.4, buckle_size: 25.4 } });
     expect(result.ok).toBe(true);
@@ -340,7 +341,7 @@ describe('buildPattern — closure modes', () => {
     const strap = result.value.pieces.find(p => p.id === 'flap-buckle-strap')!;
     const outline = strap.paths.find(p => p.id === 'flap-buckle-strap-outline')!;
     const maxX = Math.max(...outline.edges.flatMap(e => [e.start.x, e.end.x]));
-    expect(maxX).toBeCloseTo(BASE.book_width! + BASE.spine_width! + 2 * SA, 5);
+    expect(maxX).toBeCloseTo(BASE.book_width! + 6.25 + BASE.spine_width! + 2 * SA, 5);
   });
 
   it('flap-buckle strap height = strap_width + 2*SA', () => {

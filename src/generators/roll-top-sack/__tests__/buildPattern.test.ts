@@ -22,13 +22,14 @@ describe('buildPattern', () => {
     expect(result.value.pieces.length).toBeGreaterThanOrEqual(1);
   });
 
-  it('body panel cutHeight equals height_when_rolled + collar_height + top_hem + bottom_seam', () => {
+  it('body panel cutHeight equals height_when_rolled + bottom_width/2 + collar_height + top_hem + bottom_seam', () => {
     const result = buildPattern(BASE_INPUTS);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
 
-    const expectedCutHeight = 300 + DEFAULT_COLLAR_HEIGHT_MM + DEFAULT_TOP_HEM_MM + DEFAULT_BOTTOM_SEAM_MM;
-    expect(expectedCutHeight).toBeCloseTo(454.9, 2);
+    // Boxing the corners lifts the base by bottom_width / 2, so that is added back.
+    const expectedCutHeight = 300 + 100 / 2 + DEFAULT_COLLAR_HEIGHT_MM + DEFAULT_TOP_HEM_MM + DEFAULT_BOTTOM_SEAM_MM;
+    expect(expectedCutHeight).toBeCloseTo(504.9, 2);
 
     const bodyPanel = result.value.pieces.find(p => p.id === 'body-panel');
     expect(bodyPanel).toBeDefined();
@@ -38,6 +39,9 @@ describe('buildPattern', () => {
     expect(outline).toBeDefined();
     const maxY = Math.max(...outline!.edges.flatMap(e => [e.start.y, e.end.y]));
     expect(maxY).toBeCloseTo(expectedCutHeight, 2);
+    // Width: bottom_length + bottom_width + two French-seam allowances, so the boxed base is 200 × 100.
+    const maxX = Math.max(...outline!.edges.flatMap(e => [e.start.x, e.end.x]));
+    expect(maxX).toBeCloseTo(200 + 100 + 2 * 19, 1);
   });
 
   it('BOM hardware list contains a buckle with correct size', () => {

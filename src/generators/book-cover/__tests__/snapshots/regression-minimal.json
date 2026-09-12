@@ -19,7 +19,7 @@
                 "y": 0
               },
               "end": {
-                "x": 344,
+                "x": 356.5,
                 "y": 0
               }
             },
@@ -28,11 +28,11 @@
               "id": "cover-panel-outline:e1",
               "role": "cut",
               "start": {
-                "x": 344,
+                "x": 356.5,
                 "y": 0
               },
               "end": {
-                "x": 344,
+                "x": 356.5,
                 "y": 224
               }
             },
@@ -41,7 +41,7 @@
               "id": "cover-panel-outline:e2",
               "role": "cut",
               "start": {
-                "x": 344,
+                "x": 356.5,
                 "y": 224
               },
               "end": {
@@ -73,11 +73,11 @@
               "id": "cover-panel-sa-seam:e0",
               "role": "seam",
               "start": {
-                "x": 334.5,
+                "x": 347,
                 "y": 9.5
               },
               "end": {
-                "x": 334.5,
+                "x": 347,
                 "y": 214.5
               }
             },
@@ -86,7 +86,7 @@
               "id": "cover-panel-sa-seam:e1",
               "role": "seam",
               "start": {
-                "x": 334.5,
+                "x": 347,
                 "y": 214.5
               },
               "end": {
@@ -116,7 +116,7 @@
                 "y": 9.5
               },
               "end": {
-                "x": 334.5,
+                "x": 347,
                 "y": 9.5
               }
             }
@@ -131,11 +131,11 @@
               "id": "cover-panel-fold-v0:e0",
               "role": "fold",
               "start": {
-                "x": 159.5,
+                "x": 165.75,
                 "y": 0
               },
               "end": {
-                "x": 159.5,
+                "x": 165.75,
                 "y": 224
               }
             }
@@ -151,11 +151,11 @@
               "id": "cover-panel-fold-v1:e0",
               "role": "fold",
               "start": {
-                "x": 184.5,
+                "x": 190.75,
                 "y": 0
               },
               "end": {
-                "x": 184.5,
+                "x": 190.75,
                 "y": 224
               }
             }
@@ -175,7 +175,7 @@
                 "y": 12
               },
               "end": {
-                "x": 344,
+                "x": 356.5,
                 "y": 12
               }
             }
@@ -195,7 +195,7 @@
                 "y": 212
               },
               "end": {
-                "x": 344,
+                "x": 356.5,
                 "y": 212
               }
             }
@@ -208,14 +208,14 @@
           "kind": "grain",
           "label": "Grain",
           "point": {
-            "x": 172,
+            "x": 178.25,
             "y": 112
           },
           "angle": 90
         },
         {
           "kind": "label",
-          "label": "Book Cover Panel\nCut 1\n344 × 224 mm"
+          "label": "Book Cover Panel\nCut 1\n357 × 224 mm"
         }
       ],
       "seamAllowances": {
@@ -426,7 +426,7 @@
     {
       "id": "book-cover.materials",
       "title": "Gather materials",
-      "body": "Main fabric: one body panel at 344 × 224 mm plus two inner flap pieces at 92 × 224 mm each. Interfacing recommended for the body panel. Thread to match.",
+      "body": "Main fabric: one body panel at 357 × 224 mm plus two inner flap pieces at 92 × 224 mm each. Interfacing recommended for the body panel. Thread to match.",
       "dependsOn": [],
       "refsPieces": [
         "cover-panel",
@@ -438,7 +438,7 @@
     {
       "id": "book-cover.cut-panel",
       "title": "Cut the body and inner flap pieces",
-      "body": "Cut the body panel at 344 × 224 mm and two inner flap pieces at 92 × 224 mm. The 9.5 mm seam allowances are already included. Mark the two vertical spine fold lines and the top/bottom hem fold lines on the body's wrong side, and the sleeve-mouth hem fold on each flap.",
+      "body": "Cut the body panel at 357 × 224 mm and two inner flap pieces at 92 × 224 mm. The 9.5 mm seam allowances are already included. Mark the two vertical spine fold lines and the top/bottom hem fold lines on the body's wrong side, and the sleeve-mouth hem fold on each flap.",
       "dependsOn": [
         "book-cover.materials"
       ],

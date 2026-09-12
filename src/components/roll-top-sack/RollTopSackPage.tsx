@@ -1,7 +1,8 @@
 import { useMemo } from 'react';
 import type { UseRollTopSackProjectReturn } from '../../state/useRollTopSackProject.js';
-import { validateInputs } from '../../generators/roll-top-sack/inputs.js';
+import { validateInputs, resolveInputs } from '../../generators/roll-top-sack/inputs.js';
 import { buildPattern } from '../../generators/roll-top-sack/index.js';
+import type { Piece } from '../../lib/pattern-engine/graph/Piece.js';
 import { RollTopSackSettingsPanel } from './RollTopSackSettingsPanel.js';
 import { PatternPreview } from './PatternPreview.js';
 import { ExportPanel } from './ExportPanel.js';
@@ -10,7 +11,7 @@ import { ConstructionSteps } from '../shared/ConstructionSteps.js';
 import { PatternPageShell } from '../shared/PatternPageShell.js';
 import { parseProjectJson, downloadProjectJson } from '../../export/projectEnvelopeIO.js';
 import { ValidationBanner } from '../shared/ValidationBanner.js';
-import { FoldPreview3D } from '../shared/FoldPreview3D.js';
+import { FoldPreview3D, type FoldObject, type PiecePlacement, type SeamSpec } from '../shared/FoldPreview3D.js';
 import type { Pattern } from '../../lib/pattern-engine/graph/Pattern.js';
 
 type RollTopSackPageProps = Pick<
@@ -61,10 +62,46 @@ export function RollTopSackPage({ project, updateInputs, resetProject, importPro
     return r.ok ? r.value : null;
   }, [project.inputs, engineValid]);
   const steps = built?.steps ?? [];
-  const pattern3d = useMemo<Pattern | null>(
-    () => (built ? { id: 'roll-top-sack', name: 'Roll-Top Stuff Sack', pieces: built.pieces } : null),
-    [built],
-  );
+  // The body panel is cut twice; show both copies face to face in 3D, seamed down the sides and
+  // across the bottom (French seams on the stitch lines), round a block the finished size.
+  const BACK_ID = 'body-panel-back';
+  const pattern3d = useMemo<Pattern | null>(() => {
+    if (!built) return null;
+    const body = built.pieces.find((p) => p.id === 'body-panel');
+    const back: Piece[] = body ? [{ ...body, id: BACK_ID, name: `${body.name} (back)` }] : [];
+    return { id: 'roll-top-sack', name: 'Roll-Top Stuff Sack', pieces: [...built.pieces, ...back] };
+  }, [built]);
+
+  const fold3d = useMemo<{ object: FoldObject; placements: Record<string, PiecePlacement>; seams: SeamSpec[] } | null>(() => {
+    const body = built?.pieces.find((p) => p.id === 'body-panel');
+    if (!built || !body) return null;
+    try {
+      const r = resolveInputs(project.inputs);
+      const first = (id: string) => body.paths.find((p) => p.id === id)?.edges[0];
+      const left = first('body-panel-left-stitch');
+      const right = first('body-panel-right-stitch');
+      const bottom = first('body-panel-bottom-stitch');
+      const collar = first('body-panel-collar-fold');
+      if (!left || !right || !bottom || !collar) return null;
+      const side = { left: left.start.x, right: right.start.x, bottom: bottom.start.y, top: collar.start.y };
+      const depth = r.bottom_width;
+      const line = (pieceId: string, from: { x: number; y: number }, to: { x: number; y: number }) => ({ pieceId, from, to });
+      return {
+        object: {
+          width: r.bottom_length, depth, height: r.height_when_rolled, label: 'contents', pin: 'footprint',
+          base: { pieceId: BACK_ID, point: { x: (side.left + side.right) / 2, y: side.bottom - depth / 2 }, direction: { x: 0, y: -1 } },
+        },
+        placements: { 'body-panel': { dx: 0, dy: 0, dz: depth + 2 }, [BACK_ID]: { dx: 0, dy: 0, dz: 0 } },
+        seams: [
+          { label: 'left side', a: line('body-panel', { x: side.left, y: side.top }, { x: side.left, y: side.bottom }), b: line(BACK_ID, { x: side.left, y: side.top }, { x: side.left, y: side.bottom }) },
+          { label: 'right side', a: line('body-panel', { x: side.right, y: side.top }, { x: side.right, y: side.bottom }), b: line(BACK_ID, { x: side.right, y: side.top }, { x: side.right, y: side.bottom }) },
+          { label: 'bottom', a: line('body-panel', { x: side.left, y: side.bottom }, { x: side.right, y: side.bottom }), b: line(BACK_ID, { x: side.left, y: side.bottom }, { x: side.right, y: side.bottom }) },
+        ],
+      };
+    } catch {
+      return null;
+    }
+  }, [built, project.inputs]);
 
   function handleReset() {
     if (window.confirm('Reset will discard all changes and restore default Roll-Top Sack settings. Continue?')) {
@@ -102,7 +139,7 @@ export function RollTopSackPage({ project, updateInputs, resetProject, importPro
       preview={
         <div className="space-y-3">
           <PatternPreview inputs={project.inputs} hasErrors={!engineValid} />
-          {pattern3d && <FoldPreview3D pattern={pattern3d} />}
+          {pattern3d && <FoldPreview3D pattern={pattern3d} object={fold3d?.object} placements={fold3d?.placements} seams={fold3d?.seams} />}
         </div>
       }
       sidebar={

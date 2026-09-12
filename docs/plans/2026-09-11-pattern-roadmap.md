@@ -266,6 +266,27 @@ Not modelled yet: gathered seams (the face bottom "alligator lips" —
 needs a finer mesh or a pleat solver), self-collision between the face's
 two layers and between overlapping wings, friction, and gravity draping.
 
+**Sweep of the other generators (2026-09-11, later):** every pattern that
+can be assembled was run through the cloth check with a block of its
+finished size inside (`src/lib/cloth-engine/__tests__/patterns.test.ts`).
+It found that the Zip Pouch (boxed) and Roll-Top cut their panels at the
+finished length and then boxed the corners, which takes the depth back off
+the width (and half the depth off the height): both now add it. The Book
+Cover's `width_ease` / `spine_bulge` were resolved but never drawn; a single
+`coverPanelDims` now feeds every cover-width site. The Zip Pouch, Roll-Top
+and Book Cover pages carry object, placements and seams, so their previews
+run the same check (zip: 9 % stretch at the boxed corners, seams closed;
+roll-top: 11 %; book cover: 6 mm across-spine clearance on the hardcover
+default). Two-panel bags pin only the host panel under the contents
+(`FoldObject.pin: 'footprint'`).
+
+Still outside the check: Tool Roll (not on the pattern engine), Tri-Zip
+(one `seam:` path declared — `seamsFromSharedPaths` is ready for it once the
+back panel, wings and gusset carry `seam:` paths), the Zip Pouch's
+cross-bottom / gusset / multi-panel styles, Circle Skirt, and the Book
+Cover's inner flaps (shown flat beside the cover; seaming them to the cover
+edges is the next step for that page).
+
 - **Stage 1 — fold preview (done, see status).** Every piece is flat panels
   joined at `fold` edges. Treat each region between fold lines as a rigid
   panel, hinge them at the fold angles the construction implies (a folded-T is

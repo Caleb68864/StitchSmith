@@ -28,9 +28,33 @@ export interface BoxSolid {
 
 export interface SeamSide {
   pieceId: string;
-  /** Straight stitch line in that piece's flat coordinates. */
+  /** Straight stitch line in that piece's flat coordinates (ignored when `points` is given). */
   from: Point;
   to: Point;
+  /** Polyline stitch line (≥ 2 points), sampled by arc length; overrides from/to. */
+  points?: Point[];
+}
+
+/** Total length of a seam side and a point at a fraction of that length. */
+function sideLength(side: SeamSide): number {
+  const pts = side.points ?? [side.from, side.to];
+  let len = 0;
+  for (let i = 1; i < pts.length; i++) len += Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y);
+  return len;
+}
+function sideAt(side: SeamSide, t: number): Point {
+  const pts = side.points ?? [side.from, side.to];
+  const total = sideLength(side);
+  let target = t * total;
+  for (let i = 1; i < pts.length; i++) {
+    const seg = Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y);
+    if (target <= seg || i === pts.length - 1) {
+      const u = seg > 0 ? Math.min(1, target / seg) : 0;
+      return { x: pts[i - 1].x + (pts[i].x - pts[i - 1].x) * u, y: pts[i - 1].y + (pts[i].y - pts[i - 1].y) * u };
+    }
+    target -= seg;
+  }
+  return pts[pts.length - 1];
 }
 
 export interface SeamSpec {
@@ -188,14 +212,14 @@ export function createWorld(opts: CreateWorldOptions): ClothWorld {
     const ma = meshes.findIndex((m) => m.pieceId === s.a.pieceId);
     const mb = meshes.findIndex((m) => m.pieceId === s.b.pieceId);
     if (ma < 0 || mb < 0) continue;
-    const la = Math.hypot(s.a.to.x - s.a.from.x, s.a.to.y - s.a.from.y);
-    const lb = Math.hypot(s.b.to.x - s.b.from.x, s.b.to.y - s.b.from.y);
+    const la = sideLength(s.a);
+    const lb = sideLength(s.b);
     const count = Math.max(2, s.samples ?? Math.ceil(Math.max(la, lb) / params.spacing) + 1);
     const gap = s.gap ?? params.thickness;
     for (let k = 0; k < count; k++) {
       const t = k / (count - 1);
-      const pa = { x: s.a.from.x + (s.a.to.x - s.a.from.x) * t, y: s.a.from.y + (s.a.to.y - s.a.from.y) * t };
-      const pb = { x: s.b.from.x + (s.b.to.x - s.b.from.x) * t, y: s.b.from.y + (s.b.to.y - s.b.from.y) * t };
+      const pa = sideAt(s.a, t);
+      const pb = sideAt(s.b, t);
       const va = nearestVertex(meshes[ma], pa);
       const vb = nearestVertex(meshes[mb], pb);
       if (va < 0 || vb < 0) continue;
@@ -333,4 +357,34 @@ export function maxPenetration(world: ClothWorld): number {
 export function vertexPosition(world: ClothWorld, meshIndex: number, vertex: number): Vec3 {
   const g = world.base[meshIndex] + vertex;
   return [world.pos[3 * g], world.pos[3 * g + 1], world.pos[3 * g + 2]];
+}
+
+
+/**
+ * Seams implied by a pattern: every path id starting with `seam:` that appears
+ * on two pieces is one seam, sampled by arc length along both polylines. This
+ * is the Tri-Zip convention (its builder already verifies the lengths match).
+ */
+export function seamsFromSharedPaths(pieces: Array<{ id: string; paths: Array<{ id: string; edges: Array<{ start: Point; end: Point }> }> }>): SeamSpec[] {
+  const byId = new Map<string, Array<{ pieceId: string; points: Point[] }>>();
+  for (const piece of pieces) {
+    for (const path of piece.paths) {
+      if (!path.id.startsWith('seam:') || path.edges.length === 0) continue;
+      const points: Point[] = [path.edges[0].start, ...path.edges.map((e) => e.end)];
+      const arr = byId.get(path.id) ?? [];
+      arr.push({ pieceId: piece.id, points });
+      byId.set(path.id, arr);
+    }
+  }
+  const seams: SeamSpec[] = [];
+  for (const [id, sides] of byId) {
+    if (sides.length !== 2) continue;
+    const [a, b] = sides;
+    seams.push({
+      label: id,
+      a: { pieceId: a.pieceId, from: a.points[0], to: a.points[a.points.length - 1], points: a.points },
+      b: { pieceId: b.pieceId, from: b.points[0], to: b.points[b.points.length - 1], points: b.points },
+    });
+  }
+  return seams;
 }

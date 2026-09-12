@@ -5,9 +5,10 @@
  * piece). The collar forms the roll-top: the top section above height_when_rolled
  * is rolled and secured with webbing + buckle.
  *
- * Cut dimensions per panel:
- *   cutWidth  = bottom_length + 2 × frenchSeamAllowance(9.5)
- *   cutHeight = height_when_rolled + collar_height + DEFAULT_TOP_HEM_MM + DEFAULT_BOTTOM_SEAM_MM
+ * Cut dimensions per panel (boxed corners consume bottom_width of width and
+ * bottom_width / 2 of height, both added back):
+ *   cutWidth  = bottom_length + bottom_width + 2 × frenchSeamAllowance(9.5)
+ *   cutHeight = height_when_rolled + bottom_width / 2 + collar_height + DEFAULT_TOP_HEM_MM + DEFAULT_BOTTOM_SEAM_MM
  * Two panels (front + back) are cut at this size.
  */
 
@@ -32,9 +33,14 @@ export function buildPattern(inputs: RollTopSackInputs): Result<RollTopSackBuild
   const { bottom_length, bottom_width, height_when_rolled, collar_height } = r;
   const saMm = r.seam_allowance;
 
-  // Panel cut dimensions
-  const cutWidth = bottom_length + 2 * frenchSeamAllowance(saMm);
-  const cutHeight = height_when_rolled + collar_height + DEFAULT_TOP_HEM_MM + DEFAULT_BOTTOM_SEAM_MM;
+  // Panel cut dimensions. Boxing the bottom corners with a stitch line
+  // bottom_width long takes bottom_width off the panel width (half per end) and
+  // bottom_width / 2 off its height, so both are added back to deliver the
+  // stated bottom_length × bottom_width base and height_when_rolled above it.
+  // (The 3D cloth check caught the missing terms: the default sack's base came
+  // out 100 × 100, not 200 × 100.)
+  const cutWidth = bottom_length + bottom_width + 2 * frenchSeamAllowance(saMm);
+  const cutHeight = height_when_rolled + bottom_width / 2 + collar_height + DEFAULT_TOP_HEM_MM + DEFAULT_BOTTOM_SEAM_MM;
 
   // Compute boxed-corner stitch markers
   const boxed = boxedCornerStitchLine({
@@ -65,13 +71,14 @@ export function buildPattern(inputs: RollTopSackInputs): Result<RollTopSackBuild
 
   // Collar fold: reference line where the bag transitions from roll-down
   // collar to body. Not folded during construction — it's where the rolling
-  // happens when the user closes the bag.
+  // happens when the user closes the bag. The explicit 0° keeps the 3D fold
+  // preview from treating it as a box corner and creasing the open sack.
   const collarFoldLine = makeHorizLine(
     'body-panel-collar-fold',
     DEFAULT_TOP_HEM_MM + collar_height,
     cutWidth,
     'fold',
-    'Collar fold — roll here to close',
+    'Collar fold — roll here to close (0°)',
   );
 
   // Boxed-corner stitch markers as a stitch-role path at the panel bottom.
@@ -148,7 +155,7 @@ export function buildPattern(inputs: RollTopSackInputs): Result<RollTopSackBuild
       { kind: 'label', label: `Body Panel\nCut 2\n${Math.round(cutWidth)} × ${Math.round(cutHeight)} mm` },
     ],
     // The cut dimensions already include all four allowances:
-    //   cutWidth  = bottom_length + 2 × frenchSeamAllowance  (left/right SA)
+    //   cutWidth  = bottom_length + bottom_width + 2 × frenchSeamAllowance  (left/right SA)
     //   cutHeight = body + collar + top_hem + bottom_seam    (top/bottom SA)
     // So the outline IS the cut line — no additional outward offset needed.
     // The fold paths (top hem, collar fold) and the stitch-role paths below

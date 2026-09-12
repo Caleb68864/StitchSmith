@@ -76,6 +76,20 @@ function layoutPieces(pattern: Pattern, allPieces: boolean, placements: Record<s
   return entries;
 }
 
+/** Is flat point `f` on the host panel under the object's back face (inset by most of a cloth cell)? */
+function underObject(f: { x: number; y: number }, object: NonNullable<FoldPreview3DProps['object']>): boolean {
+  const base = object.base!;
+  const len = Math.hypot(base.direction.x, base.direction.y) || 1;
+  const dx = base.direction.x / len;
+  const dy = base.direction.y / len;
+  const rx = f.x - base.point.x;
+  const ry = f.y - base.point.y;
+  const along = rx * dx + ry * dy;
+  const across = Math.abs(-rx * dy + ry * dx);
+  const margin = CLOTH_SPACING - 2;
+  return along > margin && along < object.height - margin && across < object.width / 2 - margin;
+}
+
 function fmtMm(v: number | null): string {
   return v === null ? 'open' : `${Math.round(v)} mm`;
 }
@@ -242,9 +256,12 @@ export function FoldViewer({ pattern, object, placements = NO_PLACEMENTS, seams 
           seams,
           solids,
           // Pin the host panel's interior; its fold-line vertices stay free so the hinges can flex.
+          // With `pin: 'footprint'` only the area behind the object is held, leaving the rest of
+          // the host free to wrap round to the seams.
           pinned: (mi, _v, f) => valid[mi].entry.model.pieceId === hostId
             && regionAt(valid[mi].entry.model, f) === valid[mi].entry.model.root
-            && !onAnyFold(valid[mi].entry.model, f, 1.5),
+            && !onAnyFold(valid[mi].entry.model, f, 1.5)
+            && (object?.pin !== 'footprint' || !object.base || underObject(f, object)),
           params: { spacing: CLOTH_SPACING },
         });
         const geoms: THREE.BufferGeometry[] = valid.map(({ mesh, entry }) => {

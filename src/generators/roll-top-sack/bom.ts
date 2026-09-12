@@ -10,14 +10,14 @@ export function buildBom(resolved: ResolvedInputs): Bom {
   const webbingLengthMm = bottom_width + 2 * collar_height + 100;
 
   // Fabric: main body panel (2 panels in two-panel construction)
-  // cutWidth = bottom_length + 2 × frenchSeamAllowance (two-panel construction)
-  // cutHeight = height_when_rolled + collar_height + hem + bottom_seam
+  // cutWidth = bottom_length + bottom_width + 2 × frenchSeamAllowance (boxed corners consume bottom_width)
+  // cutHeight = height_when_rolled + bottom_width / 2 + collar_height + hem + bottom_seam
   const materials: Material[] = [
     {
       id: 'body-fabric',
       name: 'Main Body Fabric',
       type: 'fabric',
-      notes: `Cut 2 panels, each approx ${Math.round(bottom_length + 19)} mm × ${Math.round(height_when_rolled + collar_height + 35)} mm`,
+      notes: `Cut 2 panels, each approx ${Math.round(bottom_length + bottom_width + 38)} mm × ${Math.round(height_when_rolled + bottom_width / 2 + collar_height + 35)} mm`,
     },
     {
       id: 'webbing',

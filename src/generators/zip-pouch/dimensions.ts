@@ -38,9 +38,16 @@ export interface BoxedDims {
   cutHeight: number;
 }
 
+/**
+ * Boxed-corner panel. Boxing a corner with a stitch line `depth` long shortens
+ * the bottom by `depth` (half from each end) and the face by `depth / 2`, so
+ * both are added back: the finished interior is length × width × depth, the
+ * same envelope the other construction styles deliver. (The 3D cloth check
+ * caught the missing depth on the width: contents could not fit.)
+ */
 export function boxedDims(r: ResolvedInputs): BoxedDims {
   return {
-    cutWidth: r.finished_length + 2 * r.seam_allowance,
+    cutWidth: r.finished_length + r.finished_depth + 2 * r.seam_allowance,
     cutHeight: r.finished_width + r.finished_depth / 2 + r.seam_allowance,
   };
 }

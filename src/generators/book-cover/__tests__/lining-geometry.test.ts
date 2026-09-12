@@ -11,7 +11,7 @@ const BASE: BookCoverInputs = {
 };
 
 // SA = 9.5, top_bottom_hem = 12
-// cutWidth = 2*150 + 25 + 2*9.5 = 344
+// cutWidth = 2*(150 + 12.5/2 ease) + 25 + 2*9.5 = 356.5
 // cutHeight = 200 + 2*12 = 224
 
 describe('buildPattern — lining piece presence', () => {
@@ -38,7 +38,7 @@ describe('buildPattern — lining piece presence', () => {
 });
 
 describe('buildPattern — lining piece dimensions match body', () => {
-  it('lining outline cutWidth equals body outline cutWidth (344 mm)', () => {
+  it('lining outline cutWidth equals body outline cutWidth (356.5 mm)', () => {
     const result = buildPattern({ ...BASE, lining: { enabled: true } });
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -55,7 +55,7 @@ describe('buildPattern — lining piece dimensions match body', () => {
                        Math.min(...liningOutline.edges.flatMap(e => [e.start.x, e.end.x]));
 
     expect(liningWidth).toBeCloseTo(bodyWidth, 5);
-    expect(liningWidth).toBeCloseTo(344, 5);
+    expect(liningWidth).toBeCloseTo(356.5, 5);
   });
 
   it('lining outline cutHeight equals body outline cutHeight (224 mm)', () => {
@@ -122,8 +122,8 @@ describe('buildPattern — lining piece fold lines', () => {
       .sort((a, b) => a.edges[0].start.x - b.edges[0].start.x)
       .map(p => p.edges[0].start.x);
 
-    expect(foldXs[0]).toBeCloseTo(SA + 150, 5);
-    expect(foldXs[1]).toBeCloseTo(SA + 150 + 25, 5);
+    expect(foldXs[0]).toBeCloseTo(SA + 156.25, 5);
+    expect(foldXs[1]).toBeCloseTo(SA + 156.25 + 25, 5);
   });
 
   it('lining outline is cut-role', () => {

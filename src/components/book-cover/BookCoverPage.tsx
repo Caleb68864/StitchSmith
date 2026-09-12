@@ -1,7 +1,8 @@
 import { useMemo } from 'react';
 import type { UseBookCoverProjectReturn } from '../../state/useBookCoverProject.js';
-import { validateInputs } from '../../generators/book-cover/inputs.js';
+import { validateInputs, resolveInputs } from '../../generators/book-cover/inputs.js';
 import { buildPattern } from '../../generators/book-cover/index.js';
+import { coverPanelDims } from '../../generators/book-cover/buildPattern.js';
 import { PatternPageShell } from '../shared/PatternPageShell.js';
 import { parseProjectJson, downloadProjectJson } from '../../export/projectEnvelopeIO.js';
 import { PatternEngineLegend } from '../shared/PatternEngineLegend.js';
@@ -9,7 +10,7 @@ import { ConstructionSteps } from '../shared/ConstructionSteps.js';
 import { BookCoverSettingsPanel } from './BookCoverSettingsPanel.js';
 import { PatternPreview } from './PatternPreview.js';
 import { ExportPanel } from './ExportPanel.js';
-import { FoldPreview3D } from '../shared/FoldPreview3D.js';
+import { FoldPreview3D, type FoldObject } from '../shared/FoldPreview3D.js';
 import type { Pattern } from '../../lib/pattern-engine/graph/Pattern.js';
 
 type BookCoverPageProps = Pick<
@@ -120,6 +121,22 @@ export function BookCoverPage({
     [built],
   );
 
+  // 3D check: the closed book lies spine-down on the spine section; both covers fold up round it.
+  // The cavity report then shows the ease across the spine and over the covers.
+  const foldObject = useMemo<FoldObject | undefined>(() => {
+    if (!built || !built.pieces.some((p) => p.id === 'cover-panel')) return undefined;
+    try {
+      const r = resolveInputs(project.inputs);
+      const { coverW, spineW, cutHeight } = coverPanelDims(r);
+      return {
+        width: r.spine_width, depth: r.book_width, height: r.book_height, label: 'book',
+        base: { pieceId: 'cover-panel', point: { x: r.seam_allowance + coverW + spineW / 2, y: cutHeight - r.top_bottom_hem }, direction: { x: 0, y: -1 } },
+      };
+    } catch {
+      return undefined;
+    }
+  }, [built, project.inputs]);
+
   function handleReset() {
     if (window.confirm('Reset will discard all changes and restore default Book Cover settings. Continue?')) {
       resetProject();
@@ -175,7 +192,7 @@ export function BookCoverPage({
       preview={
         <div className="space-y-3">
           <PatternPreview inputs={project.inputs} hasErrors={!engineValid} />
-          {pattern3d && <FoldPreview3D pattern={pattern3d} />}
+          {pattern3d && <FoldPreview3D pattern={pattern3d} object={foldObject} />}
           <PatternEngineLegend />
           {steps.length > 0 && <ConstructionSteps steps={steps} />}
         </div>

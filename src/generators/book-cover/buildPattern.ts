@@ -39,12 +39,33 @@ function zeroSeamAllowances(...outlines: Path[]): Record<string, number> {
   return sa;
 }
 
+/**
+ * Cover panel envelope. `width_ease` is split across the two covers and
+ * `spine_bulge` widens the spine, so the finished cover is book_width +
+ * width_ease / 2 per side and spine_width + spine_bulge across — the ease the
+ * fit step tells the user to adjust. (Until the 3D fit check, both inputs
+ * were resolved but never reached the geometry.)
+ */
+export function coverPanelDims(r: ResolvedInputs): {
+  coverW: number; spineW: number; cutWidth: number; cutHeight: number; foldXs: [number, number];
+} {
+  const { book_width, spine_width, book_height, seam_allowance: SA, top_bottom_hem, width_ease, spine_bulge } = r;
+  const coverW = book_width + width_ease / 2;
+  const spineW = spine_width + spine_bulge;
+  return {
+    coverW,
+    spineW,
+    cutWidth: 2 * coverW + spineW + 2 * SA,
+    cutHeight: book_height + 2 * top_bottom_hem,
+    foldXs: [SA + coverW, SA + coverW + spineW],
+  };
+}
+
 function buildCoverPanel(r: ResolvedInputs): Piece {
-  const { book_width, spine_width, book_height, seam_allowance: SA, top_bottom_hem } = r;
+  const { seam_allowance: SA, top_bottom_hem } = r;
   const effectiveClosure = r.closure?.kind === 'none' ? undefined : r.closure;
 
-  const cutWidth = 2 * book_width + spine_width + 2 * SA;
-  const cutHeight = book_height + 2 * top_bottom_hem;
+  const { cutWidth, cutHeight, foldXs: coverFoldXs } = coverPanelDims(r);
 
   let outline: Path;
   const extraPaths: Path[] = [];
@@ -72,7 +93,7 @@ function buildCoverPanel(r: ResolvedInputs): Piece {
   const paths: Path[] = [outline, ...extraPaths];
 
   // Two vertical fold lines marking the spine boundaries
-  const foldXs = [SA + book_width, SA + book_width + spine_width];
+  const foldXs = coverFoldXs;
   const foldLabels = ['Front cover / spine', 'Spine / back cover'];
   foldXs.forEach((x, i) => {
     paths.push(makeVertLine(`cover-panel-fold-v${i}`, x, cutHeight, 'fold', foldLabels[i]));
@@ -188,10 +209,11 @@ function buildPenHolderPiece(ph: PenHolderConfig, SA: number): Piece {
 }
 
 function buildFlapBuckleStrapPiece(closure: Extract<ClosureConfig, { kind: 'flap-buckle' }>, r: ResolvedInputs): Piece {
-  const { book_width, spine_width, seam_allowance: SA } = r;
+  const { seam_allowance: SA } = r;
   const strapWidth = closure.strap_width ?? CLOSURE_DEFAULTS['flap-buckle'].strap_width;
 
-  const cutWidth = book_width + spine_width + 2 * SA;
+  const { coverW, spineW } = coverPanelDims(r);
+  const cutWidth = coverW + spineW + 2 * SA;
   const cutHeight = strapWidth + 2 * SA;
 
   const outline = makeRectOutline('flap-buckle-strap-outline', cutWidth, cutHeight, 'cut');
@@ -215,9 +237,8 @@ function buildFlapBuckleStrapPiece(closure: Extract<ClosureConfig, { kind: 'flap
 }
 
 function addNotchAnnotations(piece: Piece, closure: ClosureConfig, r: ResolvedInputs): void {
-  const { book_width, spine_width, book_height, seam_allowance: SA, top_bottom_hem } = r;
-  const cutWidth = 2 * book_width + spine_width + 2 * SA;
-  const cutHeight = book_height + 2 * top_bottom_hem;
+  const { top_bottom_hem } = r;
+  const { cutWidth, cutHeight } = coverPanelDims(r);
 
   if (!piece.annotations) piece.annotations = [];
 
@@ -257,11 +278,10 @@ function addNotchAnnotations(piece: Piece, closure: ClosureConfig, r: ResolvedIn
 }
 
 function buildLiningPiece(r: ResolvedInputs): Piece {
-  const { book_width, spine_width, book_height, seam_allowance: SA, top_bottom_hem } = r;
+  const { seam_allowance: SA } = r;
   const effectiveClosure = r.closure?.kind === 'none' ? undefined : r.closure;
 
-  const cutWidth = 2 * book_width + spine_width + 2 * SA;
-  const cutHeight = book_height + 2 * top_bottom_hem;
+  const { cutWidth, cutHeight, foldXs: liningFoldXs } = coverPanelDims(r);
 
   let outline: Path;
   const extraPaths: Path[] = [];
@@ -289,7 +309,7 @@ function buildLiningPiece(r: ResolvedInputs): Piece {
   const paths: Path[] = [outline, ...extraPaths];
 
   // Spine boundary fold lines (same as body) — no top/bottom hem folds (lining captured at perimeter)
-  const foldXs = [SA + book_width, SA + book_width + spine_width];
+  const foldXs = liningFoldXs;
   const foldLabels = ['Front cover / spine', 'Spine / back cover'];
   foldXs.forEach((x, i) => {
     paths.push(makeVertLine(`lining-fold-v${i}`, x, cutHeight, 'fold', foldLabels[i]));
@@ -503,7 +523,7 @@ export function buildPattern(inputs: BookCoverInputs): Result<BookCoverBuildResu
   if (!validation.ok) return validation;
 
   const r: ResolvedInputs = resolveInputs(inputs);
-  const { book_height, book_width, spine_width, seam_allowance: SA, top_bottom_hem } = r;
+  const { seam_allowance: SA, top_bottom_hem } = r;
   const effectiveClosure = r.closure?.kind === 'none' ? undefined : r.closure;
 
   const bodyPiece = buildCoverPanel(r);
@@ -558,8 +578,7 @@ export function buildPattern(inputs: BookCoverInputs): Result<BookCoverBuildResu
     pieces.push(buildPenHolderPiece(r.pen_holder, SA));
   }
 
-  const cutWidth = 2 * book_width + spine_width + 2 * SA;
-  const cutHeight = book_height + 2 * top_bottom_hem;
+  const { cutWidth, cutHeight } = coverPanelDims(r);
 
   const steps = buildSteps(r, cutWidth, cutHeight, pieces.length);
   const bom = buildBom(r);

@@ -94,6 +94,17 @@ numbers. Rules already encoded, with the note that justifies each:
   (`FoldPreview3D.seams`); a seam through a folded double layer must be
   declared for both layers. Gathered seams are not modelled — leave them out
   and say so.
+- A reference line drawn as a `fold` that is not folded in construction (the
+  roll-top collar line) must carry `(0°)` in its label, or the preview creases it.
+- **Boxed corners consume fabric.** A box stitch line D long takes D off the
+  cut width (the seam moves to mid-depth on each side) and D/2 off the height.
+  Cut panel = finished length + depth + allowances wide and finished height +
+  depth/2 + allowances tall. The cloth check catches this: the two panels
+  cannot close round a block of the finished size otherwise.
+- Two-panel bags (Zip Pouch, Roll-Top) pass `pin: 'footprint'` on the 3D
+  object so the cloth holds only the host panel under the contents and lets
+  the rest wrap to the seams; pieces whose other faces are hinged regions of
+  the same piece (Mag Pouch) keep the default whole-root pin.
 
 ## Engine usage
 
