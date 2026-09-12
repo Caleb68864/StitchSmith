@@ -723,7 +723,7 @@ helpers in the settings panels.
   `App.test.tsx` gained landing tests: category headings, search filtering,
   the recent strip and the header switcher.
 
-**Commit:** 165e925
+**Commit:** 916e505
 
 ## 2026-09-12 — Polishing passes: shared export panel, warnings and derived numbers
 
@@ -785,7 +785,7 @@ were rendered five different ways.
   keeps its BOM open below the steps (cut tags are part of the build) and
   the Tool Roll is not on the pattern engine and keeps its own panels.
 
-**Commit:** 165e925
+**Commit:** 916e505
 
 ## 2026-09-12 — Hardening pass: input validation and persistence
 
@@ -868,7 +868,7 @@ corrupted storage, export → parse → import round trips, `updateInputs`,
 - mag-pouch `resolve.ts` should default `seamAllowance` (worked around by
   requiring it in validation).
 
-**Commit:** 165e925
+**Commit:** 916e505
 
 ## Tests added
 - `src/generators/__tests__/validation-fuzz.test.ts` — 330 tests (one per
@@ -953,7 +953,7 @@ every control, and the canvas capped at the column width with a
 `ResizeObserver` so it never overflows on a narrow viewport. Existing
 `data-testid`s and the `window.__stitchsmithFoldViewer` hook are unchanged.
 
-**Commit:** 165e925
+**Commit:** 916e505
 
 ## 2026-09-12 — Session close-out: tool-roll validation, e2e label fix, verification
 
@@ -966,4 +966,4 @@ every control, and the canvas capped at the column width with a
 - Verified after all passes: tsc clean, vitest 137 files / 2577 tests, vite
   build, Playwright 24/24.
 
-**Commit:** 165e925
+**Commit:** 916e505
