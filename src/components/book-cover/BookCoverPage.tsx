@@ -11,6 +11,7 @@ import { BookCoverSettingsPanel } from './BookCoverSettingsPanel.js';
 import { PatternPreview } from './PatternPreview.js';
 import { ExportPanel } from './ExportPanel.js';
 import { FoldPreview3D, type FoldObject, type PiecePlacement, type SeamSpec } from '../shared/FoldPreview3D.js';
+import { PreviewTabs } from '../shared/PreviewTabs.js';
 import { mirrorPieceX } from '../../lib/fold-engine/index.js';
 import type { Pattern } from '../../lib/pattern-engine/graph/Pattern.js';
 
@@ -225,8 +226,10 @@ export function BookCoverPage({
       }
       preview={
         <div className="space-y-3">
-          <PatternPreview inputs={project.inputs} hasErrors={!engineValid} />
-          {pattern3d && <FoldPreview3D pattern={pattern3d} object={foldObject} placements={foldAssembly?.placements} seams={foldAssembly?.seams} />}
+          <PreviewTabs
+            pattern={<PatternPreview inputs={project.inputs} hasErrors={!engineValid} />}
+            assembly={pattern3d ? <FoldPreview3D pattern={pattern3d} object={foldObject} placements={foldAssembly?.placements} seams={foldAssembly?.seams} initialSimulate height={560} /> : null}
+          />
           <PatternEngineLegend />
           {steps.length > 0 && <ConstructionSteps steps={steps} />}
         </div>

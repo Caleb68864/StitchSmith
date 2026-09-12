@@ -328,3 +328,10 @@
 - Surfaces: src/lib/cloth-engine/{sim,index}.ts, src/lib/fold-engine/{placement,index}.ts, src/components/shared/{FoldPreview3D,FoldViewer}.tsx, src/generators/zip-pouch/{assembly3d.ts,buildPattern.ts}, src/generators/tri-zip-backpack/assembly3d.ts, src/generators/circle-skirt/assembly3d.ts, src/components/{zip-pouch/ZipPouchPage,circle-skirt/CircleSkirtPage,mag-pouch/MagPouchPage}.tsx, src/lib/cloth-engine/__tests__/*.
 - Watch: the gathered row reads ~20–40 % elongation on an 8 mm mesh (the transition zone is one cell); tests measure away from it and the global figure in the viewer includes it. The cross-bottom's corner cutouts close to a few mm, not zero. A stiff plate under gravity behaves as a hinge at its clamp (PBD iteration limit), so the material test asserts straightness, not tip drop. The circle skirt uses stronger gravity (0.08) to hang within the step budget. Gusset-strip with a front zipper is still not assembled.
 - Commit: <pending>
+
+## 2026-09-11 — "3D assembly" tab on every pattern page
+- Symptom: the 3D viewer sat under the SVG preview at 360 px, started in the rigid fold, and had to be ticked into the cloth simulation each time; the assembled view is what a user wants to see first.
+- Fix: `PreviewTabs` (shared) puts a Pattern / 3D assembly tab strip over the preview column; the assembly tab renders `FoldPreview3D` at 560 px with `initialSimulate` so the pattern appears sewn and relaxed (the "simulate" box unticks back to the rigid fold). The chosen tab is remembered in localStorage across pages. Every engine page uses it; the padded strap's torso fit report moves under the 3D view. Tool Roll shows the tab disabled with the reason (not on the pattern engine).
+- Surfaces: src/components/shared/{PreviewTabs,FoldPreview3D,FoldViewer}.tsx, src/components/*/…Page.tsx.
+- Watch: the tab strip is one component, so a page whose assembly returns null (unsupported style) shows the explanation instead of an empty tab. Simulation starts on tab open, so switching tabs restarts it.
+- Commit: <pending>

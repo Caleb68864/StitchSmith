@@ -12,6 +12,7 @@ import { PatternPageShell } from '../shared/PatternPageShell.js';
 import { parseProjectJson, downloadProjectJson } from '../../export/projectEnvelopeIO.js';
 import { ValidationBanner } from '../shared/ValidationBanner.js';
 import { FoldPreview3D } from '../shared/FoldPreview3D.js';
+import { PreviewTabs } from '../shared/PreviewTabs.js';
 import type { Pattern } from '../../lib/pattern-engine/graph/Pattern.js';
 import type { BuildPatternError } from '../../generators/zip-pouch/types.js';
 
@@ -101,10 +102,10 @@ export function ZipPouchPage({ project, updateInputs, resetProject, importProjec
         />
       }
       preview={
-        <div className="space-y-3">
-          <PatternPreview inputs={project.inputs} hasErrors={hasErrors} />
-          {pattern3d && <FoldPreview3D pattern={pattern3d} object={fold3d?.object} placements={fold3d?.placements} seams={fold3d?.seams} pins={fold3d?.pins} selfCollision={fold3d?.selfCollision ?? true} />}
-        </div>
+        <PreviewTabs
+          pattern={<PatternPreview inputs={project.inputs} hasErrors={hasErrors} />}
+          assembly={pattern3d && fold3d ? <FoldPreview3D pattern={pattern3d} object={fold3d.object} placements={fold3d.placements} seams={fold3d.seams} pins={fold3d.pins} selfCollision={fold3d.selfCollision ?? true} initialSimulate height={560} /> : null}
+        />
       }
       sidebar={
         <>

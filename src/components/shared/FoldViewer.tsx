@@ -116,7 +116,7 @@ const NO_PINS: NonNullable<FoldPreview3DProps['pins']> = [];
 
 const NO_SOLIDS: Solid[] = [];
 
-export function FoldViewer({ pattern, object, placements = NO_PLACEMENTS, seams = NO_SEAMS, pins = NO_PINS, solids: extraSolids = NO_SOLIDS, gravity: gravityProp, selfCollision = true, initialProgress = 1, height = 360 }: FoldPreview3DProps) {
+export function FoldViewer({ pattern, object, placements = NO_PLACEMENTS, seams = NO_SEAMS, pins = NO_PINS, solids: extraSolids = NO_SOLIDS, gravity: gravityProp, selfCollision = true, initialProgress = 1, initialSimulate = false, height = 360 }: FoldPreview3DProps) {
   const mountRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<{ scene: THREE.Scene; group: THREE.Group; renderer: THREE.WebGLRenderer; camera: THREE.PerspectiveCamera; controls: OrbitControls } | null>(null);
   const [progress, setProgress] = useState(initialProgress);
@@ -125,7 +125,7 @@ export function FoldViewer({ pattern, object, placements = NO_PLACEMENTS, seams 
   const [angleOverrides, setAngleOverrides] = useState<Record<string, number>>({});
   const [allPieces, setAllPieces] = useState(false);
   const [cavity, setCavity] = useState<(CavityReport & { floor: number | null; above: number | null }) | null>(null);
-  const [simulate, setSimulate] = useState(false);
+  const [simulate, setSimulate] = useState(initialSimulate);
   const [simStats, setSimStats] = useState<{ steps: number; stretch: number; seam: number; pen: number; size: [number, number, number] } | null>(null);
   const clothRef = useRef<{ world: ClothWorld; geoms: THREE.BufferGeometry[]; raf: number } | null>(null);
 

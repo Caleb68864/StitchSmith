@@ -12,6 +12,7 @@ import { parseProjectJson, downloadProjectJson } from '../../export/projectEnvel
 import { ValidationBanner } from '../shared/ValidationBanner.js';
 import { WarningsPanel, type UiWarning } from '../shared/WarningsPanel.js';
 import { FoldPreview3D } from '../shared/FoldPreview3D.js';
+import { PreviewTabs } from '../shared/PreviewTabs.js';
 import type { Pattern } from '../../lib/pattern-engine/graph/Pattern.js';
 
 type PaddedStrapPageProps = Pick<UsePaddedStrapProjectReturn, 'project' | 'updateInputs' | 'resetProject' | 'importProject'>;
@@ -89,16 +90,16 @@ export function PaddedStrapPage({ project, updateInputs, resetProject, importPro
       banner={<ValidationBanner errors={errors} fieldLabels={FIELD_LABELS} title="Fix these before exporting" />}
       settings={<PaddedStrapSettingsPanel inputs={project.inputs} errors={errors} onChange={updateInputs} />}
       preview={
-        <div className="space-y-3">
-          <PatternPreview inputs={project.inputs} hasErrors={hasErrors} />
-          {pattern3d && <FoldPreview3D pattern={pattern3d} object={assembly?.object} placements={assembly?.placements} pins={assembly?.pins} seams={assembly?.seams} />}
-          {assembly && assembly.report.length > 0 && (
+        <PreviewTabs
+          pattern={<PatternPreview inputs={project.inputs} hasErrors={hasErrors} />}
+          assembly={pattern3d && assembly ? <FoldPreview3D pattern={pattern3d} object={assembly.object} placements={assembly.placements} pins={assembly.pins} seams={assembly.seams} initialSimulate height={560} /> : null}
+          assemblyExtra={assembly && assembly.report.length > 0 ? (
             <div className="text-xs rounded border border-border p-2 space-y-1" data-testid="torso-fit">
               <div className="text-muted-foreground">Fit on a medium torso (360 × 230 mm chest, 480 mm torso, 440 mm shoulders)</div>
               {assembly.report.map((line, i) => <div key={i} className={assembly.fit && !assembly.fit.ok ? 'text-destructive' : ''}>{line}</div>)}
             </div>
-          )}
-        </div>
+          ) : null}
+        />
       }
       sidebar={
         <>

@@ -8,6 +8,7 @@ import { PatternSummary } from './PatternSummary.js';
 import { WarningsPanel } from './WarningsPanel.js';
 import { ConstructionNotes } from './ConstructionNotes.js';
 import { PatternPreview } from './PatternPreview.js';
+import { PreviewTabs } from '../shared/PreviewTabs.js';
 import { Legend } from './Legend.js';
 import { ExportPanel } from './ExportPanel.js';
 import { PatternPageShell } from '../shared/PatternPageShell.js';
@@ -83,17 +84,21 @@ export function ToolRollPage({
             onMoveToolUp={moveToolUp}
             onMoveToolDown={moveToolDown}
           />
-          {layout ? (
-            <PatternPreview
-              layout={layout}
-              settings={project.settings}
-              onToggleTileGrid={() => updateSettings({ showTileGrid: !project.settings.showTileGrid })}
-            />
-          ) : (
-            <div className="rounded border border-dashed border-border p-6 flex items-center justify-center bg-muted/20">
-              <p className="text-xs text-muted-foreground">Add tools to see pattern preview.</p>
-            </div>
-          )}
+          <PreviewTabs
+            pattern={layout ? (
+              <PatternPreview
+                layout={layout}
+                settings={project.settings}
+                onToggleTileGrid={() => updateSettings({ showTileGrid: !project.settings.showTileGrid })}
+              />
+            ) : (
+              <div className="rounded border border-dashed border-border p-6 flex items-center justify-center bg-muted/20">
+                <p className="text-xs text-muted-foreground">Add tools to see pattern preview.</p>
+              </div>
+            )}
+            assembly={null}
+            unavailableReason="The Tool Roll is not on the pattern engine yet, so it has no 3D assembly."
+          />
         </div>
       }
       sidebar={

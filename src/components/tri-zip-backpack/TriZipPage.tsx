@@ -12,6 +12,7 @@ import { PatternPageShell } from '../shared/PatternPageShell.js';
 import { parseProjectJson, downloadProjectJson } from '../../export/projectEnvelopeIO.js';
 import { ValidationBanner } from '../shared/ValidationBanner.js';
 import { FoldPreview3D } from '../shared/FoldPreview3D.js';
+import { PreviewTabs } from '../shared/PreviewTabs.js';
 import { triZipAssembly } from '../../generators/tri-zip-backpack/assembly3d.js';
 import { resolveInputs } from '../../generators/tri-zip-backpack/inputs.js';
 import type { Pattern } from '../../lib/pattern-engine/graph/Pattern.js';
@@ -118,15 +119,17 @@ export function TriZipPage({ project, updateInputs, resetProject, importProject 
         />
       }
       preview={
-        <div className="space-y-3">
-        <PatternPreview
-          inputs={project.inputs}
-          hasErrors={!engineValid}
-          showLabels={showLabels}
-          onShowLabelsChange={setShowLabels}
+        <PreviewTabs
+          pattern={
+            <PatternPreview
+              inputs={project.inputs}
+              hasErrors={!engineValid}
+              showLabels={showLabels}
+              onShowLabelsChange={setShowLabels}
+            />
+          }
+          assembly={pattern3d && assembly ? <FoldPreview3D pattern={pattern3d} object={assembly.object} placements={assembly.placements} seams={assembly.seams} initialSimulate height={560} /> : null}
         />
-        {pattern3d && <FoldPreview3D pattern={pattern3d} object={assembly?.object} placements={assembly?.placements} seams={assembly?.seams} />}
-        </div>
       }
       sidebar={
         <>

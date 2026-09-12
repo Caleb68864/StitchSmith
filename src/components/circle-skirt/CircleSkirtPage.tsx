@@ -14,6 +14,7 @@ import type { CircleSkirtInputs } from '../../generators/circle-skirt/types.js';
 import { resolveInputs } from '../../generators/circle-skirt/inputs.js';
 import { circleSkirtAssembly } from '../../generators/circle-skirt/assembly3d.js';
 import { FoldPreview3D } from '../shared/FoldPreview3D.js';
+import { PreviewTabs } from '../shared/PreviewTabs.js';
 import type { Pattern } from '../../lib/pattern-engine/graph/Pattern.js';
 
 type CircleSkirtPageProps = Pick<
@@ -106,10 +107,10 @@ export function CircleSkirtPage({ project, updateInputs, resetProject, importPro
         />
       }
       preview={
-        <div className="space-y-3">
-          <PatternPreview inputs={project.inputs} hasErrors={!engineValid} />
-          {pattern3d && assembly && <FoldPreview3D pattern={pattern3d} placements={assembly.placements} pins={assembly.pins} seams={assembly.seams} solids={assembly.solids} gravity={assembly.gravity} />}
-        </div>
+        <PreviewTabs
+          pattern={<PatternPreview inputs={project.inputs} hasErrors={!engineValid} />}
+          assembly={pattern3d && assembly ? <FoldPreview3D pattern={pattern3d} placements={assembly.placements} pins={assembly.pins} seams={assembly.seams} solids={assembly.solids} gravity={assembly.gravity} initialSimulate height={560} /> : null}
+        />
       }
       sidebar={
         <>

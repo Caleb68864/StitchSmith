@@ -64,6 +64,8 @@ export interface FoldPreview3DProps {
   selfCollision?: boolean;
   /** Fold progress 0–1 to start at. Default 1 (folded). */
   initialProgress?: number;
+  /** Start with the cloth simulation running (the assembled view) instead of the rigid fold. */
+  initialSimulate?: boolean;
   height?: number;
 }
 
@@ -95,8 +97,8 @@ export function FoldPreview3D(props: FoldPreview3DProps) {
   return (
     <div className="rounded border border-border bg-card p-3 space-y-2" data-testid="fold-preview-3d">
       <div className="flex items-center justify-between">
-        <h3 className="text-xs font-semibold">3D fold preview</h3>
-        <span className="text-xs text-muted-foreground">rigid panels — no pucker or stretch</span>
+        <h3 className="text-xs font-semibold">{props.initialSimulate ? '3D assembly' : '3D fold preview'}</h3>
+        <span className="text-xs text-muted-foreground">{props.initialSimulate ? 'sewn and relaxed — untick "simulate" for the rigid fold' : 'rigid panels — no pucker or stretch'}</span>
       </div>
       {supported === false && (
         <p className="text-xs text-muted-foreground">

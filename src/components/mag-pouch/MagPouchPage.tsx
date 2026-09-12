@@ -7,6 +7,7 @@ import { PLATFORM_LABELS } from '../../generators/mag-pouch/magazines.js';
 import { MagPouchSettingsPanel } from './MagPouchSettingsPanel.js';
 import { PatternPreview } from './PatternPreview.js';
 import { FoldPreview3D, type SeamSpec } from '../shared/FoldPreview3D.js';
+import { PreviewTabs } from '../shared/PreviewTabs.js';
 import { resolveMagPouch, inToMm } from '../../generators/mag-pouch/resolve.js';
 import { ExportPanel } from './ExportPanel.js';
 import { CutListTable } from './CutListTable.js';
@@ -243,17 +244,19 @@ export function MagPouchPage({ project, updateInputs, resetProject, importProjec
       banner={banner}
       settings={<MagPouchSettingsPanel inputs={inputs} errors={errors} onChange={updateInputs} derived={result?.derived ?? null} />}
       preview={
-        <div className="space-y-3">
-          <PatternPreview inputs={inputs} result={result} errors={errors} />
-          {result && (
+        <PreviewTabs
+          pattern={<PatternPreview inputs={inputs} result={result} errors={errors} />}
+          assembly={result ? (
             <FoldPreview3D
               pattern={result.pattern}
               object={foldObject}
               placements={foldPlacements}
               seams={foldSeams}
+              initialSimulate
+              height={560}
             />
-          )}
-        </div>
+          ) : null}
+        />
       }
       sidebar={
         <>

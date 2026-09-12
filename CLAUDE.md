@@ -143,6 +143,10 @@ numbers. Rules already encoded, with the note that justifies each:
 - Placements also take `rz` (turn a piece upside down) and `cone` (skirt
   panels wrapped from an apex); `placementMap` gives the direct flat→3D map
   for draped or cone pieces. Pages may pass extra `solids` (a hip form).
+- Every page shows its preview through `PreviewTabs` (Pattern / 3D
+  assembly); a new generator supplies an `assembly3d.ts` and passes its
+  object, placements, pins and seams to `FoldPreview3D` with
+  `initialSimulate` in the assembly tab.
 - Do not draw fold lines that run along an outline edge (the cross-bottom
   cutouts): they cannot hinge in the rigid preview and their pressed-crease
   rests fight the seams in the cloth; the cloth folds such panels through

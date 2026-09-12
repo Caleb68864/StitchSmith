@@ -12,6 +12,7 @@ import { PatternPageShell } from '../shared/PatternPageShell.js';
 import { parseProjectJson, downloadProjectJson } from '../../export/projectEnvelopeIO.js';
 import { ValidationBanner } from '../shared/ValidationBanner.js';
 import { FoldPreview3D, type FoldObject, type PiecePlacement, type SeamSpec } from '../shared/FoldPreview3D.js';
+import { PreviewTabs } from '../shared/PreviewTabs.js';
 import type { Pattern } from '../../lib/pattern-engine/graph/Pattern.js';
 
 type RollTopSackPageProps = Pick<
@@ -137,10 +138,10 @@ export function RollTopSackPage({ project, updateInputs, resetProject, importPro
         />
       }
       preview={
-        <div className="space-y-3">
-          <PatternPreview inputs={project.inputs} hasErrors={!engineValid} />
-          {pattern3d && <FoldPreview3D pattern={pattern3d} object={fold3d?.object} placements={fold3d?.placements} seams={fold3d?.seams} />}
-        </div>
+        <PreviewTabs
+          pattern={<PatternPreview inputs={project.inputs} hasErrors={!engineValid} />}
+          assembly={pattern3d && fold3d ? <FoldPreview3D pattern={pattern3d} object={fold3d.object} placements={fold3d.placements} seams={fold3d.seams} initialSimulate height={560} /> : null}
+        />
       }
       sidebar={
         <>
