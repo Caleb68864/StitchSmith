@@ -6,6 +6,7 @@ import type { BoundingBox } from '../geometry/bbox.js';
 import { bboxFromPieceWithSa } from '../geometry/saBbox.js';
 import { assertFinitePattern } from '../graph/validate.js';
 import { computeSeamAllowancePolygon } from '../geometry/offset.js';
+import { type LabelRect, textWidth, placeLabel, fitName } from './labels.js';
 
 function edgeToSvgCommands(edge: Edge, isFirst: boolean): string {
   switch (edge.kind) {
@@ -25,7 +26,23 @@ function edgeToSvgCommands(edge: Edge, isFirst: boolean): string {
   }
 }
 
-function pathToSvgPath(path: Path, role?: string): string {
+function textEl(
+  placed: { lines: string[]; x: number; y: number; size: number },
+  fill: string,
+  anchor: 'start' | 'middle',
+  extra = '',
+): string {
+  const tspans = placed.lines
+    .map((line, i) => `<tspan x="${round(placed.x)}" dy="${i === 0 ? 0 : '1.25em'}">${escXml(line)}</tspan>`)
+    .join('');
+  return `<text x="${round(placed.x)}" y="${round(placed.y)}" font-size="${round(placed.size)}" font-family="sans-serif" text-anchor="${anchor}" fill="${fill}" opacity="0.85" pointer-events="none"${extra}>${tspans}</text>`;
+}
+
+function round(n: number): number {
+  return Math.round(n * 100) / 100;
+}
+
+function pathToSvgPath(path: Path, role?: string, bbox?: BoundingBox, occupied?: LabelRect[]): string {
   if (path.edges.length === 0) return '';
   const d = path.edges
     .map((edge, i) => {
@@ -54,17 +71,16 @@ function pathToSvgPath(path: Path, role?: string): string {
   else if (role === 'stitch') strokeDash = ' stroke-dasharray="3,2"';
   const pathEl = `<path d="${d}${close}" fill="none" stroke="${stroke}" stroke-width="0.5"${strokeDash}/>`;
 
-  if (!path.label) return pathEl;
+  if (!path.label || !bbox || !occupied) return pathEl;
 
-  // Draw the label near the start of the first edge, offset slightly along the
-  // line's normal so it doesn't overlap the dashes. For open horizontal lines
-  // (the typical fold/stitch case) the label sits 4 mm above the line.
+  // The label belongs to the line, so it starts near the first edge, but it is
+  // wrapped to the piece and pushed clear of labels already placed.
   const first = path.edges[0];
   if (first.kind !== 'straight') return pathEl;
-  const labelX = first.start.x + 8;
-  const labelY = first.start.y - 4;
-  const labelEl = `<text x="${labelX}" y="${labelY}" font-size="6" font-family="sans-serif" fill="${stroke}" opacity="0.85" pointer-events="none">${escXml(path.label)}</text>`;
-  return `${pathEl}\n  ${labelEl}`;
+  const size = Math.max(3, Math.min(5, Math.min(bbox.width, bbox.height) / 22));
+  const placed = placeLabel(path.label, first.start.x + 4, first.start.y - 1, bbox, occupied, { size, maxLines: 3 });
+  if (!placed) return pathEl;
+  return `${pathEl}\n  ${textEl(placed, stroke, 'start')}`;
 }
 
 /** A closed path made of cut edges — the only kind that carries a seam allowance. */
@@ -88,8 +104,12 @@ function pieceToSvgGroup(
   showLabels: boolean,
   bbox: BoundingBox,
   showAnnotations = true,
+  /** Notes are drawn once; the name, grain and notches repeat on every copy. */
+  isFirstCopy = true,
 ): string {
   const parts: string[] = [];
+  // Text already laid out on this piece, so later labels can be nudged clear.
+  const occupied: LabelRect[] = [];
 
   // SA outer cut line drawn first so the body cut line strokes on top.
   if (piece.seamAllowances || defaultSa > 0) {
@@ -104,49 +124,51 @@ function pieceToSvgGroup(
     }
   }
 
+  // The piece name owns the middle of the piece, so it is laid out and reserved
+  // before the line labels are placed around it.
+  const centerX = bbox.minX + bbox.width / 2;
+  const centerY = bbox.minY + bbox.height / 2;
+  // Pieces taller than ~2x their width get a rotated label so the text runs
+  // along the piece (book-spine orientation) instead of spilling out the sides.
+  const isVertical = bbox.height > bbox.width * 2;
+  const qtyParts: string[] = [`Cut ${piece.quantity}`];
+  if (piece.cutOnFold) qtyParts.push('on fold');
+  else if (piece.mirror) qtyParts.push('(mirrored pair)');
+  const name = fitName(piece.name, qtyParts.join(' '), bbox, isVertical);
+  if (showLabels) {
+    // Reserve the name's footprint. Rotated names occupy a tall, narrow band.
+    const longest = Math.max(...name.lines.map((l) => textWidth(l, name.size)));
+    const blockH = name.lines.length * name.size * 1.3;
+    const w = isVertical ? blockH : longest;
+    const h = isVertical ? longest : blockH;
+    occupied.push({ x0: centerX - w / 2 - 1, y0: centerY - h / 2 - 1, x1: centerX + w / 2 + 1, y1: centerY + h / 2 + 1 });
+  }
+
   for (const path of piece.paths) {
     const role = path.edges[0]?.role;
-    parts.push(pathToSvgPath(path, role));
+    parts.push(pathToSvgPath(path, role, bbox, occupied));
   }
 
   if (showLabels) {
-    const centerX = bbox.minX + bbox.width / 2;
-    const centerY = bbox.minY + bbox.height / 2;
-    // Pieces taller than ~2x their width get a rotated label so the text
-    // runs along the piece (book-spine orientation) instead of spilling
-    // out the sides. The narrow dimension still drives font size.
-    const isVertical = bbox.height > bbox.width * 2;
-    const narrowDim = Math.min(bbox.width, bbox.height);
-    const fontSize = Math.max(8, Math.min(28, narrowDim / 8));
-
-    const lines: string[] = [piece.name];
-    const qtyParts: string[] = [`Cut ${piece.quantity}`];
-    if (piece.cutOnFold) qtyParts.push('on fold');
-    else if (piece.mirror) qtyParts.push('(mirrored pair)');
-    lines.push(qtyParts.join(' '));
-
     // For rotated text, tspans stack along the rotated-X axis (which is the
     // piece's Y axis), so the anchor stays at the same x for every line.
-    const anchorX = isVertical ? 0 : centerX;
-    const labelText = lines
-      .map((line, i) => {
-        const dy = i === 0 ? '0' : '1.2em';
-        return `<tspan x="${anchorX}" dy="${dy}">${escXml(line)}</tspan>`;
-      })
+    const anchorX = isVertical ? 0 : round(centerX);
+    const labelText = name.lines
+      .map((line, i) => `<tspan x="${anchorX}" dy="${i === 0 ? '0' : '1.3em'}">${escXml(line)}</tspan>`)
       .join('');
-
-    const transform = isVertical
-      ? ` transform="translate(${centerX},${centerY}) rotate(-90)"`
-      : '';
-    const x = isVertical ? 0 : centerX;
-    const y = isVertical ? 0 : centerY;
+    const transform = isVertical ? ` transform="translate(${round(centerX)},${round(centerY)}) rotate(-90)"` : '';
+    const x = isVertical ? 0 : round(centerX);
+    const y = isVertical ? 0 : round(centerY - ((name.lines.length - 1) * name.size * 1.3) / 2);
     parts.push(
-      `<text x="${x}" y="${y}"${transform} font-size="${fontSize}" font-family="sans-serif" text-anchor="middle" dominant-baseline="middle" fill="#374151" opacity="0.7" pointer-events="none">${labelText}</text>`,
+      `<text x="${x}" y="${y}"${transform} font-size="${round(name.size)}" font-family="sans-serif" text-anchor="middle" dominant-baseline="middle" fill="#374151" opacity="0.7" pointer-events="none">${labelText}</text>`,
     );
   }
 
   if (showAnnotations && piece.annotations) {
-    for (const a of piece.annotations) parts.push(annotationToSvg(a, bbox));
+    for (const a of piece.annotations) {
+      if (a.kind === 'label' && !isFirstCopy) continue;
+      parts.push(annotationToSvg(a, bbox, occupied));
+    }
   }
 
   return `<g id="piece-${escXml(piece.id)}" transform="translate(${offsetX},${offsetY})">\n  ${parts.join('\n  ')}\n</g>`;
@@ -156,7 +178,7 @@ function pieceToSvgGroup(
  * Annotations: a grain arrow (double-headed, along `angle`, 90 = up the piece),
  * a notch tick at `point`, or a note (wrapped, small, under the piece label).
  */
-function annotationToSvg(a: PieceAnnotation, bbox: BoundingBox): string {
+function annotationToSvg(a: PieceAnnotation, bbox: BoundingBox, occupied: LabelRect[]): string {
   const p = a.point ?? { x: bbox.minX + bbox.width / 2, y: bbox.minY + bbox.height / 2 };
   if (a.kind === 'grain') {
     const len = Math.max(12, Math.min(60, Math.min(bbox.width, bbox.height) * 0.35));
@@ -165,28 +187,20 @@ function annotationToSvg(a: PieceAnnotation, bbox: BoundingBox): string {
     const dx = Math.cos(theta) * len / 2, dy = -Math.sin(theta) * len / 2;
     const x1 = p.x - dx, y1 = p.y - dy, x2 = p.x + dx, y2 = p.y + dy;
     const head = (x: number, y: number, ux: number, uy: number) =>
-      `M ${x} ${y} L ${x - ux * 3 - uy * 1.5} ${y - uy * 3 + ux * 1.5} M ${x} ${y} L ${x - ux * 3 + uy * 1.5} ${y - uy * 3 - ux * 1.5}`;
+      `M ${round(x)} ${round(y)} L ${round(x - ux * 3 - uy * 1.5)} ${round(y - uy * 3 + ux * 1.5)} M ${round(x)} ${round(y)} L ${round(x - ux * 3 + uy * 1.5)} ${round(y - uy * 3 - ux * 1.5)}`;
     const ux = (x2 - x1) / len, uy = (y2 - y1) / len;
-    return `<path class="grain" d="M ${x1} ${y1} L ${x2} ${y2} ${head(x2, y2, ux, uy)} ${head(x1, y1, -ux, -uy)}" fill="none" stroke="#374151" stroke-width="0.5" opacity="0.7"/>`;
+    return `<path class="grain" d="M ${round(x1)} ${round(y1)} L ${round(x2)} ${round(y2)} ${head(x2, y2, ux, uy)} ${head(x1, y1, -ux, -uy)}" fill="none" stroke="#374151" stroke-width="0.5" opacity="0.7"/>`;
   }
   if (a.kind === 'notch') {
-    return `<path class="notch" d="M ${p.x - 2} ${p.y} L ${p.x + 2} ${p.y} M ${p.x} ${p.y - 2} L ${p.x} ${p.y + 2}" fill="none" stroke="#7c3aed" stroke-width="0.5"/>`;
+    return `<path class="notch" d="M ${round(p.x - 2)} ${round(p.y)} L ${round(p.x + 2)} ${round(p.y)} M ${round(p.x)} ${round(p.y - 2)} L ${round(p.x)} ${round(p.y + 2)}" fill="none" stroke="#7c3aed" stroke-width="0.5"/>`;
   }
   if (!a.label) return '';
-  // Note text: wrap at ~48 characters, at most four lines, below the piece label.
-  const words = a.label.split(/\s+/);
-  const lines: string[] = [];
-  let cur = '';
-  for (const w of words) {
-    if ((cur + ' ' + w).trim().length > 48 && cur) { lines.push(cur); cur = w; } else cur = (cur + ' ' + w).trim();
-    if (lines.length === 4) break;
-  }
-  if (cur && lines.length < 4) lines.push(cur);
-  if (lines.length === 4 && words.join(' ').length > lines.join(' ').length) lines[3] = lines[3].replace(/\s?\S*$/, '…');
-  const fontSize = Math.max(3, Math.min(5, Math.min(bbox.width, bbox.height) / 20));
-  const y0 = bbox.minY + bbox.height * 0.68;
-  const tspans = lines.map((l, i) => `<tspan x="${p.x}" dy="${i === 0 ? 0 : '1.25em'}">${escXml(l)}</tspan>`).join('');
-  return `<text class="note" x="${p.x}" y="${y0}" font-size="${fontSize}" font-family="sans-serif" text-anchor="middle" fill="#4b5563" opacity="0.8" pointer-events="none">${tspans}</text>`;
+  // A note sits under the piece name, wrapped to the piece and clear of the
+  // line labels already placed.
+  const size = Math.max(3, Math.min(5, Math.min(bbox.width, bbox.height) / 22));
+  const placed = placeLabel(a.label, p.x, bbox.minY + bbox.height * 0.72, bbox, occupied, { size, maxLines: 4, anchor: 'middle' });
+  if (!placed) return '';
+  return textEl(placed, '#4b5563', 'middle', ' class="note"');
 }
 
 function escXml(s: string): string {
@@ -269,9 +283,9 @@ export function patternToSvg(pattern: Pattern, options: SvgOptions = {}): string
     }
     const ox = cursorX - v.bbox.minX;
     const oy = cursorY - v.bbox.minY;
-    // Only the first copy renders the piece label so the preview isn't cluttered.
-    const labelThisCopy = showLabels && v.copyIndex === 0;
-    groups.push(pieceToSvgGroup(v.piece, ox, oy, defaultSa, labelThisCopy, v.bbox, showAnnotations && v.copyIndex === 0));
+    // Every copy carries its name: on a cut sheet an unlabelled rectangle is a
+    // piece nobody can identify. Only the first copy repeats the long note.
+    groups.push(pieceToSvgGroup(v.piece, ox, oy, defaultSa, showLabels, v.bbox, showAnnotations, v.copyIndex === 0));
     cursorX += v.bbox.width + gap;
     rowHeight = Math.max(rowHeight, v.bbox.height);
   }

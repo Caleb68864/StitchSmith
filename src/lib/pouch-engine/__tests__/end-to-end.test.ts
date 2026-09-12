@@ -23,8 +23,10 @@ vi.mock('pdf-lib', () => {
     drawText: vi.fn(),
     getSize: vi.fn(() => ({ width: 595.28, height: 841.89 })),
   };
+  const mockFont = { widthOfTextAtSize: vi.fn((t: string, size: number) => t.length * size * 0.5) };
   const mockDoc = {
     addPage: vi.fn(() => mockPage),
+    embedFont: vi.fn(() => Promise.resolve(mockFont)),
     save: vi.fn(() =>
       Promise.resolve(
         new Uint8Array([0x25, 0x50, 0x44, 0x46, 0x2d, 0x31, 0x2e, 0x34]),
@@ -38,6 +40,7 @@ vi.mock('pdf-lib', () => {
     rgb: vi.fn((r: number, g: number, b: number) => ({ r, g, b, type: 'RGB' })),
     degrees: vi.fn((d: number) => d),
     LineCapStyle: { Butt: 0, Round: 1, Projecting: 2 },
+    StandardFonts: { Helvetica: 'Helvetica' },
   };
 });
 

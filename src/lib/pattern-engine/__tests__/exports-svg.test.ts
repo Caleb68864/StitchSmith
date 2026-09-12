@@ -120,3 +120,32 @@ describe('patternToSvg layout and annotations', () => {
     expect(patternToSvg({ id: 'a', name: 'A', pieces: [piece] }, { showAnnotations: false })).not.toContain('class="grain"');
   });
 });
+
+describe('patternToSvg label placement', () => {
+  it('wraps a long path label inside the piece and keeps it clear of the piece name', () => {
+    const piece = makeSquarePiece(100);
+    piece.paths.push({
+      id: 'hem', closed: false,
+      label: 'Hook strips 1.5 by 4.5 inches, two across with a half inch gap, on the outside of the back half, sewn before any fold, running across the width',
+      edges: [{ kind: 'straight', id: 'hem-e', role: 'fold', start: { x: 0, y: 10 }, end: { x: 100, y: 10 } }],
+    });
+    const svg = patternToSvg({ id: 'l', name: 'L', pieces: [piece] }, { margin: 0, pieceGap: 0 });
+    const xs = [...svg.matchAll(/<tspan x="([\d.-]+)"/g)].map((m) => Number(m[1]));
+    // Nothing anchors outside the 100 mm piece.
+    expect(Math.min(...xs)).toBeGreaterThanOrEqual(0);
+    expect(Math.max(...xs)).toBeLessThanOrEqual(100);
+    // The label is broken across lines rather than run on as one long string.
+    const labelText = svg.slice(svg.indexOf('Hook strips'));
+    expect((labelText.match(/<tspan/g) ?? []).length).toBeGreaterThan(1);
+  });
+
+  it('names every copy of a multi-quantity piece but repeats the note only once', () => {
+    const piece = makeSquarePiece(50);
+    piece.name = 'Hook strip';
+    piece.quantity = 3;
+    piece.annotations = [{ kind: 'label', label: 'Cut three, trim after sewing', point: { x: 25, y: 25 } }];
+    const svg = patternToSvg({ id: 'q', name: 'Q', pieces: [piece] });
+    expect((svg.match(/Hook strip/g) ?? []).length).toBe(3);
+    expect((svg.match(/Cut three/g) ?? []).length).toBe(1);
+  });
+});

@@ -7,8 +7,10 @@ vi.mock('pdf-lib', () => {
     drawText: vi.fn(),
     getSize: vi.fn(() => ({ width: 595.28, height: 841.89 })),
   };
+  const mockFont = { widthOfTextAtSize: vi.fn((t: string, size: number) => t.length * size * 0.5) };
   const mockDoc = {
     addPage: vi.fn(() => mockPage),
+    embedFont: vi.fn(() => Promise.resolve(mockFont)),
     save: vi.fn(() =>
       Promise.resolve(
         new Uint8Array([0x25, 0x50, 0x44, 0x46, 0x2d, 0x31, 0x2e, 0x34]),
@@ -22,10 +24,11 @@ vi.mock('pdf-lib', () => {
     rgb: vi.fn((r: number, g: number, b: number) => ({ r, g, b, type: 'RGB' })),
     degrees: vi.fn((d: number) => d),
     LineCapStyle: { Butt: 0, Round: 1, Projecting: 2 },
+    StandardFonts: { Helvetica: 'Helvetica' },
   };
 });
 
-import { exportPatternToPdf } from '../exports/pdf.js';
+import { exportPatternToPdf, toWinAnsi } from '../exports/pdf.js';
 import type { Pattern } from '../graph/Pattern.js';
 
 function makePattern(overrides: Partial<Pattern> = {}): Pattern {
@@ -211,5 +214,48 @@ describe('exportPatternToPdf', () => {
     });
 
     await expect(exportPatternToPdf(pattern)).resolves.toBeInstanceOf(Blob);
+  });
+});
+
+describe('exportPatternToPdf labels', () => {
+  const labelled: Pattern = makePattern({
+    pieces: [{
+      id: 'p1', name: 'Front panel', mirror: false, quantity: 2, paths: [{
+        id: 'o', closed: true, edges: [
+          { kind: 'straight', id: 'a', role: 'cut', start: { x: 0, y: 0 }, end: { x: 100, y: 0 } },
+          { kind: 'straight', id: 'b', role: 'cut', start: { x: 100, y: 0 }, end: { x: 100, y: 120 } },
+          { kind: 'straight', id: 'c', role: 'cut', start: { x: 100, y: 120 }, end: { x: 0, y: 120 } },
+          { kind: 'straight', id: 'd', role: 'cut', start: { x: 0, y: 120 }, end: { x: 0, y: 0 } },
+        ],
+      }, {
+        id: 'hem', closed: false, label: 'Hem fold, 1 inch',
+        edges: [{ kind: 'straight', id: 'e', role: 'fold', start: { x: 0, y: 20 }, end: { x: 100, y: 20 } }],
+      }],
+    }],
+  });
+
+  async function drawnText(options?: Parameters<typeof exportPatternToPdf>[1]): Promise<string[]> {
+    vi.clearAllMocks();
+    const { PDFDocument } = await import('pdf-lib');
+    await exportPatternToPdf(labelled, options);
+    const doc = await (PDFDocument as unknown as { create: () => Promise<{ addPage: () => { drawText: { mock: { calls: unknown[][] } } } }> }).create();
+    return doc.addPage().drawText.mock.calls.map((c) => String(c[0]));
+  }
+
+  it('draws the piece name, its cut count and its line labels', async () => {
+    const text = await drawnText();
+    expect(text.some((t) => /Front panel/.test(t))).toBe(true);
+    expect(text.some((t) => /Cut 2/.test(t))).toBe(true);
+    expect(text.some((t) => /Hem fold/.test(t))).toBe(true);
+  });
+
+  it('showLabels false leaves the geometry unlabelled', async () => {
+    const text = await drawnText({ showLabels: false, showAnnotations: false });
+    expect(text.some((t) => /Front panel/.test(t))).toBe(false);
+  });
+
+  it('replaces glyphs the PDF font cannot encode', () => {
+    expect(toWinAnsi('12" → 5" ≈ half, 3 × 4')).toBe('12" -> 5" ~ half, 3 × 4');
+    expect(toWinAnsi('emoji \u{1f9f5} dropped')).toBe('emoji  dropped');
   });
 });
