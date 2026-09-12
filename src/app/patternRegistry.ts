@@ -3,7 +3,7 @@ export interface PatternEntry {
   title: string;
   description: string;
   available: boolean;
-  route: 'tool-roll' | 'tri-zip' | 'roll-top' | 'mag-pouch' | 'book-cover' | 'zip-pouch' | 'circle-skirt';
+  route: 'tool-roll' | 'tri-zip' | 'roll-top' | 'mag-pouch' | 'book-cover' | 'zip-pouch' | 'circle-skirt' | 'padded-strap';
 }
 
 export const PATTERNS: PatternEntry[] = [
@@ -76,4 +76,13 @@ registerPattern({
   description: 'Parametric circle skirt generator. Choose a fullness preset (quarter/half/full/double circle), enter your waist measurement and skirt length, and get sector-shaped panels with true arc edges. Supports side-zip, back-zip, and elastic closures.',
   available: true,
   route: 'circle-skirt',
+});
+
+// Register the padded-strap entry (idempotent — safe to call multiple times)
+registerPattern({
+  id: 'padded-strap',
+  title: 'Padded Strap',
+  description: 'Padded shoulder strap pair (foam + mesh, tacked or quilted webbing; tail derived from torso and gusset depth) or the SOE-style H-harness: two pads, slotted cross strap with 8" of adjustment, four side-release corners, unsewn hydration channels and routing PALS.',
+  available: true,
+  route: 'padded-strap',
 });

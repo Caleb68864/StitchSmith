@@ -98,15 +98,14 @@ Engines: `pattern-engine` (graph, geometry, exporters), `pouch-engine`
 
 ## Next patterns, in order
 
-### 1. Padded strap / H-harness generator (standalone page)
-The strap engine exists; a page is mostly boilerplate (copy the Zip Pouch page
-shape). Add the H-harness cross piece: 1.5" webbing legs, four side-release
-corners (NSN-compatible, frozen), cross strap with sewn slots cut-to-fit, 8" of
-chest adjustment, hydration channels as unsewn spans.
-Evidence: strong for webbing widths, hardware and adjustment; pad length,
-width, foam and cross-strap height are Open — expose as inputs with
-mock-derived warnings. `rigs/harness-h-geometry.md`,
-`rigs/harness-hydration-comms-routing.md`, `rigs/lbvmod-harness-geometry.md`.
+### 1. Padded strap / H-harness generator (standalone page) — DONE 2026-09-11
+`src/generators/padded-strap/`: pack strap pair (tail from torso and gusset)
+and the H-harness (1.5" webbing full length to four side-release corners,
+slotted cross strap with 8" adjustment, hydration channel bars sewn ends only,
+routing PALS). Open vault numbers are inputs with mock-derived warnings.
+Follow-ups: a torso block for the 3D preview so the J-curve and the H
+crossing can be checked; the LBV shoulder set variant (24" verticals, 12"
+drop, tension locks centred) as a third mode.
 
 ### 2. Micro rig / chest rig platform
 The vault's centre of gravity (74 rig notes). The platform is a panel plus a

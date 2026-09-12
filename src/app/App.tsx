@@ -9,6 +9,7 @@ import { useMagPouchProject } from '../state/useMagPouchProject.js';
 import { useBookCoverProject } from '../state/useBookCoverProject.js';
 import { useZipPouchProject } from '../state/useZipPouchProject.js';
 import { useCircleSkirtProject } from '../state/useCircleSkirtProject.js';
+import { usePaddedStrapProject } from '../state/usePaddedStrapProject.js';
 import { Toaster } from '../components/shared/Toaster.js';
 import { ErrorBoundary } from '../components/shared/ErrorBoundary.js';
 import type { PatternEntry } from './patternRegistry.js';
@@ -37,6 +38,9 @@ const ZipPouchPage = lazy(() =>
 const CircleSkirtPage = lazy(() =>
   import('../components/circle-skirt/CircleSkirtPage.js').then(m => ({ default: m.CircleSkirtPage }))
 );
+const PaddedStrapPage = lazy(() =>
+  import('../components/padded-strap/PaddedStrapPage.js').then(m => ({ default: m.PaddedStrapPage }))
+);
 
 // Tab title per view so users with multiple tabs can tell them apart.
 const VIEW_TITLES: Record<View, string> = {
@@ -48,6 +52,7 @@ const VIEW_TITLES: Record<View, string> = {
   'book-cover': 'StitchSmith — Book Cover',
   'zip-pouch': 'StitchSmith — Zip Pouch',
   'circle-skirt': 'StitchSmith — Circle Skirt',
+  'padded-strap': 'StitchSmith — Padded Strap',
 };
 
 type View = 'landing' | PatternEntry['route'];
@@ -61,6 +66,7 @@ export function App() {
   const bookCoverState = useBookCoverProject();
   const zipPouchState = useZipPouchProject();
   const circleSkirtState = useCircleSkirtProject();
+  const paddedStrapState = usePaddedStrapProject();
 
   useEffect(() => {
     document.title = VIEW_TITLES[view] ?? 'StitchSmith';
@@ -144,7 +150,7 @@ export function App() {
           >
             StitchSmith
           </button>
-          <span className="text-xs text-muted-foreground">Circle Skirt Generator</span>
+          <span className="text-xs text-muted-foreground">{view === 'padded-strap' ? 'Padded Strap Generator' : 'Circle Skirt Generator'}</span>
         </header>
       )}
       <PageShell>
@@ -229,6 +235,14 @@ export function App() {
             updateInputs={circleSkirtState.updateInputs}
             resetProject={circleSkirtState.resetProject}
             importProject={circleSkirtState.importProject}
+          />
+        )}
+        {view === 'padded-strap' && (
+          <PaddedStrapPage
+            project={paddedStrapState.project}
+            updateInputs={paddedStrapState.updateInputs}
+            resetProject={paddedStrapState.resetProject}
+            importProject={paddedStrapState.importProject}
           />
         )}
         </Suspense>

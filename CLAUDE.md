@@ -18,7 +18,7 @@ Pieces are drawn at finished size and the engine adds the allowance.
   apply a uniform offset via `offsetPolygon` / per-edge SA helpers in `src/lib/pattern-engine/geometry/offset.ts`.
 - The SVG/PDF exports must render the SA-offset cut line distinctly from the body cut line.
 
-Used by: Tool Roll, Tri-Zip, Roll-Top Sack, Mag Pouch, Book Cover, Circle Skirt.
+Used by: Tool Roll, Tri-Zip, Roll-Top Sack, Mag Pouch, Book Cover, Circle Skirt, Padded Strap (via the strap engine).
 
 ### Convention B — baked-in SA (documented exception)
 
@@ -79,6 +79,12 @@ numbers. Rules already encoded, with the note that justifies each:
   strap length must take the gusset depth as an input (`packs/medpack-shoulder-harness.md`).
 - When a note marks a number Open / Inferred, carry it forward as an input or
   a warning tagged `mock-derived`, never as a hard default.
+- H-harness (`rigs/harness-h-geometry.md`): 1.5" webbing full pad length and
+  out both ends to four side-release corners (NSN-compatible, frozen), 8" of
+  chest adjustment on a slotted cross strap (cut down between slots, never
+  add), corner tails never cut, hydration channels are unsewn crossings (the
+  sew map whitelists them). Pad length/width, foam, crossing height, spread
+  and drop legs are Open — inputs with mock-derived warnings.
 
 ## 3D preview conventions
 
@@ -117,7 +123,7 @@ numbers. Rules already encoded, with the note that justifies each:
 
 ## Engine usage
 
-All generators (Tool Roll, Tri-Zip, Roll-Top Sack, Mag Pouch, Book Cover, Zip Pouch, Circle Skirt) consume `src/lib/pattern-engine/` for graph types (`Point`, `Edge`, `Path`, `Piece`, `Pattern`), geometry helpers (offset, arc, bbox), and exporters (SVG, PDF, DXF, project JSON). New generators must use the engine — do not fork geometry or export code into the generator directory.
+All generators (Tool Roll, Tri-Zip, Roll-Top Sack, Mag Pouch, Book Cover, Zip Pouch, Circle Skirt, Padded Strap) consume `src/lib/pattern-engine/` for graph types (`Point`, `Edge`, `Path`, `Piece`, `Pattern`), geometry helpers (offset, arc, bbox), and exporters (SVG, PDF, DXF, project JSON). New generators must use the engine — do not fork geometry or export code into the generator directory.
 
 ## Project JSON envelope
 
@@ -130,6 +136,7 @@ All generators (Tool Roll, Tri-Zip, Roll-Top Sack, Mag Pouch, Book Cover, Zip Po
 - `schemaVersion: 4` → Book Cover
 - `schemaVersion: 5` → Zip Pouch
 - `schemaVersion: 6` → Circle Skirt
+- `schemaVersion: 7` → Padded Strap / H-harness
 - These are sibling schemas, not an upgrade chain. Distinguish by `generatorId`
   (the source of truth is each hook's `isValid` guard in `src/state/use*Project.ts`).
 - Unknown future versions return a friendly error, not partial state.
