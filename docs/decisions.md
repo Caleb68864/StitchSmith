@@ -967,3 +967,71 @@ every control, and the canvas capped at the column width with a
   build, Playwright 24/24.
 
 **Commit:** 916e505
+
+## 2026-09-12 — Review pass: printed and exported output
+
+**Context.** Five parallel reviews went over the generators, pages, viewer,
+state and shell. Nobody owned `src/lib/pattern-engine/exports` or the repo's
+own front matter, so the coordinator reviewed what actually comes out of the
+app. Full findings in `docs/reviews/exports.md`.
+
+**Decisions.**
+- Tiled printable HTML was emitting blank pages: the pattern was rendered into
+  a variable and never placed in the per-tile SVG, and no test asserted that
+  geometry reached a page. Rebuilt: every page carries the drawing clipped to
+  its own viewBox, crop marks on the trim line, dashed overlap guides, a
+  row/column assembly label and a 50 mm rule, with `@page` set so browsers
+  print 1:1.
+- The PDF truncated any piece larger than a page. It now tiles with the same
+  `computeTiles` the HTML uses (print area less a 10 mm overlap), never
+  scaling, because a pattern printed at anything but 1:1 is worthless. Pages
+  past the first name their row and column.
+- The PDF drew no text. It now draws the piece name, cut count, line labels
+  and notes, laid out by the same code as the SVG. Standard PDF fonts encode
+  WinAnsi only and vault labels are full of arrows and approximately-equals,
+  so `toWinAnsi` maps the meaningful glyphs to ASCII and drops the rest; one
+  unencodable character used to throw the whole export.
+- Label layout moved to `src/lib/pattern-engine/exports/labels.ts`, shared by
+  both exporters: wrap to the owning piece, shrink the piece name until it fits
+  its own rectangle, clamp inside the outline, and nudge blocks clear of text
+  already placed. The piece name reserves the middle before line labels are
+  placed around it. Every copy of a multi-quantity piece is named; only the
+  first repeats the long note.
+- The 50 mm scale check moved from a square laid over the pattern to a rule in
+  the bottom margin, in both formats.
+- Tri-Zip modules' warnings were dropped in `collect()`; they are now carried
+  through the build result and shown on the page.
+- README rewritten: it described a tool roll generator with a mag pouch bolted
+  on, a source tree that no longer exists, and AK magazines as unsupported when
+  a preset and its hemmed-face variant ship. The page description and PWA
+  manifest listed five of fifteen generators.
+
+**Commit:** 8853043 (exports), 8846c9b (README)
+
+## 2026-09-12 — Review pass: generators, pages, viewer, state and shell
+
+**Context.** Five parallel reviews with fixes, one per area, each inside its own
+file ownership. Per-area reports in `docs/reviews/`.
+
+**Decisions and findings.** Full detail in the reports; the load-bearing ones:
+- Cut lists and drawings must come from the same measurement. All five new
+  generators' BOMs printed the drawn box as the piece size, which under
+  Convention A is the finished size; they now use `bboxFromPieceWithSa`.
+- Material ids are the cloth engine's key for bending stiffness, so a one-off
+  spelling (`mesh-spacer` for `spacer-mesh`) silently simulates the wrong
+  material and splits the cut list. Ids derive as `Math.round(mm)`.
+- The cloth solve stops when the shape stops changing (rms displacement over a
+  20-step window), not at a fixed 360 steps, and the settled state is cached per
+  input hash. Plate constraints are built only for materials stiffer than 0.1,
+  so foam and webbing keep them and cloth does not: removing them from cloth
+  moves the settled shape 1.0 mm rms and changes no reported figure.
+- Stretch is reported as the 99th percentile with the worst edge as an aside. A
+  single torn edge on a coarse mesh is not a number a user can act on.
+- Pins smaller than the mesh spacing hold nothing. `PinSpec` gained a ring
+  shape after the circle skirt was found to be in free fall.
+- One project hook per generator, one `assertGeneratorMatch`: four hooks named
+  the wrong generator when refusing an import.
+- The app has URLs now (hash routing), so a generator can be linked, bookmarked
+  and refreshed.
+
+**Commit:** dbb1087
