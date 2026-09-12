@@ -200,15 +200,15 @@ describe('buildPattern — rejects inputs that fail validateInputs', () => {
   });
 
   it('throws instead of allocating an infinite number of panels', () => {
-    expect(() => buildPattern({ ...base, preset: 'custom', sweep_angle_deg: Infinity })).toThrow(/sweep_angle_deg/);
+    expect(() => buildPattern({ ...base, preset: 'custom', sweep_angle_deg: Infinity })).toThrow(/Sweep angle/);
   });
 
   it('throws for a sweep outside [45, 720] rather than building thousands of panels', () => {
-    expect(() => buildPattern({ ...base, preset: 'custom', sweep_angle_deg: 1e9 })).toThrow(/sweep_angle_deg/);
+    expect(() => buildPattern({ ...base, preset: 'custom', sweep_angle_deg: 1e9 })).toThrow(/Sweep angle must be at most 720/);
   });
 
   it('throws for a NaN seam allowance rather than drawing NaN geometry', () => {
-    expect(() => buildPattern({ ...base, seam_allowance: NaN })).toThrow(/seam_allowance/);
+    expect(() => buildPattern({ ...base, seam_allowance: NaN })).toThrow(/Seam allowance needs a number/);
   });
 
   it('still builds a valid pattern for good inputs', () => {

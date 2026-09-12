@@ -113,8 +113,26 @@ const VIEW_TITLES: Record<View, string> = {
 
 type View = 'landing' | PatternEntry['route'];
 
+/**
+ * The open generator lives in the URL hash (#/mag-pouch), so refreshing keeps
+ * your place, Back goes to the previous generator instead of leaving the site,
+ * and a link to a generator can be shared. Unknown hashes fall back to the
+ * landing page rather than a blank screen.
+ */
+function routeFromHash(hash: string): View {
+  const slug = hash.replace(/^#\/?/, '');
+  if (!slug) return 'landing';
+  return PATTERNS.some((p) => p.route === slug) ? (slug as View) : 'landing';
+}
+
+function hashFromRoute(view: View): string {
+  return view === 'landing' ? '#/' : `#/${view}`;
+}
+
 export function App() {
-  const [view, setView] = useState<View>('landing');
+  const [view, setView] = useState<View>(() =>
+    typeof window === 'undefined' ? 'landing' : routeFromHash(window.location.hash),
+  );
   const toolRollState = useToolRollProject();
   const triZipState = useTriZipProject();
   const rollTopState = useRollTopSackProject();
@@ -133,6 +151,22 @@ export function App() {
 
   useEffect(() => {
     document.title = VIEW_TITLES[view] ?? 'StitchSmith';
+  }, [view]);
+
+  // Back and Forward move between generators.
+  useEffect(() => {
+    const onHashChange = () => setView(routeFromHash(window.location.hash));
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, []);
+
+  // Keep the hash in step with the view without adding a history entry for the
+  // initial render (a plain assignment on mount would push one).
+  useEffect(() => {
+    const want = hashFromRoute(view);
+    if (window.location.hash === want) return;
+    if (routeFromHash(window.location.hash) === view) return;
+    window.history.pushState(null, '', want);
   }, [view]);
 
   function openPattern(route: PatternEntry['route']) {
@@ -165,14 +199,16 @@ export function App() {
             >
               StitchSmith
             </button>
-            <span className="text-xs text-muted-foreground truncate">{HEADER_SUBTITLES[view] ?? 'Pattern Generator'}</span>
+            {/* The switcher already names the generator, so the subtitle is the
+                first thing to go when the header runs out of room. */}
+            <span className="hidden md:inline text-xs text-muted-foreground truncate">{HEADER_SUBTITLES[view] ?? 'Pattern Generator'}</span>
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <GeneratorSwitcher current={view} onSelect={openPattern} />
             <button
               type="button"
               onClick={() => setView('landing')}
-              className="h-7 rounded-md border border-input px-2 text-xs text-muted-foreground hover:text-foreground"
+              className="hidden sm:block h-7 rounded-md border border-input px-2 text-xs text-muted-foreground hover:text-foreground"
             >
               All generators
             </button>

@@ -69,9 +69,11 @@ describe('buildPattern', () => {
     expect(patternToSvg({ id: 'x', name: 'x', pieces: b.value.pieces }, { defaultSeamAllowance: 0, showLabels: true })).toContain('<svg');
     expect(b.value.warnings.some((w) => w.id === 'flush')).toBe(true);
   });
-  it('variations: bifold doubles the body and panel, PALS replaces Velcro, grommets add hardware, loop over hook', () => {
+  it('variations: bifold adds a second pocket, PALS replaces Velcro, grommets add hardware, loop over hook', () => {
     const bi = buildPattern({ ...SOE, bifold: true });
-    expect(bi.ok && bi.value.resolved.body_cut_length).toBeCloseTo(24 * IN, 6);
+    // Two 5" pockets about a spine, hemmed only at the two raw ends: 4 x 5 + 2 x 1.
+    // (Was 24" — that counted a hem at each end of each half, two of which are not raw edges.)
+    expect(bi.ok && bi.value.resolved.body_cut_length).toBeCloseTo(22 * IN, 6);
     expect(bi.ok && bi.value.pieces.find((p) => p.id === PANEL_ID)!.quantity).toBe(2);
     const pals = buildPattern({ ...SOE, pals_back: true, grommets: true, loop_over_hook: true });
     expect(pals.ok).toBe(true);

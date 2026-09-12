@@ -1,4 +1,4 @@
-import { NumericField, ChoiceField, Toggle, UnitToggle } from '../shared/fields/index.js';
+import { NumericField, ChoiceField, Toggle, UnitToggle, CollapsibleSection, VaultOpenNote, displayNumber } from '../shared/fields/index.js';
 import type { LbvInputs, MaleSide } from '../../generators/lbv/types.js';
 import { convertLengthValues, type UnitSystem } from '../../utils/units.js';
 
@@ -26,9 +26,20 @@ export function LbvSettingsPanel({ inputs, errors, onChange }: Props) {
     onChange({ units: next, ...convertLengthValues(inputs, DISPLAY_UNIT_FIELDS, units, next), front_strap_positions: positions.map((p) => Math.round(p * f * 1e4) / 1e4) });
   }
   return (
-    <div className="rounded border border-border p-3 space-y-4">
-      <p className="text-xs text-muted-foreground">The vault gives the interface, the straps and the build order; it never states a panel size, the pad, or the cross piece angle. Every blank field is a placeholder — measure a real rig and enter it.</p>
-      <h2 className="text-xs font-semibold">Panels (every panel is a foam pocket)</h2>
+    <div className="space-y-2">
+      <div className="rounded border border-border p-3 space-y-3">
+        <UnitToggle value={units} onChange={handleUnitsChange} />
+        <VaultOpenNote>
+          The vault gives the interface, the straps and the build order. It never states a panel size, the pad, or the
+          cross piece angle, so fields marked <span className="font-medium">measure</span> are starting points — check them against a real rig.
+        </VaultOpenNote>
+      </div>
+
+      <CollapsibleSection
+        title="Panels (every panel is a foam pocket)"
+        defaultOpen
+        summary={inputs.panel_width && inputs.panel_height ? `${displayNumber(inputs.panel_width)} × ${displayNumber(inputs.panel_height)} ${units}` : undefined}
+      >
       <div className="grid grid-cols-2 gap-3">
         <NumericField id="panel-width" label={`Front panel width (${units})`} value={inputs.panel_width} error={errors['panel_width']} step={step} placeholder={mock} mockDerived onChange={v => onChange({ panel_width: v })} />
         <NumericField id="panel-height" label={`Front panel height (${units})`} value={inputs.panel_height} error={errors['panel_height']} step={step} placeholder={mock} mockDerived onChange={v => onChange({ panel_height: v })} />
@@ -40,7 +51,9 @@ export function LbvSettingsPanel({ inputs, errors, onChange }: Props) {
         <NumericField id="edge-tape" label={`Edge tape width (${units})`} value={inputs.edge_tape_width} error={errors['edge_tape_width']} step={step} placeholder={units === 'in' ? '1' : '25.4'} onChange={v => onChange({ edge_tape_width: v })} />
       </div>
       <Toggle label="Foam insert in every panel (rigidity, belt-line load transfer, flotation)" value={inputs.foam_insert ?? true} onChange={v => onChange({ foam_insert: v })} />
-      <h2 className="text-xs font-semibold">Modular interface (Velcro-faced PALS rows)</h2>
+      </CollapsibleSection>
+
+      <CollapsibleSection title="Modular interface (Velcro-faced PALS rows)" summary={`${inputs.back_cols ?? 4} back columns`}>
       <div className="grid grid-cols-2 gap-3">
         <NumericField id="row-width" label={`Row webbing width (${units})`} value={inputs.row_width} error={errors['row_width']} step={step} placeholder={units === 'in' ? '1.5' : '38'} onChange={v => onChange({ row_width: v })} />
         <NumericField id="row-pitch" label={`Row pitch (${units})`} value={inputs.row_pitch} error={errors['row_pitch']} step={step} placeholder={mock} mockDerived onChange={v => onChange({ row_pitch: v })} />
@@ -50,7 +63,9 @@ export function LbvSettingsPanel({ inputs, errors, onChange }: Props) {
         <NumericField id="pouch-width" label={`Pouch width for capacity (${units})`} value={inputs.pouch_width} error={errors['pouch_width']} step={step} placeholder={units === 'in' ? '3' : '76'} onChange={v => onChange({ pouch_width: v })} />
       </div>
       <Toggle label="Loop Velcro on the row faces (lids stage up, patches)" value={inputs.loop_velcro_face ?? true} onChange={v => onChange({ loop_velcro_face: v })} />
-      <h2 className="text-xs font-semibold">Verticals and drop</h2>
+      </CollapsibleSection>
+
+      <CollapsibleSection title="Verticals and drop" summary={inputs.vertical_strap_len ? `${displayNumber(inputs.vertical_strap_len)} ${units} straps` : undefined}>
       <div className="grid grid-cols-2 gap-3">
         <NumericField id="vertical-mark" label={`Vertical mark from the outer edge (${units})`} value={inputs.vertical_mark} error={errors['vertical_mark']} step={step} placeholder={units === 'in' ? '4' : '101.6'} onChange={v => onChange({ vertical_mark: v })} />
         <NumericField id="vertical-width" label={`Vertical webbing width (${units})`} value={inputs.vertical_width} error={errors['vertical_width']} step={step} placeholder={mock} mockDerived onChange={v => onChange({ vertical_width: v })} />
@@ -59,7 +74,9 @@ export function LbvSettingsPanel({ inputs, errors, onChange }: Props) {
         <NumericField id="hardware-wrap" label={`Lost in the tension lock (${units})`} value={inputs.hardware_wrap} error={errors['hardware_wrap']} step={step} placeholder="0" onChange={v => onChange({ hardware_wrap: v })} />
         <NumericField id="drop-adjust" label={`Drop the verticals must fund (${units})`} value={inputs.drop_adjust} error={errors['drop_adjust']} step={step} placeholder={units === 'in' ? '12' : '305'} onChange={v => onChange({ drop_adjust: v })} />
       </div>
-      <h2 className="text-xs font-semibold">Shoulder set</h2>
+      </CollapsibleSection>
+
+      <CollapsibleSection title="Shoulder set" summary={inputs.pad_length ? `${displayNumber(inputs.pad_length)} ${units} pads` : undefined}>
       <div className="grid grid-cols-2 gap-3">
         <NumericField id="pad-length" label={`Pad length (${units})`} value={inputs.pad_length} error={errors['pad_length']} step={step} placeholder={mock} mockDerived onChange={v => onChange({ pad_length: v })} />
         <NumericField id="pad-width" label={`Pad width (${units})`} value={inputs.pad_width} error={errors['pad_width']} step={step} placeholder={mock} mockDerived onChange={v => onChange({ pad_width: v })} />
@@ -70,7 +87,9 @@ export function LbvSettingsPanel({ inputs, errors, onChange }: Props) {
         <NumericField id="drag-len" label={`Drag handle cut (${units})`} value={inputs.drag_handle_len} error={errors['drag_handle_len']} step={step} placeholder={mock} mockDerived onChange={v => onChange({ drag_handle_len: v })} />
       </div>
       <Toggle label='Drag handle — 2" webbing, staggered fold, four-point dispersion stitch' value={inputs.drag_handle ?? true} onChange={v => onChange({ drag_handle: v })} />
-      <h2 className="text-xs font-semibold">Closure and sizing</h2>
+      </CollapsibleSection>
+
+      <CollapsibleSection title="Closure and sizing" summary={`${straps} front straps`}>
       <div className="grid grid-cols-2 gap-3">
         <NumericField id="front-straps" label="Front straps" value={inputs.front_straps} error={errors['front_straps']} step={1} placeholder="3" onChange={v => onChange({ front_straps: v })} />
         <NumericField id="adjust-per" label={`Adjustment per location (${units})`} value={inputs.adjust_per_location} error={errors['adjust_per_location']} step={step} placeholder={units === 'in' ? '12' : '305'} onChange={v => onChange({ adjust_per_location: v })} />
@@ -83,14 +102,16 @@ export function LbvSettingsPanel({ inputs, errors, onChange }: Props) {
       </div>
       <ChoiceField<MaleSide> label="Male buckles from the wearer's" value={inputs.male_side ?? 'right'} options={[{ value: 'right', label: 'right (97% right-handed)' }, { value: 'left', label: 'left' }]} onChange={v => onChange({ male_side: v })} />
       <Toggle label='Tension locks outboard (+3" for big torsos)' value={inputs.tension_lock_outboard ?? false} onChange={v => onChange({ tension_lock_outboard: v })} />
-      <h2 className="text-xs font-semibold">Belt</h2>
+      </CollapsibleSection>
+
+      <CollapsibleSection title="Belt and hydration" summary={inputs.belt_width ? `${displayNumber(inputs.belt_width)} ${units} belt` : undefined}>
       <div className="grid grid-cols-3 gap-3">
         <NumericField id="belt-width" label={`Belt width (${units})`} value={inputs.belt_width} error={errors['belt_width']} step={step} placeholder={units === 'in' ? '2' : '51'} onChange={v => onChange({ belt_width: v })} />
         <NumericField id="loops" label="Loops per panel" value={inputs.loops_per_panel} error={errors['loops_per_panel']} step={1} placeholder="2" onChange={v => onChange({ loops_per_panel: v })} />
         <NumericField id="belt-length" label={`Belt length (${units})`} value={inputs.belt_length} error={errors['belt_length']} step={step} placeholder={mock} mockDerived onChange={v => onChange({ belt_length: v })} />
       </div>
       <NumericField id="hydration" label={`Hydration webbing across the back top (${units})`} value={inputs.hydration_webbing} error={errors['hydration_webbing']} step={step} placeholder={units === 'in' ? '10' : '254'} onChange={v => onChange({ hydration_webbing: v })} />
-      <UnitToggle value={units} onChange={handleUnitsChange} />
+      </CollapsibleSection>
     </div>
   );
 }

@@ -68,3 +68,55 @@ export const BACK_LOOP_TAPE_OFFSET_MM = 1 * IN;
 export const BACK_LOOP_TAPE_WIDTH_MM = 1.5 * IN;
 /** Belt loop footprint on the belt: belt width plus an inch of loop. MOCK. */
 export const LOOP_FOOTPRINT_EXTRA_MM = 1 * IN;
+
+/**
+ * The default project's inputs, in DISPLAY units (inches, except the two the
+ * panel labels in mm: foam thickness and the zipper seam allowance).
+ *
+ * Every field is filled in so the panel opens with numbers rather than sixteen
+ * empty boxes, and so the four vault-open lengths stop firing a warning each
+ * for being unset. The panel still marks them mock-derived.
+ */
+export const DEFAULT_LBV_INPUTS = {
+  units: DEFAULT_UNITS,
+  panel_width: PANEL_WIDTH_MM / IN,
+  panel_height: PANEL_HEIGHT_MM / IN,
+  back_panel_width: BACK_PANEL_WIDTH_MM / IN,
+  back_panel_height: BACK_PANEL_HEIGHT_MM / IN,
+  back_bellow: BACK_BELLOW_MM / IN,
+  foam_insert: true,
+  foam_thickness: FOAM_MM,
+  seam_allowance: SEAM_ALLOWANCE_MM,
+  edge_tape_width: EDGE_TAPE_MM / IN,
+  edge_tape_conceal: EDGE_TAPE_CONCEAL_MM / IN,
+  row_width: ROW_WIDTH_MM / IN,
+  row_pitch: ROW_PITCH_MM / IN,
+  front_cols: FRONT_COLS,
+  back_cols: BACK_COLS,
+  loop_velcro_face: true,
+  vertical_mark: VERTICAL_MARK_MM / IN,
+  vertical_width: VERTICAL_WIDTH_MM / IN,
+  vertical_strap_len: VERTICAL_STRAP_MM / IN,
+  tab_foldover: TAB_FOLDOVER_MM / IN,
+  hardware_wrap: HARDWARE_WRAP_MM / IN,
+  drop_adjust: DROP_ADJUST_MM / IN,
+  pad_length: PAD_LENGTH_MM / IN,
+  pad_width: PAD_WIDTH_MM / IN,
+  pad_tab_foldover: PAD_TAB_FOLDOVER_MM / IN,
+  cross_piece_width: CROSS_PIECE_WIDTH_MM / IN,
+  cross_piece_angle: CROSS_PIECE_ANGLE_DEG,
+  pad_spread: PAD_SPREAD_MM / IN,
+  drag_handle: true,
+  drag_handle_len: DRAG_HANDLE_LEN_MM / IN,
+  front_straps: FRONT_STRAPS,
+  male_side: 'right' as const,
+  front_strap_positions: FRONT_STRAP_POSITIONS_MM.map((v) => v / IN),
+  adjust_per_location: ADJUST_PER_LOCATION_MM / IN,
+  tension_lock_outboard: false,
+  base_chest: BASE_CHEST_MM / IN,
+  belt_width: BELT_WIDTH_MM / IN,
+  loops_per_panel: LOOPS_PER_PANEL,
+  belt_length: BELT_LENGTH_MM / IN,
+  hydration_webbing: HYDRATION_WEBBING_MM / IN,
+  pouch_width: POUCH_WIDTH_MM / IN,
+};

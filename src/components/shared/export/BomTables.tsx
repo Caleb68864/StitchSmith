@@ -4,7 +4,7 @@ import type { SimpleBomRow, StructuredBom } from './exportAdapter.js';
 export function SimpleBomTable({ bom }: { bom: SimpleBomRow[] }) {
   if (bom.length === 0) return <p className="text-xs text-muted-foreground">No items in cut list.</p>;
   return (
-    <table className="w-full border-collapse text-xs" data-testid="bom-table">
+    <div className="overflow-x-auto" data-testid="bom-table"><table className="w-full border-collapse text-xs">
       <thead>
         <tr className="border-b border-border">
           <th className="text-left py-1 pr-2">Item</th>
@@ -24,7 +24,7 @@ export function SimpleBomTable({ bom }: { bom: SimpleBomRow[] }) {
           </tr>
         ))}
       </tbody>
-    </table>
+    </table></div>
   );
 }
 
@@ -39,7 +39,7 @@ export function StructuredBomTable({ bom }: { bom: StructuredBom }) {
       {bom.materials.length > 0 && (
         <div>
           <h3 className="font-semibold mb-1">Materials</h3>
-          <table className="w-full border-collapse">
+          <div className="overflow-x-auto"><table className="w-full border-collapse">
             <tbody>
               {bom.materials.map((m, i) => (
                 <tr key={m.id ?? i} className="border-b border-border/50">
@@ -48,13 +48,13 @@ export function StructuredBomTable({ bom }: { bom: StructuredBom }) {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         </div>
       )}
       {bom.hardware.length > 0 && (
         <div>
           <h3 className="font-semibold mb-1">Hardware</h3>
-          <table className="w-full border-collapse">
+          <div className="overflow-x-auto"><table className="w-full border-collapse">
             <tbody>
               {bom.hardware.map((h, i) => (
                 <tr key={h.id ?? i} className="border-b border-border/50">
@@ -64,7 +64,7 @@ export function StructuredBomTable({ bom }: { bom: StructuredBom }) {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         </div>
       )}
       {notes.length > 0 && (

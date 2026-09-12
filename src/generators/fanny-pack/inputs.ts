@@ -2,6 +2,9 @@ import type { FannyPackInputs, ResolvedInputs, ValidationResult, BuildPatternErr
 import { DEFAULT_UNITS, WIDTH_MM, HEIGHT_MM, DEPTH_MM, SEAM_ALLOWANCE_MM, ZIPPER_LIP_MM, LID_ANGLE_DEG, GROMMET_INSET_MM, BELT_MIN_MM, BELT_MAX_MM, BELT_TAIL_MM, CORD_ANCHOR_DROP_MM } from './defaults.js';
 import { sweepInputs, stripNulls, unitsOf, type GuardSpec } from '../../utils/inputGuards.js';
 
+/** Bottom drainage grommets: 0, 2 or 4 (vault bags/fanny-pack-drainage-grommets.md). */
+export const MAX_GROMMETS = 4;
+
 /** Type/range guard run before the generator's own rules (hardening pass H1). */
 const GUARD_SPEC: GuardSpec = {
   units: { kind: 'enum', allowed: ['mm', 'in'] },
@@ -15,7 +18,7 @@ const GUARD_SPEC: GuardSpec = {
   zipper_edge_finish: { kind: 'enum', allowed: ['fold', 'tape'] },
   zipper_lip: { kind: 'length' },
   drawbridge_limiter: { kind: 'bool' },
-  bottom_grommets: { kind: 'count', max: 4 },
+  bottom_grommets: { kind: 'count', max: MAX_GROMMETS },
   belt_webbing: { kind: 'length' },
   belt_min: { kind: 'length' },
   belt_max: { kind: 'length' },
@@ -60,7 +63,10 @@ export function resolveInputs(inputs: FannyPackInputs): ResolvedInputs {
   const chordR = Math.max(0, height - CORD_ANCHOR_DROP_MM);
   const angle = lid_drop_target === 'closed' ? 0 : lid_drop_target === 'fully_open' ? 180 : lid_angle_deg;
   const chord = 2 * chordR * Math.sin((Math.min(angle, 179) * Math.PI) / 360);
-  const n = bottom_grommets;
+  // validateInputs caps this at 4, but the page resolves on every keystroke and
+  // does not wait for validation: an unclamped Array.from({length: 1e9}) here
+  // exhausted the heap and took the tab with it while the user was still typing.
+  const n = Number.isFinite(bottom_grommets) ? Math.max(0, Math.min(MAX_GROMMETS, Math.floor(bottom_grommets))) : 0;
   const grommet_positions = n === 0 ? [] : Array.from({ length: n }, (_, i) => (width * (i + 1)) / (n + 1));
   return {
     units, width, height, depth, seam_allowance: sa, lid_drop_target, lid_angle_deg, lid_extension, lid_extension_overridden: overridden,

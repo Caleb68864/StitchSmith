@@ -122,8 +122,13 @@ export function resolvedWarnings(r: ResolvedMagPouch): string[] {
   if (r.hasFlap && r.pullChannelDepthIn > 0 && r.pullChannelDepthIn < DEFAULT_PULL_CHANNEL_DEPTH_IN) {
     w.push(`Pull channel ${inTxt(r.pullChannelDepthIn)} is under the 1.5" SOE marks for a gloved finger; the 1" sample was the one he called too small (rigs/subgun-lid-pull-channel.md).`);
   }
-  if (r.hasFlap && r.retention === 'flap_velcro' && r.closureOverlapIn < MIN_LID_PURCHASE_IN) {
-    w.push(`Lid purchase ${inTxt(r.closureOverlapIn)} is under the ${inTxt(MIN_LID_PURCHASE_IN)} of hook SOE keeps at every adjustment; a taller magazine will leave less. Raise closure_overlap or the loop length.`);
+  // The vault's rule is about the hook strip itself: whatever the adjustment,
+  // at least 3" of hook must be in contact (rigs/subgun-lid-pull-channel.md).
+  if (r.hasFlap && r.retention === 'flap_velcro' && r.hookLengthIn < MIN_LID_PURCHASE_IN) {
+    w.push(`Hook strip ${inTxt(r.hookLengthIn)} is under the ${inTxt(MIN_LID_PURCHASE_IN)} of purchase SOE keeps at every lid position; a taller magazine leaves less of it in contact. Lengthen hook_length, and the loop field with it.`);
+  }
+  if (r.hasFlap && r.retention === 'flap_velcro' && r.loopLengthIn <= r.hookLengthIn) {
+    w.push(`The loop field ${inTxt(r.loopLengthIn)} is no longer than the ${inTxt(r.hookLengthIn)} hook, so the lid has no adjustment. The loop is the parametric piece: make it longer than the hook by the travel you want.`);
   }
   if (r.hourglassInsetIn > 0) {
     w.push('Hourglass aesthetic is on: the side seams pinch in 1/4" per side. Purely cosmetic and it costs real labour — SOE dropped it from the 4-pack rifle card.');

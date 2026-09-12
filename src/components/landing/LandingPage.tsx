@@ -46,6 +46,10 @@ export function LandingPage({ onSelectPattern }: LandingPageProps) {
           Parametric sewing patterns in your browser. Pick a project, dial in the dimensions,
           check it in 3D, and export to SVG, PDF or DXF — every cut line, seam and hem to scale.
         </p>
+        <p className="text-xs text-muted-foreground">
+          Each generator keeps its own project, saved in this browser as you type. Export downloads a
+          file you can share or back up. Nothing is uploaded anywhere.
+        </p>
       </div>
 
       <div className="w-full max-w-4xl space-y-6">
@@ -59,6 +63,11 @@ export function LandingPage({ onSelectPattern }: LandingPageProps) {
             placeholder={`Find a generator — try "PALS", "zipper" or "sling" (${PATTERNS.length} available)`}
             className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           />
+          <p className="sr-only" role="status" aria-live="polite">
+            {query.trim() === ''
+              ? `${PATTERNS.length} generators`
+              : `${filtered.length} of ${PATTERNS.length} generators match ${query}`}
+          </p>
         </div>
 
         {showRecent && (
@@ -76,7 +85,7 @@ export function LandingPage({ onSelectPattern }: LandingPageProps) {
 
         {groups.map(({ category, patterns }) => (
           <section key={category.id} aria-labelledby={`cat-${category.id}`} className="space-y-3">
-            <div className="flex items-baseline gap-3">
+            <div className="flex flex-col sm:flex-row sm:items-baseline gap-0.5 sm:gap-3">
               <h2 id={`cat-${category.id}`} className="text-base font-semibold">{category.title}</h2>
               <p className="text-xs text-muted-foreground">{category.blurb}</p>
             </div>
@@ -88,7 +97,8 @@ export function LandingPage({ onSelectPattern }: LandingPageProps) {
       </div>
 
       <p className="text-xs text-muted-foreground text-center max-w-md">
-        Projects save to this browser automatically. Use Export on any generator to download a project file you can share or back up.
+        Every pattern is derived from a measured build, not a stock template. Where a dimension was never
+        stated, the field says <span className="font-medium">measure</span> — mock it before you cut.
       </p>
     </div>
   );

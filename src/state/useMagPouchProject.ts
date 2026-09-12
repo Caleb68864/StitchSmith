@@ -13,6 +13,7 @@ function isValidMagPouchProject(value: unknown): value is MagPouchProject {
 
 const storage = makeProjectStorage<MagPouchProject>({ key: STORAGE_KEY, isValid: isValidMagPouchProject });
 export const _resetMagPouchStorage = storage._reset;
+import { assertGeneratorMatch } from '../export/projectEnvelopeIO.js';
 import {
   DEFAULT_EASE_WIDTH_IN,
   DEFAULT_EASE_DEPTH_IN,
@@ -99,9 +100,7 @@ export function useMagPouchProject(): UseMagPouchProjectReturn {
   const importProject = useCallback((p: MagPouchProject) => {
     // parseProjectJson already checks generatorId on the file-import path; this
     // is defence in depth so a caller can never load another generator's project.
-    if (p.generatorId !== 'mag-pouch') {
-      throw new Error(`Cannot import project with generatorId '${p.generatorId}' into Mag Pouch`);
-    }
+    assertGeneratorMatch(p.generatorId, 'mag-pouch');
     setProjectState(p);
   }, []);
 

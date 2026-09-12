@@ -74,9 +74,11 @@ export function MagazineSection({ magazine, errors, onChange }: Props) {
                 value={magazine.width ?? ''}
                 onChange={e => handleDimensionChange('width', e.target.value)}
                 placeholder="e.g. 2.55"
+                aria-invalid={errors['width'] ? true : undefined}
+                aria-describedby={errors['width'] ? 'mag-width-error' : undefined}
               />
               {errors['width'] && (
-                <p className="text-xs text-destructive">{errors['width']}</p>
+                <p id="mag-width-error" className="text-xs text-destructive">{errors['width']}</p>
               )}
             </div>
             <div className="space-y-1">
@@ -90,9 +92,11 @@ export function MagazineSection({ magazine, errors, onChange }: Props) {
                 value={magazine.thickness ?? ''}
                 onChange={e => handleDimensionChange('thickness', e.target.value)}
                 placeholder="e.g. 1.05"
+                aria-invalid={errors['thickness'] ? true : undefined}
+                aria-describedby={errors['thickness'] ? 'mag-thickness-error' : undefined}
               />
               {errors['thickness'] && (
-                <p className="text-xs text-destructive">{errors['thickness']}</p>
+                <p id="mag-thickness-error" className="text-xs text-destructive">{errors['thickness']}</p>
               )}
             </div>
             <div className="space-y-1">
@@ -106,9 +110,11 @@ export function MagazineSection({ magazine, errors, onChange }: Props) {
                 value={magazine.height ?? ''}
                 onChange={e => handleDimensionChange('height', e.target.value)}
                 placeholder="e.g. 9.0"
+                aria-invalid={errors['height'] ? true : undefined}
+                aria-describedby={errors['height'] ? 'mag-height-error' : undefined}
               />
               {errors['height'] && (
-                <p className="text-xs text-destructive">{errors['height']}</p>
+                <p id="mag-height-error" className="text-xs text-destructive">{errors['height']}</p>
               )}
             </div>
           </div>

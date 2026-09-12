@@ -21,6 +21,8 @@ export interface PatternPreviewProps {
   onShowLabelsChange?: (v: boolean) => void;
   margin?: number;
   pieceGap?: number;
+  /** Viewport height in px; matches the 3D tab so switching tabs does not jump. */
+  height?: number;
 }
 
 /**
@@ -28,7 +30,7 @@ export interface PatternPreviewProps {
  * exporter inside the zoom/pan viewport, with piece-label and annotation
  * toggles in the toolbar and the piece count in the header.
  */
-export function PatternPreview({ pattern, buildError, hasErrors, defaultSeamAllowance = 0, saLabel, showLabels: labelsProp, onShowLabelsChange, margin, pieceGap }: PatternPreviewProps) {
+export function PatternPreview({ pattern, buildError, hasErrors, defaultSeamAllowance = 0, saLabel, showLabels: labelsProp, onShowLabelsChange, margin, pieceGap, height = 560 }: PatternPreviewProps) {
   const [labelsState, setLabelsState] = useState(true);
   const [annotations, setAnnotations] = useState(true);
   const showLabels = labelsProp ?? labelsState;
@@ -63,20 +65,20 @@ export function PatternPreview({ pattern, buildError, hasErrors, defaultSeamAllo
   const totalQuantity = pattern.pieces.reduce((s, p) => s + (p.quantity ?? 1), 0);
   const header = (
     <span data-testid="pattern-preview-region">
-      <span className="font-medium text-foreground">{pieceCount}</span> piece type{pieceCount === 1 ? '' : 's'}
-      {totalQuantity !== pieceCount && <> · <span className="font-medium text-foreground">{totalQuantity}</span> to cut</>}
-      {saLabel && <span className="text-muted-foreground"> · SA {saLabel}</span>}
+      <span className="font-medium text-gray-900">{pieceCount}</span> piece type{pieceCount === 1 ? '' : 's'}
+      {totalQuantity !== pieceCount && <> · <span className="font-medium text-gray-900">{totalQuantity}</span> to cut</>}
+      {saLabel && <span className="text-gray-500"> · SA {saLabel}</span>}
     </span>
   );
   const toolbarExtras = (
     <>
-      <Button variant="ghost" size="sm" onClick={() => setShowLabels(!showLabels)} className={`h-7 w-7 p-0 ${showLabels ? 'text-foreground' : 'text-muted-foreground'}`} title={showLabels ? 'Hide piece labels' : 'Show piece labels'} aria-pressed={showLabels} aria-label="Piece labels">
+      <Button variant="ghost" size="sm" onClick={() => setShowLabels(!showLabels)} className={`h-7 w-7 p-0 hover:bg-gray-100 ${showLabels ? 'text-gray-900' : 'text-gray-400'}`} title={showLabels ? 'Hide piece labels' : 'Show piece labels'} aria-pressed={showLabels} aria-label="Piece labels">
         {showLabels ? <Tag className="h-3.5 w-3.5" /> : <TagsIcon className="h-3.5 w-3.5 opacity-40" />}
       </Button>
-      <Button variant="ghost" size="sm" onClick={() => setAnnotations((v) => !v)} className={`h-7 w-7 p-0 ${annotations ? 'text-foreground' : 'text-muted-foreground'}`} title={annotations ? 'Hide notes and grain arrows' : 'Show notes and grain arrows'} aria-pressed={annotations} aria-label="Notes and grain arrows">
+      <Button variant="ghost" size="sm" onClick={() => setAnnotations((v) => !v)} className={`h-7 w-7 p-0 hover:bg-gray-100 ${annotations ? 'text-gray-900' : 'text-gray-400'}`} title={annotations ? 'Hide notes and grain arrows' : 'Show notes and grain arrows'} aria-pressed={annotations} aria-label="Notes and grain arrows">
         <StickyNote className={`h-3.5 w-3.5 ${annotations ? '' : 'opacity-40'}`} />
       </Button>
     </>
   );
-  return <PatternViewport svg={svg} header={header} toolbarExtras={toolbarExtras} fitKey={svg.length} />;
+  return <PatternViewport svg={svg} header={header} toolbarExtras={toolbarExtras} fitKey={svg.length} height={height} />;
 }

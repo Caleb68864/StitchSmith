@@ -21,13 +21,15 @@ import {
 } from '../../lib/fold-engine/index.js';
 import type { FoldPreview3DProps, PiecePlacement, SeamSpec } from './FoldPreview3D.js';
 import { validateSeams, clothSpacingFor, hasNonFinite, STAT_HELP } from './viewer/validate.js';
+import { solveKey, getSolve, putSolve } from './viewer/settleCache.js';
 import { ViewerLegend } from './viewer/Legend.js';
 import {
   buildClothMesh,
   createWorld,
   step as clothStep,
+  createSettleMonitor,
   seamResidual,
-  maxStretch,
+  stretchReport,
   maxPenetration,
   clothBounds,
   foldedInitial,
@@ -43,7 +45,13 @@ import {
 
 const CLOTH_SPACING = 8;
 const CLOTH_STEPS = 360;
-const CLOTH_STEPS_PER_FRAME = 8;
+/**
+ * Milliseconds of solver per animation frame. The loop used to run a fixed 8
+ * steps a frame, which on the heavier assemblies was most of a second of
+ * blocked main thread per frame — the page simply froze. A deadline keeps the
+ * browser responsive whatever the assembly costs.
+ */
+const FRAME_BUDGET_MS = 10;
 
 const DEG = Math.PI / 180;
 const PIECE_GAP = 20;
@@ -109,6 +117,26 @@ function underObject(f: { x: number; y: number }, object: NonNullable<FoldPrevie
   return along > margin && along < object.height - margin && across < object.width / 2 - margin;
 }
 
+/** Point the camera at the whole scene from the front, a little above and to the right. */
+function frameScene(
+  s: { camera: THREE.PerspectiveCamera; controls: OrbitControls },
+  bounds: THREE.Box3 | null,
+  up: THREE.Vector3,
+): void {
+  if (!bounds || bounds.isEmpty()) return;
+  const center = bounds.getCenter(new THREE.Vector3());
+  const size = bounds.getSize(new THREE.Vector3()).length();
+  s.controls.target.copy(center);
+  const cam = s.camera;
+  const dist = (size / (2 * Math.tan((cam.fov * DEG) / 2))) * 1.15;
+  const dir = new THREE.Vector3(0.55, 0, 0.75).add(up.clone().multiplyScalar(0.4)).normalize();
+  cam.position.copy(center.clone().add(dir.multiplyScalar(Math.max(dist, 100))));
+  cam.near = Math.max(1, dist / 100);
+  cam.far = dist * 20;
+  cam.updateProjectionMatrix();
+  s.controls.update();
+}
+
 /** Remove and dispose everything in a group (geometries and materials both). */
 function disposeChildren(group: THREE.Group): void {
   while (group.children.length) {
@@ -145,13 +173,19 @@ export function FoldViewer({ pattern, object, placements = NO_PLACEMENTS, seams:
   const [allPieces, setAllPieces] = useState(false);
   const [cavity, setCavity] = useState<(CavityReport & { floor: number | null; above: number | null }) | null>(null);
   const [simulate, setSimulate] = useState(initialSimulate);
-  const [simStats, setSimStats] = useState<{ steps: number; stretch: number; seam: number; pen: number; size: [number, number, number]; skipped: string[]; spacing: number; capped: boolean; diverged: boolean } | null>(null);
+  const [simStats, setSimStats] = useState<{ steps: number; stretch: number; stretchMax: number; worstPiece: string | null; strained: number; seam: number; pen: number; size: [number, number, number]; skipped: string[]; spacing: number; capped: boolean; diverged: boolean; settled: boolean; cached: boolean } | null>(null);
+  // Stepped every frame so the progress badge is smooth without re-deriving the stats.
+  const [simSteps, setSimSteps] = useState(0);
   const [sceneError, setSceneError] = useState<string | null>(null);
   const clothRef = useRef<{ world: ClothWorld; geoms: THREE.BufferGeometry[]; raf: number } | null>(null);
   // False after unmount: no state updates or uploads from a straggling animation frame.
   const aliveRef = useRef(true);
   useEffect(() => { aliveRef.current = true; return () => { aliveRef.current = false; }; }, []);
   const [viewKey, setViewKey] = useState(0);
+  // Scene bounds from the last build, so "reset view" re-frames without rebuilding
+  // (which would restart the cloth solve).
+  const boundsRef = useRef<THREE.Box3 | null>(null);
+  const upRef = useRef(new THREE.Vector3(0, 1, 0));
 
   const entries = useMemo(() => layoutPieces(pattern, allPieces, placements, object?.base), [pattern, allPieces, placements, object?.base]);
   const first = entries[0];
@@ -171,6 +205,13 @@ export function FoldViewer({ pattern, object, placements = NO_PLACEMENTS, seams:
     camera.up.set(0, 0, 1);
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
+    // The wheel belongs to the page until the user engages the viewer. Otherwise
+    // scrolling down a settings page zooms the 3D view instead, and the page sticks.
+    controls.enableZoom = false;
+    const engage = () => { controls.enableZoom = true; };
+    const release = () => { controls.enableZoom = false; };
+    renderer.domElement.addEventListener('pointerdown', engage);
+    mount.addEventListener('pointerleave', release);
     scene.add(new THREE.AmbientLight(0xffffff, 0.7));
     const key = new THREE.DirectionalLight(0xffffff, 0.8);
     key.position.set(300, -400, 800);
@@ -200,6 +241,8 @@ export function FoldViewer({ pattern, object, placements = NO_PLACEMENTS, seams:
       cancelAnimationFrame(raf);
       if (clothRef.current) { cancelAnimationFrame(clothRef.current.raf); clothRef.current = null; }
       window.removeEventListener('resize', onResize);
+      renderer.domElement.removeEventListener('pointerdown', engage);
+      mount.removeEventListener('pointerleave', release);
       ro?.disconnect();
       disposeChildren(group);
       controls.dispose();
@@ -355,7 +398,13 @@ export function FoldViewer({ pattern, object, placements = NO_PLACEMENTS, seams:
           plateStiffnessOf: (mi) => materialPlateStiffness(materialOf(mi)),
           params: { spacing, selfCollision, gravity },
         });
-        const statsOf = (diverged = false) => ({ steps: world.steps, stretch: maxStretch(world), seam: seamResidual(world).mean, pen: maxPenetration(world), size: clothBounds(world).size, skipped: seamCheck.skipped, spacing, capped: budget.capped, diverged });
+        const monitor = createSettleMonitor(world);
+        let settled = false;
+        let fromCache = false;
+        const statsOf = (diverged = false) => {
+          const sr = stretchReport(world, 0.99);
+          return { steps: world.steps, stretch: sr.value, stretchMax: sr.max, worstPiece: sr.worstPiece, strained: sr.strained, seam: seamResidual(world).mean, pen: maxPenetration(world), size: clothBounds(world).size, skipped: seamCheck.skipped, spacing, capped: budget.capped, diverged, settled, cached: fromCache };
+        };
         const geoms: THREE.BufferGeometry[] = valid.map(({ mesh, entry }) => {
           const geom = new THREE.BufferGeometry();
           geom.setAttribute('position', new THREE.BufferAttribute(new Float32Array(mesh.vertexCount * 3), 3));
@@ -376,27 +425,55 @@ export function FoldViewer({ pattern, object, placements = NO_PLACEMENTS, seams:
             geoms[mi].computeVertexNormals();
           });
         };
+        // A solve this viewer has already run (the user flipped to the pattern tab and
+        // back) is restored instead of re-run.
+        const pinKey = pins.flatMap((p) => ('rect' in p
+          ? [0, p.rect.x0, p.rect.y0, p.rect.x1, p.rect.y1]
+          : 'ring' in p
+            ? [2, p.ring.cx, p.ring.cy, p.ring.r0, p.ring.r1]
+            : [1, p.point.x, p.point.y, p.radius]));
+        const key = solveKey({ meshes: valid.map((v) => v.mesh), seams, solids, pins: pinKey, gravity, spacing, selfCollision, angles: valid.flatMap(({ entry }) => anglesOf(entry)), progress });
+        const cached = getSolve(key, world.pos.length);
+        if (cached) {
+          world.pos.set(cached.pos);
+          world.prev.set(cached.pos);
+          world.steps = cached.steps;
+          settled = cached.settled;
+          fromCache = true;
+        }
         upload();
+        setSimSteps(world.steps);
         // Debug hook (used by the headless screenshot harness): run the remaining steps now.
         (window as unknown as { __stitchsmithFoldViewer?: { finish: () => void } }).__stitchsmithFoldViewer = {
           finish: () => {
-            while (world.steps < CLOTH_STEPS && !hasNonFinite(world.pos)) clothStep(world);
+            while (world.steps < CLOTH_STEPS && !settled && !hasNonFinite(world.pos)) {
+              clothStep(world);
+              if (monitor.observe()) settled = true;
+            }
             if (hasNonFinite(world.pos)) { setSimStats(statsOf(true)); return; }
             upload();
+            setSimSteps(world.steps);
+            putSolve(key, world.pos, world.steps, settled);
             setSimStats(statsOf());
           },
         };
         setSimStats(statsOf());
         const tick = () => {
           if (!aliveRef.current) return;
-          if (world.steps < CLOTH_STEPS) {
-            for (let k = 0; k < CLOTH_STEPS_PER_FRAME; k++) clothStep(world);
-            // A diverged solve never reaches the GPU: stop, keep the last good frame, say so.
-            if (hasNonFinite(world.pos)) { setSimStats((prev) => ({ ...(prev ?? statsOf()), steps: world.steps, diverged: true })); return; }
-            upload();
-            if (world.steps % 20 === 0 || world.steps >= CLOTH_STEPS) setSimStats(statsOf());
-            clothRef.current = { world, geoms, raf: requestAnimationFrame(tick) };
-          }
+          if (world.steps >= CLOTH_STEPS || settled) return;
+          const deadline = (typeof performance !== 'undefined' ? performance.now() : Date.now()) + FRAME_BUDGET_MS;
+          do {
+            clothStep(world);
+            if (monitor.observe()) { settled = true; break; }
+          } while (world.steps < CLOTH_STEPS && (typeof performance !== 'undefined' ? performance.now() : Date.now()) < deadline);
+          // A diverged solve never reaches the GPU: stop, keep the last good frame, say so.
+          if (hasNonFinite(world.pos)) { setSimStats((prev) => ({ ...(prev ?? statsOf()), steps: world.steps, diverged: true })); return; }
+          upload();
+          setSimSteps(world.steps);
+          const done = settled || world.steps >= CLOTH_STEPS;
+          if (done) putSolve(key, world.pos, world.steps, settled);
+          if (done || world.steps % 40 < 8) setSimStats(statsOf());
+          if (!done) clothRef.current = { world, geoms, raf: requestAnimationFrame(tick) };
         };
         clothRef.current = { world, geoms, raf: requestAnimationFrame(tick) };
       }
@@ -463,20 +540,9 @@ export function FoldViewer({ pattern, object, placements = NO_PLACEMENTS, seams:
     s.camera.up.copy(up);
 
     // Frame the scene.
-    if (!bounds.isEmpty()) {
-      const center = bounds.getCenter(new THREE.Vector3());
-      const size = bounds.getSize(new THREE.Vector3()).length();
-      s.controls.target.copy(center);
-      const cam = s.camera;
-      const dist = size / (2 * Math.tan((cam.fov * DEG) / 2)) * 1.15;
-      // Look from the front (+z), a little above (along `up`) and to the right.
-      const dir = new THREE.Vector3(0.55, 0, 0.75).add(up.clone().multiplyScalar(0.4)).normalize();
-      cam.position.copy(center.clone().add(dir.multiplyScalar(Math.max(dist, 100))));
-      cam.near = Math.max(1, dist / 100);
-      cam.far = dist * 20;
-      cam.updateProjectionMatrix();
-      s.controls.update();
-    }
+    boundsRef.current = bounds.isEmpty() ? null : bounds.clone();
+    upRef.current = up.clone();
+    frameScene(s, bounds.isEmpty() ? null : bounds, up);
     if (!(object && showObject && first)) setCavity(null);
     } catch (err) {
       // Anything the fold engine or the cloth setup throws stays inside the panel.
@@ -486,7 +552,14 @@ export function FoldViewer({ pattern, object, placements = NO_PLACEMENTS, seams:
       setSceneError(err instanceof Error ? err.message : String(err));
     }
     return () => { if (clothRef.current) { cancelAnimationFrame(clothRef.current.raf); clothRef.current = null; } };
-  }, [entries, progress, showObject, showFlat, angleOverrides, object, first, simulate, seamsProp, pins, extraSolids, gravityProp, selfCollision, pattern, viewKey]);
+  }, [entries, progress, showObject, showFlat, angleOverrides, object, first, simulate, seamsProp, pins, extraSolids, gravityProp, selfCollision, pattern]);
+
+  // "Reset view" re-frames only: rebuilding would discard a solve in progress.
+  useEffect(() => {
+    if (viewKey === 0) return;
+    const s = sceneRef.current;
+    if (s) frameScene(s, boundsRef.current, upRef.current);
+  }, [viewKey]);
 
   const foldControls = entries.flatMap((e) =>
     e.model.folds.map((f, i) => {
@@ -502,7 +575,7 @@ export function FoldViewer({ pattern, object, placements = NO_PLACEMENTS, seams:
     : object
       ? `The pieces folded and sewn round a block of the finished contents (${object.label ?? 'object'}); the stats say whether they close round it.`
       : 'The pieces folded at their fold lines and sewn together; the stats say whether the seams close.';
-  const running = simStats !== null && simStats.steps < CLOTH_STEPS && !simStats.diverged;
+  const running = simStats !== null && !simStats.settled && simStats.steps < CLOTH_STEPS && !simStats.diverged;
   const legendEntries = entries.map((e) => ({ id: e.model.pieceId, name: e.model.pieceName, color: e.color }));
 
   return (
@@ -511,8 +584,8 @@ export function FoldViewer({ pattern, object, placements = NO_PLACEMENTS, seams:
       <div ref={mountRef} className="w-full max-w-full rounded bg-muted/30 overflow-hidden relative" style={{ height }} aria-label="3D preview" role="img">
         {running && (
           <div className="absolute left-2 top-2 rounded bg-background/80 px-2 py-1 text-xs" role="status" aria-live="polite" data-testid="sim-progress">
-            <span>simulating… {Math.round((simStats.steps / CLOTH_STEPS) * 100)}%</span>
-            <progress className="ml-2 h-2 w-24 align-middle" value={simStats.steps} max={CLOTH_STEPS} />
+            <span>simulating… {Math.round((Math.min(simSteps, CLOTH_STEPS) / CLOTH_STEPS) * 100)}%</span>
+            <progress className="ml-2 h-2 w-24 align-middle" value={Math.min(simSteps, CLOTH_STEPS)} max={CLOTH_STEPS} />
           </div>
         )}
       </div>
@@ -528,24 +601,30 @@ export function FoldViewer({ pattern, object, placements = NO_PLACEMENTS, seams:
             onChange={(e) => setProgress(parseFloat(e.target.value))} className="flex-1 accent-primary" />
           <span className="w-10 text-right tabular-nums">{Math.round(progress * 100)}%</span>
         </label>
-        <label className="flex items-center gap-1"><input type="checkbox" checked={showFlat} aria-label="Show flat" onChange={(e) => setShowFlat(e.target.checked)} /> flat</label>
-        <label className="flex items-center gap-1"><input type="checkbox" checked={allPieces} aria-label="Show all pieces" onChange={(e) => setAllPieces(e.target.checked)} /> all pieces</label>
-        {canSimulate && <label className="flex items-center gap-1"><input type="checkbox" checked={simulate} aria-label="Simulate cloth" onChange={(e) => setSimulate(e.target.checked)} /> {seamsProp.length > 0 ? 'simulate seams' : 'simulate cloth'}</label>}
+        <label className="flex items-center gap-1" title="Lay every piece out flat, as cut, instead of folded and sewn."><input type="checkbox" checked={showFlat} aria-label="Show flat" onChange={(e) => setShowFlat(e.target.checked)} /> flat</label>
+        <label className="flex items-center gap-1" title="Also show the pieces this view does not assemble — loose straps, strips and pockets."><input type="checkbox" checked={allPieces} aria-label="Show all pieces" onChange={(e) => setAllPieces(e.target.checked)} /> all pieces</label>
+        {canSimulate && <label className="flex items-center gap-1" title="Relax the cloth: sew the seams and let the fabric settle. Untick for the rigid fold, which is instant."><input type="checkbox" checked={simulate} aria-label="Simulate cloth" onChange={(e) => setSimulate(e.target.checked)} /> {seamsProp.length > 0 ? 'simulate seams' : 'simulate cloth'}</label>}
         {object && <label className="flex items-center gap-1"><input type="checkbox" checked={showObject} aria-label={`Show ${object.label ?? 'object'}`} onChange={(e) => setShowObject(e.target.checked)} /> {object.label ?? 'object'}</label>}
         <button type="button" className="rounded border border-border px-2 py-0.5 hover:bg-muted/40" onClick={() => setViewKey((k) => k + 1)} title="Re-frame the camera on the whole scene">reset view</button>
-        <span className="text-muted-foreground">drag to orbit, wheel to zoom</span>
+        <span className="text-muted-foreground">drag to orbit; click first, then wheel to zoom</span>
       </div>
       <ViewerLegend entries={legendEntries} />
       {simStats && (
         <div className="text-xs rounded border border-border p-2 space-y-1" data-testid="sim-stats">
           <div className="flex flex-wrap gap-3">
-            <span title={STAT_HELP.steps}><span className="text-muted-foreground">Cloth:</span> {simStats.steps}/{CLOTH_STEPS} steps</span>
-            <span title={STAT_HELP.stretch}><span className="text-muted-foreground">max stretch</span> {(simStats.stretch * 100).toFixed(1)}%</span>
+            <span title={STAT_HELP.steps}><span className="text-muted-foreground">Cloth:</span> {simStats.steps} steps{simStats.settled ? ', settled' : simStats.steps >= CLOTH_STEPS ? ', still moving' : ''}{simStats.cached ? ' (cached)' : ''}</span>
+            <span title={STAT_HELP.stretch}><span className="text-muted-foreground">stretch</span> {(simStats.stretch * 100).toFixed(1)}%{simStats.stretchMax > simStats.stretch * 1.5 ? <span className="text-muted-foreground"> (one edge {(simStats.stretchMax * 100).toFixed(0)}% on {simStats.worstPiece ?? 'a piece'})</span> : null}</span>
             <span title={STAT_HELP.seam}><span className="text-muted-foreground">seam gap</span> {simStats.seam.toFixed(1)} mm</span>
             <span title={STAT_HELP.penetration}><span className="text-muted-foreground">penetration</span> {simStats.pen.toFixed(1)} mm</span>
             <span title={STAT_HELP.envelope}><span className="text-muted-foreground">envelope</span> {Math.round(simStats.size[0])} × {Math.round(simStats.size[1])} × {Math.round(simStats.size[2])} mm (w × h × d, slack cloth incl. allowances)</span>
           </div>
           {simStats.diverged && <p role="alert" className="text-destructive font-semibold" data-testid="sim-diverged">simulation diverged — the last stable frame is shown; try fewer pins or a coarser mesh</p>}
+          {!simStats.settled && !simStats.diverged && simStats.steps >= CLOTH_STEPS && (
+            <p className="text-muted-foreground" data-testid="sim-unsettled">still moving after {CLOTH_STEPS} steps — this is a frame of a drape in progress, not a resting shape; the hang is longer than the solver runs</p>
+          )}
+          {simStats.strained > 0.005 && (
+            <p className="text-muted-foreground">{(simStats.strained * 100).toFixed(1)}% of edges are stretched over 10% — gathers and allowance flaps do this; a whole panel doing it means a piece is too small.</p>
+          )}
           {simStats.capped && <p className="text-muted-foreground">large pattern: mesh coarsened to {simStats.spacing} mm cells to stay within the vertex budget</p>}
           {simStats.skipped.length > 0 && <p className="text-muted-foreground" data-testid="sim-skipped">{simStats.skipped.length} seam{simStats.skipped.length === 1 ? '' : 's'} skipped: {simStats.skipped.join('; ')}</p>}
           <details>

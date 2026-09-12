@@ -1,3 +1,5 @@
+import { useRememberedOpen } from './useRememberedOpen.js';
+
 type LegendItem = {
   label: string;
   stroke: string;
@@ -47,9 +49,19 @@ const ITEMS: LegendItem[] = [
  * page layout to get a consistent key.
  */
 export function PatternEngineLegend() {
+  // Reference material: read once, then it is 250 px of sidebar in the way of
+  // the export panel and the derived numbers. Closed by default, and the
+  // user's choice is remembered.
+  const [open, setOpen] = useRememberedOpen('legend', false);
   return (
-    <details className="rounded border border-border bg-muted/20 text-xs" open>
-      <summary className="cursor-pointer select-none px-3 py-2 font-semibold">Legend</summary>
+    <details
+      className="rounded border border-border bg-muted/20 text-xs"
+      open={open}
+      onToggle={(e) => setOpen((e.currentTarget as HTMLDetailsElement).open)}
+    >
+      <summary className="cursor-pointer select-none px-3 py-2 font-semibold">
+        Legend <span className="font-normal text-muted-foreground">(what the line colours mean)</span>
+      </summary>
       <ul className="px-3 pb-3 space-y-1.5">
         {ITEMS.map(i => (
           <li key={i.label} className="flex items-center gap-3">

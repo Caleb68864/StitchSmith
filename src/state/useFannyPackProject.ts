@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import type { FannyPackInputs } from '../generators/fanny-pack/types.js';
 import { makeProjectStorage } from '../storage/genericProjectStorage.js';
 import { isPlainObject } from '../utils/isPlainObject.js';
+import { assertGeneratorMatch } from '../export/projectEnvelopeIO.js';
 
 export const STORAGE_KEY = 'stitchsmith.fanny-pack.project';
 
@@ -76,9 +77,7 @@ export function useFannyPackProject(): UseFannyPackProjectReturn {
   }, []);
 
   const importProject = useCallback((p: FannyPackProject) => {
-    if (p.generatorId !== 'fanny-pack') {
-      throw new Error(`Cannot import project with generatorId '${p.generatorId}' into organizer`);
-    }
+    assertGeneratorMatch(p.generatorId, 'fanny-pack');
     setProjectState(p);
   }, []);
 

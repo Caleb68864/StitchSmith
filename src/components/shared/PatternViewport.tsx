@@ -138,23 +138,28 @@ export function PatternViewport({
     }
   }
 
+  // The canvas is paper: light in either theme. The engine draws black cut
+  // lines and coloured fold and stitch lines for print, so a dark surface
+  // behind them would be black on black and the preview would stop matching
+  // what comes out of the printer. The chrome floating on the canvas is
+  // pinned to light colours for the same reason.
   return (
-    <div className="rounded border border-border bg-white dark:bg-gray-900 relative overflow-hidden">
-      <div className="absolute top-2 right-2 z-10 flex gap-1 bg-white/90 dark:bg-gray-900/90 backdrop-blur rounded border border-border p-1 shadow-sm">
+    <div className="rounded border border-border bg-white relative overflow-hidden">
+      <div className="absolute top-2 right-2 z-10 flex gap-1 bg-white/90 backdrop-blur rounded border border-gray-300 p-1 shadow-sm text-gray-700">
         {toolbarExtras}
         {toolbarExtras && <span className="w-px bg-border self-stretch mx-0.5" aria-hidden />}
         <Button
           variant="ghost"
           size="sm"
           onClick={zoomOut}
-          className="h-7 w-7 p-0"
+          className="h-7 w-7 p-0 text-gray-700 hover:text-gray-900 hover:bg-gray-100"
           title="Zoom out (or scroll down)"
           aria-label="Zoom out"
         >
           <ZoomOut className="h-3.5 w-3.5" aria-hidden="true" />
         </Button>
         <span
-          className="text-xs text-muted-foreground self-center w-12 text-center tabular-nums"
+          className="text-xs text-gray-600 self-center w-12 text-center tabular-nums"
           aria-live="polite"
           aria-label={`Zoom level: ${Math.round(scale * 100)} percent`}
         >
@@ -164,7 +169,7 @@ export function PatternViewport({
           variant="ghost"
           size="sm"
           onClick={zoomIn}
-          className="h-7 w-7 p-0"
+          className="h-7 w-7 p-0 text-gray-700 hover:text-gray-900 hover:bg-gray-100"
           title="Zoom in (or scroll up)"
           aria-label="Zoom in"
         >
@@ -174,7 +179,7 @@ export function PatternViewport({
           variant="ghost"
           size="sm"
           onClick={fitToScreen}
-          className="h-7 w-7 p-0"
+          className="h-7 w-7 p-0 text-gray-700 hover:text-gray-900 hover:bg-gray-100"
           title="Fit to screen (or press 0)"
           aria-label="Fit pattern to screen"
         >
@@ -183,7 +188,7 @@ export function PatternViewport({
       </div>
 
       {header && (
-        <div className="absolute top-2 left-2 z-10 text-xs text-muted-foreground bg-white/80 dark:bg-gray-900/80 backdrop-blur rounded px-2 py-1 max-w-[60%] truncate">
+        <div className="absolute top-2 left-2 z-10 text-xs text-gray-600 bg-white/80 backdrop-blur rounded px-2 py-1 max-w-[60%] truncate">
           {header}
         </div>
       )}
@@ -193,7 +198,7 @@ export function PatternViewport({
         role="img"
         aria-label="Pattern preview. Drag to pan, scroll to zoom. Keyboard: arrow keys pan, plus or minus zoom, zero fits to screen."
         tabIndex={0}
-        className="overflow-hidden relative outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        className="overflow-hidden relative outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-white"
         style={{ height, cursor: dragRef.current ? 'grabbing' : 'grab', touchAction: 'none' }}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}

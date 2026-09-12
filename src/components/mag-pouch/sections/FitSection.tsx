@@ -31,12 +31,14 @@ export function FitSection({ inputs, errors, onChange }: Props) {
             className="flex h-8 w-full rounded-md border border-input bg-background px-2 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             value={inputs.ease_width ?? DEFAULT_EASE_WIDTH_IN}
             onChange={e => onChange({ ease_width: parseFloat(e.target.value) })}
+            aria-invalid={errors['ease_width'] ? true : undefined}
+            aria-describedby={`${errors['ease_width'] ? 'ease-width-error ' : ''}ease-width-help`}
           />
-          <p className="text-xs text-muted-foreground">
+          <p id="ease-width-help" className="text-xs text-muted-foreground">
             Added to the mag width for a non-PALS cell. PALS cells snap to the 1.5" grid instead.
           </p>
           {errors['ease_width'] && (
-            <p className="text-xs text-destructive">{errors['ease_width']}</p>
+            <p id="ease-width-error" className="text-xs text-destructive">{errors['ease_width']}</p>
           )}
         </div>
         <div className="space-y-1">
@@ -52,9 +54,11 @@ export function FitSection({ inputs, errors, onChange }: Props) {
             className="flex h-8 w-full rounded-md border border-input bg-background px-2 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             value={inputs.ease_depth ?? DEFAULT_EASE_DEPTH_IN}
             onChange={e => onChange({ ease_depth: parseFloat(e.target.value) })}
+            aria-invalid={errors['ease_depth'] ? true : undefined}
+            aria-describedby={errors['ease_depth'] ? 'ease-depth-error' : undefined}
           />
           {errors['ease_depth'] && (
-            <p className="text-xs text-destructive">{errors['ease_depth']}</p>
+            <p id="ease-depth-error" className="text-xs text-destructive">{errors['ease_depth']}</p>
           )}
         </div>
       </div>

@@ -103,6 +103,8 @@ export function ToolRollPage({
       }
       sidebar={
         <>
+          {/* Warnings first, as on every other generator page. */}
+          <WarningsPanel warnings={warnings} />
           <Legend settings={project.settings} />
           <ExportPanel
             layout={layout}
@@ -116,7 +118,6 @@ export function ToolRollPage({
             toolCount={project.tools.length}
             units={project.units}
           />
-          <WarningsPanel warnings={warnings} />
           <ConstructionNotes notes={layout?.constructionNotes ?? []} />
         </>
       }

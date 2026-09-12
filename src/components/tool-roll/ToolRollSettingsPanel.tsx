@@ -1,4 +1,4 @@
-import { Children, cloneElement, isValidElement, useId } from 'react';
+import { Children, cloneElement, isValidElement, useId, useState } from 'react';
 import type { ToolRollSettings } from '../../generators/tool-roll/types.js';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../ui/accordion.js';
 import { Input } from '../ui/input.js';
@@ -26,20 +26,29 @@ function NumInput({
   onChange: (v: number) => void;
   min?: number;
 }) {
+  // Settings are stored in mm; the box shows the display unit. The draft holds
+  // what the user is typing so the caret does not fight the formatter, and it
+  // is dropped on blur — the box can never show a number the pattern is not
+  // using. Commit happens on every valid keystroke, so clicking Export the
+  // moment after typing does not lose the edit (it used to commit on blur only).
+  const [draft, setDraft] = useState<string | null>(null);
   const safe = Number.isFinite(value) ? value : 0;
-  const display = units === 'in' ? (safe / 25.4).toFixed(3) : safe.toFixed(1);
+  const canonical = units === 'in' ? (safe / 25.4).toFixed(3) : safe.toFixed(1);
+  function commit(raw: string) {
+    const n = parseFloat(raw);
+    if (Number.isFinite(n)) onChange(units === 'in' ? n * 25.4 : n);
+  }
   return (
     <Input
       id={id}
       className="h-7 text-xs w-24"
-      defaultValue={display}
-      key={`${id}-${units}`}
+      type="number"
       inputMode="decimal"
       min={min}
-      onBlur={e => {
-        const n = parseFloat(e.target.value);
-        if (isFinite(n)) onChange(units === 'in' ? n * 25.4 : n);
-      }}
+      step={units === 'in' ? 0.125 : 1}
+      value={draft ?? canonical}
+      onChange={e => { setDraft(e.target.value); commit(e.target.value); }}
+      onBlur={e => { commit(e.target.value); setDraft(null); }}
     />
   );
 }

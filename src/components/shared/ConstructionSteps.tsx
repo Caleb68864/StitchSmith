@@ -1,4 +1,8 @@
 import type { Step } from '../../lib/pattern-engine/instructions/Step.js';
+import { useRememberedOpen } from './useRememberedOpen.js';
+
+/** Above this many steps the list is longer than the rest of the sidebar put together. */
+const LONG_LIST = 6;
 
 interface Props {
   steps: Step[];
@@ -13,6 +17,9 @@ interface Props {
  * grouped by first-occurrence order so the generator controls flow.
  */
 export function ConstructionSteps({ steps, title = 'Construction steps' }: Props) {
+  // A long list in a 300 px sidebar pushes everything else past the fold, so
+  // it starts closed and remembers whichever way the user leaves it.
+  const [open, setOpen] = useRememberedOpen('steps', steps.length <= LONG_LIST);
   if (steps.length === 0) {
     return (
       <div className="rounded border border-border p-3">
@@ -38,7 +45,11 @@ export function ConstructionSteps({ steps, title = 'Construction steps' }: Props
   const hasNamedGroups = groups.some((g) => g.name !== '');
 
   return (
-    <details className="rounded border border-border bg-card text-xs" open>
+    <details
+      className="rounded border border-border bg-card text-xs"
+      open={open}
+      onToggle={(e) => setOpen((e.currentTarget as HTMLDetailsElement).open)}
+    >
       <summary className="cursor-pointer select-none px-3 py-2 font-semibold">
         {title} <span className="font-normal text-muted-foreground">({steps.length} step{steps.length === 1 ? '' : 's'})</span>
       </summary>

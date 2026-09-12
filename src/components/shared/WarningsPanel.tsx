@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 export type WarningSeverity = 'error' | 'warning' | 'info';
 
@@ -61,17 +61,64 @@ export function normalizeWarnings(warnings: WarningInput[], idPrefix = 'warning'
   });
 }
 
+const escapeId = (s: string) => (typeof CSS !== 'undefined' && CSS.escape ? CSS.escape(s) : s.replace(/[^\w-]/g, '\\$&'));
+
+/**
+ * Find the settings control a warning's `field` refers to.
+ *
+ * Generators name fields in snake_case (`side_seam_allowance`) while the
+ * panels give inputs short kebab ids (`side-seam`), so an id lookup alone
+ * misses most of them. The last resort matches the field's words against the
+ * visible label text, which is what the user is hunting for anyway.
+ */
+export function resolveFieldControl(field: string): HTMLElement | null {
+  if (typeof document === 'undefined') return null;
+  const kebab = field.replace(/_/g, '-');
+  const direct = document.querySelector<HTMLElement>(
+    `[data-field="${escapeId(field)}"], #${escapeId(field)}, [name="${escapeId(field)}"], #${escapeId(kebab)}`,
+  );
+  if (direct) return direct;
+
+  const words = field.replace(/_/g, ' ').toLowerCase();
+  for (const label of Array.from(document.querySelectorAll('label[for]'))) {
+    const text = (label.textContent ?? '').trim().toLowerCase();
+    if (!text.startsWith(words)) continue;
+    const control = document.getElementById((label as HTMLLabelElement).htmlFor);
+    if (control) return control;
+  }
+  return null;
+}
+
 function defaultFocusField(field: string) {
-  if (typeof document === 'undefined') return;
-  const el = document.querySelector<HTMLElement>(`[data-field="${field}"], #${CSS.escape(field)}, [name="${field}"], #${CSS.escape(field.replace(/_/g, '-'))}`);
+  const el = resolveFieldControl(field);
   if (!el) return;
-  el.scrollIntoView({ block: 'center', behavior: 'smooth' });
-  el.focus();
+  // Focus first: scrollIntoView is missing in some environments, and losing
+  // the scroll must not cost the user the focus as well.
+  el.focus({ preventScroll: true });
+  try {
+    el.scrollIntoView?.({ block: 'center', behavior: 'smooth' });
+  } catch {
+    // Non-fatal: the control is focused either way.
+  }
 }
 
 export function WarningsPanel({ warnings, onFocusField, collapseAbove = 6, title = 'Warnings' }: Props) {
   const [expanded, setExpanded] = useState(false);
   const items = normalizeWarnings(warnings);
+  // Offer the "[field]" jump only where a control actually answers to the
+  // name; an affordance that does nothing when clicked is worse than none.
+  // A page that supplies its own handler owns that decision instead.
+  const fieldKey = items.map((w) => w.field ?? '').join('|');
+  const [linkable, setLinkable] = useState<ReadonlySet<string>>(new Set());
+  useEffect(() => {
+    if (onFocusField) return;
+    const found = new Set<string>();
+    for (const w of items) if (w.field && resolveFieldControl(w.field)) found.add(w.field);
+    setLinkable(found);
+    // items is rebuilt each render; the field list is what matters.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fieldKey, onFocusField]);
+  const canLink = (field: string) => Boolean(onFocusField) || linkable.has(field);
   if (items.length === 0) {
     return (
       <div className="rounded border border-border p-3" data-testid="warnings-panel">
@@ -118,8 +165,8 @@ export function WarningsPanel({ warnings, onFocusField, collapseAbove = 6, title
                   <li key={w.id} className={`text-xs ${cfg.textClass}`}>
                     {w.tag && <span className="mr-1 rounded bg-muted px-1 py-0.5 text-[10px] text-foreground/80" title={w.tag}>{TAG_LABEL[w.tag] ?? w.tag}</span>}
                     {w.message}
-                    {w.field && (
-                      <button type="button" className="ml-1 opacity-60 hover:opacity-100 underline" onClick={() => focus(w.field!)} title={`Go to ${w.field}`}>
+                    {w.field && canLink(w.field) && (
+                      <button type="button" className="ml-1 opacity-60 hover:opacity-100 underline" onClick={() => focus(w.field!)} title={`Go to the ${w.field.replace(/_/g, ' ')} setting`}>
                         [{w.field}]
                       </button>
                     )}

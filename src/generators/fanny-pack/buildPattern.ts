@@ -146,7 +146,7 @@ function buildSteps(r: ResolvedInputs): Step[] {
     ? `Fold the ${fmtIn(r.zipper_lip)}" lip back over the zipper tape on each half and sew along the zipper (two lines, or one pass with a double needle). The fold hides the raw edge and stands a lip proud of the zipper. Watch the slider — a machine will sew through a pull and it can knock the timing out.`
     : `Bind the zipper edge of each half with ${r.edge_tape_color} edge tape, then sew the zipper on top aligned to the tape edge. Fiddly: the zipper has to track the tape edge, and it cannot be done in one double-needle pass — the reason SOE recommends the fold instead unless the edge is a multi-layer stack or a tight curve.`, dependsOn: ['fp.mark'], refsPieces: [ZIP_HALF_ID], group: 'Zipper panel' });
   steps.push(
-    { id: 'fp.hoop', title: 'Close the hoop', body: `Join each end of the zipper panel to the matching end of the rising gusset, right sides together, ${fmtIn(r.seam_allowance)}" seam: the zipper runs ${fmtIn(r.lid_extension)}" down each side and the gusset rises ${fmtIn(r.rising_side)}" to meet it. Open the zipper a hand's width before the next step or you cannot turn the bag.`, dependsOn: ['fp.zipper', ...flat], refsPieces: [ZIP_HALF_ID, GUSSET_ID], group: 'Assembly' },
+    { id: 'fp.hoop', title: 'Close the hoop', body: `Join each end of the zipper panel to the matching end of the rising gusset, right sides together, ${fmtIn(r.seam_allowance)}" seam: the zipper runs ${fmtIn(r.lid_extension)}" down each side and the gusset rises ${fmtIn(r.rising_side)}" to meet it. Long seams draw in: trim the closing end to the measured gap rather than to the plan. Open the zipper a hand's width before the next step or you cannot turn the bag.`, dependsOn: ['fp.zipper', ...flat], refsPieces: [ZIP_HALF_ID, GUSSET_ID], group: 'Assembly' },
     { id: 'fp.back', title: 'Back panel onto the hoop', body: 'Match the corner marks to the panel corners and sew the back panel to the hoop all round, pleating the corners. Sew the two sides in opposite directions so both stretch the same way and the front clocks to it afterwards.', dependsOn: ['fp.hoop'], refsPieces: [BACK_ID, GUSSET_ID, ZIP_HALF_ID], group: 'Assembly' },
     { id: 'fp.front', title: 'Front panel onto the hoop', body: 'Same again on the other edge of the hoop, in bites, excess pushed to the inside where it disappears. Any shortfall at the last corner is sewn straight across and tucked.', dependsOn: ['fp.back'], refsPieces: [FRONT_ID, GUSSET_ID, ZIP_HALF_ID], group: 'Assembly' },
     { id: 'fp.turn', title: 'Turn and dress', body: `Turn the bag through the zipper, push the corners out, ${r.drawbridge_limiter ? 'tie the 550 loops between the anchors, ' : ''}thread the belt: ${r.belt_webbing}" webbing ${dim(r.belt_cut_length)} through the side tabs, side-release buckle one end, tri-glide the other; set it to ${fmtIn(r.belt_min)}" for the waist and let it out to ${fmtIn(r.belt_max)}" for sling carry.`, dependsOn: ['fp.front'], refsPieces: [BELT_ID], group: 'Finish' },
@@ -168,8 +168,6 @@ function buildWarnings(r: ResolvedInputs): GeneratorWarning[] {
     w.push({ id: 'grommet-dual-use', severity: 'info', message: 'The grommets drain and double as lash points: bungee, tabs or a tourniquet through them on the outside.' });
   }
   w.push({ id: 'mock-derived-belt', severity: 'info', field: 'belt_max', message: `Belt ${fmtIn(r.belt_min)}"–${fmtIn(r.belt_max)}" covers waist and sling carry only if measured on the wearer; the vault gives no lengths (mock-derived). ${r.belt_webbing}" webbing needs matching ${r.belt_webbing}" hardware.` });
-  w.push({ id: 'slider', severity: 'info', message: 'The zipper is horizontal and not load-bearing: a non-locking slider is fine and takes a custom pull; the BOM says so.' });
-  w.push({ id: 'shrink', severity: 'info', message: 'Long seams draw in: cut the hoop pieces to these numbers but trim the closing end to the measured gap rather than to the plan; tag the belt webbing trim-after-sew.' });
   return w;
 }
 
@@ -178,13 +176,16 @@ export function buildPattern(inputs: FannyPackInputs): Result<FannyPackBuildResu
   if (!validation.ok) return { ok: false, errors: validation.errors };
   const r = resolveInputs(inputs);
   const beltW = r.belt_webbing * IN;
+  // Material id follows the chosen webbing (the engine's scheme: Math.round(mm)),
+  // or a 1" belt is listed on the cut list as 1.5" stock.
+  const beltMat = `webbing-${Math.round(beltW)}`;
   const pieces: Piece[] = [
     buildPanel(BACK_ID, 'Back panel', r, 'body'),
     buildPanel(FRONT_ID, 'Front panel (lid)', r, 'lid'),
     buildZipperHalf(r),
     buildGusset(r),
-    strip(BELT_TAB_ID, 'Belt tab', 4 * IN, beltW, 2, 'webbing-38', `${r.belt_webbing}" webbing, folded round the buckle / tri-glide, basted into the side seams`),
-    strip(BELT_ID, 'Belt', r.belt_cut_length, beltW, 1, 'webbing-38', `${r.belt_webbing}" webbing ${fmtIn(r.belt_cut_length)}" — trim after fitting`),
+    strip(BELT_TAB_ID, 'Belt tab', 4 * IN, beltW, 2, beltMat, `${r.belt_webbing}" webbing, folded round the buckle / tri-glide, basted into the side seams`),
+    strip(BELT_ID, 'Belt', r.belt_cut_length, beltW, 1, beltMat, `${r.belt_webbing}" webbing ${fmtIn(r.belt_cut_length)}" — trim after fitting`),
   ];
   if (r.bottom_grommets > 0) pieces.push(strip(GROMMET_PATCH_ID, 'Grommet reinforcement patch', GROMMET_PATCH_MM, GROMMET_PATCH_MM, r.bottom_grommets, 'cordura-1000', '1000D under each grommet, sewn before the hole is burnt'));
   if (r.drawbridge_limiter) pieces.push(strip(CORD_TAB_ID, 'Cord anchor loop', 2 * IN, 1 * IN, 4, 'webbing-25', '1" webbing loops, two per side (lid and body)'));

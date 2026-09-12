@@ -1,8 +1,8 @@
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import type { TriZipInputs, ZipperMethod } from '../../../generators/tri-zip-backpack/types.js';
+import { NumericField } from '../../shared/fields/index.js';
 
 interface Props {
   inputs: TriZipInputs;
@@ -29,19 +29,16 @@ export function ZipperSystemSection({ inputs, onChange }: Props) {
       </div>
 
       {(inputs.zipper_method ?? 'gusseted') === 'gusseted' && (
-        <div className="space-y-1">
-          <Label htmlFor="tz-zipper-gusset">Zipper gusset width (mm)</Label>
-          <Input
-            id="tz-zipper-gusset"
-            type="number"
-            min={5}
-            value={inputs.zipper_gusset_width ?? 25}
-            onChange={e => {
-              const n = parseFloat(e.target.value);
-              onChange({ zipper_gusset_width: isNaN(n) ? 25 : n });
-            }}
-          />
-        </div>
+        <NumericField
+          id="tz-zipper-gusset"
+          label="Zipper gusset width"
+          units="mm"
+          value={inputs.zipper_gusset_width ?? 25}
+          onChange={(v) => onChange({ zipper_gusset_width: v })}
+          min={5}
+          step={1}
+          help="The strip the zipper sits on. Default 25 mm; the wings give up this width so the front still matches the back."
+        />
       )}
 
       <div className="flex items-center gap-3">

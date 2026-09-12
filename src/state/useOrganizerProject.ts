@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import type { OrganizerInputs } from '../generators/organizer/types.js';
 import { makeProjectStorage } from '../storage/genericProjectStorage.js';
 import { isPlainObject } from '../utils/isPlainObject.js';
+import { assertGeneratorMatch } from '../export/projectEnvelopeIO.js';
 
 export const STORAGE_KEY = 'stitchsmith.organizer.project';
 
@@ -78,9 +79,7 @@ export function useOrganizerProject(): UseOrganizerProjectReturn {
   }, []);
 
   const importProject = useCallback((p: OrganizerProject) => {
-    if (p.generatorId !== 'organizer') {
-      throw new Error(`Cannot import project with generatorId '${p.generatorId}' into organizer`);
-    }
+    assertGeneratorMatch(p.generatorId, 'organizer');
     setProjectState(p);
   }, []);
 

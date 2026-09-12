@@ -14,6 +14,7 @@ import { DEFAULT_SEAM_ALLOWANCE_MM, DEFAULT_TOP_BOTTOM_HEM_MM, DEFAULT_PEN_HOLDE
 import { toast } from '../lib/toast/toast.js';
 import { makeProjectStorage } from '../storage/genericProjectStorage.js';
 import { isPlainObject } from '../utils/isPlainObject.js';
+import { assertGeneratorMatch } from '../export/projectEnvelopeIO.js';
 
 export const STORAGE_KEY = 'stitchsmith.book-cover.project';
 
@@ -136,9 +137,7 @@ export function useBookCoverProject(): UseBookCoverProjectReturn {
   }, []);
 
   const importProject = useCallback((p: BookCoverProject) => {
-    if (p.generatorId !== 'book-cover') {
-      throw new Error(`Cannot import project with generatorId '${p.generatorId}' into Book Cover`);
-    }
+    assertGeneratorMatch(p.generatorId, 'book-cover');
     setProjectState(p);
   }, []);
 

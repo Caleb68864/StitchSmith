@@ -85,9 +85,11 @@ export function ConstructionSection({ inputs, errors, onChange, derived }: Props
             className="flex h-8 w-full rounded-md border border-input bg-background px-2 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
             value={inputs.cell_count ?? DEFAULT_CELL_COUNT}
             onChange={e => onChange({ cell_count: parseInt(e.target.value, 10) })}
+            aria-invalid={errors['cell_count'] ? true : undefined}
+            aria-describedby={`${errors['cell_count'] ? 'cell-count-error ' : ''}cell-count-help`}
           />
-          {!isCard && <p className="text-xs text-muted-foreground">Folded-T is a single cell.</p>}
-          {errors['cell_count'] && <p className="text-xs text-destructive">{errors['cell_count']}</p>}
+          {!isCard && <p id="cell-count-help" className="text-xs text-muted-foreground">Folded-T is a single cell.</p>}
+          {errors['cell_count'] && <p id="cell-count-error" className="text-xs text-destructive">{errors['cell_count']}</p>}
         </div>
         <div className="space-y-1">
           <label htmlFor="cell-span" className="text-xs font-medium">Cell span (in) — override</label>
@@ -100,13 +102,15 @@ export function ConstructionSection({ inputs, errors, onChange, derived }: Props
             value={inputs.cell_span ?? ''}
             placeholder={derived ? `${derived.cellSpanIn.toFixed(2)} derived` : 'derived'}
             onChange={e => onChange({ cell_span: numberOrUndefined(e.target.value) })}
+            aria-invalid={errors['cell_span'] ? true : undefined}
+            aria-describedby={`${errors['cell_span'] ? 'cell-span-error ' : ''}cell-span-help`}
           />
-          <p className="text-xs text-muted-foreground">
+          <p id="cell-span-help" className="text-xs text-muted-foreground">
             {isPals
               ? 'PALS mounts snap to the 1.5" grid: 3" for a rifle mag (two columns). The grid, not the mag, sizes the cell.'
               : 'Non-PALS mounts can run close to the mag: width + ease.'}
           </p>
-          {errors['cell_span'] && <p className="text-xs text-destructive">{errors['cell_span']}</p>}
+          {errors['cell_span'] && <p id="cell-span-error" className="text-xs text-destructive">{errors['cell_span']}</p>}
         </div>
       </div>
 
@@ -124,12 +128,14 @@ export function ConstructionSection({ inputs, errors, onChange, derived }: Props
                 value={inputs.face_per_cell ?? ''}
                 placeholder={derived?.facePerCellIn ? `${derived.facePerCellIn.toFixed(3)} derived` : 'derived'}
                 onChange={e => onChange({ face_per_cell: numberOrUndefined(e.target.value) })}
+                aria-invalid={errors['face_per_cell'] ? true : undefined}
+                aria-describedby={`${errors['face_per_cell'] ? 'face-per-cell-error ' : ''}face-per-cell-help`}
               />
-              <p className="text-xs text-muted-foreground">
+              <p id="face-per-cell-help" className="text-xs text-muted-foreground">
                 Derived as mag width + 2 × thickness + 5/16". Pucker per side must stay above ~0.9".
                 {derived?.puckerPerSideIn !== undefined && ` Currently ${derived.puckerPerSideIn.toFixed(2)}".`}
               </p>
-              {errors['face_per_cell'] && <p className="text-xs text-destructive">{errors['face_per_cell']}</p>}
+              {errors['face_per_cell'] && <p id="face-per-cell-error" className="text-xs text-destructive">{errors['face_per_cell']}</p>}
             </div>
             <div className="space-y-1">
               <label htmlFor="bottom-style" className="text-xs font-medium">Cell bottom</label>
@@ -160,9 +166,11 @@ export function ConstructionSection({ inputs, errors, onChange, derived }: Props
                 className="flex h-8 w-full rounded-md border border-input bg-background px-2 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 value={inputs.back_hem ?? DEFAULT_BACK_HEM_IN}
                 onChange={e => onChange({ back_hem: parseFloat(e.target.value) })}
+                aria-invalid={errors['back_hem'] ? true : undefined}
+                aria-describedby={`${errors['back_hem'] ? 'back-hem-error ' : ''}back-hem-help`}
               />
-              <p className="text-xs text-muted-foreground">1" is the production floor spec; ½" saves fabric on a one-off.</p>
-              {errors['back_hem'] && <p className="text-xs text-destructive">{errors['back_hem']}</p>}
+              <p id="back-hem-help" className="text-xs text-muted-foreground">1" is the production floor spec; ½" saves fabric on a one-off.</p>
+              {errors['back_hem'] && <p id="back-hem-error" className="text-xs text-destructive">{errors['back_hem']}</p>}
             </div>
             <div className="space-y-1">
               <label htmlFor="face-end-hem" className="text-xs font-medium">Face end hem (in)</label>
@@ -175,8 +183,10 @@ export function ConstructionSection({ inputs, errors, onChange, derived }: Props
                 className="flex h-8 w-full rounded-md border border-input bg-background px-2 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 value={inputs.face_end_hem ?? DEFAULT_FACE_END_HEM_IN}
                 onChange={e => onChange({ face_end_hem: parseFloat(e.target.value) })}
+                aria-invalid={errors['face_end_hem'] ? true : undefined}
+                aria-describedby={errors['face_end_hem'] ? 'face-end-hem-error' : undefined}
               />
-              {errors['face_end_hem'] && <p className="text-xs text-destructive">{errors['face_end_hem']}</p>}
+              {errors['face_end_hem'] && <p id="face-end-hem-error" className="text-xs text-destructive">{errors['face_end_hem']}</p>}
             </div>
           </div>
 

@@ -65,11 +65,13 @@ export function ClosureSection({ inputs, errors, onChange }: Props) {
             value={inputs.pull_channel_depth ?? (inputs.retention === 'flap_velcro' ? 1.5 : 0)}
             onChange={(e) => onChange({ pull_channel_depth: e.target.value === '' ? undefined : parseFloat(e.target.value) })}
             className={`h-8 w-full rounded border bg-background px-2 text-xs ${errors['pull_channel_depth'] ? 'border-destructive' : 'border-input'}`}
+            aria-invalid={errors['pull_channel_depth'] ? true : undefined}
+            aria-describedby={`${errors['pull_channel_depth'] ? 'pull-channel-depth-error ' : ''}pull-channel-depth-help`}
           />
-          <p className="text-xs text-muted-foreground">
+          <p id="pull-channel-depth-help" className="text-xs text-muted-foreground">
             One-piece lid: the tip folds back on itself into a finger channel. SOE marks 1.5&quot;; the 1&quot; sample was too small for a gloved hand. 0 = no channel.
           </p>
-          {errors['pull_channel_depth'] && <p className="text-xs text-destructive">{errors['pull_channel_depth']}</p>}
+          {errors['pull_channel_depth'] && <p id="pull-channel-depth-error" className="text-xs text-destructive">{errors['pull_channel_depth']}</p>}
         </div>
       )}
 

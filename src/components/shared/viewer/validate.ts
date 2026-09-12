@@ -39,8 +39,18 @@ export function validateSeams(seams: SeamSpec[], pieceIds: Iterable<string>): Se
   return { seams: ok, skipped };
 }
 
-/** Vertex budget for the browser cloth: above this the mesh coarsens. */
-export const CLOTH_VERTEX_BUDGET = 40000;
+/**
+ * Vertex budget for the browser cloth: above this the mesh coarsens.
+ *
+ * Solve time is roughly linear in vertices, so this is really a time budget.
+ * Measured (headless Chromium, software rendering): a circle skirt at the old
+ * 40 000 came out at 33 660 vertices and took 21 seconds to reach the step cap;
+ * at 12 000 it meshes to 14 mm and 12 172 vertices and takes about a third of
+ * that. No other assembly reaches even 12 000 — every one of them meshes at the
+ * full 8 mm either way — so this only bites on the genuinely huge patterns it
+ * is meant for.
+ */
+export const CLOTH_VERTEX_BUDGET = 12000;
 
 /**
  * Pick a cloth spacing so the whole scene stays under the vertex budget: the

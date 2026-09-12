@@ -6,6 +6,7 @@
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
+import { GENERATOR_TITLES } from '../../export/projectEnvelopeIO.js';
 import { PROJECT_HOOKS, SCHEMA_VERSIONS, TOOL_ROLL_STORAGE_KEY } from '../index.js';
 import { parseProjectJson, KNOWN_SCHEMA_VERSIONS } from '../../export/projectEnvelopeIO.js';
 import { loadProject, _resetStorageModule } from '../../storage/localStorage.js';
@@ -101,10 +102,15 @@ for (const h of PROJECT_HOOKS) {
       expect(result.current.project.projectName).toBe(original.projectName);
     });
 
-    it('importProject refuses another generator\'s project by name', () => {
+    it("importProject refuses another generator's project, naming both pages by their titles", () => {
       const { result } = renderHook(() => h.useHook());
       const foreign = { ...h.makeDefault(), generatorId: 'tool-roll' };
-      expect(() => act(() => { result.current.importProject(foreign as never); })).toThrow(/tool-roll/);
+      // The message must name the file's generator AND this page, both the way the
+      // user sees them: four hooks used to say "into organizer" whatever page they were on.
+      expect(() => act(() => { result.current.importProject(foreign as never); })).toThrow(/Tool Roll project file/);
+      expect(() => act(() => { result.current.importProject(foreign as never); })).toThrow(
+        new RegExp(`on the ${GENERATOR_TITLES[h.generatorId].replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')} page`),
+      );
     });
 
     it('updateInputs merges and stamps updatedAt; resetProject restores defaults and clears storage', () => {

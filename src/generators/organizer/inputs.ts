@@ -45,7 +45,10 @@ export function resolveInputs(inputs: OrganizerInputs): ResolvedInputs {
   const side_seam_allowance = d(inputs.side_seam_allowance, SIDE_SEAM_MM);
   const side_fold = d(inputs.side_fold, SIDE_FOLD_MM);
   const panel_extra_width = d(inputs.panel_extra_width, PANEL_EXTRA_WIDTH_MM);
-  const slot_widths = (inputs.slot_widths ?? SLOT_WIDTHS_MM.map((v) => (units === 'in' ? v / IN : v))).filter((v) => Number.isFinite(v) && v > 0).map((v) => toMm(v, units));
+  // A hand-edited file can put a scalar here; resolve is called for the page's
+  // derived numbers before anything is validated, so it must not throw on one.
+  const slotSource = Array.isArray(inputs.slot_widths) ? inputs.slot_widths : SLOT_WIDTHS_MM.map((v) => (units === 'in' ? v / IN : v));
+  const slot_widths = slotSource.filter((v) => Number.isFinite(v) && v > 0).map((v) => toMm(v, units));
   const velcro_strip_count = inputs.velcro_strip_count ?? VELCRO_STRIPS;
   const velcro_strip_width = d(inputs.velcro_strip_width, VELCRO_STRIP_WIDTH_MM);
   const velcro_gap = d(inputs.velcro_gap, VELCRO_GAP_MM);
@@ -79,7 +82,10 @@ export function resolveInputs(inputs: OrganizerInputs): ResolvedInputs {
     bifold: inputs.bifold ?? false,
     pals_back: inputs.pals_back ?? false,
     contents_height: d(inputs.contents_height, CONTENTS_HEIGHT_MM),
-    body_cut_length: 2 * (pocket_height + body_hem) * (inputs.bifold ? 2 : 1),
+    // Single: hem + pocket + pocket + hem. Bifold: two pockets nose to nose about a
+    // centre spine, hemmed only at the two raw ends (the vault's "twice as long" is a
+    // loose remark, not the layout — see buildPattern's spine fold).
+    body_cut_length: inputs.bifold ? 4 * pocket_height + 2 * body_hem : 2 * (pocket_height + body_hem),
     body_cut_width: pouch_width,
     panel_cut_width,
     panel_cut_height: pocket_height + panel_hem,

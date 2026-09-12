@@ -1,4 +1,4 @@
-import { NumericField, ChoiceField, UnitToggle } from '../shared/fields/index.js';
+import { NumericField, ChoiceField, UnitToggle , CollapsibleSection } from '../shared/fields/index.js';
 import type { PlateCarrierInputs, PlatePreset, PlateCut, FrontField, BackField, CummerbundStyle, SidePlate, QrBuckle, ShoulderStyle, EdgeFinish, ShellMaterial, BackComfort, PocketOpening } from '../../generators/plate-carrier/types.js';
 import { convertLengthValues, type UnitSystem } from '../../utils/units.js';
 
@@ -28,9 +28,17 @@ export function PlateCarrierSettingsPanel({ inputs, errors, onChange }: Props) {
   const front = inputs.front_field ?? 'loop';
   const cummerbund = inputs.cummerbund_style ?? 'elastic';
   return (
-    <div className="rounded border border-border p-3 space-y-4">
-      <p className="text-xs text-muted-foreground">Plate sizes and PALS spacing are firm; the rest of the vault's carrier notes are reference material. Blank fields are placeholders to mock on the wearer.</p>
-      <h2 className="text-xs font-semibold">Plate</h2>
+    <div className="space-y-2">
+      <div className="rounded border border-border p-3 space-y-3">
+        <UnitToggle value={units} onChange={handleUnitsChange} />
+        <p className="text-[11px] leading-snug text-muted-foreground">Plate sizes and PALS spacing are firm; the rest of the vault's carrier notes are reference material. Blank fields are placeholders to mock on the wearer.</p>
+      </div>
+
+      <CollapsibleSection
+        title="Plate"
+        defaultOpen
+        summary={`${inputs.plate_preset ?? '10x12'} ${inputs.plate_cut ?? 'sapi'}`}
+      >
       <ChoiceField label="Plate size" value={inputs.plate_preset ?? '10x12'} options={PRESETS} onChange={v => onChange({ plate_preset: v })} />
       {(inputs.plate_preset ?? '10x12') === 'custom' && (
         <div className="grid grid-cols-2 gap-3">
@@ -45,7 +53,12 @@ export function PlateCarrierSettingsPanel({ inputs, errors, onChange }: Props) {
         <NumericField id="pocket-ease" label={`Pocket ease per side (${units})`} value={inputs.pocket_ease} error={errors['pocket_ease']} step={step} placeholder={ph('0.375', '9.5')} onChange={v => onChange({ pocket_ease: v })} />
         <NumericField id="torso-length" label={`Wearer torso length (${units})`} value={inputs.torso_length} error={errors['torso_length']} step={step} placeholder="mock it" onChange={v => onChange({ torso_length: v })} />
       </div>
-      <h2 className="text-xs font-semibold">Panels</h2>
+      </CollapsibleSection>
+
+      <CollapsibleSection
+        title="Panels"
+        summary={undefined}
+      >
       <ChoiceField label="Shell" value={inputs.shell_material ?? '500d'} options={SHELLS} onChange={v => onChange({ shell_material: v })} />
       <ChoiceField label="Edge finish" value={inputs.edge_finish ?? 'bound'} options={FINISH} onChange={v => onChange({ edge_finish: v })} />
       <div className="grid grid-cols-2 gap-3">
@@ -56,7 +69,12 @@ export function PlateCarrierSettingsPanel({ inputs, errors, onChange }: Props) {
       </div>
       <ChoiceField label="Pocket opening" value={inputs.pocket_opening ?? 'top'} options={OPENING} onChange={v => onChange({ pocket_opening: v })} />
       <ChoiceField label="Back comfort layer" value={inputs.back_comfort ?? 'mesh'} options={COMFORT} onChange={v => onChange({ back_comfort: v })} />
-      <h2 className="text-xs font-semibold">Fields</h2>
+      </CollapsibleSection>
+
+      <CollapsibleSection
+        title="Fields"
+        summary={front === 'loop' ? 'loop field' : 'PALS'}
+      >
       <ChoiceField label="Front" value={front} options={FRONT} onChange={v => onChange({ front_field: v })} />
       {(front === 'loop' || front === 'split') && (
         <div className="grid grid-cols-3 gap-3">
@@ -66,7 +84,12 @@ export function PlateCarrierSettingsPanel({ inputs, errors, onChange }: Props) {
         </div>
       )}
       <ChoiceField label="Back" value={inputs.back_field ?? 'pals_sewn'} options={BACK} onChange={v => onChange({ back_field: v })} />
-      <h2 className="text-xs font-semibold">Shoulder straps</h2>
+      </CollapsibleSection>
+
+      <CollapsibleSection
+        title="Shoulder straps"
+        summary={undefined}
+      >
       <ChoiceField label="Style" value={inputs.shoulder_style ?? 'padded'} options={SHOULDER} onChange={v => onChange({ shoulder_style: v })} />
       <div className="grid grid-cols-2 gap-3">
         <NumericField id="strap-width" label={`Strap width (${units})`} value={inputs.strap_width} error={errors['strap_width']} step={step} placeholder={ph('2', '51')} onChange={v => onChange({ strap_width: v })} />
@@ -75,7 +98,12 @@ export function PlateCarrierSettingsPanel({ inputs, errors, onChange }: Props) {
         {(inputs.shoulder_style ?? 'padded') === 'padded' && <NumericField id="pad-length" label={`Pad length (${units})`} value={inputs.pad_length} error={errors['pad_length']} step={step} placeholder="mock it (6–10)" onChange={v => onChange({ pad_length: v })} />}
         {(inputs.shoulder_style ?? 'padded') === 'padded' && <NumericField id="pad-foam" label="Pad foam (mm)" value={inputs.pad_foam_thickness} error={errors['pad_foam_thickness']} step={1} placeholder="6" onChange={v => onChange({ pad_foam_thickness: v })} />}
       </div>
-      <h2 className="text-xs font-semibold">Cummerbund</h2>
+      </CollapsibleSection>
+
+      <CollapsibleSection
+        title="Cummerbund"
+        summary={cummerbund}
+      >
       <ChoiceField label="Style" value={cummerbund} options={CUMMERBUND} onChange={v => onChange({ cummerbund_style: v })} />
       {cummerbund !== 'none' && (
         <>
@@ -88,7 +116,8 @@ export function PlateCarrierSettingsPanel({ inputs, errors, onChange }: Props) {
           <ChoiceField label="Front release" value={inputs.qr_buckle ?? 'none'} options={QR} onChange={v => onChange({ qr_buckle: v })} />
         </>
       )}
-      <UnitToggle value={units} onChange={handleUnitsChange} />
+      </CollapsibleSection>
+
     </div>
   );
 }

@@ -192,13 +192,16 @@ describe('validateInputs — validation rule coverage', () => {
     expect(r.ok).toBe(true);
   });
 
-  it('zipper warning is emitted when zipper exceeds cut_width (always true)', () => {
-    // cut_width = finished_length + 2*sa; zipper = ceil((cut_width+25)/50)*50
-    // For any reasonable finished_length, zipper > cut_width — warning always fires
-    const r = validateInputs({ preset: 'pencil' });
-    expect(r.ok).toBe(true);
-    expect(r.warnings.length).toBeGreaterThan(0);
-    expect(r.warnings[0]).toMatch(/zipper/i);
+  it('the zip-overhang note stays quiet on normal pouches and fires only when the tail is disproportionate', () => {
+    // cut_width = finished_length + 2*sa; the zip is bought at the next 50 mm up,
+    // so it ALWAYS overhangs. Saying so on every pouch (as this used to) is noise:
+    // the note now fires only when the tail is over a quarter of the panel.
+    const normal = validateInputs({ preset: 'pencil' });
+    expect(normal.ok).toBe(true);
+    expect(normal.warnings.filter((w) => /zip/i.test(w))).toHaveLength(0);
+
+    const tiny = validateInputs({ preset: 'custom', units: 'mm', finished_length: 60, finished_width: 60, finished_depth: 10, seam_allowance: 6 });
+    expect(tiny.warnings.some((w) => /hangs off to be trimmed/.test(w))).toBe(true);
   });
 
   it('custom preset: large depth/2 exactly violates boxing constraint', () => {

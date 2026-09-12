@@ -9,7 +9,7 @@
 import { describe, it, expect } from 'vitest';
 import type { Piece } from '../../lib/pattern-engine/graph/Piece.js';
 import { assemble, type AssemblyObject } from '../../lib/cloth-engine/__tests__/harness.js';
-import { relax, seamResidual, maxStretch, maxPenetration, type SeamSpec, type Solid, type Vec3, type PinSpec } from '../../lib/cloth-engine/index.js';
+import { relax, seamResidual, maxStretch, stretchReport, maxPenetration, type SeamSpec, type Solid, type Vec3, type PinSpec } from '../../lib/cloth-engine/index.js';
 import { buildFoldModel, pathToPolygon, area } from '../../lib/fold-engine/index.js';
 import type { PiecePlacement } from '../../lib/fold-engine/index.js';
 
@@ -51,7 +51,19 @@ interface Asm {
   gravity?: Vec3;
   selfCollision?: boolean;
 }
-interface Case { name: string; spacing?: number; maxStretch: number; maxSeamMean: number; build: () => Asm | null }
+interface Case {
+  name: string;
+  spacing?: number;
+  /**
+   * Ceiling on the 99th-percentile edge elongation. The single worst edge is
+   * not a useful bound: one sheared cell beside a gathered seam reads as 116 %
+   * on a pattern whose seams all close, so a ceiling loose enough to pass it
+   * catches nothing. The percentile is tight enough to fail on a real change.
+   */
+  maxStretch: number;
+  maxSeamMean: number;
+  build: () => Asm | null;
+}
 
 function ok<T>(r: { ok: true; value: T } | { ok: false }): T { if (!r.ok) throw new Error('build failed'); return r.value; }
 
@@ -75,24 +87,24 @@ const zipCase = (i: typeof zip) => zipPouchAssembly(ok(buildZip(i)).pieces, reso
 
 // Ceilings are the measured values rounded up, so a regression shows.
 const CASES: Case[] = [
-  { name: 'tri-zip backpack', maxStretch: 0.30, maxSeamMean: 3, build: () => triZip(tz) },
-  { name: 'tri-zip (split gusset, direct zips)', maxStretch: 0.30, maxSeamMean: 3, build: () => triZip({ ...tz, split_gusset: true, zipper_method: 'direct' }) },
-  { name: 'zip pouch (boxed)', maxStretch: 0.30, maxSeamMean: 3, build: () => zipCase(zip) },
-  { name: 'zip pouch (cross-bottom)', maxStretch: 0.35, maxSeamMean: 3, build: () => zipCase({ ...zip, construction_style: 'cross-bottom' }) },
-  { name: 'zip pouch (gusset strip)', maxStretch: 0.30, maxSeamMean: 3, build: () => zipCase({ ...zip, construction_style: 'gusset-strip' }) },
-  { name: 'zip pouch (multi-panel)', maxStretch: 0.30, maxSeamMean: 3, build: () => zipCase({ ...zip, construction_style: 'multi-panel' }) },
-  { name: 'circle skirt', spacing: 16, maxStretch: 0.15, maxSeamMean: 3, build: () => { const b = buildSkirt(skirt); return circleSkirtAssembly(b.pieces, resolveSkirt(skirt)); } },
-  { name: 'padded strap pair', maxStretch: 0.15, maxSeamMean: 3, build: () => paddedStrapAssembly(ok(buildStrap(strap)).pieces, resolveStrap(strap)) },
-  { name: 'H-harness', spacing: 10, maxStretch: 0.15, maxSeamMean: 3, build: () => paddedStrapAssembly(ok(buildStrap(hh)).pieces, resolveStrap(hh)) },
-  { name: 'micro rig', maxStretch: 1.5, maxSeamMean: 3, build: () => { const v = ok(buildRig(rig)); return microRigAssembly(v.pieces, v.resolved); } },
-  { name: 'micro rig (.308 stacked)', maxStretch: 1.5, maxSeamMean: 3, build: () => { const v = ok(buildRig(r308)); return microRigAssembly(v.pieces, v.resolved); } },
-  { name: 'padded sling', maxStretch: 0.15, maxSeamMean: 3, build: () => slingAssembly(ok(buildSling(sling)).resolved) },
-  { name: 'tactical organizer', maxStretch: 0.50, maxSeamMean: 3, build: () => { const v = ok(buildOrg(org)); return organizerAssembly(v.pieces, v.resolved); } },
-  { name: 'fanny pack', maxStretch: 0.15, maxSeamMean: 3, build: () => { const v = ok(buildFanny(fanny)); return fannyPackAssembly(v.pieces, v.resolved); } },
-  { name: 'fanny pack (closed lid, grommets, drawbridge)', maxStretch: 0.25, maxSeamMean: 3, build: () => { const v = ok(buildFanny(fannyVar)); return fannyPackAssembly(v.pieces, v.resolved); } },
-  { name: 'clamshell pack', maxStretch: 0.30, maxSeamMean: 3, build: () => { const v = ok(buildClam(clam)); return clamshellAssembly(v.pieces, v.resolved); } },
-  { name: 'plate carrier', maxStretch: 0.30, maxSeamMean: 3, build: () => { const v = ok(buildPlate(plate)); return plateCarrierAssembly(v.pieces, v.resolved); } },
-  { name: 'modular lbv', maxStretch: 0.15, maxSeamMean: 3, build: () => { const v = ok(buildLbv(lbv)); return lbvAssembly(v.pieces, v.resolved); } },
+  { name: 'tri-zip backpack', maxStretch: 0.04, maxSeamMean: 3, build: () => triZip(tz) },
+  { name: 'tri-zip (split gusset, direct zips)', maxStretch: 0.03, maxSeamMean: 3, build: () => triZip({ ...tz, split_gusset: true, zipper_method: 'direct' }) },
+  { name: 'zip pouch (boxed)', maxStretch: 0.05, maxSeamMean: 3, build: () => zipCase(zip) },
+  { name: 'zip pouch (cross-bottom)', maxStretch: 0.04, maxSeamMean: 3, build: () => zipCase({ ...zip, construction_style: 'cross-bottom' }) },
+  { name: 'zip pouch (gusset strip)', maxStretch: 0.02, maxSeamMean: 3, build: () => zipCase({ ...zip, construction_style: 'gusset-strip' }) },
+  { name: 'zip pouch (multi-panel)', maxStretch: 0.02, maxSeamMean: 3, build: () => zipCase({ ...zip, construction_style: 'multi-panel' }) },
+  { name: 'circle skirt', spacing: 16, maxStretch: 0.04, maxSeamMean: 3, build: () => { const b = buildSkirt(skirt); return circleSkirtAssembly(b.pieces, resolveSkirt(skirt)); } },
+  { name: 'padded strap pair', maxStretch: 0.01, maxSeamMean: 3, build: () => paddedStrapAssembly(ok(buildStrap(strap)).pieces, resolveStrap(strap)) },
+  { name: 'H-harness', spacing: 10, maxStretch: 0.02, maxSeamMean: 3, build: () => paddedStrapAssembly(ok(buildStrap(hh)).pieces, resolveStrap(hh)) },
+  { name: 'micro rig', maxStretch: 0.18, maxSeamMean: 3, build: () => { const v = ok(buildRig(rig)); return microRigAssembly(v.pieces, v.resolved); } },
+  { name: 'micro rig (.308 stacked)', maxStretch: 0.36, maxSeamMean: 3, build: () => { const v = ok(buildRig(r308)); return microRigAssembly(v.pieces, v.resolved); } },
+  { name: 'padded sling', maxStretch: 0.01, maxSeamMean: 3, build: () => slingAssembly(ok(buildSling(sling)).resolved) },
+  { name: 'tactical organizer', maxStretch: 0.17, maxSeamMean: 3, build: () => { const v = ok(buildOrg(org)); return organizerAssembly(v.pieces, v.resolved); } },
+  { name: 'fanny pack', maxStretch: 0.02, maxSeamMean: 3, build: () => { const v = ok(buildFanny(fanny)); return fannyPackAssembly(v.pieces, v.resolved); } },
+  { name: 'fanny pack (closed lid, grommets, drawbridge)', maxStretch: 0.03, maxSeamMean: 3, build: () => { const v = ok(buildFanny(fannyVar)); return fannyPackAssembly(v.pieces, v.resolved); } },
+  { name: 'clamshell pack', maxStretch: 0.04, maxSeamMean: 3, build: () => { const v = ok(buildClam(clam)); return clamshellAssembly(v.pieces, v.resolved); } },
+  { name: 'plate carrier', maxStretch: 0.03, maxSeamMean: 3, build: () => { const v = ok(buildPlate(plate)); return plateCarrierAssembly(v.pieces, v.resolved); } },
+  { name: 'modular lbv', maxStretch: 0.01, maxSeamMean: 3, build: () => { const v = ok(buildLbv(lbv)); return lbvAssembly(v.pieces, v.resolved); } },
 ];
 
 /** The pieces the viewer simulates in an assembled scene: placed pieces and the object's host. */
@@ -102,7 +114,7 @@ function scenePieces(asm: Asm): Piece[] {
   return placed.length ? placed : asm.pieces;
 }
 
-const results: Record<string, { stretch: number; seam: number; pen: number }> = {};
+const results: Record<string, { stretch: number; worst: number; seam: number; pen: number }> = {};
 
 describe('assembly sweep — every generator with a 3D assembly', () => {
   for (const c of CASES) {
@@ -122,14 +134,15 @@ describe('assembly sweep — every generator with a 3D assembly', () => {
       const { world } = assemble(pieces, asm.placements, asm.seams, asm.object ?? null, c.spacing ?? 8, asm.pins ?? [], asm.gravity, asm.solids ?? [], asm.selfCollision ?? true);
       relax(world, 400);
       for (let i = 0; i < world.pos.length; i++) if (!Number.isFinite(world.pos[i])) throw new Error(`${c.name}: non-finite position at ${i}`);
-      const stretch = maxStretch(world), seam = asm.seams.length ? seamResidual(world).mean : 0, pen = maxPenetration(world);
-      results[c.name] = { stretch, seam, pen };
+      const sr = stretchReport(world, 0.99);
+      const stretch = sr.value, seam = asm.seams.length ? seamResidual(world).mean : 0, pen = maxPenetration(world);
+      results[c.name] = { stretch, worst: maxStretch(world), seam, pen };
       expect(pen, `${c.name} penetration`).toBeLessThan(world.params.thickness);
       expect(seam, `${c.name} seam mean`).toBeLessThan(c.maxSeamMean);
-      expect(stretch, `${c.name} stretch`).toBeLessThan(c.maxStretch);
+      expect(stretch, `${c.name} stretch (99th pct)`).toBeLessThan(c.maxStretch);
     });
   }
   it('prints the sweep table', () => {
-    console.log(Object.entries(results).map(([n, r]) => `${n}: stretch ${(r.stretch * 100).toFixed(1)}% seam ${r.seam.toFixed(2)} mm pen ${r.pen.toFixed(2)} mm`).join('\n'));
+    console.log(Object.entries(results).map(([n, r]) => `${n}: p99 ${(r.stretch * 100).toFixed(1)}% worst-edge ${(r.worst * 100).toFixed(0)}% seam ${r.seam.toFixed(2)} mm pen ${r.pen.toFixed(2)} mm`).join('\n'));
   });
 });

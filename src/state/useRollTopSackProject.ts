@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import type { RollTopSackInputs } from '../generators/roll-top-sack/types.js';
 import { makeProjectStorage } from '../storage/genericProjectStorage.js';
 import { isPlainObject } from '../utils/isPlainObject.js';
+import { assertGeneratorMatch } from '../export/projectEnvelopeIO.js';
 
 export const STORAGE_KEY = 'stitchsmith.roll-top-sack.project';
 
@@ -74,9 +75,7 @@ export function useRollTopSackProject(): UseRollTopSackProjectReturn {
   }, []);
 
   const importProject = useCallback((p: RollTopSackProject) => {
-    if (p.generatorId !== 'roll-top-sack') {
-      throw new Error(`Cannot import project with generatorId '${p.generatorId}' into Roll-Top Sack`);
-    }
+    assertGeneratorMatch(p.generatorId, 'roll-top-sack');
     setProjectState(p);
   }, []);
 

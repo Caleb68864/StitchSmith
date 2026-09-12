@@ -68,11 +68,27 @@ export function resolveInputs(inputs: PlateCarrierInputs): ResolvedInputs {
   const units = inputs.units ?? DEFAULT_UNITS;
   const d = (v: number | undefined, fallbackMm: number) => (v === undefined || v === null || Number.isNaN(v) ? fallbackMm : toMm(v, units));
   const mock: string[] = [];
-  const mockD = (field: keyof PlateCarrierInputs, fallbackMm: number) => { const v = inputs[field] as number | undefined; if (v === undefined || v === null || Number.isNaN(v)) { mock.push(field); return fallbackMm; } return toMm(v, units); };
+  /**
+   * A vault-open number: report it as mock-derived while it is still the shipped
+   * guess, not merely while the field is empty. The default project now fills
+   * these in so the panel opens with numbers instead of blank boxes, and keying
+   * the caveat on "unset" would have silently dropped it the moment it did.
+   */
+  const mockD = (field: keyof PlateCarrierInputs, fallbackMm: number) => {
+    const v = inputs[field] as number | undefined;
+    if (v === undefined || v === null || Number.isNaN(v)) { mock.push(field); return fallbackMm; }
+    const mm = toMm(v, units);
+    if (Math.abs(mm - fallbackMm) < 1e-6) mock.push(field);
+    return mm;
+  };
   const plate_preset = inputs.plate_preset ?? '10x12';
   const plate_cut = inputs.plate_cut ?? 'sapi';
-  const [pw, ph] = plate_preset === 'custom' ? [d(inputs.plate_width, PLATE_SIZES_MM['10x12'][0]), d(inputs.plate_height, PLATE_SIZES_MM['10x12'][1])] : PLATE_SIZES_MM[plate_preset];
-  const cutDef = CUT_DEFAULTS[plate_cut];
+  // An unrecognised preset falls back to 10 x 12 rather than destructuring undefined.
+  const presetDims = PLATE_SIZES_MM[plate_preset as keyof typeof PLATE_SIZES_MM] ?? PLATE_SIZES_MM['10x12'];
+  const [pw, ph] = plate_preset === 'custom'
+    ? [d(inputs.plate_width, PLATE_SIZES_MM['10x12'][0]), d(inputs.plate_height, PLATE_SIZES_MM['10x12'][1])]
+    : presetDims;
+  const cutDef = CUT_DEFAULTS[plate_cut as keyof typeof CUT_DEFAULTS] ?? CUT_DEFAULTS.sapi;
   const top_clip_length = d(inputs.top_clip_length, cutDef.clip);
   const top_clip_angle = inputs.top_clip_angle ?? cutDef.angle;
   const pocket_ease = d(inputs.pocket_ease, POCKET_EASE_MM);
@@ -88,7 +104,9 @@ export function resolveInputs(inputs: PlateCarrierInputs): ResolvedInputs {
   const torso_circumference = d(inputs.torso_circumference, TORSO_CIRCUMFERENCE_MM);
   const cummerbund_overlap = d(inputs.cummerbund_overlap, CUMMERBUND_OVERLAP_MM);
   const cummerbund_free_girth = torso_circumference - 2 * panel_width;
-  const side_plate = inputs.side_plate ?? 'none';
+  // An unknown side-plate size (hand-edited file, stale project) must fall back
+  // rather than destructure `undefined`: resolve runs before validation on the page.
+  const side_plate = (inputs.side_plate !== undefined && inputs.side_plate in SIDE_PLATE_MM ? inputs.side_plate : 'none') as keyof typeof SIDE_PLATE_MM | 'none';
   const [spw, sph] = side_plate === 'none' ? [0, 0] : SIDE_PLATE_MM[side_plate];
   const front_field = inputs.front_field ?? 'loop';
   const perimeter = (W: number, H: number, dx: number) => 2 * H + 2 * W - 2 * dx * 0.6; // clips shorten the top a little
@@ -111,7 +129,10 @@ export function resolveInputs(inputs: PlateCarrierInputs): ResolvedInputs {
     binding_width: d(inputs.binding_width, BINDING_WIDTH_MM),
     seam_allowance,
     back_comfort: inputs.back_comfort ?? 'mesh',
-    comfort_foam_thickness: d(inputs.comfort_foam_thickness, COMFORT_FOAM_MM),
+    // Foam thickness is millimetres whatever the display unit, as it is on the
+    // sling and the LBV, and as the panel's "(mm)" label already promises. Running
+    // it through d() meant a 6 typed into a box labelled mm resolved to 152.4 mm.
+    comfort_foam_thickness: inputs.comfort_foam_thickness ?? COMFORT_FOAM_MM,
     pocket_opening: inputs.pocket_opening ?? 'top',
     pocket_flap_length: d(inputs.pocket_flap_length, POCKET_FLAP_MM),
     front_field,
@@ -122,7 +143,7 @@ export function resolveInputs(inputs: PlateCarrierInputs): ResolvedInputs {
     shoulder_style,
     strap_width,
     pad_length,
-    pad_foam_thickness: d(inputs.pad_foam_thickness, PAD_FOAM_MM),
+    pad_foam_thickness: inputs.pad_foam_thickness ?? PAD_FOAM_MM,
     shoulder_strap_length: mockD('shoulder_strap_length', SHOULDER_STRAP_LENGTH_MM),
     strap_adjust_range: d(inputs.strap_adjust_range, STRAP_ADJUST_MM),
     cummerbund_style,

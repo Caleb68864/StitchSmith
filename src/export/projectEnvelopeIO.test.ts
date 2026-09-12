@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { parseProjectJson, KNOWN_SCHEMA_VERSIONS } from './projectEnvelopeIO.js';
+import { describe, it, expect, vi } from 'vitest';
+import { parseProjectJson, KNOWN_SCHEMA_VERSIONS, downloadProjectJson } from './projectEnvelopeIO.js';
 
 interface Env {
   generatorId: 'zip-pouch';
@@ -15,9 +15,18 @@ describe('parseProjectJson (shared envelope import)', () => {
     expect(parsed.inputs.finished_length).toBe(180);
   });
 
-  it('rejects a different generator with a message naming both ids', () => {
+  it('rejects a different generator, naming both pages the way the user sees them', () => {
     expect(() => parseProjectJson<Env>(JSON.stringify(good), 'mag-pouch' as never)).toThrow(
-      /"zip-pouch" project, not a mag-pouch/,
+      /This is a Zip Pouch project file, so it cannot be opened on the Mag Pouch page/,
+    );
+  });
+
+  it('names an unrecognised generator id rather than printing "undefined"', () => {
+    expect(() => parseProjectJson<Env>(JSON.stringify({ ...good, generatorId: 'not-a-generator' }), 'zip-pouch')).toThrow(
+      /This is a "not-a-generator" project file/,
+    );
+    expect(() => parseProjectJson<Env>(JSON.stringify({ ...good, generatorId: undefined }), 'zip-pouch')).toThrow(
+      /This is a unknown project file/,
     );
   });
 
@@ -57,5 +66,33 @@ describe('parseProjectJson — schema versions and names (H5)', () => {
   it('the version table covers every generator in CLAUDE.md', () => {
     expect(Object.keys(KNOWN_SCHEMA_VERSIONS)).toHaveLength(15);
     expect(KNOWN_SCHEMA_VERSIONS['lbv']).toBe(14);
+  });
+});
+
+describe('downloadProjectJson filename', () => {
+  function nameFor(projectName: string, generatorId: string): string {
+    const anchors: HTMLAnchorElement[] = [];
+    const realCreate = document.createElement.bind(document);
+    vi.spyOn(document, 'createElement').mockImplementation((tag: string) => {
+      const el = realCreate(tag) as HTMLAnchorElement;
+      if (tag === 'a') { el.click = () => {}; anchors.push(el); }
+      return el;
+    });
+    // jsdom implements neither.
+    (URL as unknown as { createObjectURL: unknown }).createObjectURL = () => 'blob:x';
+    (URL as unknown as { revokeObjectURL: unknown }).revokeObjectURL = () => {};
+    downloadProjectJson({ projectName, generatorId } as never);
+    vi.restoreAllMocks();
+    return anchors[0].download;
+  }
+
+  it('keeps the project name and tags the generator, so two generators never collide', () => {
+    expect(nameFor('My Project', 'zip-pouch')).toBe('My_Project.zip-pouch.json');
+    expect(nameFor('My Project', 'mag-pouch')).toBe('My_Project.mag-pouch.json');
+  });
+
+  it('falls back to the generator id when the name sanitises to nothing', () => {
+    expect(nameFor('***', 'organizer')).toBe('organizer.organizer.json');
+    expect(nameFor('  ', 'lbv')).toBe('lbv.lbv.json');
   });
 });

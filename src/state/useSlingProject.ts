@@ -1,7 +1,9 @@
 import { useState, useCallback, useEffect } from 'react';
 import type { SlingInputs } from '../generators/sling/types.js';
+import { DEFAULT_SLING_INPUTS } from '../generators/sling/defaults.js';
 import { makeProjectStorage } from '../storage/genericProjectStorage.js';
 import { isPlainObject } from '../utils/isPlainObject.js';
+import { assertGeneratorMatch } from '../export/projectEnvelopeIO.js';
 
 export const STORAGE_KEY = 'stitchsmith.sling.project';
 
@@ -29,13 +31,7 @@ export function makeDefaultSlingProject(): SlingProject {
     schemaVersion: 9,
     generatorId: 'sling',
     projectName: 'My Sling',
-    inputs: {
-      units: 'in',
-      third_piece: 'anchor_strap',
-      end_interface: 'bare_triglide',
-      route_through_both_slots: false,
-      seam_allowance: 9.5,
-    },
+    inputs: { ...DEFAULT_SLING_INPUTS },
     createdAt: now,
     updatedAt: now,
   };
@@ -70,9 +66,7 @@ export function useSlingProject(): UseSlingProjectReturn {
   }, []);
 
   const importProject = useCallback((p: SlingProject) => {
-    if (p.generatorId !== 'sling') {
-      throw new Error(`Cannot import project with generatorId '${p.generatorId}' into sling`);
-    }
+    assertGeneratorMatch(p.generatorId, 'sling');
     setProjectState(p);
   }, []);
 

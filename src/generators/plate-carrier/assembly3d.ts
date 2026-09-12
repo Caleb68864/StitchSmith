@@ -84,7 +84,7 @@ export function plateCarrierAssembly(pieces: Piece[], r: ResolvedInputs, torso: 
     // Draped at the setting the adjustment allows nearest the requirement: a strap within its
     // range closes; one outside it leaves the gap.
     const L = Math.min(Math.max(strapRequired, r.shoulder_strap_length), r.shoulder_strap_length + r.strap_adjust_range);
-    body.push(rectPiece(id, `Shoulder strap span (${xw < 0 ? 'left' : 'right'})`, sw, L, 'webbing-50'));
+    body.push(rectPiece(id, `Shoulder strap span (${xw < 0 ? 'left' : 'right'})`, sw, L, 'webbing-51'));
     placements[id] = { keep: true, drape: { path, across: [1, 0, 0], x0: sw / 2 } };
     pins.push({ pieceId: id, point: { x: sw / 2, y: 0 }, radius: sw }, { pieceId: id, point: { x: sw / 2, y: L }, radius: sw });
     seams.push(

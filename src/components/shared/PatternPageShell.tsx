@@ -78,7 +78,7 @@ export function PatternPageShell({
   }
 
   return (
-    <div className="flex flex-col gap-4 max-w-7xl mx-auto px-4 py-4 w-full">
+    <div className="flex flex-col gap-4 max-w-[1800px] mx-auto px-4 py-4 w-full">
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
           <h1 className="text-xl font-bold truncate">{title}</h1>
@@ -117,7 +117,10 @@ export function PatternPageShell({
 
       {banner}
 
-      <div className="grid grid-cols-1 lg:grid-cols-[300px_minmax(0,1fr)_320px] gap-4 items-start">
+      {/* The drawing is the point of the page, so the middle column takes
+          every pixel the two fixed rails do not need, and the container runs
+          wider than the old 1280 px cap on a large display. */}
+      <div className="grid grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)_300px] 2xl:grid-cols-[300px_minmax(0,1fr)_320px] gap-4 items-start">
         <aside className="space-y-2 min-w-0">{settings}</aside>
         <section className="min-w-0">{preview}</section>
         <aside className="space-y-3 min-w-0">{sidebar}</aside>

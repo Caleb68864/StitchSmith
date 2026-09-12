@@ -167,7 +167,7 @@ export function validateInputs(inputs: MicroRigInputs): ValidationResult {
     pos('cradle_width', 'Cradle width');
     if (!Number.isFinite(r.cradle_drop) || r.cradle_drop < 0) errors.push({ field: 'cradle_drop', message: 'Cradle drop must be 0 or greater' });
     pos('pull_tab_length', 'Pull tab length');
-    if (inputs.magazine_preset_id !== undefined && !getMagazine(inputs.magazine_preset_id)) errors.push({ field: 'magazine_preset_id', message: 'Unknown magazine preset' });
+    if (inputs.magazine_preset_id !== undefined && !getMagazine(inputs.magazine_preset_id)) errors.push({ field: 'magazine_preset_id', message: `"${String(inputs.magazine_preset_id)}" is not a magazine this build knows. Pick one from the magazine list, or enter the cell sizes by hand.` });
   }
   if (r.pocket_set === 'mag_cells') {
     if (!Number.isInteger(r.cell_count) || r.cell_count < 1 || r.cell_count > 8) errors.push({ field: 'cell_count', message: 'Cells must be a whole number from 1 to 8' });
@@ -176,7 +176,7 @@ export function validateInputs(inputs: MicroRigInputs): ValidationResult {
     pos('cell_height', 'Cell height');
     if (r.cell_height > r.panel_height) errors.push({ field: 'cell_height', message: 'Cell height cannot exceed the panel height' });
     if (r.face_per_cell < r.cell_span) errors.push({ field: 'face_per_cell', message: 'Face per cell must be at least the cell span' });
-    if (inputs.magazine_preset_id !== undefined && !getMagazine(inputs.magazine_preset_id)) errors.push({ field: 'magazine_preset_id', message: 'Unknown magazine preset' });
+    if (inputs.magazine_preset_id !== undefined && !getMagazine(inputs.magazine_preset_id)) errors.push({ field: 'magazine_preset_id', message: `"${String(inputs.magazine_preset_id)}" is not a magazine this build knows. Pick one from the magazine list, or enter the cell sizes by hand.` });
   }
   if (!Number.isInteger(r.side_pals_columns) || r.side_pals_columns < 0 || r.side_pals_columns > 2) errors.push({ field: 'side_pals_columns', message: 'Side PALS columns must be 0, 1 or 2' });
   if (!Number.isInteger(r.bottom_loop_count) || r.bottom_loop_count < 0 || r.bottom_loop_count > 6) errors.push({ field: 'bottom_loop_count', message: 'Bottom loops must be a whole number from 0 to 6' });

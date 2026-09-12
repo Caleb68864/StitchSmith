@@ -75,7 +75,10 @@ export function resolveInputs(inputs: LbvInputs): ResolvedInputs {
   const loops_per_panel = inputs.loops_per_panel ?? D.LOOPS_PER_PANEL;
   const belt_length = d(inputs.belt_length, D.BELT_LENGTH_MM);
   const pouch_width = d(inputs.pouch_width, D.POUCH_WIDTH_MM);
-  const positions = (inputs.front_strap_positions ?? D.FRONT_STRAP_POSITIONS_MM.map((v) => (units === 'in' ? v / IN : v))).filter((v) => Number.isFinite(v)).map((v) => toMm(v, units));
+  // Same guard as the organizer's slot list: a scalar from a hand-edited file
+  // must fall back to the default rather than throw inside resolve.
+  const positionSource = Array.isArray(inputs.front_strap_positions) ? inputs.front_strap_positions : D.FRONT_STRAP_POSITIONS_MM.map((v) => (units === 'in' ? v / IN : v));
+  const positions = positionSource.filter((v) => Number.isFinite(v)).map((v) => toMm(v, units));
   const loop_footprint = belt_width + D.LOOP_FOOTPRINT_EXTRA_MM;
   const foam_margin = edge_tape_conceal + 3;
   return {

@@ -246,12 +246,19 @@ export function validateInputs(inputs: ZipPouchInputs): ValidationResult {
 
   if (dimensionsValid && Number.isFinite(sa) && sa >= 0) {
     const cutWidth = resolved.finished_length + 2 * sa;
-    const zipperLengthRaw = cutWidth + 25;
-    const zipperLength = Math.ceil(zipperLengthRaw / 50) * 50;
-    if (zipperLength > cutWidth) {
+    // The zipper is MEANT to overhang: 25 mm of working tail, then rounded up to
+    // the next 50 mm because that is how stock zip is sold. The old test here
+    // (`zipperLength > cutWidth`) is true of every pouch that has ever been
+    // generated, so it fired on every project — including this generator's own
+    // default — and told the user to fix something the generator chose for them.
+    // Only an overhang big enough to be worth re-planning is worth saying.
+    const zipperLength = Math.ceil((cutWidth + 25) / 50) * 50;
+    const tail = zipperLength - cutWidth;
+    if (tail > cutWidth * 0.25) {
       warnings.push(
-        `Zipper may be longer than the panel; consider a shorter zipper or wider bag. ` +
-          `(cut_width=${cutWidth} mm, zipper_length=${zipperLength} mm)`,
+        `The next stock zip length up is ${zipperLength} mm against a ${Math.round(cutWidth)} mm panel, ` +
+          `so ${Math.round(tail)} mm hangs off to be trimmed. On a pouch this small, cutting from a ` +
+          `continuous zip chain wastes less than buying a fixed length.`,
       );
     }
   }

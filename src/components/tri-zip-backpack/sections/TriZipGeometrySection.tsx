@@ -1,7 +1,7 @@
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { TriZipInputs, CurveStyle } from '../../../generators/tri-zip-backpack/types.js';
+import { NumericField } from '../../shared/fields/index.js';
 
 interface Props {
   inputs: TriZipInputs;
@@ -10,10 +10,10 @@ interface Props {
 }
 
 export function TriZipGeometrySection({ inputs, errors, onChange }: Props) {
-  function handlePercent(field: keyof TriZipInputs, raw: string) {
-    const n = parseFloat(raw);
-    onChange({ [field]: isNaN(n) ? raw as unknown as number : n });
-  }
+  // Cleared boxes report undefined so the preset default applies again; they
+  // used to snap back to the hard-coded number on every keystroke, which made
+  // the field impossible to retype.
+  const set = (field: keyof TriZipInputs) => (v: number | undefined) => onChange({ [field]: v });
 
   return (
     <div className="space-y-4 py-2">
@@ -34,70 +34,53 @@ export function TriZipGeometrySection({ inputs, errors, onChange }: Props) {
         </Select>
       </div>
 
-      <div className="space-y-1">
-        <Label htmlFor="tz-y-split">Y-split height (%)</Label>
-        <Input
-          id="tz-y-split"
-          type="number"
-          min={1}
-          max={99}
-          value={inputs.y_split_height_percent ?? 60}
-          onChange={e => handlePercent('y_split_height_percent', e.target.value)}
-          className={errors['y_split_height_percent'] ? 'border-destructive' : ''}
-        />
-        {errors['y_split_height_percent'] && (
-          <p className="text-xs text-destructive">{errors['y_split_height_percent']}</p>
-        )}
-        <p className="text-xs text-muted-foreground">Where the tri-zip split occurs (1–99%)</p>
-      </div>
+      <NumericField
+        id="tz-y-split"
+        label="Y-split height"
+        units="%"
+        value={inputs.y_split_height_percent ?? 60}
+        onChange={set('y_split_height_percent')}
+        error={errors['y_split_height_percent']}
+        min={1}
+        max={99}
+        help="Where the tri-zip split sits up the bag. Default 60%."
+      />
 
-      <div className="space-y-1">
-        <Label htmlFor="tz-center-panel">Center panel width (%)</Label>
-        <Input
-          id="tz-center-panel"
-          type="number"
-          min={1}
-          max={99}
-          value={inputs.center_panel_width_percent ?? 35}
-          onChange={e => handlePercent('center_panel_width_percent', e.target.value)}
-          className={errors['center_panel_width_percent'] ? 'border-destructive' : ''}
-        />
-        {errors['center_panel_width_percent'] && (
-          <p className="text-xs text-destructive">{errors['center_panel_width_percent']}</p>
-        )}
-        <p className="text-xs text-muted-foreground">Width of center zip panel (1–99% of total width)</p>
-      </div>
+      <NumericField
+        id="tz-center-panel"
+        label="Centre panel width"
+        units="%"
+        value={inputs.center_panel_width_percent ?? 35}
+        onChange={set('center_panel_width_percent')}
+        error={errors['center_panel_width_percent']}
+        min={1}
+        max={99}
+        help="Width of the centre zip panel as a share of the bag width. Default 35%."
+      />
 
-      <div className="space-y-1">
-        <Label htmlFor="tz-seam-allowance">Seam allowance (mm)</Label>
-        <Input
-          id="tz-seam-allowance"
-          type="number"
-          min={0}
-          value={inputs.seam_allowance ?? 10}
-          onChange={e => {
-            const n = parseFloat(e.target.value);
-            onChange({ seam_allowance: isNaN(n) ? 10 : n });
-          }}
-        />
-      </div>
+      <NumericField
+        id="tz-seam-allowance"
+        label="Seam allowance"
+        units="mm"
+        value={inputs.seam_allowance ?? 10}
+        onChange={set('seam_allowance')}
+        error={errors['seam_allowance']}
+        min={0}
+        step={1}
+        help="Added to every sewn edge. Default 10 mm; always millimetres, whatever the body dimensions use."
+      />
 
-      <div className="space-y-1">
-        <Label htmlFor="tz-hem-allowance">Hem allowance (mm)</Label>
-        <Input
-          id="tz-hem-allowance"
-          type="number"
-          min={0}
-          value={inputs.hem_allowance ?? 25}
-          onChange={e => {
-            const n = parseFloat(e.target.value);
-            onChange({ hem_allowance: isNaN(n) ? 25 : n });
-          }}
-        />
-        <p className="text-xs text-muted-foreground">
-          Applied to free edges that fold under (laptop sleeve opening, gusset zipper tape edges).
-        </p>
-      </div>
+      <NumericField
+        id="tz-hem-allowance"
+        label="Hem allowance"
+        units="mm"
+        value={inputs.hem_allowance ?? 25}
+        onChange={set('hem_allowance')}
+        error={errors['hem_allowance']}
+        min={0}
+        step={1}
+        help="Free edges that fold under: the laptop sleeve opening and the gusset zipper tape edges. Default 25 mm."
+      />
     </div>
   );
 }

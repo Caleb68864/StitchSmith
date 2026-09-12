@@ -19,6 +19,8 @@ const LAZY_TIMEOUT = 20_000;
 vi.setConfig({ testTimeout: LAZY_TIMEOUT + 10_000 });
 
 beforeEach(() => {
+  // The view lives in the URL hash; start every test on the landing page.
+  window.history.replaceState(null, '', '#/');
   localStorage.clear();
   _resetStorage();
   _resetZipPouchStorage();
@@ -269,5 +271,64 @@ describe('circle skirt buildPattern → patternToSvg', () => {
         throw new Error(`Cannot import project with generatorId '${fakeProject.generatorId}' into circle-skirt`);
       }
     }).toThrow('circle-skirt');
+  });
+});
+
+// ─── URL, history and search ────────────────────────────────────────────────
+// The open generator lives in the hash so refresh keeps your place, Back moves
+// between generators instead of leaving the site, and a link can be shared.
+
+describe('hash routing', () => {
+  it('opening a generator puts it in the URL and going home clears it', async () => {
+    render(<App />);
+    fireEvent.click(screen.getByRole('button', { name: /Open Zip Pouch/i }));
+    await waitFor(() => expect(window.location.hash).toBe('#/zip-pouch'));
+    fireEvent.click(screen.getByRole('button', { name: /Back to home/i }));
+    await waitFor(() => expect(window.location.hash).toBe('#/'));
+  });
+
+  it('a deep link opens that generator on first render', async () => {
+    window.history.replaceState(null, '', '#/circle-skirt');
+    render(<App />);
+    expect(await screen.findAllByText(/Circle Skirt Generator/i)).not.toHaveLength(0);
+  });
+
+  it('an unknown hash falls back to the landing page instead of a blank screen', () => {
+    window.history.replaceState(null, '', '#/not-a-generator');
+    render(<App />);
+    expect(screen.getByRole('button', { name: /Open Tool Roll/i })).toBeTruthy();
+  });
+
+  it('Back returns to the previous view', async () => {
+    render(<App />);
+    fireEvent.click(screen.getByRole('button', { name: /Open Zip Pouch/i }));
+    await waitFor(() => expect(window.location.hash).toBe('#/zip-pouch'));
+    window.history.replaceState(null, '', '#/');
+    window.dispatchEvent(new HashChangeEvent('hashchange'));
+    await waitFor(() => expect(screen.getByRole('button', { name: /Open Tool Roll/i })).toBeTruthy());
+  });
+});
+
+describe('landing search', () => {
+  const CASES: [string, RegExp][] = [
+    ['molle', /Open Mag Pouch/i],
+    ['backpack', /Open Tri-Zip Backpack/i],
+    ['belt', /Open Fanny Pack/i],
+    ['rifle', /Open Padded Sling/i],
+    ['notebook', /Open Tactical Organizer/i],
+    ['armor', /Open Plate Carrier/i],
+  ];
+  for (const [term, expected] of CASES) {
+    it(`finds the right generator for "${term}"`, () => {
+      render(<App />);
+      fireEvent.change(screen.getByLabelText(/Find a generator/i), { target: { value: term } });
+      expect(screen.getByRole('button', { name: expected }), `"${term}" should match`).toBeTruthy();
+    });
+  }
+
+  it('announces how many generators match', () => {
+    render(<App />);
+    fireEvent.change(screen.getByLabelText(/Find a generator/i), { target: { value: 'zipper' } });
+    expect(screen.getByRole('status').textContent).toMatch(/of 15 generators match zipper/);
   });
 });

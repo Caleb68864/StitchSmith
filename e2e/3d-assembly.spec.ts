@@ -24,7 +24,7 @@ const TARGETS: Record<string, Target> = {
   'mag pouch (folded-T)': { open: /Open Mag Pouch/i, seams: true, fitReport: true },
   'mag pouch (pleated card)': {
     // The gathered face bottom shears its last mesh row (see CLAUDE.md), which the global figure includes.
-    open: /Open Mag Pouch/i, seams: true, fitReport: true, maxStretch: 150,
+    open: /Open Mag Pouch/i, seams: true, fitReport: true, maxStretch: 40,
     seed: { key: 'stitchsmith.mag-pouch.project', project: { schemaVersion: 3, generatorId: 'mag-pouch', projectName: 'E2E', ...stamp, inputs: { magazine: { mode: 'predefined', presetId: 'ar15_30_round', units: 'in' }, construction: 'pleated_card', cell_count: 2, retention: 'velcro_dot', attachment: 'pals', drainage: 'open_corner', seamAllowance: 0.375 } } },
   },
   'zip pouch (boxed)': { open: /Open Zip Pouch/i, seams: true, fitReport: true },
@@ -53,9 +53,9 @@ const TARGETS: Record<string, Target> = {
     seed: { key: 'stitchsmith.padded-strap.project', project: { schemaVersion: 7, generatorId: 'padded-strap', projectName: 'E2E', ...stamp, inputs: { units: 'mm', mode: 'h_harness', pad_length: 400, pad_width: 63.5, cross_strap_height: 150, pad_spread: 150, drop_leg_length: 300, foam_thickness: 10 } } },
   },
   'circle skirt': { open: /Open Circle Skirt/i, seams: true, fitReport: false },
-  'micro rig': { open: /Open Micro Rig/i, seams: true, fitReport: true, maxStretch: 150 },
+  'micro rig': { open: /Open Micro Rig/i, seams: true, fitReport: true, maxStretch: 35 },
   'padded sling': { open: /Open Padded Sling/i, seams: false, fitReport: false },
-  'tactical organizer': { open: /Open Tactical Organizer/i, seams: true, fitReport: true },
+  'tactical organizer': { open: /Open Tactical Organizer/i, seams: true, fitReport: true, maxStretch: 30 },
   'fanny pack': { open: /Open Fanny Pack/i, seams: true, fitReport: true },
   'fanny pack (closed lid, grommets, drawbridge)': {
     open: /Open Fanny Pack/i, seams: true, fitReport: true,
@@ -65,7 +65,7 @@ const TARGETS: Record<string, Target> = {
   'plate carrier': { open: /Open Plate Carrier/i, seams: true, fitReport: false },
   'modular lbv': { open: /Open Modular LBV/i, seams: true, fitReport: false },
   'micro rig (.308 stacked)': {
-    open: /Open Micro Rig/i, seams: true, fitReport: true, maxStretch: 150,
+    open: /Open Micro Rig/i, seams: true, fitReport: true, maxStretch: 70,
     seed: { key: 'stitchsmith.micro-rig.project', project: { schemaVersion: 8, generatorId: 'micro-rig', projectName: 'E2E', ...stamp, inputs: { units: 'in', panel_width_preset: 'r308_14', pocket_set: 'stacked_cells', magazine_preset_id: 'pmag_308_20', cell_count: 2, cells_deep: 2 } } },
   },
 };
@@ -98,7 +98,7 @@ async function finishCloth(page: Page) {
     const m = text.match(new RegExp(`${label}\\s*([-\\d.]+)`));
     return m ? parseFloat(m[1]) : NaN;
   };
-  return { text, steps: num('Cloth:'), stretch: num('max stretch'), seam: num('seam gap'), pen: num('penetration') };
+  return { text, steps: num('Cloth:'), stretch: num('stretch'), seam: num('seam gap'), pen: num('penetration') };
 }
 
 for (const [name, target] of Object.entries(TARGETS)) {
@@ -112,9 +112,12 @@ for (const [name, target] of Object.entries(TARGETS)) {
     await expect(preview).toContainText('sewn and relaxed');
 
     const stats = await finishCloth(page);
-    expect(stats.steps, stats.text).toBe(360);
+    // Assemblies stop when the shape stops changing (180-300 steps); the skirt
+    // is the one that never settles and says so.
+    expect(stats.steps, stats.text).toBeGreaterThanOrEqual(140);
+    expect(stats.text).toMatch(/settled|still moving/);
     expect(stats.pen, stats.text).toBeLessThan(1.2);
-    expect(stats.stretch, stats.text).toBeLessThan(target.maxStretch ?? 60);
+    expect(stats.stretch, stats.text).toBeLessThan(target.maxStretch ?? 12);
     if (target.seams) expect(stats.seam, stats.text).toBeLessThan(3);
 
     // The canvas is actually drawing: its pixels change when the view changes.

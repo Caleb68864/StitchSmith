@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import type { PlateCarrierInputs } from '../generators/plate-carrier/types.js';
 import { makeProjectStorage } from '../storage/genericProjectStorage.js';
 import { isPlainObject } from '../utils/isPlainObject.js';
+import { assertGeneratorMatch } from '../export/projectEnvelopeIO.js';
 
 export const STORAGE_KEY = 'stitchsmith.plate-carrier.project';
 
@@ -42,6 +43,7 @@ export function makeDefaultPlateCarrierProject(): PlateCarrierProject {
       back_comfort: 'mesh',
       pocket_opening: 'top',
       pocket_flap_length: 3,
+      comfort_foam_thickness: 6,   // mm, like every other foam thickness
       front_field: 'loop',
       loop_field_width: 6,
       loop_field_height: 6,
@@ -49,10 +51,18 @@ export function makeDefaultPlateCarrierProject(): PlateCarrierProject {
       back_field: 'pals_sewn',
       shoulder_style: 'padded',
       strap_width: 2,
+      // Wearer measurements and pad sizes: constants the vault never measures, so
+      // they ship as plausible starting values the panel marks mock-derived,
+      // rather than as blank boxes that each fired their own warning.
+      pad_length: 8,
+      pad_foam_thickness: 6,       // mm
+      shoulder_strap_length: 16,
       strap_adjust_range: 3,
       cummerbund_style: 'elastic',
       cummerbund_width: 4,
+      torso_circumference: 40,
       cummerbund_overlap: 2,
+      torso_length: 17,
       side_plate: 'none',
       qr_buckle: 'none',
     },
@@ -90,9 +100,7 @@ export function usePlateCarrierProject(): UsePlateCarrierProjectReturn {
   }, []);
 
   const importProject = useCallback((p: PlateCarrierProject) => {
-    if (p.generatorId !== 'plate-carrier') {
-      throw new Error(`Cannot import project with generatorId '${p.generatorId}' into organizer`);
-    }
+    assertGeneratorMatch(p.generatorId, 'plate-carrier');
     setProjectState(p);
   }, []);
 

@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import type { ClamshellPackInputs } from '../generators/clamshell-pack/types.js';
 import { makeProjectStorage } from '../storage/genericProjectStorage.js';
 import { isPlainObject } from '../utils/isPlainObject.js';
+import { assertGeneratorMatch } from '../export/projectEnvelopeIO.js';
 
 export const STORAGE_KEY = 'stitchsmith.clamshell-pack.project';
 
@@ -93,9 +94,7 @@ export function useClamshellPackProject(): UseClamshellPackProjectReturn {
   }, []);
 
   const importProject = useCallback((p: ClamshellPackProject) => {
-    if (p.generatorId !== 'clamshell-pack') {
-      throw new Error(`Cannot import project with generatorId '${p.generatorId}' into organizer`);
-    }
+    assertGeneratorMatch(p.generatorId, 'clamshell-pack');
     setProjectState(p);
   }, []);
 

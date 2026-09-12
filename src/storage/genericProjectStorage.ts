@@ -64,6 +64,7 @@ export function makeProjectStorage<T>(opts: MakeProjectStorageOpts<T>): ProjectS
   let timer: ReturnType<typeof setTimeout> | null = null;
   let available: boolean | null = null;
   let probeToastFired = false;
+  let unreadableToastFired = false;
 
   function isAvailable(): boolean {
     if (writeFailed) return false;
@@ -80,16 +81,36 @@ export function makeProjectStorage<T>(opts: MakeProjectStorageOpts<T>): ProjectS
     return available;
   }
 
+  /**
+   * A saved project that cannot be read is dropped and the generator opens at
+   * its defaults. Doing that silently looks exactly like "the app lost my work",
+   * so say it once — and say what to do about it, since the user cannot inspect
+   * localStorage. An absent key is not an error and says nothing.
+   */
+  function reportUnreadable(reason: string): void {
+    if (unreadableToastFired) return;
+    unreadableToastFired = true;
+    toast.warning(
+      'Saved project could not be opened',
+      `${reason} This generator has started from its defaults. If you exported this project, use Import to bring it back.`,
+    );
+  }
+
   function load(): T | null {
     if (writeFailed) return memCache;
     if (!isAvailable()) return memCache;
+    let raw: string | null = null;
     try {
-      const raw = localStorage.getItem(opts.key);
+      raw = localStorage.getItem(opts.key);
       if (raw == null) return null;
       const parsed = JSON.parse(raw);
-      if (!opts.isValid(parsed)) return null;
+      if (!opts.isValid(parsed)) {
+        reportUnreadable('The autosaved copy in this browser is from a different version of StitchSmith, or is incomplete.');
+        return null;
+      }
       return opts.migrate ? opts.migrate(parsed) : parsed;
     } catch {
+      if (raw != null) reportUnreadable('The autosaved copy in this browser is damaged.');
       return null;
     }
   }
@@ -155,6 +176,8 @@ export function makeProjectStorage<T>(opts: MakeProjectStorageOpts<T>): ProjectS
     writeFailed = false;
     warnedOnce = false;
     available = null;
+    unreadableToastFired = false;
+    probeToastFired = false;
     if (timer != null) {
       clearTimeout(timer);
       timer = null;

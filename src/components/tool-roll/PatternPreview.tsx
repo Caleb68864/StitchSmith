@@ -15,7 +15,7 @@ export function PatternPreview({ layout, settings, onToggleTileGrid }: PatternPr
     <Button
       variant={settings.showTileGrid ? 'secondary' : 'ghost'}
       size="sm"
-      className="h-7 w-7 p-0"
+      className="h-7 w-7 p-0 text-gray-700 hover:text-gray-900 hover:bg-gray-100"
       onClick={onToggleTileGrid}
       title="Toggle tile grid"
     >
@@ -25,7 +25,7 @@ export function PatternPreview({ layout, settings, onToggleTileGrid }: PatternPr
 
   const header = (
     <span>
-      <span className="font-medium text-foreground">{layout.pockets.length}</span> pocket
+      <span className="font-medium text-gray-900">{layout.pockets.length}</span> pocket
       {layout.pockets.length === 1 ? '' : 's'} · {layout.patternWidth.toFixed(0)} × {layout.patternHeight.toFixed(0)} mm
     </span>
   );

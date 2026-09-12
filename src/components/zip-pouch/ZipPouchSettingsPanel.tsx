@@ -138,6 +138,16 @@ export function ZipPouchSettingsPanel({ inputs, errors, onChange }: Props) {
     onChange(convertInputsUnits(inputs, newUnits));
   }
 
+  // Under a preset the dimension inputs stay empty and the preset supplies the
+  // numbers at resolve time, so show what is in effect as the placeholder:
+  // three blank boxes tell the user nothing about what they are editing.
+  const presetInEffect = inputs.preset && inputs.preset !== 'custom' ? PRESET_DEFAULTS[inputs.preset] : undefined;
+  const dimPlaceholder = (field: 'finished_length' | 'finished_width' | 'finished_depth'): string | undefined => {
+    if (!presetInEffect) return undefined;
+    const valueMm = presetInEffect[field];
+    return units === 'in' ? String(Math.round((valueMm / 25.4) * 100) / 100) : String(valueMm);
+  };
+
   return (
     <div className="space-y-2">
       <Accordion type="multiple" defaultValue={['preset', 'dimensions', 'construction', 'options']} className="rounded border border-border px-3">
@@ -177,6 +187,7 @@ export function ZipPouchSettingsPanel({ inputs, errors, onChange }: Props) {
                 id="finished-length"
                 label={`Length (${units})`}
                 value={inputs.finished_length}
+                placeholder={dimPlaceholder('finished_length')}
                 error={errors['finished_length']}
                 onChange={v => onChange({ finished_length: v, preset: 'custom' })}
               />
@@ -184,6 +195,7 @@ export function ZipPouchSettingsPanel({ inputs, errors, onChange }: Props) {
                 id="finished-width"
                 label={`Width (${units})`}
                 value={inputs.finished_width}
+                placeholder={dimPlaceholder('finished_width')}
                 error={errors['finished_width']}
                 onChange={v => onChange({ finished_width: v, preset: 'custom' })}
               />
@@ -191,6 +203,7 @@ export function ZipPouchSettingsPanel({ inputs, errors, onChange }: Props) {
                 id="finished-depth"
                 label={`Depth (${units})`}
                 value={inputs.finished_depth}
+                placeholder={dimPlaceholder('finished_depth')}
                 error={errors['finished_depth']}
                 onChange={v => onChange({ finished_depth: v, preset: 'custom' })}
               />

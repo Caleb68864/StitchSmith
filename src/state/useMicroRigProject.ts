@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import type { MicroRigInputs } from '../generators/micro-rig/types.js';
 import { makeProjectStorage } from '../storage/genericProjectStorage.js';
 import { isPlainObject } from '../utils/isPlainObject.js';
+import { assertGeneratorMatch } from '../export/projectEnvelopeIO.js';
 
 export const STORAGE_KEY = 'stitchsmith.micro-rig.project';
 
@@ -32,6 +33,9 @@ export function makeDefaultMicroRigProject(): MicroRigProject {
     inputs: {
       units: 'in',
       panel_width_preset: 'standard_13',
+      // Panel width, cell span, face per cell and cell height follow the width preset
+      // and the magazine, so they stay unset and the panel shows the resolved value.
+      panel_height: 7,
       pocket_set: 'mag_cells',
       magazine_preset_id: 'ar15_30_round',
       cell_count: 2,
@@ -42,6 +46,9 @@ export function makeDefaultMicroRigProject(): MicroRigProject {
       suspension: 'webbing_straps',
       dangler_field: true,
       seam_allowance: 9.5,
+      edge_margin: 0.25,
+      gap_width: 1,
+      buckle_setback: 1,
     },
     createdAt: now,
     updatedAt: now,
@@ -69,8 +76,7 @@ export function useMicroRigProject(): UseMicroRigProjectReturn {
   }, []);
   const resetProject = useCallback(() => { storage.clear(); setProjectState(makeDefaultMicroRigProject()); }, []);
   const importProject = useCallback((p: MicroRigProject) => {
-    if (p.generatorId !== 'micro-rig') throw new Error(`Cannot import project with generatorId '${p.generatorId}' into micro-rig`);
-    setProjectState(p);
+    assertGeneratorMatch(p.generatorId, 'micro-rig');setProjectState(p);
   }, []);
   return { project, setProject, updateInputs, resetProject, importProject };
 }

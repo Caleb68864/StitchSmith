@@ -62,12 +62,14 @@ export function RetentionSection({ inputs, errors, onChange }: Props) {
               className="flex h-8 w-full rounded-md border border-input bg-background px-2 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               value={inputs.closure_overlap ?? DEFAULT_CLOSURE_OVERLAP_IN}
               onChange={e => onChange({ closure_overlap: parseFloat(e.target.value) })}
+              aria-invalid={errors['closure_overlap'] ? true : undefined}
+              aria-describedby={`${errors['closure_overlap'] ? 'closure-overlap-error ' : ''}closure-overlap-help`}
             />
-            <p className="text-xs text-muted-foreground">
+            <p id="closure-overlap-help" className="text-xs text-muted-foreground">
               How far the lid comes down the face after wrapping the mag top. Lid length = exposed mag + cell depth + this.
             </p>
             {errors['closure_overlap'] && (
-              <p className="text-xs text-destructive">{errors['closure_overlap']}</p>
+              <p id="closure-overlap-error" className="text-xs text-destructive">{errors['closure_overlap']}</p>
             )}
           </div>
 
@@ -87,9 +89,11 @@ export function RetentionSection({ inputs, errors, onChange }: Props) {
                 const v = e.target.value === '' ? undefined : parseFloat(e.target.value);
                 onChange({ flap_length: v });
               }}
+              aria-invalid={errors['flap_length'] ? true : undefined}
+              aria-describedby={errors['flap_length'] ? 'flap-length-error' : undefined}
             />
             {errors['flap_length'] && (
-              <p className="text-xs text-destructive">{errors['flap_length']}</p>
+              <p id="flap-length-error" className="text-xs text-destructive">{errors['flap_length']}</p>
             )}
           </div>
         </>
@@ -109,9 +113,11 @@ export function RetentionSection({ inputs, errors, onChange }: Props) {
               className="flex h-8 w-full rounded-md border border-input bg-background px-2 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               value={inputs.hook_length ?? DEFAULT_HOOK_LENGTH_IN}
               onChange={e => onChange({ hook_length: parseFloat(e.target.value) })}
+              aria-invalid={errors['hook_length'] ? true : undefined}
+              aria-describedby={errors['hook_length'] ? 'hook-length-error' : undefined}
             />
             {errors['hook_length'] && (
-              <p className="text-xs text-destructive">{errors['hook_length']}</p>
+              <p id="hook-length-error" className="text-xs text-destructive">{errors['hook_length']}</p>
             )}
           </div>
           <div className="space-y-1">
@@ -126,10 +132,12 @@ export function RetentionSection({ inputs, errors, onChange }: Props) {
               className="flex h-8 w-full rounded-md border border-input bg-background px-2 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               value={inputs.loop_length ?? DEFAULT_LOOP_LENGTH_IN}
               onChange={e => onChange({ loop_length: parseFloat(e.target.value) })}
+              aria-invalid={errors['loop_length'] ? true : undefined}
+              aria-describedby={`${errors['loop_length'] ? 'loop-length-error ' : ''}loop-length-help`}
             />
-            <p className="text-xs text-muted-foreground">Loop = hook + travel.</p>
+            <p id="loop-length-help" className="text-xs text-muted-foreground">Loop = hook + travel.</p>
             {errors['loop_length'] && (
-              <p className="text-xs text-destructive">{errors['loop_length']}</p>
+              <p id="loop-length-error" className="text-xs text-destructive">{errors['loop_length']}</p>
             )}
           </div>
         </div>

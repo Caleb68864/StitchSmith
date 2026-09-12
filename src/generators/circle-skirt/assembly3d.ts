@@ -5,15 +5,20 @@
  * disc, so its cone half-angle is 90° and gravity does all the draping.
  */
 import type { Piece } from '../../lib/pattern-engine/graph/Piece.js';
-import type { Point } from '../../lib/pattern-engine/graph/Point.js';
 import type { PiecePlacement } from '../../lib/fold-engine/index.js';
-import type { SeamSpec, Solid, Vec3 } from '../../lib/cloth-engine/index.js';
+import type { SeamSpec, Solid, Vec3, PinSpec } from '../../lib/cloth-engine/index.js';
 import type { ResolvedInputs } from './types.js';
+
+/**
+ * Depth of cloth the waistband grips, mm. Wide enough to catch mesh vertices at
+ * any spacing the viewer picks for a skirt (8–16 mm).
+ */
+const WAISTBAND_GRIP_MM = 18;
 
 export interface CircleSkirtAssembly {
   pieces: Piece[];
   placements: Record<string, PiecePlacement>;
-  pins: { pieceId: string; point: Point; radius: number }[];
+  pins: PinSpec[];
   seams: SeamSpec[];
   /** Hip form (a vertical capsule) the skirt hangs over. */
   solids: Solid[];
@@ -35,12 +40,11 @@ export function circleSkirtAssembly(pieces: Piece[], r: ResolvedInputs): CircleS
   const seams: SeamSpec[] = [];
   panels.forEach((p, k) => {
     placements[p.id] = { keep: true, cone: { apex: { x: 0, y: 0 }, apex3, halfAngle, angleScale, angle0: k * panelRad * angleScale } };
-    // Hold the waist edge: every vertex on the inner (cut) arc.
-    const steps = Math.max(2, Math.ceil((r.cut_inner_r * panelRad) / 6));
-    for (let i = 0; i <= steps; i++) {
-      const a = (i / steps) * panelRad;
-      pins.push({ pieceId: p.id, point: { x: r.cut_inner_r * Math.cos(a), y: r.cut_inner_r * Math.sin(a) }, radius: 4 });
-    }
+    // Hold the waist edge — what the waistband does. An annulus, not a row of
+    // discs: the waist is an arc and the cloth mesh is a square grid, so discs
+    // sized for the arc spacing fall between vertices and hold nothing (they
+    // did, and the skirt fell for the whole simulation).
+    pins.push({ pieceId: p.id, ring: { cx: 0, cy: 0, r0: r.cut_inner_r - 1, r1: r.cut_inner_r + WAISTBAND_GRIP_MM } });
     if (k > 0) {
       const prev = panels[k - 1];
       // prev's right seam (θ = panel sweep) meets this panel's left seam (θ = 0), waist to hem.

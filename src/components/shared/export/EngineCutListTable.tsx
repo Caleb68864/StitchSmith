@@ -17,7 +17,7 @@ export function EngineCutListTable({ cutList }: Props) {
       {cutList.byMaterial.length > 0 && (
         <div>
           <h3 className="font-semibold mb-2">Fabric by material</h3>
-          <table className="w-full border-collapse">
+          <div className="overflow-x-auto"><table className="w-full border-collapse">
             <thead>
               <tr className="border-b border-border">
                 <th className="text-left py-1 pr-2">Material</th>
@@ -30,17 +30,17 @@ export function EngineCutListTable({ cutList }: Props) {
                 <tr key={entry.materialId} className="border-b border-border/50">
                   <td className="py-1 pr-2 font-medium">{entry.materialId}</td>
                   <td className="py-1 pr-2 text-right tabular-nums">{(entry.totalAreaMm2 / 100).toFixed(1)}</td>
-                  <td className="py-1 text-muted-foreground">{entry.pieces.join(', ')}</td>
+                  <td className="py-1 text-muted-foreground break-words">{entry.pieces.join(', ')}</td>
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         </div>
       )}
       {cutList.strips.length > 0 && (
         <div>
           <h3 className="font-semibold mb-2">Strip stock (webbing, Velcro, binding)</h3>
-          <table className="w-full border-collapse">
+          <div className="overflow-x-auto"><table className="w-full border-collapse">
             <thead>
               <tr className="border-b border-border">
                 <th className="text-left py-1 pr-2">Material</th>
@@ -63,13 +63,13 @@ export function EngineCutListTable({ cutList }: Props) {
                 )),
               )}
             </tbody>
-          </table>
+          </table></div>
         </div>
       )}
       {cutList.byHardware.length > 0 && (
         <div>
           <h3 className="font-semibold mb-2">Hardware</h3>
-          <table className="w-full border-collapse">
+          <div className="overflow-x-auto"><table className="w-full border-collapse">
             <thead>
               <tr className="border-b border-border">
                 <th className="text-left py-1 pr-2">Item</th>
@@ -84,7 +84,7 @@ export function EngineCutListTable({ cutList }: Props) {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         </div>
       )}
     </div>

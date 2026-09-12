@@ -20,6 +20,10 @@ export function PatternPreview({ inputs, hasErrors }: Props) {
       return { pattern: null, error: (e as Error).message };
     }
   }, [inputs, hasErrors]);
-  const sa = inputs.seam_allowance ?? 10;
-  return <SharedPatternPreview pattern={built.pattern} buildError={built.error} hasErrors={hasErrors} defaultSeamAllowance={sa} saLabel={`${sa} ${inputs.units ?? 'mm'}`} />;
+  // seam_allowance is in the display unit (resolveInputs converts it); the
+  // exporter wants millimetres, so an inch project must not hand it 0.375.
+  const units = inputs.units ?? 'mm';
+  const sa = inputs.seam_allowance ?? (units === 'in' ? 0.375 : 10);
+  const saMm = units === 'in' ? sa * 25.4 : sa;
+  return <SharedPatternPreview pattern={built.pattern} buildError={built.error} hasErrors={hasErrors} defaultSeamAllowance={saMm} saLabel={`${sa} ${units}`} />;
 }

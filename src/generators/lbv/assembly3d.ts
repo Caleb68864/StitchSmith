@@ -123,11 +123,16 @@ export function lbvAssembly(pieces: Piece[], r: ResolvedInputs, torso: TorsoSpec
   // Arc length from the landing to the crest: the first two segments plus the near-side quarter of the arc (k = 0..6).
   const xPadL = form.shoulderTop.left[0], xPadR = form.shoulderTop.right[0];
   const reach = pathLength(overShoulder(torso, xPadL, startY, true, 6, xFrontL).slice(0, 9));
+  // The front and back webbing of one shoulder meet at its tension lock; they do not
+  // lie on top of each other. Offsetting them by a strap width across the body keeps
+  // them side by side over the crest instead of fighting for the same line (which
+  // read as a tangle round the neck, three layers deep with the pad).
+  const lane = vw / 2 + 2;
   const verticals: Array<[string, number, number, boolean, string, number]> = [
-    [VERTICAL_IDS.frontLeft, xFrontL, xPadL, true, FRONT_OUTER_ID, r.vertical_mark],
-    [VERTICAL_IDS.frontRight, xFrontR, xPadR, true, FRONT_RIGHT_ID, W - r.vertical_mark],
-    [VERTICAL_IDS.backLeft, xBackL, xPadL, false, BACK_OUTER_ID, Wb / 2 - backSpread / 2],
-    [VERTICAL_IDS.backRight, xBackR, xPadR, false, BACK_OUTER_ID, Wb / 2 + backSpread / 2],
+    [VERTICAL_IDS.frontLeft, xFrontL, xPadL - lane, true, FRONT_OUTER_ID, r.vertical_mark],
+    [VERTICAL_IDS.frontRight, xFrontR, xPadR + lane, true, FRONT_RIGHT_ID, W - r.vertical_mark],
+    [VERTICAL_IDS.backLeft, xBackL, xPadL + lane, false, BACK_OUTER_ID, Wb / 2 - backSpread / 2],
+    [VERTICAL_IDS.backRight, xBackR, xPadR - lane, false, BACK_OUTER_ID, Wb / 2 + backSpread / 2],
   ];
   for (const [id, xStart, x, fromFront, hostId, hostX] of verticals) {
     const path = overShoulder(torso, x, startY, fromFront, 6, xStart);

@@ -16,7 +16,8 @@ export function ExportPanel({ inputs, project, hasErrors }: Props) {
     generatorId: 'zip-pouch',
     projectName: project.projectName,
     hasErrors,
-    defaultSeamAllowance: inputs.seam_allowance ?? 10,
+    // Inputs carry the display unit; the exporters draw in millimetres.
+    defaultSeamAllowance: (inputs.seam_allowance ?? ((inputs.units ?? 'mm') === 'in' ? 0.375 : 10)) * ((inputs.units ?? 'mm') === 'in' ? 25.4 : 1),
     buildPattern: () => { const r = build(); return r ? { id: 'zip-pouch', name: project.projectName, pieces: r.pieces } : null; },
     steps: () => build()?.steps ?? null,
     bom: () => build()?.bom ?? null,

@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import type { CircleSkirtInputs } from '../generators/circle-skirt/types.js';
 import { makeProjectStorage } from '../storage/genericProjectStorage.js';
 import { isPlainObject } from '../utils/isPlainObject.js';
+import { assertGeneratorMatch } from '../export/projectEnvelopeIO.js';
 
 export const STORAGE_KEY = 'stitchsmith.circle-skirt.project';
 
@@ -79,9 +80,7 @@ export function useCircleSkirtProject(): UseCircleSkirtProjectReturn {
   }, []);
 
   const importProject = useCallback((p: CircleSkirtProject) => {
-    if (p.generatorId !== 'circle-skirt') {
-      throw new Error(`Cannot import project with generatorId '${p.generatorId}' into circle-skirt`);
-    }
+    assertGeneratorMatch(p.generatorId, 'circle-skirt');
     setProjectState(p);
   }, []);
 

@@ -72,7 +72,12 @@ describe('buildPattern', () => {
     expect(renderHtml(b.value.steps).ok).toBe(true);
     expect(patternToSvg({ id: 'x', name: 'x', pieces: b.value.pieces }, { defaultSeamAllowance: 0, showLabels: true })).toContain('<svg');
     expect(b.value.warnings.some((w) => w.id === 'reference-grade')).toBe(true);
-    expect(b.value.warnings.filter((w) => w.id.startsWith('mock-derived-'))).toHaveLength(4);
+    // One consolidated note naming every unmeasured field (was one warning each,
+    // which filled the panel with identical yellow rows on an untouched project).
+    const mock = b.value.warnings.filter((w) => w.id.startsWith('mock-derived'));
+    expect(mock).toHaveLength(1);
+    expect(mock[0].severity).toBe('info');
+    for (const f of ['pad length', 'shoulder strap length', 'torso circumference', 'torso length']) expect(mock[0].message).toContain(f);
     expect(b.value.hardware.some((h) => h.id === 'binding')).toBe(true);
   });
   it('turned edges carry the allowance; webbing straps, skeletal cummerbund with 6 × 8 side plates, laser front on 500D warns', () => {

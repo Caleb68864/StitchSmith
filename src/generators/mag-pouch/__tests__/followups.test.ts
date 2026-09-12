@@ -36,8 +36,10 @@ describe('one-piece lid pull channel', () => {
   });
   it('warns when the channel is under 1.5" or the hook purchase under 3", and validates the range', () => {
     expect(buildPattern(inputs({ pull_channel_depth: 1 })).warnings.some((w) => /Pull channel 1/.test(w))).toBe(true);
-    expect(buildPattern(inputs()).warnings.some((w) => /Lid purchase/.test(w))).toBe(true);
-    expect(buildPattern(inputs({ closure_overlap: 3 })).warnings.some((w) => /Lid purchase/.test(w))).toBe(false);
+    // The purchase rule is about the hook strip, not how far the lid reaches.
+    expect(buildPattern(inputs()).warnings.some((w) => /Hook strip/.test(w))).toBe(false);
+    expect(buildPattern(inputs({ hook_length: 2 })).warnings.some((w) => /Hook strip 2/.test(w))).toBe(true);
+    expect(buildPattern(inputs({ loop_length: 3 })).warnings.some((w) => /no adjustment/.test(w))).toBe(true);
     expect(validateInputs(inputs({ pull_channel_depth: 6 })).ok).toBe(false);
     expect(buildPattern(inputs({ pull_channel_depth: 0 })).pattern.pieces.find((p) => p.id === 'back')!.paths.some((p) => p.id === 'pull-channel-fold')).toBe(false);
   });

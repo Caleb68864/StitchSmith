@@ -51,7 +51,7 @@ function mapPaths(paths: Path[], f: (p: Point) => Point): Path[] {
   return paths.map((p) => ({ ...p, edges: p.edges.map((e) => (e.kind === 'straight' ? { ...e, start: f(e.start), end: f(e.end) } : e)) }));
 }
 
-interface PalsUse { rows: number; cols: number; webbingLength: number; quantity: number; warnings: string[] }
+interface PalsUse { rows: number; cols: number; webbingLength: number; quantity: number; warnings: string[]; where: string }
 
 function facePanel(r: ResolvedInputs, id: string, name: string, isFace: boolean, pals: PalsUse[]): Piece {
   const eid = makeEdgeIdGen(id);
@@ -59,9 +59,10 @@ function facePanel(r: ResolvedInputs, id: string, name: string, isFace: boolean,
   const outline = rect(eid, `${id}-outline`, W, H);
   const paths: Path[] = [outline];
   if (isFace && r.pals_rows_face > 0) {
+    const palsWhere = 'face';
     const f = buildPalsField({ origin: { x: r.edge_offset, y: r.edge_offset }, width: W - 2 * r.edge_offset, height: H - 2 * r.edge_offset, rows: r.pals_rows_face, cols: r.face_pals_cols, style: r.pals_style, edgeMargin: 0, idPrefix: `${id}-pals`, eid });
     paths.push(...f.paths);
-    pals.push({ rows: f.rows, cols: f.cols, webbingLength: f.webbing.lengthMm, quantity: f.webbing.quantity, warnings: f.warnings });
+    pals.push({ rows: f.rows, cols: f.cols, webbingLength: f.webbing.lengthMm, quantity: f.webbing.quantity, warnings: f.warnings, where: palsWhere });
   }
   if (!isFace && r.strap_provision !== 'none') {
     // Removable strap hardware: 2" webbing tabs 4" apart at the top (centre ± 2"), lower anchors 1" up, kicked.
@@ -114,9 +115,10 @@ function hoopStrip(r: ResolvedInputs, id: string, name: string, depthPart: numbe
       { x0: u + H + W + r.edge_offset, label: 'right' },
     ];
     for (const run of runs) {
+      const palsWhere = `side ${run.label}`;
       const f = buildPalsField({ origin: { x: 0, y: 0 }, width: r.side_pals_budget, height: r.side_work_area, rows: r.pals_rows_side, cols: r.pals_cols_side, style: r.pals_style, edgeMargin: 0, centred: false, idPrefix: `${id}-pals-${run.label}`, eid });
       paths.push(...mapPaths(f.paths, (p) => ({ x: run.x0 + p.y, y: f0 + p.x })));
-      pals.push({ rows: f.rows, cols: f.cols, webbingLength: f.webbing.lengthMm, quantity: f.webbing.quantity, warnings: f.warnings });
+      pals.push({ rows: f.rows, cols: f.cols, webbingLength: f.webbing.lengthMm, quantity: f.webbing.quantity, warnings: f.warnings, where: palsWhere });
     }
   }
   if (withPals && r.handle) {
@@ -154,9 +156,10 @@ function bottomStrip(r: ResolvedInputs, pals: PalsUse[]): Piece {
     line(eid, `${id}-hem-b`, 'fold', { x: 0, y: Wd - fi }, { x: L, y: Wd - fi }, 'Depth fold-in (180°)'),
   ];
   if (r.pals_rows_bottom > 0) {
+    const palsWhere = 'bottom';
     const f = buildPalsField({ origin: { x: 2 * fi, y: fi }, width: L - 4 * fi, height: Wd - 2 * fi, rows: r.pals_rows_bottom, style: r.pals_style, idPrefix: `${id}-pals`, eid });
     paths.push(...f.paths);
-    pals.push({ rows: f.rows, cols: f.cols, webbingLength: f.webbing.lengthMm, quantity: f.webbing.quantity, warnings: f.warnings });
+    pals.push({ rows: f.rows, cols: f.cols, webbingLength: f.webbing.lengthMm, quantity: f.webbing.quantity, warnings: f.warnings, where: palsWhere });
   }
   const annotations: PieceAnnotation[] = [
     { kind: 'grain', label: 'grain', point: { x: L / 2, y: Wd / 2 }, angle: 0 },
@@ -213,16 +216,26 @@ export function buildPattern(inputs: ClamshellPackInputs): Result<ClamshellPackB
     bottomStrip(r, pals),
   ];
   if (r.handle) {
-    pieces.push(strip('clamshell-handle', 'Top handle webbing', r.handle_cut_length, D.HANDLE_WEBBING_WIDTH_MM, 1, 'webbing-50', `2" webbing ${fmtIn(r.handle_cut_length)}": ${fmtIn(r.handle_fold_under)}" under each end, ${fmtIn(r.handle_bow)}" of bow`));
+    pieces.push(strip('clamshell-handle', 'Top handle webbing', r.handle_cut_length, D.HANDLE_WEBBING_WIDTH_MM, 1, 'webbing-51', `2" webbing ${fmtIn(r.handle_cut_length)}": ${fmtIn(r.handle_fold_under)}" under each end, ${fmtIn(r.handle_bow)}" of bow`));
     pieces.push(strip('clamshell-handle-core', 'Handle core', r.handle_core_length, D.HANDLE_CORE_WIDTH_MM, 1, 'webbing-25', '1" webbing inside the handle for rigidity'));
   }
   if (r.compression_straps_per_side > 0) pieces.push(strip('clamshell-compression-strap', 'Compression strap', r.compression_strap_length, 1 * IN, 2 * r.compression_straps_per_side, 'webbing-25', `1" webbing ${fmtIn(r.compression_strap_length)}" — depth + ${fmtIn(r.compression_extra)}"`));
-  if (r.strap_tab_count > 0) pieces.push(strip('clamshell-strap-tab', 'Shoulder strap tab', D.STRAP_TAB_LENGTH_MM, D.STRAP_TAB_WEBBING_MM, r.strap_tab_count, 'webbing-50', '2" webbing, 3" — buckle points for removable straps'));
+  if (r.strap_tab_count > 0) pieces.push(strip('clamshell-strap-tab', 'Shoulder strap tab', D.STRAP_TAB_LENGTH_MM, D.STRAP_TAB_WEBBING_MM, r.strap_tab_count, 'webbing-51', '2" webbing, 3" — the vault cuts six; four take the side-release buckles the two removable straps clip into, the remaining pair anchors the stow pocket'));
   if (r.strap_provision === 'tabs_and_stow') pieces.push(strip('clamshell-stow-pocket', 'Strap stow pocket', r.width, r.height * 0.45, 1, 'cordura-500', 'Back pocket that swallows two rolled straps; doubles as a dressing sleeve'));
   if (r.interior_loop && r.loop_strips_per_wall > 0) pieces.push(strip('clamshell-loop-strip', 'Interior loop strip', r.loop_strip_cut_length, r.loop_strip_width, 2 * r.loop_strips_per_wall, 'velcro-loop', `Loop ${fmtIn(r.loop_strip_width)}" — cut 2" long, trim after sewing`));
-  const rowLen = Math.max(0, ...pals.map((p) => p.webbingLength));
-  const rowQty = pals.reduce((a, p) => a + p.quantity, 0);
-  if (rowQty > 0) pieces.push(strip('clamshell-pals-row', r.pals_style === 'fabricated' ? 'Fabricated PALS row (2" Cordura → 1")' : 'PALS webbing row', rowLen, PALS_ROW_WIDTH_MM, rowQty, r.pals_style === 'fabricated' ? 'cordura-500' : 'webbing-25', `${rowQty} rows, longest ${fmtIn(rowLen)}" — cut 1" long, trim after sewing`));
+  // Rows differ in length by surface (a side run is much shorter than the face):
+  // one cut-list entry per length, or the list tells the cutter to cut every row long.
+  const byLength = new Map<number, { qty: number; where: Set<string> }>();
+  for (const p of pals) {
+    if (p.quantity <= 0) continue;
+    const key = Math.round(p.webbingLength * 10) / 10;
+    const e = byLength.get(key) ?? { qty: 0, where: new Set<string>() };
+    e.qty += p.quantity; e.where.add(p.where);
+    byLength.set(key, e);
+  }
+  [...byLength.entries()].sort((x, y) => y[0] - x[0]).forEach(([len, e], i) => {
+    pieces.push(strip(`clamshell-pals-row-${i}`, r.pals_style === 'fabricated' ? 'Fabricated PALS row (2" Cordura → 1")' : 'PALS webbing row', len, PALS_ROW_WIDTH_MM, e.qty, r.pals_style === 'fabricated' ? 'cordura-500' : 'webbing-25', `${e.qty} rows of ${fmtIn(len)}" (${[...e.where].join(', ')}) — cut 1" long, trim after sewing`));
+  });
   const hardware: HardwareItem[] = [
     { id: 'zipper', name: 'Coil zipper, two sliders, non-locking', quantity: 1, notes: `${fmtIn(r.hoop_length)}" of chain round the hoop` },
   ];

@@ -128,7 +128,7 @@ function pocketFlap(r: ResolvedInputs): Piece {
     id, name: 'Plate pocket flap', mirror: false, quantity: 2, materialId: 'cordura-500',
     paths: [outline,
       { id: `${id}-anchor`, closed: false, label: 'Sewn into the shell binding along this 1" (the flap clears the strap box-X)', edges: [seg(eid, 'stitch', { x: 0, y: 1 * IN }, { x: W, y: 1 * IN })] },
-      polygon(eid, `${id}-hook`, rectPts(0.5 * IN, 1.5 * IN, W - 1 * IN, r.pocket_flap_length - 1 * IN), 'stitch'),
+      polygon(eid, `${id}-hook`, rectPts(0.5 * IN, 1.5 * IN, W - 0.5 * IN, r.pocket_flap_length - 1 * IN), 'stitch'),
     ],
     seamAllowances: saRecord(outline, 0),
     annotations: [{ kind: 'label', label: `Pocket flap ${dim(W)} × ${dim(L)}: hook on the inside face, loop on the pocket wall`, point: { x: W / 2, y: L / 2 } }],
@@ -145,7 +145,7 @@ function comfortPieces(r: ResolvedInputs): Piece[] {
   const out: Piece[] = [];
   const eid = makeEdgeIdGen(BACK_COMFORT_ID);
   const outline = polygon(eid, `${BACK_COMFORT_ID}-outline`, shrink(r.panel_outline));
-  out.push({ id: BACK_COMFORT_ID, name: 'Back comfort layer (spacer mesh)', mirror: false, quantity: 1, materialId: 'mesh-spacer', paths: [outline], seamAllowances: saRecord(outline, 0), annotations: [{ kind: 'label', label: 'Spacer mesh, inset 1/4" so the binding closes round shell + mesh', point: { x: r.panel_width / 2, y: r.panel_height / 2 } }] });
+  out.push({ id: BACK_COMFORT_ID, name: 'Back comfort layer (spacer mesh)', mirror: false, quantity: 1, materialId: 'spacer-mesh', paths: [outline], seamAllowances: saRecord(outline, 0), annotations: [{ kind: 'label', label: 'Spacer mesh, inset 1/4" so the binding closes round shell + mesh', point: { x: r.panel_width / 2, y: r.panel_height / 2 } }] });
   if (r.back_comfort === 'foam_mesh') {
     const eid2 = makeEdgeIdGen(BACK_FOAM_ID);
     const o2 = polygon(eid2, `${BACK_FOAM_ID}-outline`, shrink(shrink(r.panel_outline)));
@@ -206,7 +206,7 @@ function shoulderPieces(r: ResolvedInputs, hardware: HardwareItem[], steps: Step
     const L = r.shoulder_strap_length + r.strap_adjust_range + 2 * IN;
     const outline = polygon(eid, `${SHOULDER_WEBBING_ID}-outline`, rectPts(0, 0, r.strap_width, L));
     hardware.push({ id: 'velcro-strap', name: `${fmtIn(r.strap_width)}" hook + loop, ${fmtIn(r.strap_adjust_range + 2 * IN)}" each per strap`, quantity: 2, notes: 'Velcro overlap adjustment; bartack both ends of the loop run.' });
-    return [{ id: SHOULDER_WEBBING_ID, name: 'Shoulder strap (slick webbing)', mirror: false, quantity: 2, materialId: r.strap_width >= 1.9 * IN ? 'webbing-50' : 'webbing-38', paths: [outline, mark(eid, `${SHOULDER_WEBBING_ID}-x0`, { x: r.strap_width / 2, y: 1 * IN }, 'X', 'Box-X onto the back panel'), mark(eid, `${SHOULDER_WEBBING_ID}-x1`, { x: r.strap_width / 2, y: L - 1 * IN }, 'X', 'Box-X onto the front panel (or the Velcro overlap end)')], seamAllowances: saRecord(outline, 0), annotations: [{ kind: 'label', label: `Slick strap ${dim(r.strap_width)} × ${dim(L)}: ${fmtIn(r.shoulder_strap_length)}" span + ${fmtIn(r.strap_adjust_range)}" adjustment + 2" box-X ends`, point: { x: r.strap_width / 2, y: L / 2 } }] }];
+    return [{ id: SHOULDER_WEBBING_ID, name: 'Shoulder strap (slick webbing)', mirror: false, quantity: 2, materialId: r.strap_width >= 1.9 * IN ? 'webbing-51' : 'webbing-38', paths: [outline, mark(eid, `${SHOULDER_WEBBING_ID}-x0`, { x: r.strap_width / 2, y: 1 * IN }, 'X', 'Box-X onto the back panel'), mark(eid, `${SHOULDER_WEBBING_ID}-x1`, { x: r.strap_width / 2, y: L - 1 * IN }, 'X', 'Box-X onto the front panel (or the Velcro overlap end)')], seamAllowances: saRecord(outline, 0), annotations: [{ kind: 'label', label: `Slick strap ${dim(r.strap_width)} × ${dim(L)}: ${fmtIn(r.shoulder_strap_length)}" span + ${fmtIn(r.strap_adjust_range)}" adjustment + 2" box-X ends`, point: { x: r.strap_width / 2, y: L / 2 } }] }];
   }
   const free = Math.max(0, r.shoulder_strap_length - r.pad_length);
   const strap = buildPaddedStrap({
@@ -260,7 +260,10 @@ function buildSteps(r: ResolvedInputs, pals: { front?: PalsFieldResult; back?: P
 function buildWarnings(r: ResolvedInputs, pals: { front?: PalsFieldResult; back?: PalsFieldResult }): GeneratorWarning[] {
   const w: GeneratorWarning[] = [];
   w.push({ id: 'reference-grade', severity: 'info', message: 'The vault\'s plate-carrier notes are reference material, not a reconciled build: plate sizes and PALS spacing are firm, everything else here is a starting point to mock in scrap.' });
-  for (const f of r.mock_derived) w.push({ id: `mock-derived-${f}`, severity: 'warning', field: f, message: `[mock-derived] ${f.replace(/_/g, ' ')} is a default the vault does not measure — enter the wearer's number.` });
+  // One note, not one per field: the settings panel marks each of these fields
+  // itself, and a stack of identical yellow warnings on an untouched project
+  // teaches the user to ignore the list.
+  if (r.mock_derived.length > 0) w.push({ id: 'mock-derived', severity: 'info', field: r.mock_derived[0], message: `[mock-derived] ${r.mock_derived.map((f) => f.replace(/_/g, ' ')).join(', ')} ${r.mock_derived.length === 1 ? 'is a default' : 'are defaults'} the vault does not measure. Enter the wearer's numbers before cutting.` });
   if ((r.front_field === 'loop' || r.front_field === 'split') && r.loop_field_height < PLACARD_MIN_ENGAGEMENT_MM) w.push({ id: 'loop-engagement', severity: 'warning', field: 'loop_field_height', message: `A ${fmtIn(r.loop_field_height)}" loop field gives less than the ~2" of hook/loop engagement a placard needs.` });
   if ((r.front_field === 'pals_laser' || r.back_field === 'pals_laser') && r.shell_material !== 'laminate') w.push({ id: 'laser-needs-laminate', severity: 'warning', field: 'shell_material', message: 'Laser-cut PALS wants a stiff laminate (Squadron / B52 / Hypalon); 500D or 1000D alone is too floppy to hold slots.' });
   if (r.plate_height > r.torso_length - 1.5 * IN) w.push({ id: 'plate-too-tall', severity: 'warning', field: 'plate_preset', message: `A ${fmtIn(r.plate_height)}" plate on a ${fmtIn(r.torso_length)}" torso leaves under 1.5" for the two finger widths below the sternal notch and clearance above the navel: it will hit the lap seated.` });

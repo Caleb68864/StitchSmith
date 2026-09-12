@@ -1,6 +1,6 @@
 import type { PlateCarrierInputs, BomRow } from './types.js';
 import { buildPattern } from './buildPattern.js';
-import { bboxFromPiece } from '../../lib/pattern-engine/geometry/bbox.js';
+import { bboxFromPieceWithSa } from '../../lib/pattern-engine/geometry/saBbox.js';
 
 export function buildBom(inputs: PlateCarrierInputs): BomRow[] {
   const built = buildPattern(inputs);
@@ -8,7 +8,9 @@ export function buildBom(inputs: PlateCarrierInputs): BomRow[] {
   const rows: BomRow[] = [];
   const totals = new Map<string, number>();
   for (const p of built.value.pieces) {
-    const bb = bboxFromPiece(p);
+    // SA-inclusive: on a Convention A piece the drawn outline is the finished size,
+    // so the cut list must add the allowance the exporters already draw.
+    const bb = bboxFromPieceWithSa(p, 0);
     const m = p.materialId ?? 'cordura-500';
     if (/^(velcro|webbing|elastic)/.test(m)) { totals.set(m, (totals.get(m) ?? 0) + Math.max(bb.width, bb.height) * p.quantity); continue; }
     rows.push({ id: `piece-${p.id}`, description: p.name, quantity: p.quantity, unit: `pc — ${Math.round(bb.width)} × ${Math.round(bb.height)} mm`, notes: m.replace(/-/g, ' ') });

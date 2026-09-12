@@ -341,3 +341,51 @@ describe('genericProjectStorage — pagehide flushes the pending write', () => {
     expect(localStorage.getItem('stitchsmith.test.project')).toBe('sentinel');
   });
 });
+
+describe('an unreadable autosave is reported, not silently discarded', () => {
+  const KEY = 'stitchsmith.review.project';
+  const isValid = (v: unknown): v is { generatorId: string } =>
+    typeof v === 'object' && v !== null && (v as { generatorId?: string }).generatorId === 'review';
+  let store: Record<string, string>;
+
+  beforeEach(() => {
+    store = {};
+    Object.defineProperty(globalThis, 'localStorage', {
+      value: {
+        getItem: (k: string) => store[k] ?? null,
+        setItem: (k: string, v: string) => { store[k] = v; },
+        removeItem: (k: string) => { delete store[k]; },
+      },
+      writable: true,
+      configurable: true,
+    });
+  });
+
+  function load(raw?: string) {
+    if (raw !== undefined) store[KEY] = raw;
+    const s = makeProjectStorage({ key: KEY, isValid });
+    s._reset();
+    const { received, unsub } = captureToasts();
+    const value = s.load();
+    const again = s.load();
+    unsub();
+    return { value, again, received };
+  }
+
+  it('says so when the stored JSON is damaged', () => {
+    const { value, received } = load('{ not json');
+    expect(value).toBeNull();
+    expect(received).toEqual(['Saved project could not be opened']);
+  });
+
+  it('says so when the stored project is from another version, and only once', () => {
+    const { value, again, received } = load(JSON.stringify({ generatorId: 'something-else' }));
+    expect(value).toBeNull();
+    expect(again).toBeNull();
+    expect(received).toHaveLength(1);
+  });
+
+  it('stays quiet when there is simply nothing saved', () => {
+    expect(load().received).toEqual([]);
+  });
+});

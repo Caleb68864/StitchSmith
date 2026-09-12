@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import type { ZipPouchInputs } from '../generators/zip-pouch/types.js';
 import { makeProjectStorage } from '../storage/genericProjectStorage.js';
 import { isPlainObject } from '../utils/isPlainObject.js';
+import { assertGeneratorMatch } from '../export/projectEnvelopeIO.js';
 
 export const STORAGE_KEY = 'stitchsmith.zip-pouch.project';
 
@@ -75,9 +76,7 @@ export function useZipPouchProject(): UseZipPouchProjectReturn {
   }, []);
 
   const importProject = useCallback((p: ZipPouchProject) => {
-    if (p.generatorId !== 'zip-pouch') {
-      throw new Error(`Cannot import project with generatorId '${p.generatorId}' into Zip Pouch`);
-    }
+    assertGeneratorMatch(p.generatorId, 'zip-pouch');
     setProjectState(p);
   }, []);
 

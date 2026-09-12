@@ -29,11 +29,11 @@ export function DerivedNumbers({ rows, title = 'Derived numbers', testId = 'deri
   return (
     <div className="rounded border border-border p-3 space-y-1 text-xs" data-testid={testId}>
       <h2 className="font-semibold">{title}</h2>
-      <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
+      <div className="grid grid-cols-[minmax(0,auto)_minmax(0,1fr)] gap-x-3 gap-y-1">
         {shown.map((r) => (
           <div key={r.label} className="contents">
             <span className="text-muted-foreground">{r.label}</span>
-            <span>{r.value}</span>
+            <span className="break-words">{r.value}</span>
           </div>
         ))}
       </div>

@@ -108,7 +108,7 @@ export function verifySharedSeams(pieces: Piece[]): Result<true, BuildPatternErr
   return { ok: true, value: true };
 }
 
-export function buildPattern(inputs: TriZipInputs, preset: StylePreset): Result<Pattern & { steps: Step[]; hardware: Hardware[] }, BuildPatternError> {
+export function buildPattern(inputs: TriZipInputs, preset: StylePreset): Result<Pattern & { steps: Step[]; warnings: string[]; hardware: Hardware[] }, BuildPatternError> {
   const validation = validateInputs(inputs);
   if (!validation.ok) return validation;
 
@@ -118,9 +118,13 @@ export function buildPattern(inputs: TriZipInputs, preset: StylePreset): Result<
   const allSteps: Step[] = [];
   const seamRefs: SeamRef[] = [];
 
-  function collect(result: { pieces: Piece[]; steps: Step[] }) {
+  // Modules may report warnings (the strap engine does); dropping them on the
+  // floor is how the Tri-Zip ended up as the only page with nothing to show.
+  const allWarnings: string[] = [];
+  function collect(result: { pieces: Piece[]; steps: Step[]; warnings?: string[] }) {
     allPieces.push(...result.pieces);
     allSteps.push(...result.steps);
+    if (result.warnings) allWarnings.push(...result.warnings);
   }
 
   // Back panel
@@ -167,5 +171,5 @@ export function buildPattern(inputs: TriZipInputs, preset: StylePreset): Result<
     units: r.units,
   };
 
-  return { ok: true, value: { ...pattern, steps: allSteps, hardware: buildTriZipBom(r, straps.hardware) } };
+  return { ok: true, value: { ...pattern, steps: allSteps, warnings: allWarnings, hardware: buildTriZipBom(r, straps.hardware) } };
 }

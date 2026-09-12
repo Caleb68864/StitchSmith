@@ -45,44 +45,57 @@ export interface RoundedBoxSolid {
 export type Solid = BoxSolid | CapsuleSolid | RoundedBoxSolid;
 
 /**
+ * Signed distance and outward normal from a point to a solid's surface, written
+ * into `out` as [dist, nx, ny, nz]. The hot path (`collide`, 100M+ calls on a
+ * torso assembly) cannot afford the array-and-object allocation the public
+ * `solidDistance` shape implies, so the maths lives here and that function
+ * wraps it.
+ */
+function solidDistanceInto(s: CapsuleSolid | RoundedBoxSolid, px: number, py: number, pz: number, out: Float64Array): void {
+  if (s.kind === 'capsule') {
+    const abx = s.b[0] - s.a[0], aby = s.b[1] - s.a[1], abz = s.b[2] - s.a[2];
+    const apx = px - s.a[0], apy = py - s.a[1], apz = pz - s.a[2];
+    const l2 = abx * abx + aby * aby + abz * abz;
+    let t = l2 > 0 ? (apx * abx + apy * aby + apz * abz) / l2 : 0;
+    t = t < 0 ? 0 : t > 1 ? 1 : t;
+    const qx = px - (s.a[0] + abx * t), qy = py - (s.a[1] + aby * t), qz = pz - (s.a[2] + abz * t);
+    const d = Math.sqrt(qx * qx + qy * qy + qz * qz);
+    out[0] = d - s.radius;
+    if (d > 1e-9) { out[1] = qx / d; out[2] = qy / d; out[3] = qz / d; }
+    else { out[1] = 0; out[2] = 0; out[3] = 1; }
+    return;
+  }
+  // Rounded box: distance to the inner box shrunk by r, minus r.
+  const qx = Math.abs(px - s.center[0]) - (s.half[0] - s.radius);
+  const qy = Math.abs(py - s.center[1]) - (s.half[1] - s.radius);
+  const qz = Math.abs(pz - s.center[2]) - (s.half[2] - s.radius);
+  const ox = qx > 0 ? qx : 0, oy = qy > 0 ? qy : 0, oz = qz > 0 ? qz : 0;
+  const outside = Math.sqrt(ox * ox + oy * oy + oz * oz);
+  const qmax = qx >= qy ? (qx >= qz ? qx : qz) : (qy >= qz ? qy : qz);
+  out[0] = outside + (qmax < 0 ? qmax : 0) - s.radius;
+  let nx: number, ny: number, nz: number;
+  if (outside > 1e-9) { nx = ox / outside; ny = oy / outside; nz = oz / outside; }
+  else {
+    // Inside the inner box: push out through the nearest face.
+    nx = 0; ny = 0; nz = 0;
+    if (qx >= qy && qx >= qz) nx = 1; else if (qy >= qz) ny = 1; else nz = 1;
+  }
+  const sx = Math.sign(px - s.center[0]) || 1;
+  const sy = Math.sign(py - s.center[1]) || 1;
+  const sz = Math.sign(pz - s.center[2]) || 1;
+  out[1] = nx * sx; out[2] = ny * sy; out[3] = nz * sz;
+}
+
+const SD_SCRATCH = new Float64Array(4);
+
+/**
  * Signed distance and outward normal from a point to a solid's surface.
  * Boxes are handled by the continuous face push-out in `collide`; this covers
  * the smooth shapes a body is made of.
  */
 export function solidDistance(s: CapsuleSolid | RoundedBoxSolid, p: Vec3): { dist: number; normal: Vec3 } {
-  if (s.kind === 'capsule') {
-    const ab: Vec3 = [s.b[0] - s.a[0], s.b[1] - s.a[1], s.b[2] - s.a[2]];
-    const ap: Vec3 = [p[0] - s.a[0], p[1] - s.a[1], p[2] - s.a[2]];
-    const l2 = ab[0] * ab[0] + ab[1] * ab[1] + ab[2] * ab[2];
-    const t = l2 > 0 ? Math.max(0, Math.min(1, (ap[0] * ab[0] + ap[1] * ab[1] + ap[2] * ab[2]) / l2)) : 0;
-    const q: Vec3 = [p[0] - (s.a[0] + ab[0] * t), p[1] - (s.a[1] + ab[1] * t), p[2] - (s.a[2] + ab[2] * t)];
-    const d = Math.hypot(q[0], q[1], q[2]);
-    const normal: Vec3 = d > 1e-9 ? [q[0] / d, q[1] / d, q[2] / d] : [0, 0, 1];
-    return { dist: d - s.radius, normal };
-  }
-  // Rounded box: distance to the inner box shrunk by r, minus r.
-  const q: Vec3 = [
-    Math.abs(p[0] - s.center[0]) - (s.half[0] - s.radius),
-    Math.abs(p[1] - s.center[1]) - (s.half[1] - s.radius),
-    Math.abs(p[2] - s.center[2]) - (s.half[2] - s.radius),
-  ];
-  const o: Vec3 = [Math.max(q[0], 0), Math.max(q[1], 0), Math.max(q[2], 0)];
-  const outside = Math.hypot(o[0], o[1], o[2]);
-  const inside = Math.min(Math.max(q[0], q[1], q[2]), 0);
-  const dist = outside + inside - s.radius;
-  let normal: Vec3;
-  if (outside > 1e-9) {
-    normal = [o[0] / outside, o[1] / outside, o[2] / outside];
-  } else {
-    // Inside the inner box: push out through the nearest face.
-    const axis = q[0] >= q[1] && q[0] >= q[2] ? 0 : q[1] >= q[2] ? 1 : 2;
-    normal = [0, 0, 0];
-    normal[axis] = 1;
-  }
-  const sx = Math.sign(p[0] - s.center[0]) || 1;
-  const sy = Math.sign(p[1] - s.center[1]) || 1;
-  const sz = Math.sign(p[2] - s.center[2]) || 1;
-  return { dist, normal: [normal[0] * sx, normal[1] * sy, normal[2] * sz] };
+  solidDistanceInto(s, p[0], p[1], p[2], SD_SCRATCH);
+  return { dist: SD_SCRATCH[0], normal: [SD_SCRATCH[1], SD_SCRATCH[2], SD_SCRATCH[3]] };
 }
 
 export interface SeamSide {
@@ -201,7 +214,18 @@ interface PlateConstraint {
   k: number;
 }
 
-/** Plate (isometric bending) stiffness by material id: foam and webbing resist curvature; cloth barely. */
+/**
+ * Plate (isometric bending) stiffness by material id: foam and webbing resist
+ * curvature; cloth barely.
+ *
+ * Anything below `PLATE_MIN_STIFFNESS` is not built as a plate constraint at
+ * all. Cordura's nominal 0.02 was measured (scratchpad profile-converge) to
+ * move a settled clamshell by 1.0 mm rms — a quarter of a mesh cell, and no
+ * change at all to the reported stretch, seam gap or penetration — while
+ * costing 2.6× the whole solve, because every bending pair of every cloth
+ * piece became a 4-vertex plate projection. Cordura is cloth: its bending
+ * constraint (0.45) is what holds it.
+ */
 export function materialPlateStiffness(materialId: string | undefined): number {
   if (!materialId) return 0;
   if (materialId.startsWith('foam')) return 0.35;
@@ -209,6 +233,9 @@ export function materialPlateStiffness(materialId: string | undefined): number {
   if (materialId.startsWith('cordura')) return 0.02;
   return 0;
 }
+
+/** Plate constraints below this stiffness are not built (see `materialPlateStiffness`). */
+export const PLATE_MIN_STIFFNESS = 0.1;
 
 /**
  * Bending stiffness by material id (per-iteration fraction). Closed-cell foam
@@ -271,7 +298,9 @@ function d3(a: Float64Array, i: number, j: number): number {
   const dx = a[3 * j] - a[3 * i];
   const dy = a[3 * j + 1] - a[3 * i + 1];
   const dz = a[3 * j + 2] - a[3 * i + 2];
-  return Math.hypot(dx, dy, dz);
+  // sqrt, not hypot: hypot's overflow guard costs several times as much and the
+  // magnitudes here are millimetres.
+  return Math.sqrt(dx * dx + dy * dy + dz * dz);
 }
 
 export function createWorld(opts: CreateWorldOptions): ClothWorld {
@@ -321,7 +350,7 @@ export function createWorld(opts: CreateWorldOptions): ClothWorld {
       const k2 = opts.bendStiffnessOf?.(mi);
       bend.push(k2 === undefined ? { i: gk, j: gl, rest } : { i: gk, j: gl, rest, k: k2 });
       const kp = opts.plateStiffnessOf?.(mi) ?? 0;
-      if (kp > 0 && !anyTorn) {
+      if (kp >= PLATE_MIN_STIFFNESS && !anyTorn) {
         const q = plateMatrix(fp(i), fp(j), fp(k), fp(l));
         if (q) plates.push({ v: [base[mi] + i, base[mi] + j, gk, gl], q, k: kp });
       }
@@ -389,25 +418,48 @@ function plateMatrix(x0: Point, x1: Point, x2: Point, x3: Point): number[] | nul
   return q;
 }
 
+// Scratch for projectPlate: 4 vertices × 3 components, reused every call. The plate
+// constraint runs once per bending pair per iteration (24k × 12 × 360 on a clamshell),
+// so the arrays it used to allocate dominated the whole solve.
+const PLATE_X = new Float64Array(12);
+const PLATE_G = new Float64Array(12);
+
 /** Project the isometric bending constraint C = ½ Σ Q_ab x_a·x_b toward zero (flat). */
 function projectPlate(pos: Float64Array, invMass: Float64Array, c: PlateConstraint): void {
-  const x: Vec3[] = c.v.map((g) => [pos[3 * g], pos[3 * g + 1], pos[3 * g + 2]] as Vec3);
-  let energy = 0;
-  const grad: Vec3[] = [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]];
-  for (let a = 0; a < 4; a++) for (let b = 0; b < 4; b++) {
-    const qab = c.q[4 * a + b];
-    energy += 0.5 * qab * (x[a][0] * x[b][0] + x[a][1] * x[b][1] + x[a][2] * x[b][2]);
-    grad[a][0] += qab * x[b][0]; grad[a][1] += qab * x[b][1]; grad[a][2] += qab * x[b][2];
+  const v = c.v;
+  const x = PLATE_X, grad = PLATE_G;
+  for (let a = 0; a < 4; a++) {
+    const g = 3 * v[a];
+    x[3 * a] = pos[g]; x[3 * a + 1] = pos[g + 1]; x[3 * a + 2] = pos[g + 2];
+    grad[3 * a] = 0; grad[3 * a + 1] = 0; grad[3 * a + 2] = 0;
   }
-  if (Math.abs(energy) < 1e-12) return;
+  const q = c.q;
+  let energy = 0;
+  for (let a = 0; a < 4; a++) {
+    const ax = x[3 * a], ay = x[3 * a + 1], az = x[3 * a + 2];
+    let gx = 0, gy = 0, gz = 0;
+    for (let b = 0; b < 4; b++) {
+      const qab = q[4 * a + b];
+      if (qab === 0) continue;
+      const bx = x[3 * b], by = x[3 * b + 1], bz = x[3 * b + 2];
+      energy += 0.5 * qab * (ax * bx + ay * by + az * bz);
+      gx += qab * bx; gy += qab * by; gz += qab * bz;
+    }
+    grad[3 * a] = gx; grad[3 * a + 1] = gy; grad[3 * a + 2] = gz;
+  }
+  if (energy < 1e-12 && energy > -1e-12) return;
   let denom = 0;
-  for (let a = 0; a < 4; a++) denom += invMass[c.v[a]] * (grad[a][0] * grad[a][0] + grad[a][1] * grad[a][1] + grad[a][2] * grad[a][2]);
+  for (let a = 0; a < 4; a++) {
+    const gx = grad[3 * a], gy = grad[3 * a + 1], gz = grad[3 * a + 2];
+    denom += invMass[v[a]] * (gx * gx + gy * gy + gz * gz);
+  }
   if (denom < 1e-12) return;
   const lambda = -c.k * energy / denom;
   for (let a = 0; a < 4; a++) {
-    const g = c.v[a], w = invMass[g];
+    const vi = v[a], w = invMass[vi];
     if (w === 0) continue;
-    pos[3 * g] += w * lambda * grad[a][0]; pos[3 * g + 1] += w * lambda * grad[a][1]; pos[3 * g + 2] += w * lambda * grad[a][2];
+    const g = 3 * vi, wl = w * lambda;
+    pos[g] += wl * grad[3 * a]; pos[g + 1] += wl * grad[3 * a + 1]; pos[g + 2] += wl * grad[3 * a + 2];
   }
 }
 
@@ -446,15 +498,28 @@ function closestOnTriangle(p: Vec3, a: Vec3, b: Vec3, c: Vec3): Vec3 {
  */
 function selfCollide(world: ClothWorld, margin: number, cell: number): void {
   const { pos, invMass, n, tris, ring } = world;
-  const hash = new Map<string, number[]>();
-  const key = (x: number, y: number, z: number) => `${x},${y},${z}`;
+  // Numeric cell keys: string keys (`x,y,z`) allocated and hashed a string per
+  // triangle per cell, which dominated this pass.
+  const hash = new Map<number, number[]>();
+  const B = 1 << 11, HALF = 1 << 10;
+  const key = (x: number, y: number, z: number) => ((x + HALF) * B + (y + HALF)) * B + (z + HALF);
   const triCount = tris.length / 3;
   for (let t = 0; t < triCount; t++) {
     const a = tris[3 * t], b = tris[3 * t + 1], c = tris[3 * t + 2];
-    let lo = [Infinity, Infinity, Infinity], hi = [-Infinity, -Infinity, -Infinity];
-    for (const v of [a, b, c]) for (let k = 0; k < 3; k++) { lo[k] = Math.min(lo[k], pos[3 * v + k]); hi[k] = Math.max(hi[k], pos[3 * v + k]); }
-    const c0 = lo.map((x) => Math.floor(x / cell)), c1 = hi.map((x) => Math.floor(x / cell));
-    for (let x = c0[0]; x <= c1[0]; x++) for (let y = c0[1]; y <= c1[1]; y++) for (let z = c0[2]; z <= c1[2]; z++) {
+    let lox = Infinity, loy = Infinity, loz = Infinity, hix = -Infinity, hiy = -Infinity, hiz = -Infinity;
+    for (let q = 0; q < 3; q++) {
+      const v = tris[3 * t + q];
+      const x = pos[3 * v], y = pos[3 * v + 1], z = pos[3 * v + 2];
+      if (x < lox) lox = x; if (x > hix) hix = x;
+      if (y < loy) loy = y; if (y > hiy) hiy = y;
+      if (z < loz) loz = z; if (z > hiz) hiz = z;
+    }
+    if (!Number.isFinite(lox) || !Number.isFinite(hiz)) continue;
+    const x0 = Math.floor(lox / cell), x1 = Math.floor(hix / cell);
+    const y0 = Math.floor(loy / cell), y1 = Math.floor(hiy / cell);
+    const z0 = Math.floor(loz / cell), z1 = Math.floor(hiz / cell);
+    void a; void b; void c;
+    for (let x = x0; x <= x1; x++) for (let y = y0; y <= y1; y++) for (let z = z0; z <= z1; z++) {
       const k = key(x, y, z);
       const list = hash.get(k);
       if (list) list.push(t); else hash.set(k, [t]);
@@ -463,8 +528,7 @@ function selfCollide(world: ClothWorld, margin: number, cell: number): void {
   const m2 = margin * margin;
   for (let g = 0; g < n; g++) {
     const p: Vec3 = [pos[3 * g], pos[3 * g + 1], pos[3 * g + 2]];
-    const cx = Math.floor(p[0] / cell), cy = Math.floor(p[1] / cell), cz = Math.floor(p[2] / cell);
-    const list = hash.get(key(cx, cy, cz));
+    const list = hash.get(key(Math.floor(p[0] / cell), Math.floor(p[1] / cell), Math.floor(p[2] / cell)));
     if (!list) continue;
     const nb = ring[g];
     for (const t of list) {
@@ -537,16 +601,18 @@ function project(pos: Float64Array, invMass: Float64Array, c: DistanceConstraint
   const wj = invMass[c.j];
   const w = wi + wj;
   if (w === 0) return;
-  const dx = pos[3 * c.j] - pos[3 * c.i];
-  const dy = pos[3 * c.j + 1] - pos[3 * c.i + 1];
-  const dz = pos[3 * c.j + 2] - pos[3 * c.i + 2];
-  const d = Math.hypot(dx, dy, dz);
+  const i = 3 * c.i, j = 3 * c.j;
+  const dx = pos[j] - pos[i];
+  const dy = pos[j + 1] - pos[i + 1];
+  const dz = pos[j + 2] - pos[i + 2];
+  const d = Math.sqrt(dx * dx + dy * dy + dz * dz);
   if (d < 1e-9) return;
   let corr = k * (d - c.rest);
   if (Math.abs(corr) > maxMove * w) corr = Math.sign(corr) * maxMove * w;
   const s = corr / d / w;
-  pos[3 * c.i] += wi * s * dx; pos[3 * c.i + 1] += wi * s * dy; pos[3 * c.i + 2] += wi * s * dz;
-  pos[3 * c.j] -= wj * s * dx; pos[3 * c.j + 1] -= wj * s * dy; pos[3 * c.j + 2] -= wj * s * dz;
+  const si = wi * s, sj = wj * s;
+  pos[i] += si * dx; pos[i + 1] += si * dy; pos[i + 2] += si * dz;
+  pos[j] -= sj * dx; pos[j + 1] -= sj * dy; pos[j + 2] -= sj * dz;
 }
 
 /**
@@ -555,39 +621,75 @@ function project(pos: Float64Array, invMass: Float64Array, c: DistanceConstraint
  * pushed back out through THAT face, so a seam cannot drag cloth through the
  * object — the lid slides over the magazine top instead of tunnelling.
  */
+/** Axis-aligned bounds of a smooth solid, expanded by `margin`: [minX,minY,minZ,maxX,maxY,maxZ]. */
+const SOLID_BB = new WeakMap<object, { margin: number; bb: Float64Array }>();
+function solidBounds(s: CapsuleSolid | RoundedBoxSolid, margin: number): Float64Array {
+  const hit = SOLID_BB.get(s);
+  if (hit && hit.margin === margin) return hit.bb;
+  const bb = new Float64Array(6);
+  if (s.kind === 'capsule') {
+    const r = s.radius + margin;
+    for (let k = 0; k < 3; k++) {
+      bb[k] = Math.min(s.a[k], s.b[k]) - r;
+      bb[k + 3] = Math.max(s.a[k], s.b[k]) + r;
+    }
+  } else {
+    for (let k = 0; k < 3; k++) {
+      bb[k] = s.center[k] - s.half[k] - margin;
+      bb[k + 3] = s.center[k] + s.half[k] + margin;
+    }
+  }
+  SOLID_BB.set(s, { margin, bb });
+  return bb;
+}
+
 function collide(pos: Float64Array, prev: Float64Array, invMass: Float64Array, n: number, solids: Solid[], margin: number): void {
+  const sd = SD_SCRATCH;
   for (const s of solids) {
     if (s.kind !== 'box') {
-      // Smooth solids: push out along the surface normal by the penetration.
+      // Smooth solids: push out along the surface normal by the penetration. Most
+      // particles are nowhere near a given capsule (an LBV panel against the neck),
+      // so reject them on the solid's bounding box before evaluating its distance.
+      const bb = solidBounds(s, margin);
       for (let g = 0; g < n; g++) {
         if (invMass[g] === 0) continue;
-        const p: Vec3 = [pos[3 * g], pos[3 * g + 1], pos[3 * g + 2]];
-        const { dist, normal } = solidDistance(s, p);
-        const pen = margin - dist;
+        const i = 3 * g;
+        const x = pos[i], y = pos[i + 1], z = pos[i + 2];
+        if (x < bb[0] || x > bb[3] || y < bb[1] || y > bb[4] || z < bb[2] || z > bb[5]) continue;
+        solidDistanceInto(s, x, y, z, sd);
+        const pen = margin - sd[0];
         if (pen <= 0) continue;
-        pos[3 * g] += normal[0] * pen; pos[3 * g + 1] += normal[1] * pen; pos[3 * g + 2] += normal[2] * pen;
+        pos[i] += sd[1] * pen; pos[i + 1] += sd[2] * pen; pos[i + 2] += sd[3] * pen;
       }
       continue;
     }
-    const h = [s.half[0] + margin, s.half[1] + margin, s.half[2] + margin];
+    const hx = s.half[0] + margin, hy = s.half[1] + margin, hz = s.half[2] + margin;
+    const cx = s.center[0], cy = s.center[1], cz = s.center[2];
     for (let g = 0; g < n; g++) {
       if (invMass[g] === 0) continue;
-      const d = [pos[3 * g] - s.center[0], pos[3 * g + 1] - s.center[1], pos[3 * g + 2] - s.center[2]];
-      if (Math.abs(d[0]) >= h[0] || Math.abs(d[1]) >= h[1] || Math.abs(d[2]) >= h[2]) continue;
-      const dp = [prev[3 * g] - s.center[0], prev[3 * g + 1] - s.center[1], prev[3 * g + 2] - s.center[2]];
+      const i = 3 * g;
+      const dx = pos[i] - cx, dy = pos[i + 1] - cy, dz = pos[i + 2] - cz;
+      const adx = dx < 0 ? -dx : dx, ady = dy < 0 ? -dy : dy, adz = dz < 0 ? -dz : dz;
+      if (adx >= hx || ady >= hy || adz >= hz) continue;
+      const px = prev[i] - cx, py = prev[i + 1] - cy, pz = prev[i + 2] - cz;
       // Prefer the axis on which the particle was outside before this step (the face it entered).
       let axis = -1;
       let best = -Infinity;
-      for (let a = 0; a < 3; a++) {
-        const outside = Math.abs(dp[a]) - h[a];
-        if (outside >= -1e-9 && outside > best) { best = outside; axis = a; }
-      }
+      const o0 = (px < 0 ? -px : px) - hx;
+      if (o0 >= -1e-9 && o0 > best) { best = o0; axis = 0; }
+      const o1 = (py < 0 ? -py : py) - hy;
+      if (o1 >= -1e-9 && o1 > best) { best = o1; axis = 1; }
+      const o2 = (pz < 0 ? -pz : pz) - hz;
+      if (o2 >= -1e-9 && o2 > best) { best = o2; axis = 2; }
       if (axis < 0) {
-        const pen = [h[0] - Math.abs(d[0]), h[1] - Math.abs(d[1]), h[2] - Math.abs(d[2])];
-        axis = pen[2] <= pen[0] && pen[2] <= pen[1] ? 2 : pen[0] <= pen[1] ? 0 : 1;
+        const p0 = hx - adx, p1 = hy - ady, p2 = hz - adz;
+        axis = p2 <= p0 && p2 <= p1 ? 2 : p0 <= p1 ? 0 : 1;
       }
-      const sign = axis === -1 ? 1 : Math.sign(dp[axis] || d[axis] || 1);
-      pos[3 * g + axis] = s.center[axis] + sign * h[axis];
+      const pa = axis === 0 ? px : axis === 1 ? py : pz;
+      const da = axis === 0 ? dx : axis === 1 ? dy : dz;
+      const ha = axis === 0 ? hx : axis === 1 ? hy : hz;
+      const ca = axis === 0 ? cx : axis === 1 ? cy : cz;
+      pos[i + axis] = ca + (Math.sign(pa || da || 1)) * ha;
     }
   }
 }
@@ -629,6 +731,110 @@ export function relax(world: ClothWorld, steps: number): void {
   for (let i = 0; i < steps; i++) step(world);
 }
 
+/**
+ * Root-mean-square distance every particle moved during the last `step`.
+ * `prev` holds the position at the start of the step, so this is free.
+ *
+ * RMS, not max: a handful of vertices beside a gathered seam or between two
+ * colliding layers jitter by a millimetre or two for ever, so the maximum
+ * never settles even when the shape has (measured on the clamshell: max move
+ * still 2.2 mm at step 360 while the rms distance to the final shape is
+ * already 0.24 mm at step 300).
+ */
+export function stepMovement(world: ClothWorld): number {
+  const { pos, prev, n } = world;
+  let sum = 0;
+  for (let g = 0; g < n; g++) {
+    const i = 3 * g;
+    const dx = pos[i] - prev[i], dy = pos[i + 1] - prev[i + 1], dz = pos[i + 2] - prev[i + 2];
+    sum += dx * dx + dy * dy + dz * dz;
+  }
+  return n > 0 ? Math.sqrt(sum / n) : 0;
+}
+
+export interface SettleOptions {
+  /** Hard cap on steps. Default 360. */
+  maxSteps?: number;
+  /** Steps per comparison window. Default 20. */
+  window?: number;
+  /**
+   * Settled when the assembly's rms displacement over a window is under this
+   * many millimetres. Default `spacing / 40` (0.2 mm on an 8 mm mesh) — a
+   * fortieth of a cell, well under what the mesh itself can resolve.
+   */
+  tol?: number;
+  /** Consecutive quiet windows required. Default 2. */
+  hold?: number;
+  /**
+   * Never stop before this step. The seam ramp has to finish or the seams are
+   * still being pulled closed. Default `seamRampSteps + 20`.
+   */
+  minSteps?: number;
+  /** Called after every step; return false to stop (a time-sliced caller). */
+  onStep?: (world: ClothWorld) => boolean | void;
+}
+
+export interface SettleMonitor {
+  /** Call once after every `step`; true when the shape has stopped changing. */
+  observe: () => boolean;
+  /** Rms displacement over the last completed window, mm. */
+  lastMovement: () => number;
+}
+
+/**
+ * Stateful convergence detector, shared by `relaxUntilSettled` and any caller
+ * that steps the world itself (the viewer, a frame at a time).
+ *
+ * The measure is rms displacement over a window of steps, not per-step
+ * movement. A PBD solve never comes to rest: seam corrections, the stretch
+ * projection and the self-collision pass trade hundredths of a millimetre back
+ * and forth for ever, so per-step movement falls to a floor and stays there
+ * (0.05–0.25 mm on the assemblies measured) whether or not the shape is still
+ * changing. Over a window that jitter cancels, while coherent motion — a
+ * circle skirt still falling at 0.7 mm a step — accumulates. Bounding the
+ * window displacement therefore bounds how far the answer can still move.
+ */
+export function createSettleMonitor(world: ClothWorld, opts: SettleOptions = {}): SettleMonitor {
+  const win = Math.max(2, opts.window ?? 20);
+  const tol = opts.tol ?? world.params.spacing / 40;
+  const hold = opts.hold ?? 2;
+  const minSteps = opts.minSteps ?? world.params.seamRampSteps + 20;
+  let mark = Float64Array.from(world.pos);
+  let count = 0;
+  let quiet = 0;
+  let last = Infinity;
+  return {
+    lastMovement: () => last,
+    observe: () => {
+      if (++count < win) return false;
+      count = 0;
+      let sum = 0;
+      const n = world.n;
+      for (let g = 0; g < n; g++) {
+        const i = 3 * g;
+        const dx = world.pos[i] - mark[i], dy = world.pos[i + 1] - mark[i + 1], dz = world.pos[i + 2] - mark[i + 2];
+        sum += dx * dx + dy * dy + dz * dz;
+      }
+      last = n > 0 ? Math.sqrt(sum / n) : 0;
+      mark.set(world.pos);
+      if (last < tol) quiet++; else quiet = 0;
+      return world.steps >= minSteps && quiet >= hold;
+    },
+  };
+}
+
+export function relaxUntilSettled(world: ClothWorld, opts: SettleOptions = {}): { steps: number; settled: boolean } {
+  const maxSteps = opts.maxSteps ?? 360;
+  const monitor = createSettleMonitor(world, opts);
+  while (world.steps < maxSteps) {
+    step(world);
+    const settled = monitor.observe();
+    if (opts.onStep?.(world) === false) return { steps: world.steps, settled: false };
+    if (settled) return { steps: world.steps, settled: true };
+  }
+  return { steps: world.steps, settled: false };
+}
+
 /** Max and mean distance error across seam constraints (mm). */
 export function seamResidual(world: ClothWorld): { max: number; mean: number } {
   let max = 0;
@@ -659,6 +865,60 @@ export function maxStretch(world: ClothWorld, inside?: (pieceId: string, flat: P
     max = Math.max(max, (d3(world.pos, c.i, c.j) - c.rest) / Math.max(c.rest, floor));
   }
   return max;
+}
+
+export interface StretchReport {
+  /** Elongation at the requested quantile, e.g. 0.08 = 8 %. The headline figure. */
+  value: number;
+  /** Largest single-edge elongation. */
+  max: number;
+  /** Piece carrying that worst edge. */
+  worstPiece: string | null;
+  /** Share of edges elongated more than 10 % — how widespread the strain is. */
+  strained: number;
+  /** Edges measured. */
+  count: number;
+}
+
+/**
+ * Elongation across the mesh as a distribution rather than a single worst edge.
+ *
+ * The maximum is not a number a sewer can act on: one sheared cell beside a
+ * gathered seam (the pleated face bottom) or one allowance flap dragged round a
+ * corner reads as "116 % stretch" on a pattern whose seams all close to a tenth
+ * of a millimetre. The quantile says whether the fabric as a whole has to
+ * stretch to reach, and `worstPiece` says where to look if it does.
+ */
+export function stretchReport(world: ClothWorld, quantile = 0.99, inside?: (pieceId: string, flat: Point) => boolean): StretchReport {
+  const floor = world.params.spacing / 2;
+  const keep = inside ? insideMask(world, inside) : null;
+  const vals: number[] = [];
+  let max = 0;
+  let worst = -1;
+  for (const c of world.stretch) {
+    if (c.rest < 1e-9) continue;
+    if (keep && !(keep[c.i] && keep[c.j])) continue;
+    const e = (d3(world.pos, c.i, c.j) - c.rest) / Math.max(c.rest, floor);
+    vals.push(e);
+    if (e > max) { max = e; worst = c.i; }
+  }
+  if (vals.length === 0) return { value: 0, max: 0, worstPiece: null, strained: 0, count: 0 };
+  vals.sort((a, b) => a - b);
+  const idx = Math.min(vals.length - 1, Math.max(0, Math.round(quantile * (vals.length - 1))));
+  let strained = 0;
+  for (let i = vals.length - 1; i >= 0 && vals[i] > 0.1; i--) strained++;
+  let worstPiece: string | null = null;
+  if (worst >= 0) {
+    for (let mi = world.meshes.length - 1; mi >= 0; mi--) {
+      if (worst >= world.base[mi]) { worstPiece = world.meshes[mi].pieceId; break; }
+    }
+  }
+  return { value: vals[idx], max, worstPiece, strained: strained / vals.length, count: vals.length };
+}
+
+/** The quantile of edge elongation alone; see `stretchReport`. */
+export function stretchPercentile(world: ClothWorld, quantile = 0.99, inside?: (pieceId: string, flat: Point) => boolean): number {
+  return stretchReport(world, quantile, inside).value;
 }
 
 /** Vertices whose flat point passes `inside` (e.g. within the stitch lines, leaving out allowance flaps). */

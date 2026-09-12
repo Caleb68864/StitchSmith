@@ -7,6 +7,7 @@ import { TriZipSettingsPanel } from './TriZipSettingsPanel.js';
 import { PatternPreview } from './PatternPreview.js';
 import { ExportPanel } from './ExportPanel.js';
 import { TriZipLegend } from './Legend.js';
+import { WarningsPanel } from '../shared/WarningsPanel.js';
 import { ConstructionSteps } from '../shared/ConstructionSteps.js';
 import { PatternPageShell } from '../shared/PatternPageShell.js';
 import { parseProjectJson, downloadProjectJson } from '../../export/projectEnvelopeIO.js';
@@ -72,6 +73,7 @@ export function TriZipPage({ project, updateInputs, resetProject, importProject 
     return r.ok ? r.value : null;
   }, [project.inputs, engineValid]);
   const steps = built?.steps ?? [];
+  const warnings = built?.warnings ?? [];
   // 3D: assemble the body (mirrored wing and zip-strip instances, gusset turned up) round a block of the finished size.
   const assembly = useMemo(() => {
     if (!built) return null;
@@ -133,6 +135,7 @@ export function TriZipPage({ project, updateInputs, resetProject, importProject 
       }
       sidebar={
         <>
+          <WarningsPanel warnings={warnings} />
           <TriZipLegend />
           <ExportPanel
             inputs={project.inputs}

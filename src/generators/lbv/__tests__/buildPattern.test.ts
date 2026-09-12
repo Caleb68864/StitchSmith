@@ -81,12 +81,16 @@ describe('buildPattern', () => {
     const b = buildPattern(SOE);
     if (!b.ok) return;
     const w = b.value.warnings;
-    for (const f of ['panel_width', 'pad_length', 'cross_piece_angle', 'front_strap_positions', 'row_pitch']) expect(w.some((x) => x.id === `mock-derived-${f}`), f).toBe(true);
+    // One consolidated note naming every Open number (was one warning per field).
+    const mock = w.filter((x) => x.id.startsWith('mock-derived'));
+    expect(mock).toHaveLength(1);
+    expect(mock[0].severity).toBe('info');
+    for (const f of ['Front panel width', 'Shoulder pad length', 'Cross piece angle', 'Front strap positions', 'PALS row pitch']) expect(mock[0].message, f).toContain(f);
     expect(w.some((x) => x.id === 'front-cols-unresolved')).toBe(true);
     expect(w.some((x) => x.id === 'row-width-divergence')).toBe(true);
     expect(w.some((x) => /not the 1" spec/.test(x.message))).toBe(true);
     const explicit = buildPattern({ ...SOE, panel_width: 9 });
-    expect(explicit.ok && explicit.value.warnings.some((x) => x.id === 'mock-derived-panel_width')).toBe(false);
+    expect(explicit.ok && explicit.value.warnings.find((x) => x.id === 'mock-derived')!.message).not.toContain('Front panel width');
     const three = buildPattern({ ...SOE, loops_per_panel: 3 });
     expect(three.ok && three.value.warnings.some((x) => x.id === 'three-loops')).toBe(true);
     const five = buildPattern({ ...SOE, back_cols: 5 });

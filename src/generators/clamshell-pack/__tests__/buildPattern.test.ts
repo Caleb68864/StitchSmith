@@ -67,7 +67,8 @@ describe('buildPattern', () => {
     const bottom = b.value.pieces[4];
     expect(bottom.paths.filter((p) => p.id.includes('-pals-row-'))).toHaveLength(3);
     expect(bottom.annotations?.some((a) => /CUT AFTER THE HOOP/.test(a.label ?? ''))).toBe(true);
-    expect(b.value.pieces.find((p) => p.id === 'clamshell-pals-row')!.quantity).toBe(5 + 7 + 7 + 3);
+    // One entry per row length (face, two side runs, bottom), summing to every row.
+    expect(b.value.pieces.filter((p) => p.id.startsWith('clamshell-pals-row')).reduce((a2, p) => a2 + p.quantity, 0)).toBe(5 + 7 + 7 + 3);
     expect(b.value.pieces.find((p) => p.id === 'clamshell-strap-tab')!.quantity).toBe(6);
     const steps = b.value.steps.map((s) => s.id);
     expect(steps.indexOf('cs.velcro')).toBeLessThan(steps.indexOf('cs.back'));
@@ -90,7 +91,9 @@ describe('buildPattern', () => {
     const none = buildPattern({ ...SOE, strap_provision: 'none', handle: false, compression_straps_per_side: 0, interior_loop: false });
     expect(none.ok).toBe(true);
     if (!none.ok) return;
-    expect(none.value.pieces.map((p) => p.id)).toEqual([FACE_ID, BACK_ID, GUSSET_ID, LID_STRIP_ID, BOTTOM_ID, 'clamshell-pals-row']);
+    expect(none.value.pieces.map((p) => p.id).filter((id) => !id.startsWith('clamshell-pals-row')))
+      .toEqual([FACE_ID, BACK_ID, GUSSET_ID, LID_STRIP_ID, BOTTOM_ID]);
+    expect(none.value.pieces.some((p) => p.id.startsWith('clamshell-pals-row'))).toBe(true);
     expect(none.value.warnings.some((x) => x.id === 'strap-trap')).toBe(true);
   });
   it('BOM lists cut sizes with allowance, webbing totals and hardware', () => {

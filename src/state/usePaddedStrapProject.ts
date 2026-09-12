@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import type { PaddedStrapInputs } from '../generators/padded-strap/types.js';
 import { makeProjectStorage } from '../storage/genericProjectStorage.js';
 import { isPlainObject } from '../utils/isPlainObject.js';
+import { assertGeneratorMatch } from '../export/projectEnvelopeIO.js';
 
 export const STORAGE_KEY = 'stitchsmith.padded-strap.project';
 
@@ -78,9 +79,7 @@ export function usePaddedStrapProject(): UsePaddedStrapProjectReturn {
   }, []);
 
   const importProject = useCallback((p: PaddedStrapProject) => {
-    if (p.generatorId !== 'padded-strap') {
-      throw new Error(`Cannot import project with generatorId '${p.generatorId}' into padded-strap`);
-    }
+    assertGeneratorMatch(p.generatorId, 'padded-strap');
     setProjectState(p);
   }, []);
 

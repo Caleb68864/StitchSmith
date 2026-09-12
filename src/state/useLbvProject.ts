@@ -2,6 +2,8 @@ import { useState, useCallback, useEffect } from 'react';
 import type { LbvInputs } from '../generators/lbv/types.js';
 import { makeProjectStorage } from '../storage/genericProjectStorage.js';
 import { isPlainObject } from '../utils/isPlainObject.js';
+import { assertGeneratorMatch } from '../export/projectEnvelopeIO.js';
+import { DEFAULT_LBV_INPUTS } from '../generators/lbv/defaults.js';
 
 export const STORAGE_KEY = 'stitchsmith.lbv.project';
 
@@ -29,34 +31,7 @@ export function makeDefaultLbvProject(): LbvProject {
     schemaVersion: 14,
     generatorId: 'lbv',
     projectName: 'My Modular LBV',
-    inputs: {
-      units: 'in',
-      panel_width: 9,
-      panel_height: 11,
-      back_panel_width: 11,
-      back_panel_height: 11,
-      back_bellow: 0.75,
-      foam_insert: true,
-      row_width: 1.5,
-      row_pitch: 2.5,
-      front_cols: 4,
-      back_cols: 4,
-      vertical_mark: 4,
-      vertical_strap_len: 24,
-      tab_foldover: 1,
-      drop_adjust: 12,
-      pad_length: 10,
-      pad_width: 2.5,
-      pad_tab_foldover: 1.5,
-      cross_piece_angle: 15,
-      front_straps: 3,
-      male_side: 'right',
-      front_strap_positions: [1, 5, 9],
-      adjust_per_location: 12,
-      belt_width: 2,
-      loops_per_panel: 2,
-      hydration_webbing: 10,
-    },
+    inputs: { ...DEFAULT_LBV_INPUTS },
     createdAt: now,
     updatedAt: now,
   };
@@ -91,9 +66,7 @@ export function useLbvProject(): UseLbvProjectReturn {
   }, []);
 
   const importProject = useCallback((p: LbvProject) => {
-    if (p.generatorId !== 'lbv') {
-      throw new Error(`Cannot import project with generatorId '${p.generatorId}' into organizer`);
-    }
+    assertGeneratorMatch(p.generatorId, 'lbv');
     setProjectState(p);
   }, []);
 

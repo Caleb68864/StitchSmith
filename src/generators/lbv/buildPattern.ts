@@ -178,10 +178,15 @@ function backField(r: ResolvedInputs): PalsFieldResult {
   return buildPalsField({ origin: { x: c, y: top }, width: r.back_outer_width - 2 * c, height: Math.max(0, bottom - top), rowWidth: r.row_width, rowPitch: r.row_pitch, colPitch: PALS_COL_PITCH_MM, edgeMargin: D.STRIP_END_MARGIN_MM, cols: r.back_cols, rows: r.rows_per_panel, idPrefix: `${BACK_OUTER_ID}-pals`, eid: makeEdgeIdGen(`${BACK_OUTER_ID}-pals`) });
 }
 
+/**
+ * The vest's Open numbers, as ONE note. Each of these fields is marked
+ * mock-derived in the settings panel, so repeating them as a stack of yellow
+ * warnings on an untouched project only teaches the user to ignore the list.
+ */
 function mockDerived(inputs: LbvInputs, r: ResolvedInputs): GeneratorWarning[] {
-  const w: GeneratorWarning[] = [];
+  const open_: { field: keyof LbvInputs; what: string; value: string }[] = [];
   const open = (field: keyof LbvInputs, what: string, value: string) => {
-    if (inputs[field] === undefined) w.push({ id: `mock-derived-${field}`, severity: 'warning', field, message: `[mock-derived] ${what} defaults to ${value} — the vault never states it. Measure a real rig or scale video frames, then enter it.` });
+    if (inputs[field] === undefined) open_.push({ field, what, value });
   };
   open('panel_width', 'Front panel width', dim(r.panel_width));
   open('panel_height', 'Front panel height', dim(r.panel_height));
@@ -197,7 +202,11 @@ function mockDerived(inputs: LbvInputs, r: ResolvedInputs): GeneratorWarning[] {
   open('vertical_width', 'Vertical webbing width', dim(r.vertical_width));
   open('base_chest', 'Base chest size the vest fits at minimum', dim(r.base_chest));
   open('drag_handle_len', 'Drag handle cut', dim(r.drag_handle_len));
-  return w;
+  if (open_.length === 0) return [];
+  return [{
+    id: 'mock-derived', severity: 'info', field: open_[0].field,
+    message: `[mock-derived] ${open_.length} number${open_.length === 1 ? '' : 's'} the vault never states ${open_.length === 1 ? 'is' : 'are'} at a default here — ${open_.map((o) => `${o.what.replace(/ \(.*\)$/, '')} ${o.value}`).join('; ')}. Measure a real rig or scale video frames, then enter them.`,
+  }];
 }
 
 export function buildPattern(inputs: LbvInputs): Result<LbvBuildResult> {

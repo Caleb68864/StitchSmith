@@ -1,6 +1,6 @@
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { NumericField } from '../../shared/fields/index.js';
 import type { TriZipInputs, PresetName } from '../../../generators/tri-zip-backpack/types.js';
 import { computeVolumeLiters } from '../../../generators/tri-zip-backpack/inputs.js';
 
@@ -47,10 +47,11 @@ export function StyleAndDimensionsSection({ inputs, errors, onChange }: Props) {
   const volumeL = computeVolumeLiters(inputs);
   const validVolume = isFinite(volumeL) && volumeL > 0;
 
-  function handleNumber(field: keyof TriZipInputs, raw: string) {
-    const n = parseFloat(raw);
-    onChange({ [field]: isNaN(n) ? raw as unknown as number : n });
-  }
+  // The three body dimensions are required, so a cleared box reports NaN and
+  // validation flags it. (It used to store the raw string, which put a string
+  // into a number field and reached the generator as garbage.)
+  const setDimension = (field: 'height' | 'width' | 'depth') => (v: number | undefined) =>
+    onChange({ [field]: v === undefined ? NaN : v });
 
   return (
     <div className="space-y-4">
@@ -107,48 +108,9 @@ export function StyleAndDimensionsSection({ inputs, errors, onChange }: Props) {
       </div>
 
       <div className="grid grid-cols-3 gap-2">
-        <div className="space-y-1">
-          <Label htmlFor="tz-height">Height</Label>
-          <Input
-            id="tz-height"
-            type="number"
-            min={1}
-            value={inputs.height}
-            onChange={e => handleNumber('height', e.target.value)}
-            className={errors['height'] ? 'border-destructive' : ''}
-          />
-          {errors['height'] && (
-            <p className="text-xs text-destructive">{errors['height']}</p>
-          )}
-        </div>
-        <div className="space-y-1">
-          <Label htmlFor="tz-width">Width</Label>
-          <Input
-            id="tz-width"
-            type="number"
-            min={1}
-            value={inputs.width}
-            onChange={e => handleNumber('width', e.target.value)}
-            className={errors['width'] ? 'border-destructive' : ''}
-          />
-          {errors['width'] && (
-            <p className="text-xs text-destructive">{errors['width']}</p>
-          )}
-        </div>
-        <div className="space-y-1">
-          <Label htmlFor="tz-depth">Depth</Label>
-          <Input
-            id="tz-depth"
-            type="number"
-            min={1}
-            value={inputs.depth}
-            onChange={e => handleNumber('depth', e.target.value)}
-            className={errors['depth'] ? 'border-destructive' : ''}
-          />
-          {errors['depth'] && (
-            <p className="text-xs text-destructive">{errors['depth']}</p>
-          )}
-        </div>
+        <NumericField id="tz-height" label="Height" units={inputs.units} value={inputs.height} onChange={setDimension('height')} error={errors['height']} min={1} step={inputs.units === 'in' ? 0.25 : 5} allowEmpty={false} />
+        <NumericField id="tz-width" label="Width" units={inputs.units} value={inputs.width} onChange={setDimension('width')} error={errors['width']} min={1} step={inputs.units === 'in' ? 0.25 : 5} allowEmpty={false} />
+        <NumericField id="tz-depth" label="Depth" units={inputs.units} value={inputs.depth} onChange={setDimension('depth')} error={errors['depth']} min={1} step={inputs.units === 'in' ? 0.25 : 5} allowEmpty={false} />
       </div>
 
       <div className="rounded bg-muted px-3 py-2 text-sm font-medium" aria-live="polite">
