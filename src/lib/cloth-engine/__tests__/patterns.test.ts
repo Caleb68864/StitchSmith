@@ -6,7 +6,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import type { Piece } from '../../pattern-engine/graph/Piece.js';
-import { buildClothMesh, nearestVertex, createWorld, relax, seamResidual, maxStretch, maxPenetration, vertexPosition, foldedInitial, foldedCreaseRest, torsoForm, clothBounds, materialBendStiffness, materialPlateStiffness, DEFAULT_CLOTH_PARAMS, type SeamSpec, type Solid, type Vec3 } from '../index.js';
+import { buildClothMesh, nearestVertex, createWorld, relax, seamResidual, maxStretch, maxPenetration, vertexPosition, foldedInitial, foldedCreaseRest, torsoForm, clothBounds, materialBendStiffness, materialPlateStiffness, DEFAULT_CLOTH_PARAMS, pinHolds, type SeamSpec, type Solid, type Vec3, type PinSpec } from '../index.js';
 import { buildFoldModel, defaultFoldAngles, regionAt, onAnyFold, makePlacer, mirrorPieceX, placementMap, type PlacedEntry, type PiecePlacement } from '../../fold-engine/index.js';
 import { buildPattern as buildStrap, resolveInputs as resolveStrap } from '../../../generators/padded-strap/index.js';
 import { paddedStrapAssembly, PAD_LEFT_ID } from '../../../generators/padded-strap/assembly3d.js';
@@ -14,6 +14,7 @@ import { zipPouchAssembly } from '../../../generators/zip-pouch/assembly3d.js';
 import { buildPattern as buildCircleSkirt, resolveInputs as resolveCircleSkirt } from '../../../generators/circle-skirt/index.js';
 import { circleSkirtAssembly } from '../../../generators/circle-skirt/assembly3d.js';
 import { makeDefaultCircleSkirtProject } from '../../../state/useCircleSkirtProject.js';
+import { buildPattern as buildMicroRig, microRigAssembly, REAR_POUCH_ID, FRONT_POUCH_ID } from '../../../generators/micro-rig/index.js';
 import { PAD_PIECE_ID, CROSS_STRAP_PIECE_ID } from '../../../generators/padded-strap/buildPattern.js';
 import type { Point } from '../../pattern-engine/graph/Point.js';
 import { buildPattern as buildTriZip } from '../../../generators/tri-zip-backpack/index.js';
@@ -37,7 +38,7 @@ interface AssemblyObject {
   torso?: { shoulderWidth: number; neckRadius: number };
   at?: Vec3;
 }
-type Pin = { pieceId: string; point: Point; radius: number };
+type Pin = PinSpec;
 
 /**
  * The viewer's assembly, without the viewer: fold each piece, place it (rotation,
@@ -97,7 +98,7 @@ function assemble(pieces: Piece[], placements: Record<string, PiecePlacement>, s
     bendRest: (mi, k, l, i, j) => { const c = creases[mi]; return c ? c(k, l, i, j) : Math.hypot(l.x - k.x, l.y - k.y); },
     seams,
     solids,
-    pinned: (mi, _v, f) => pins.some((p) => p.pieceId === entries[mi].piece.id && Math.hypot(f.x - p.point.x, f.y - p.point.y) <= p.radius) || pinnedHost(mi, f),
+    pinned: (mi, _v, f) => pinHolds(pins, entries[mi].piece.id, f) || pinnedHost(mi, f),
     bendStiffnessOf: (mi) => materialBendStiffness(entries[mi].piece.materialId, DEFAULT_CLOTH_PARAMS.bendStiffness),
     plateStiffnessOf: (mi) => materialPlateStiffness(entries[mi].piece.materialId),
     params: { spacing, selfCollision, gravity: gravity ?? [0, 0, 0] },
@@ -504,5 +505,30 @@ describe('circle skirt cloth', () => {
     const hipR = (r.hip_circumference / (2 * Math.PI)) * 1.05;
     expect(all.hi[0] - all.lo[0]).toBeGreaterThan(2 * hipR);
     void bounds;
+  });
+});
+
+describe('micro rig, stacked .308 cells', () => {
+  it('rear pouch seams to the panel round a flat-side-out magazine and the front pouch stands a stack layer out', () => {
+    const built = buildMicroRig({ units: 'in', panel_width_preset: 'r308_14', pocket_set: 'stacked_cells', magazine_preset_id: 'pmag_308_20', cell_count: 2, cells_deep: 2 });
+    expect(built.ok).toBe(true);
+    if (!built.ok) return;
+    const asm = microRigAssembly(built.value.pieces, built.value.resolved)!;
+    const body = asm.pieces.filter((p) => p.id in asm.placements || p.id === asm.object.base.pieceId);
+    const { world, bounds } = assemble(body, asm.placements, asm.seams, asm.object, 8, asm.pins ?? []);
+    relax(world, 400);
+    expect(seamResidual(world).mean).toBeLessThan(3);
+    expect(maxPenetration(world)).toBeLessThan(world.params.thickness);
+    const r = built.value.resolved;
+    const rear = bounds(REAR_POUCH_ID), front = bounds(FRONT_POUCH_ID);
+    // The rear pouch wraps the magazine's thickness; the front pouch (empty — the viewer holds one
+    // object) collapses onto it but stays outside it, its wrap allowance slack.
+    expect(rear.hi[2]).toBeGreaterThan(r.mag.thickness);
+    expect(front.hi[2]).toBeGreaterThan(rear.hi[2] - 6);
+    expect(front.hi[2]).toBeLessThan(r.stack_depth + 40);
+    // A flat 3.4" cell round a 2.9 × 1.1" magazine only closes because the panel bows behind it.
+    const panelBow = bounds('panel-front').hi[2];
+    expect(panelBow).toBeGreaterThan(5);
+    expect(panelBow).toBeLessThan(r.mag.thickness);
   });
 });

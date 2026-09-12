@@ -5,7 +5,7 @@ import type { MicroRigInputs, PanelWidthPreset, PocketSet, Suspension } from '..
 import { MAGAZINE_IDS, getMagazine, PLATFORM_LABELS } from '../../generators/mag-pouch/magazines.js';
 import { convertLengthValues, type UnitSystem } from '../../utils/units.js';
 
-const DISPLAY_UNIT_FIELDS = ['panel_width', 'panel_height', 'cell_span', 'face_per_cell', 'cell_height', 'gap_width', 'buckle_setback', 'edge_margin'] as const;
+const DISPLAY_UNIT_FIELDS = ['panel_width', 'panel_height', 'cell_span', 'face_per_cell', 'cell_height', 'gap_width', 'buckle_setback', 'edge_margin', 'stack_ease', 'wrap_allowance', 'cradle_width', 'cradle_drop', 'pull_tab_length'] as const;
 
 interface Props {
   inputs: MicroRigInputs;
@@ -59,6 +59,7 @@ const WIDTHS: { value: PanelWidthPreset; label: string }[] = [
 ];
 const POCKETS: { value: PocketSet; label: string }[] = [
   { value: 'mag_cells', label: 'Mag cells + utility pocket' },
+  { value: 'stacked_cells', label: 'Stacked cells (Stacked / .308 Micro)' },
   { value: 'blank_pals', label: 'Blank panel' },
 ];
 const SUSPENSIONS: { value: Suspension; label: string }[] = [
@@ -101,6 +102,27 @@ export function MicroRigSettingsPanel({ inputs, errors, onChange }: Props) {
             <NumericField id="cell-height" label={`Cell height (${units})`} value={inputs.cell_height} error={errors['cell_height']} step={step} placeholder="panel − 1″" onChange={v => onChange({ cell_height: v })} />
           </div>
           <Toggle label='Utility pocket (6 × 6 × 3")' value={inputs.utility_pocket ?? true} onChange={v => onChange({ utility_pocket: v })} />
+        </>
+      )}
+      {pocket === 'stacked_cells' && (
+        <>
+          <div className="space-y-1">
+            <Label htmlFor="magazine" className="text-xs">Magazine (stands flat side out)</Label>
+            <select id="magazine" className="h-8 w-full rounded border border-border bg-background px-2 text-xs" value={inputs.magazine_preset_id ?? 'ar15_30_round'} onChange={e => onChange({ magazine_preset_id: e.target.value })}>
+              {MAGAZINE_IDS.map(id => { const m = getMagazine(id)!; return <option key={id} value={id}>{m.description} — {PLATFORM_LABELS[m.platform]}</option>; })}
+            </select>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <NumericField id="cell-count" label="Columns" value={inputs.cell_count} error={errors['cell_count']} step={1} placeholder="2" onChange={v => onChange({ cell_count: v })} />
+            <NumericField id="cells-deep" label="Mags deep (1 or 2)" value={inputs.cells_deep} error={errors['cells_deep']} step={1} placeholder="2" onChange={v => onChange({ cells_deep: v })} />
+            <NumericField id="stack-ease" label={`Cell ease (${units})`} value={inputs.stack_ease} error={errors['stack_ease']} step={step} placeholder={units === 'in' ? '0.5' : '12.7'} onChange={v => onChange({ stack_ease: v })} />
+            <NumericField id="wrap-allowance" label={`Wrap allowance (${units})`} value={inputs.wrap_allowance} error={errors['wrap_allowance']} step={step} placeholder="pin scrap" onChange={v => onChange({ wrap_allowance: v })} />
+            <NumericField id="coverage" label="Coverage (fraction of mag)" value={inputs.coverage} error={errors['coverage']} step={0.05} placeholder="0.65" onChange={v => onChange({ coverage: v })} />
+            <NumericField id="cradle-width" label={`Cradle width (${units})`} value={inputs.cradle_width} error={errors['cradle_width']} step={step} placeholder={units === 'in' ? '2' : '51'} onChange={v => onChange({ cradle_width: v })} />
+            <NumericField id="cradle-drop" label={`Cradle drop (${units})`} value={inputs.cradle_drop} error={errors['cradle_drop']} step={step} placeholder="0" onChange={v => onChange({ cradle_drop: v })} />
+            <NumericField id="pull-tab" label={`Pull tab length (${units})`} value={inputs.pull_tab_length} error={errors['pull_tab_length']} step={step} placeholder={units === 'in' ? '3.5' : '89'} onChange={v => onChange({ pull_tab_length: v })} />
+          </div>
+          <Toggle label='Med-pouch zone with face PALS (3")' value={inputs.med_zone ?? true} onChange={v => onChange({ med_zone: v })} />
         </>
       )}
 

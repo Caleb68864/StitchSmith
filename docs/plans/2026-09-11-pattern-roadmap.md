@@ -123,12 +123,12 @@ in the closing stitch, tri-glide / QD / sewn ends. No vault lengths: every
 length is an input with a mock-derived placeholder and the cord mock-up is
 step one.
 
-### 4. .308 stacked micro rig (tandem-depth cells)
-Depth stacking removes `cells_deep` from the width equation; cradle depth stop;
-bungee over-top with grommets in the cradle. Follows from follow-up 2 above.
-Evidence: strong, with a worked test case.
-`rigs/soe-308-stacked-micro-rig.md`, `rigs/stacked-cell-geometry.md`,
-`rigs/r308-mag-cradle-depth-stop.md`, `rigs/r308-bungee-retention-over-top.md`.
+### 4. .308 stacked micro rig (tandem-depth cells) — DONE 2026-09-11
+`stacked_cells` pocket set on the micro rig: rear cell = depth + ease, front
+mark = rear + wrap, stack depth, coverage-driven pouch height, cradle depth
+stop with grommets, bungee over the top, split vs plain pulls, weight
+warning. The .308 test case reproduces the vault table. Left: the tear-off
+med pouch piece and a second magazine in the 3D view.
 
 ### 5. Tactical organizer / pen-and-notebook organizer
 The exemplar note; hems marked at double, tack hem ends, sew side folds before

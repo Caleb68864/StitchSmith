@@ -15,7 +15,7 @@ import type { Piece } from '../../lib/pattern-engine/graph/Piece.js';
 import type { Step } from '../../lib/pattern-engine/instructions/Step.js';
 
 export type PanelWidthPreset = 'stacked_10_5' | 'standard_13' | 'r308_14' | 'pals_16' | 'pals_19' | 'custom';
-export type PocketSet = 'mag_cells' | 'blank_pals';
+export type PocketSet = 'mag_cells' | 'stacked_cells' | 'blank_pals';
 export type Suspension = 'webbing_straps' | 'h_harness';
 
 export interface MicroRigInputs {
@@ -38,6 +38,23 @@ export interface MicroRigInputs {
   cell_height?: number;
   /** 6 × 6 × 3" utility pocket on the outboard end. Default true (mag_cells). */
   utility_pocket?: boolean;
+  // ── stacked_cells (vault rigs/stacked-mag-cell-geometry.md, soe-308-stacked-micro-rig.md) ──
+  /** Magazines deep per column: 1 (individual slots) or 2 (a front cell over a rear cell). Default 2. */
+  cells_deep?: number;
+  /** Ease added to the magazine's front-to-back depth for the rear cell, display units. Default 1/2" (min 1/4"). */
+  stack_ease?: number;
+  /** Extra face fabric per front cell so it wraps out over the rear magazine, display units. Default 1/2"; bounds 1/4"–mag thickness. Never settled on camera — pin scrap round two mags. */
+  wrap_allowance?: number;
+  /** Fraction of the magazine length the pouch covers. Default 0.65. */
+  coverage?: number;
+  /** Cradle webbing width, display units. Default 2". */
+  cradle_width?: number;
+  /** How far the cradle lets the magazine hang below the pouch bottom, display units. Default 0. */
+  cradle_drop?: number;
+  /** Reserve a 3" med-pouch zone with face PALS outboard of the cells (the Stacked Micro trades the utility pocket for it). Default true. */
+  med_zone?: boolean;
+  /** Bungee pull tab length, display units. Default 3 1/2". */
+  pull_tab_length?: number;
   /** PALS columns on each end of the panel (0–2). Default 1. */
   side_pals_columns?: number;
   /** Elastic loops along the bottom edge. Default 2. */
@@ -98,6 +115,37 @@ export interface ResolvedInputs {
   side_pals_rows: number;
   /** Total front width when split: 2 × panel + gap. */
   total_front_width: number;
+  // ── stacked_cells ──
+  cells_deep: number;
+  stack_ease: number;
+  wrap_allowance: number;
+  coverage: number;
+  cradle_width: number;
+  cradle_drop: number;
+  med_zone: boolean;
+  med_zone_width: number;
+  pull_tab_length: number;
+  /** Rear cell (flat on the panel): mag depth + ease. Consumes panel width. */
+  rear_cell_width: number;
+  /** Front cell division pitch on the face: rear cell + wrap allowance. */
+  front_cell_mark: number;
+  /** n_deep × mag thickness + divider layers. */
+  stack_depth: number;
+  /** coverage × mag length. */
+  pouch_height: number;
+  /** Magazine standing proud of the mouth: length − pouch height − cradle drop. */
+  mag_exposed_height: number;
+  /** Cradle webbing length: stack depth + hem at the face + run under the back Velcro + drop. */
+  cradle_length: number;
+  grommet_count: number;
+  cord_count: number;
+  pull_tab_count: number;
+  /** Loaded magazine weight for the set, lb (5.56 ≈ 1.6, .308 ≈ 2.4, AK ≈ 1.8). */
+  loaded_weight_lb: number;
+  /** Split pull tabs only for curved magazines (AK); plain otherwise. */
+  split_pull: boolean;
+  /** Rear cell width is a multiple of the 1.5" PALS column. */
+  pals_aligned: boolean;
 }
 
 export type WarningSeverity = 'error' | 'warning' | 'info';

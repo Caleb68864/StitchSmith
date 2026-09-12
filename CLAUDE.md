@@ -77,6 +77,11 @@ numbers. Rules already encoded, with the note that justifies each:
 - Padded straps: SOE's recommended build tacks the webbing 1" into the pad
   ends, never through the foam (`rigs/harness-padded-strap-construction.md`);
   strap length must take the gusset depth as an input (`packs/medpack-shoulder-harness.md`).
+- Stacked cells (`rigs/stacked-mag-cell-geometry.md`): the mag stands flat
+  side out, so rear cell = mag depth + ease (≥ 1/4", not PALS-snapped), front
+  mark = rear cell + wrap allowance (1/4"–mag thickness, unsettled — mock it),
+  stack depth = deep × thickness + 1/8", pouch = coverage × length; the cradle
+  is the depth stop and the bungee anchor; no elastic that cannot be replaced.
 - When a note marks a number Open / Inferred, carry it forward as an input or
   a warning tagged `mock-derived`, never as a hard default.
 - H-harness (`rigs/harness-h-geometry.md`): 1.5" webbing full pad length and

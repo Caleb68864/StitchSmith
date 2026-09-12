@@ -55,6 +55,10 @@ const TARGETS: Record<string, Target> = {
   'circle skirt': { open: /Open Circle Skirt/i, seams: true, fitReport: false },
   'micro rig': { open: /Open Micro Rig/i, seams: true, fitReport: true, maxStretch: 150 },
   'padded sling': { open: /Open Padded Sling/i, seams: false, fitReport: false },
+  'micro rig (.308 stacked)': {
+    open: /Open Micro Rig/i, seams: true, fitReport: true, maxStretch: 150,
+    seed: { key: 'stitchsmith.micro-rig.project', project: { schemaVersion: 8, generatorId: 'micro-rig', projectName: 'E2E', ...stamp, inputs: { units: 'in', panel_width_preset: 'r308_14', pocket_set: 'stacked_cells', magazine_preset_id: 'pmag_308_20', cell_count: 2, cells_deep: 2 } } },
+  },
 };
 
 async function openAssemblyTab(page: Page, target: Target) {

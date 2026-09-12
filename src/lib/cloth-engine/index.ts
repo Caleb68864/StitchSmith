@@ -5,3 +5,5 @@ export { DEFAULT_CLOTH_PARAMS, createWorld, step, relax, seamResidual, maxStretc
 export { foldedInitial, foldedCreaseRest } from './initial.js';
 export type { TorsoSpec, TorsoForm } from './body.js';
 export { torsoForm, shoulderPath, TORSO_MEDIUM } from './body.js';
+export type { PinSpec } from './pins.js';
+export { pinHolds } from './pins.js';

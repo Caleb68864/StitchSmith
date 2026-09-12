@@ -19,6 +19,7 @@ import {
   UTILITY_LOOP_FIELD_MM, INTERIOR_VELCRO_HEIGHT_MM, DANGLER_FIELD_MM, ELASTIC_PITCH_MM, ELASTIC_LOOP_LEN_MM,
   PALS_ROW_PITCH_MM, PALS_WEBBING_MM, PALS_TOP_DROP_MM, PALS_COLUMN_PITCH_MM, JOIN_BUCKLES, ANTIFLOP_CELL_MM,
   MIN_PUCKER_PER_SIDE_MM, STRAP_WEBBING_MM, SHOULDER_STRAP_LEN_MM, WAIST_STRAP_LEN_MM,
+  CELL_VELCRO_MM, FRONT_POUCH_BOTTOM_HEM_MM, POUCH_END_HEM_MM, CRADLE_END_MM, WEIGHT_WARN_LB,
 } from './defaults.js';
 
 export type Result<T> = { ok: true; value: T } | { ok: false; errors: BuildPatternError[] };
@@ -26,6 +27,8 @@ export type Result<T> = { ok: true; value: T } | { ok: false; errors: BuildPatte
 export const PANEL_FRONT_ID = 'panel-front';
 export const PANEL_BACK_ID = 'panel-back';
 export const FACE_ID = 'face';
+export const REAR_POUCH_ID = 'stack-rear-pouch';
+export const FRONT_POUCH_ID = 'stack-front-pouch';
 
 const IN = 25.4;
 const fmt = (mm: number) => String(Math.round(mm));
@@ -73,11 +76,20 @@ function buildPanelFront(r: ResolvedInputs): Piece {
   }
   // Placard loop at top centre.
   paths.push({ id: `${PANEL_FRONT_ID}-placard-loop`, closed: false, label: 'Placard webbing loop — 1" down; the rig mounts as an armour placard', edges: [seg(eid, 'notch', W / 2 - 0.75 * IN, 1 * IN, W / 2 + 0.75 * IN, 1 * IN)] });
+  // Med-pouch zone (Stacked Micro): 3" outboard of the columns, with face PALS for the tear-off pouch.
+  if (r.med_zone) {
+    const mx1 = r.panel_width - r.edge_margin, mx0 = mx1 - r.med_zone_width;
+    for (let row = 0; row < 3; row++) {
+      const y = PALS_TOP_DROP_MM + row * PALS_ROW_PITCH_MM;
+      if (y + PALS_WEBBING_MM > H) break;
+      paths.push({ id: `${PANEL_FRONT_ID}-med-pals-${row}`, closed: false, label: row === 0 ? `Med zone ${fmtIn(r.med_zone_width)}" — face PALS for the tear-off med pouch` : undefined, edges: [seg(eid, 'stitch', mx0, y, mx1, y), seg(eid, 'stitch', mx0, y + PALS_WEBBING_MM, mx1, y + PALS_WEBBING_MM)] });
+    }
+  }
   // Mag section: cell divisions at the cell span pitch, from the cell top to the bottom.
   if (r.cell_count > 0) {
     for (let k = 0; k <= r.cell_count; k++) {
       const x = magX0 + k * r.cell_span;
-      paths.push({ id: `${PANEL_FRONT_ID}-cell-${k}`, closed: false, label: k === 0 ? `Mag section — ${r.cell_count} cells at ${fmtIn(r.cell_span)}" (span ${fmtIn(r.mag_span)}"); face sews here bottom first, then divisions, then sides` : undefined, edges: [seg(eid, 'stitch', x, cellTop, x, H)] });
+      paths.push({ id: `${PANEL_FRONT_ID}-cell-${k}`, closed: false, label: k === 0 ? (r.pocket_set === 'stacked_cells' ? `Stacked cells — ${r.cell_count} column${r.cell_count === 1 ? '' : 's'} × ${r.cells_deep} deep at ${fmtIn(r.cell_span)}" (rear cell = mag depth + ${fmtIn(r.stack_ease)}" ease); rear pouch divisions sew here` : `Mag section — ${r.cell_count} cells at ${fmtIn(r.cell_span)}" (span ${fmtIn(r.mag_span)}"); face sews here bottom first, then divisions, then sides`) : undefined, edges: [seg(eid, 'stitch', x, cellTop, x, H)] });
     }
     paths.push({ id: `${PANEL_FRONT_ID}-cell-bottom`, closed: false, label: 'Cell bottom — face bottom gathers onto this line', edges: [seg(eid, 'stitch', magX0, H - 0.5 * IN, magX0 + r.mag_span, H - 0.5 * IN)] });
   }
@@ -171,6 +183,55 @@ function buildFacePieces(r: ResolvedInputs): { pieces: Piece[]; warnings: string
   return { pieces, warnings: res.warnings ?? [] };
 }
 
+/** Stacked cells: rear double pouch, front single pouches, divider, cradles, bridge, cords, pull tabs, cell Velcro. */
+function buildStackedPieces(r: ResolvedInputs): Piece[] {
+  if (r.pocket_set !== 'stacked_cells') return [];
+  const q = r.split_front ? 2 : 1;
+  const n = r.cell_count;
+  const out: Piece[] = [];
+  // Rear pouch: self-lined, folded at the mouth (clean folded edge at the top; edge tape at the bottom).
+  const rw = n * r.rear_cell_width + 2 * POUCH_END_HEM_MM;
+  const rh = 2 * r.pouch_height;
+  const rEid = makeEdgeIdGen(REAR_POUCH_ID);
+  const rOutline = rect(rEid, `${REAR_POUCH_ID}-outline`, rw, rh);
+  const rPaths: Path[] = [rOutline,
+    { id: `${REAR_POUCH_ID}-mouth-fold`, closed: false, label: 'Mouth fold — fold in half; the clean folded edge is the top', edges: [seg(rEid, 'fold', 0, r.pouch_height, rw, r.pouch_height)] },
+    { id: `${REAR_POUCH_ID}-hem-l`, closed: false, label: `${fmtIn(POUCH_END_HEM_MM)}" end hem`, edges: [seg(rEid, 'fold', POUCH_END_HEM_MM, 0, POUCH_END_HEM_MM, rh)] },
+    { id: `${REAR_POUCH_ID}-hem-r`, closed: false, edges: [seg(rEid, 'fold', rw - POUCH_END_HEM_MM, 0, rw - POUCH_END_HEM_MM, rh)] },
+  ];
+  for (let k = 1; k < n; k++) {
+    const x = POUCH_END_HEM_MM + k * r.rear_cell_width;
+    rPaths.push({ id: `${REAR_POUCH_ID}-division-${k}`, closed: false, label: k === 1 ? `Rear cell division — ${fmtIn(r.rear_cell_width)}" pitch` : undefined, edges: [seg(rEid, 'stitch', x, 0, x, rh)] });
+  }
+  for (let k = 0; k < n; k++) {
+    const x0 = POUCH_END_HEM_MM + k * r.rear_cell_width;
+    const vy0 = r.pouch_height - r.pouch_height * 0.85, vy1 = r.pouch_height + r.pouch_height * 0.85;
+    rPaths.push({ id: `${REAR_POUCH_ID}-velcro-${k}`, closed: false, label: k === 0 ? `Cell loop Velcro ${fmtIn(CELL_VELCRO_MM)}" wide on both walls, stopping short of the cradle field` : undefined, edges: [seg(rEid, 'stitch', x0 + (r.rear_cell_width - CELL_VELCRO_MM) / 2, vy0, x0 + (r.rear_cell_width - CELL_VELCRO_MM) / 2, vy1), seg(rEid, 'stitch', x0 + (r.rear_cell_width + CELL_VELCRO_MM) / 2, vy0, x0 + (r.rear_cell_width + CELL_VELCRO_MM) / 2, vy1)] });
+  }
+  out.push({ id: REAR_POUCH_ID, name: 'Rear pouch (self-lined, folded at the mouth)', mirror: false, quantity: q, materialId: 'cordura-500', paths: rPaths, seamAllowances: saRecord(rOutline, 0), annotations: [{ kind: 'label', label: `Rear pouch — cut ${fmtIn(rw)} × ${fmtIn(rh)}"; ${n} cell${n === 1 ? '' : 's'} at ${fmtIn(r.rear_cell_width)}"; folds to ${fmtIn(r.pouch_height)}" tall`, point: { x: rw / 2, y: rh / 2 } }] });
+  if (r.cells_deep === 2) {
+    // Front pouch, one per column: wider by the wrap allowance, cut 1" longer for a bottom hem.
+    const fw = r.front_cell_mark + 2 * POUCH_END_HEM_MM;
+    const fh = 2 * r.pouch_height + FRONT_POUCH_BOTTOM_HEM_MM;
+    const fEid = makeEdgeIdGen(FRONT_POUCH_ID);
+    const fOutline = rect(fEid, `${FRONT_POUCH_ID}-outline`, fw, fh);
+    out.push({ id: FRONT_POUCH_ID, name: 'Front pouch (one per column, self-lined)', mirror: false, quantity: n * q, materialId: 'cordura-500', paths: [fOutline,
+      { id: `${FRONT_POUCH_ID}-mouth-fold`, closed: false, label: 'Mouth fold', edges: [seg(fEid, 'fold', 0, r.pouch_height + FRONT_POUCH_BOTTOM_HEM_MM / 2, fw, r.pouch_height + FRONT_POUCH_BOTTOM_HEM_MM / 2)] },
+      { id: `${FRONT_POUCH_ID}-hem-l`, closed: false, label: `${fmtIn(POUCH_END_HEM_MM)}" end hem`, edges: [seg(fEid, 'fold', POUCH_END_HEM_MM, 0, POUCH_END_HEM_MM, fh)] },
+      { id: `${FRONT_POUCH_ID}-hem-r`, closed: false, edges: [seg(fEid, 'fold', fw - POUCH_END_HEM_MM, 0, fw - POUCH_END_HEM_MM, fh)] },
+      { id: `${FRONT_POUCH_ID}-bottom-hem`, closed: false, label: `${fmtIn(FRONT_POUCH_BOTTOM_HEM_MM)}" bottom hem — cut long so the raw bottom is hemmed, not taped`, edges: [seg(fEid, 'fold', 0, fh - FRONT_POUCH_BOTTOM_HEM_MM, fw, fh - FRONT_POUCH_BOTTOM_HEM_MM)] },
+      { id: `${FRONT_POUCH_ID}-pull`, closed: false, label: `${r.split_pull ? 'Split' : 'Plain'} pull tab lands dead centre, before the face is sewn down`, edges: [seg(fEid, 'notch', fw / 2, r.pouch_height * 0.6, fw / 2, r.pouch_height * 0.9)] },
+    ], seamAllowances: saRecord(fOutline, 0), annotations: [{ kind: 'label', label: `Front pouch — cut ${fmtIn(fw)} × ${fmtIn(fh)}"; marks ${fmtIn(r.front_cell_mark)}" on the face (rear cell + ${fmtIn(r.wrap_allowance)}" wrap)`, point: { x: fw / 2, y: fh / 2 } }] });
+    out.push(strip('stack-divider', 'Centre divider (folded double)', n * r.rear_cell_width, 2 * r.pouch_height, q, 'cordura-500', `Divider between the rear and front layers — ${fmtIn(n * r.rear_cell_width)} × ${fmtIn(2 * r.pouch_height)}", folded`));
+    out.push(strip('stack-bridge', 'Webbing bridge between cells', n * r.rear_cell_width, PALS_WEBBING_MM, q, 'webbing-25', 'Sewn between the two cells: the back bungee anchors here and runs between the mags and over the tops'));
+  }
+  out.push(strip('stack-cradle', `Cradle webbing ${fmtIn(r.cradle_width)}"`, r.cradle_length, r.cradle_width, n * q, `webbing-${Math.round(r.cradle_width)}`, `Cradle — ${fmtIn(r.cradle_length)}" per column: ${fmtIn(CRADLE_END_MM)}" hemmed over at the face, ${fmtIn(r.stack_depth)}" across the stack${r.cradle_drop > 0 ? ` + ${fmtIn(r.cradle_drop)}" drop` : ''}, ${fmtIn(CRADLE_END_MM)}" under the back Velcro; grommets set in it`));
+  out.push(strip('stack-pull-tab', 'Bungee pull tab', r.pull_tab_length, 1 * IN, r.pull_tab_count * q, 'webbing-25', `${r.split_pull ? 'Split pull (curved AK mag)' : 'Plain pull'} — ${fmtIn(r.pull_tab_length)}", one per magazine, dead centre of its cell`));
+  out.push(strip('stack-bungee', 'Bungee cord', 2 * (r.pouch_height + r.stack_depth) + 6 * IN, 4, r.cord_count * q, 'elastic-4', 'One cord per magazine (a bungee cut in half): front cord through the face PALS, back cord on the bridge, knotted below the cradle grommet'));
+  out.push(strip('stack-cell-velcro', 'Cell loop Velcro', CELL_VELCRO_MM, r.pouch_height * 1.7, 2 * n * q, 'velcro-loop', 'Both interior walls of every rear cell; leading edge captured under the next seam, never raw toward the opening'));
+  return out;
+}
+
 function buildUtilityPocket(r: ResolvedInputs): Piece[] {
   if (!r.utility_pocket) return [];
   const sa = r.seam_allowance;
@@ -246,6 +307,10 @@ function buildHardware(r: ResolvedInputs): HardwareItem[] {
     { id: 'tri-glide', name: '1.5" tri-glide', quantity: r.suspension === 'webbing_straps' ? 4 : 0, notes: 'Strap adjustment' },
   ];
   if (r.split_front) hw.push({ id: 'join-buckle', name: '1.5" side-release buckle (join)', quantity: JOIN_BUCKLES, notes: 'Joins the two halves at the sternum' });
+  if (r.pocket_set === 'stacked_cells') {
+    hw.push({ id: 'cradle-grommet', name: '#4 grommet in the cradle webbing', quantity: r.grommet_count * q, notes: 'One per magazine; holes pre-burned for position, then pressed. The cradle is the bungee anchor plate.' });
+    hw.push({ id: 'velcro-dot', name: '1" adhesive hook dot (on the magazine)', quantity: r.cell_count * r.cells_deep * q, notes: 'One inch is enough; a 2" patch makes the mag nearly impossible to draw.' });
+  }
   if (r.suspension === 'h_harness') hw.push({ id: 'h-harness', name: 'Slim padded H-harness', quantity: 1, notes: 'Build it on the Padded Strap page (H-harness mode); it clips into the four buckles and is the prerequisite for a hydration carrier' });
   return hw.filter((h) => h.quantity > 0);
 }
@@ -258,6 +323,16 @@ function buildSteps(r: ResolvedInputs): Step[] {
   if (r.pocket_set === 'mag_cells') {
     steps.push({ id: 'rig.cells', title: 'Sew the mag cells to the front layer', body: `Hem the face ends, fold it double, and sew it to the front layer over the mag section (${r.cell_count} cells at ${fmtIn(r.cell_span)}", span ${fmtIn(r.mag_span)}"): bottom first (the face gathers onto the cell-bottom line), then the divisions, then the outer sides, so a magazine never meets a raw ridge on the way in. ${fmtIn(r.pucker_per_side)}" of pucker each side of every cell wraps the magazine. Tack the cradles under each cell.`, dependsOn: ['rig.interior'], refsPieces: [PANEL_FRONT_ID, FACE_ID], group: 'Front' });
   }
+  if (r.pocket_set === 'stacked_cells') {
+    steps.push(
+      { id: 'rig.stack-prep', title: 'Prepare the pouches before anything is sewn down', body: `Hem the ends of the rear pouch and the ${r.cell_count} front pouch${r.cell_count === 1 ? '' : 'es'} ${fmtIn(POUCH_END_HEM_MM)}" and fold each at its mouth (clean folded edge up). Sew the ${fmtIn(CELL_VELCRO_MM)}" loop Velcro on BOTH interior walls of every rear cell, stopping short of the cradle field, leading edge captured under the next seam. Anchor the ${r.pull_tab_count} pull tabs dead centre of each cell face now — they cannot be added after the face is locked down.`, dependsOn: ['rig.interior'], refsPieces: [REAR_POUCH_ID, ...(r.cells_deep === 2 ? [FRONT_POUCH_ID] : []), 'stack-pull-tab', 'stack-cell-velcro'], group: 'Front' },
+      { id: 'rig.cells', title: 'Sew the rear pouch to the front layer', body: `Sew the rear pouch to the front layer at its ${r.cell_count > 1 ? `${r.cell_count - 1} division${r.cell_count > 2 ? 's' : ''} (${fmtIn(r.rear_cell_width)}" pitch — mag depth + ${fmtIn(r.stack_ease)}" ease) and` : ''} outer sides, side sew lines ${fmtIn(r.rear_cell_width / 2)}" off each cell centre. Edge-tape the raw bottom. Mags sit to the support-hand side; excess runs outboard.${r.pals_aligned ? '' : ` A ${fmtIn(r.cell_span)}" cell does not line up with the 1.5" PALS grid — face PALS on the cells will not mount up in spec spacing.`}`, dependsOn: ['rig.stack-prep'], refsPieces: [PANEL_FRONT_ID, REAR_POUCH_ID], group: 'Front' },
+    );
+    if (r.cells_deep === 2) {
+      steps.push({ id: 'rig.stack-front', title: 'Divider, bridge and the front pouches', body: `Sew the divider over the rear pouch face, then the webbing bridge between the layers at the top (the back bungee anchors to it). Sew each front pouch onto the divider at ${fmtIn(r.front_cell_mark)}" marks — ${fmtIn(r.wrap_allowance)}" more than the rear cell so the face travels out over the rear magazine and back. That wrap was decided by feel on camera; pin scrap round two real magazines and measure before you commit. The stack is ${fmtIn(r.stack_depth)}" deep. Hem the front pouch bottoms.`, dependsOn: ['rig.cells'], refsPieces: [FRONT_POUCH_ID, 'stack-divider', 'stack-bridge'], group: 'Front' });
+    }
+    steps.push({ id: 'rig.cradles', title: 'Cradles, grommets and bungee', body: `Under each column sew the ${fmtIn(r.cradle_width)}" cradle: front end hemmed over at the pouch face, back end run under the back Velcro, multi-pass ("1 2 3 4 over 1 2 3 4") — never raw in the channel. Burn and press ${r.cells_deep} grommet${r.cells_deep === 1 ? '' : 's'} per cradle. Run one cord per magazine: the front cord through the face PALS, the back cord on the bridge, over the mag tops and down through the grommet, knotted below so it sits inside out of the way. X-tack the load-bearing webbing corners. No elastic anywhere it cannot be replaced with scissors and a knot. Magazines get a 1" hook dot; the mag rides ${fmtIn(r.mag_exposed_height)}" proud of the mouth.`, dependsOn: [r.cells_deep === 2 ? 'rig.stack-front' : 'rig.cells'], refsPieces: ['stack-cradle', 'stack-bungee'], group: 'Front' });
+  }
   if (r.utility_pocket) {
     steps.push({ id: 'rig.utility', title: 'Build and attach the utility pocket', body: `Sew the loop field inside the pocket front, join the gusset round three sides of the front (corners turned at the fold marks), and sew the gusset's other edge to the front layer on the utility outline. Sew the lid above it with its two Velcro strips and the dead channel between them.`, dependsOn: ['rig.interior'], refsPieces: [PANEL_FRONT_ID, 'utility-front', 'utility-gusset', 'utility-lid'], group: 'Front' });
   }
@@ -266,7 +341,7 @@ function buildSteps(r: ResolvedInputs): Step[] {
   }
   steps.push(
     { id: 'rig.hardware', title: 'Buckle anchors, placard loop, pull tabs', body: `On the FRONT layer only, sew the two shoulder-buckle anchors ${fmtIn(r.buckle_edge_offset)}" from each edge (${fmtIn(r.buckle_spacing)}" apart), each over its backer, and the placard loop at top centre 1" down. Keep the closure Velcro clear of the anchor stitching. Sew the pull tabs on the opening edge.`, dependsOn: ['rig.interior'], refsPieces: [PANEL_FRONT_ID, 'shoulder-buckle-anchor', 'shoulder-buckle-backer', 'placard-loop', 'pull-tab'], group: 'Panel' },
-    { id: 'rig.close', title: 'Close the panel', body: `Lay the layers back to back (Velcro inside) and edge-tape the sides and bottom, running the tape out past the edge and catching the run-out under the closure Velcro at the top instead of folding it. The top stays open on the Velcro: the panel is a pocket. Set the grommet at bottom centre${r.dangler_field ? ' and sew the dangler hook field on the outside back' : ''}. Sew the waist-strap buckle tabs at the sides last.`, dependsOn: ['rig.hardware', ...(r.pocket_set === 'mag_cells' ? ['rig.cells'] : []), ...(r.utility_pocket ? ['rig.utility'] : [])], refsPieces: [PANEL_FRONT_ID, PANEL_BACK_ID], group: 'Panel' },
+    { id: 'rig.close', title: 'Close the panel', body: `Lay the layers back to back (Velcro inside) and edge-tape the sides and bottom, running the tape out past the edge and catching the run-out under the closure Velcro at the top instead of folding it. The top stays open on the Velcro: the panel is a pocket. Set the grommet at bottom centre${r.dangler_field ? ' and sew the dangler hook field on the outside back' : ''}. Sew the waist-strap buckle tabs at the sides last.`, dependsOn: ['rig.hardware', ...(r.pocket_set === 'mag_cells' ? ['rig.cells'] : []), ...(r.pocket_set === 'stacked_cells' ? ['rig.cradles'] : []), ...(r.utility_pocket ? ['rig.utility'] : [])], refsPieces: [PANEL_FRONT_ID, PANEL_BACK_ID], group: 'Panel' },
   );
   if (r.split_front) {
     steps.push({ id: 'rig.join', title: 'Join the halves at the sternum', body: `Sew the ${JOIN_BUCKLES} join straps with their anchors ${fmtIn(r.buckle_setback)}" from each half's inboard edge, leaving a ${fmtIn(r.gap_width)}" gap between the halves. Put the 3" anti-flop cell on the FRONT face of the join — on the back it lets the panel fall open when the wearer bends. Float a PALS bridge across the gap, sewn to the halves only, never to anything in the gap. Jog the stitch line round the buckles rather than ramming the foot against them; the join zone closes at 8–10 layers.`, dependsOn: ['rig.close'], refsPieces: ['join-strap', 'antiflop-cell', 'gap-bridge-pals'], group: 'Split front' });
@@ -287,6 +362,13 @@ function buildWarnings(inputs: MicroRigInputs, r: ResolvedInputs, engine: string
   if (r.pocket_set === 'mag_cells' && r.pucker_per_side < MIN_PUCKER_PER_SIDE_MM) {
     w.push({ id: 'pucker', severity: 'warning', field: 'face_per_cell', message: `Pucker of ${fmtIn(r.pucker_per_side)}" per side is under the ~0.9" a rifle mag needs to be wrapped; widen the face per cell.` });
   }
+  if (r.pocket_set === 'stacked_cells') {
+    if (inputs.wrap_allowance === undefined) w.push({ id: 'mock-derived-wrap', severity: 'warning', field: 'wrap_allowance', message: `[mock-derived] Wrap allowance defaults to ${fmtIn(r.wrap_allowance)}"; on camera it was 3 1/4", 3 1/2" and 3 3/4" in fifteen seconds. Pin scrap round two real magazines and measure.` });
+    if (!r.pals_aligned) w.push({ id: 'pals-misaligned', severity: 'info', field: 'cell_span', message: `A ${fmtIn(r.cell_span)}" cell is not on the 1.5" PALS grid; anything mounted to the cell faces will not line up in spec spacing (the .308 rig accepts this).` });
+    if (r.loaded_weight_lb > WEIGHT_WARN_LB) w.push({ id: 'weight', severity: 'warning', field: 'cell_count', message: `${r.cell_count * r.cells_deep} loaded ${r.mag.platform === 'rifle_308' ? '.308' : ''} magazines weigh about ${Math.round(r.loaded_weight_lb)} lb. SOE's eight-mag .308 rig became a four-mag rig: "everybody wants it until they have it". Reduce columns or depth.` });
+    if (r.mag.platform === 'rifle_308') w.push({ id: 'r308-height', severity: 'info', message: `The .308 pouch is shorter than the 5.56 one (${fmtIn(r.pouch_height)}" at ${Math.round(r.coverage * 100)} % coverage of a ${fmtIn(r.mag.height)}" magazine), and plain pulls replace the split pulls.` });
+    if (r.mag_exposed_height < 1.5 * IN) w.push({ id: 'grab', severity: 'warning', field: 'coverage', message: `Only ${fmtIn(r.mag_exposed_height)}" of magazine stands proud of the mouth; lower the coverage or add cradle drop for a grab.` });
+  }
   if (r.pocket_set === 'mag_cells' && r.cell_count > 4 && r.mag.platform !== 'rifle_308') {
     w.push({ id: 'class', severity: 'info', message: 'Four rifle mags is the definition of the micro rig class; six only happens on the .308 panel. More than that and "you do not belong in a micro rig".' });
   }
@@ -306,7 +388,7 @@ export function buildPattern(inputs: MicroRigInputs): Result<MicroRigBuildResult
   if (!validation.ok) return { ok: false, errors: validation.errors };
   const r = resolveInputs(inputs);
   const face = buildFacePieces(r);
-  const pieces: Piece[] = [buildPanelFront(r), buildPanelBack(r), ...face.pieces, ...buildUtilityPocket(r), ...buildStrips(r)];
+  const pieces: Piece[] = [buildPanelFront(r), buildPanelBack(r), ...face.pieces, ...buildStackedPieces(r), ...buildUtilityPocket(r), ...buildStrips(r)];
   return {
     ok: true,
     value: { pieces, steps: buildSteps(r), warnings: buildWarnings(inputs, r, face.warnings), hardware: buildHardware(r), resolved: r },

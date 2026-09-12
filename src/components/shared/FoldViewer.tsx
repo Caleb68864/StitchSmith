@@ -34,6 +34,7 @@ import {
   materialBendStiffness,
   materialPlateStiffness,
   DEFAULT_CLOTH_PARAMS,
+  pinHolds,
   type ClothWorld,
   type Solid,
 } from '../../lib/cloth-engine/index.js';
@@ -305,7 +306,7 @@ export function FoldViewer({ pattern, object, placements = NO_PLACEMENTS, seams 
         const gravity: [number, number, number] = gravityProp ?? [-upDir.x * 0.01, -upDir.y * 0.01, -upDir.z * 0.01];
         const hostId = object?.base?.pieceId ?? valid[0].entry.model.pieceId;
         const solids: Solid[] = [...extraSolids, ...(!(object && showObject) ? [] : torsoSolids.length ? torsoSolids : objectBox ? [{ kind: 'box' as const, center: objectBox.center, half: objectBox.half }] : [])];
-        const pinnedByList = (pieceId: string, f: { x: number; y: number }) => pins.some((p) => p.pieceId === pieceId && Math.hypot(f.x - p.point.x, f.y - p.point.y) <= p.radius);
+        const pinnedByList = (pieceId: string, f: { x: number; y: number }) => pinHolds(pins, pieceId, f);
         const world = createWorld({
           meshes: valid.map((v) => v.mesh),
           initial: (mi, _v, f) => inits[mi](f),

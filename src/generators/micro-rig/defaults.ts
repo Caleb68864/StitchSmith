@@ -43,3 +43,21 @@ export const STRAP_WEBBING_MM = 1.5 * IN;
 export const SHOULDER_STRAP_LEN_MM = 54 * IN;
 export const WAIST_STRAP_LEN_MM = 48 * IN;
 export const DEFAULT_MAGAZINE = 'ar15_30_round';
+/** Stacked cells (vault rigs/stacked-mag-cell-geometry.md). */
+export const STACK_EASE_MM = 0.5 * IN;
+export const STACK_EASE_MIN_MM = 0.25 * IN;
+export const WRAP_ALLOWANCE_MM = 0.5 * IN;
+export const WRAP_ALLOWANCE_MIN_MM = 0.25 * IN;
+export const STACK_COVERAGE = 0.65;
+export const DIVIDER_LAYERS_MM = 0.125 * IN;
+export const CRADLE_WIDTH_MM = 2 * IN;
+/** Cradle ends: hemmed over at the pouch face, run under the back Velcro — 1" each. */
+export const CRADLE_END_MM = 1 * IN;
+export const MED_ZONE_MM = 3 * IN;
+export const PULL_TAB_MM = 3.5 * IN;
+export const CELL_VELCRO_MM = 2 * IN;
+export const FRONT_POUCH_BOTTOM_HEM_MM = 1 * IN;
+export const POUCH_END_HEM_MM = 0.5 * IN;
+/** Loaded magazine weight, lb, by platform (vault stacked-rig-308-adaptation.md). */
+export const MAG_WEIGHT_LB: Record<string, number> = { rifle_556: 1.6, rifle_308: 2.4, ak: 1.8, custom: 1.8 };
+export const WEIGHT_WARN_LB = 15;

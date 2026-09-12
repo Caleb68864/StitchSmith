@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
 import type { Pattern } from '../../lib/pattern-engine/graph/Pattern.js';
 import type { SeamSpec, Solid } from '../../lib/cloth-engine/sim.js';
+import type { PinSpec } from '../../lib/cloth-engine/pins.js';
 import type { PiecePlacement } from '../../lib/fold-engine/index.js';
 
 export type { SeamSpec };
@@ -43,6 +44,7 @@ export interface FoldObject {
 }
 
 export type { PiecePlacement };
+export type { PinSpec };
 
 export interface FoldPreview3DProps {
   pattern: Pattern;
@@ -54,8 +56,8 @@ export interface FoldPreview3DProps {
    * pattern coordinates, including closures (lid tip to face) as short seams.
    */
   seams?: SeamSpec[];
-  /** Cloth vertices held still: every vertex of `pieceId` within `radius` of flat `point`. */
-  pins?: { pieceId: string; point: { x: number; y: number }; radius: number }[];
+  /** Cloth vertices held still: every vertex of `pieceId` within `radius` of flat `point`, or inside a flat `rect`. */
+  pins?: PinSpec[];
   /** Extra colliders (a hip form, a tabletop) besides the object. */
   solids?: Solid[];
   /** Gravity per step for the cloth (default: 0.01 mm/step² along −up). */

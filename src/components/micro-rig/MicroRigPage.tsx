@@ -65,8 +65,8 @@ export function MicroRigPage({ project, updateInputs, resetProject, importProjec
       preview={
         <PreviewTabs
           pattern={<PatternPreview inputs={project.inputs} hasErrors={hasErrors} />}
-          assembly={pattern3d && assembly ? <FoldPreview3D pattern={pattern3d} object={assembly.object} placements={assembly.placements} seams={assembly.seams} initialSimulate height={560} /> : null}
-          unavailableReason="The 3D check assembles the mag-cell front; a blank panel has nothing to sew up."
+          assembly={pattern3d && assembly ? <FoldPreview3D pattern={pattern3d} object={assembly.object} placements={assembly.placements} seams={assembly.seams} pins={assembly.pins} initialSimulate height={560} /> : null}
+          unavailableReason="The 3D check assembles the cell front; a blank panel has nothing to sew up."
         />
       }
       sidebar={
@@ -80,6 +80,11 @@ export function MicroRigPage({ project, updateInputs, resetProject, importProjec
               <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
                 <span className="text-muted-foreground">Panel</span><span>{inch(r.panel_width)} × {inch(r.panel_height)}"{r.split_front ? ` per half, ${inch(r.total_front_width)}" across the front` : ''}</span>
                 {r.pocket_set === 'mag_cells' && <><span className="text-muted-foreground">Cells</span><span>{r.cell_count} × {inch(r.cell_span)}" = {inch(r.mag_span)}"; face {inch(r.face_per_cell)}" per cell, pucker {inch(r.pucker_per_side)}"/side</span></>}
+                {r.pocket_set === 'stacked_cells' && <>
+                  <span className="text-muted-foreground">Stack</span><span>{r.cell_count} × {r.cells_deep} = {r.cell_count * r.cells_deep} mags; rear cell {inch(r.rear_cell_width)}" (depth + {inch(r.stack_ease)}"), front marks {inch(r.front_cell_mark)}"</span>
+                  <span className="text-muted-foreground">Depth</span><span>{inch(r.stack_depth)}" stack; pouch {inch(r.pouch_height)}" tall ({Math.round(r.coverage * 100)} %); {inch(r.mag_exposed_height)}" of mag proud</span>
+                  <span className="text-muted-foreground">Retention</span><span>{r.grommet_count} grommets in {inch(r.cradle_length)}" cradles, {r.cord_count} cords, {r.pull_tab_count} {r.split_pull ? 'split' : 'plain'} pulls; ≈ {Math.round(r.loaded_weight_lb)} lb loaded</span>
+                </>}
                 <span className="text-muted-foreground">Width used</span><span>{inch(r.width_needed)}" of {inch(r.panel_width)}"</span>
                 <span className="text-muted-foreground">Interior loop</span><span>3 × {inch(r.internal_velcro_length)}"</span>
                 <span className="text-muted-foreground">Shoulder buckles</span><span>{inch(r.buckle_edge_offset)}" in from each edge, {inch(r.buckle_spacing)}" apart</span>
