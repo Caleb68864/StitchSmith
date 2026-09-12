@@ -9,6 +9,7 @@ import { buildBackPanel } from './modules/backPanel.js';
 import { buildFrontCenterPanel } from './modules/frontCenterPanel.js';
 import { buildFrontWing } from './modules/frontWing.js';
 import { buildPerimeterGusset } from './modules/perimeterGusset.js';
+import { buildTopPanel } from './modules/topPanel.js';
 import { buildTriZipSubsystem } from './modules/triZipSubsystem.js';
 import { buildShoulderStraps } from './modules/shoulderStraps.js';
 import { buildSternumStrap } from './modules/sternumStrap.js';
@@ -135,8 +136,9 @@ export function buildPattern(inputs: TriZipInputs, preset: StylePreset): Result<
   collect(tziResult);
   if (tziResult.seamRef) seamRefs.push(tziResult.seamRef);
 
-  // Gusset
+  // Gusset, then the top panel that closes the pack above it
   collect(buildPerimeterGusset(r));
+  collect(buildTopPanel(r));
 
   // Straps and accessories
   collect(buildShoulderStraps(r));

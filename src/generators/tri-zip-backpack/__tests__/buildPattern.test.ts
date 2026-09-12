@@ -397,3 +397,41 @@ describe('buildPattern — front width and gusset turns (3D assembly)', () => {
     expect(b.paths.filter((p) => p.edges[0]?.role === 'fold').map((p) => p.edges[0].start.x)).toEqual([150]);
   });
 });
+
+describe('buildPattern — top panel closes the pack', () => {
+  it('emits a width × depth top panel whose short side shares seam:gusset-end-top with both gusset ends', () => {
+    const result = buildPattern(DEFAULT_INPUTS, urban_assault);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const top = findPieceById(result.value.pieces, 'top-panel')!;
+    expect(top).toBeDefined();
+    const outline = top.paths.find((p) => p.id === 'top-panel-outline')!;
+    expect(Math.max(...outline.edges.map((e) => e.end.x))).toBe(300);
+    expect(Math.max(...outline.edges.map((e) => e.end.y))).toBe(200);
+    const gusset = findPieceById(result.value.pieces, 'perimeter-gusset')!;
+    const ends = gusset.paths.filter((p) => p.id === 'seam:gusset-end-top');
+    expect(ends.map((p) => p.edges[0].start.x)).toEqual([0, 300 + 2 * 510]);
+    expect(verifySharedSeams([top, gusset]).ok).toBe(true);
+  });
+
+  it('split gusset halves each carry one end seam', () => {
+    const result = buildPattern({ ...DEFAULT_INPUTS, split_gusset: true }, urban_assault);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const a = findPieceById(result.value.pieces, 'perimeter-gusset-a')!;
+    const b = findPieceById(result.value.pieces, 'perimeter-gusset-b')!;
+    expect(a.paths.filter((p) => p.id === 'seam:gusset-end-top').map((p) => p.edges[0].start.x)).toEqual([0]);
+    expect(b.paths.filter((p) => p.id === 'seam:gusset-end-top').map((p) => p.edges[0].start.x)).toEqual([660]);
+  });
+
+  it('final assembly step depends on the top panel', () => {
+    const result = buildPattern(DEFAULT_INPUTS, urban_assault);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const ids = result.value.steps.map((s) => s.id);
+    expect(ids).toContain('tri-zip.top-panel.cut');
+    expect(ids).toContain('tri-zip.top-panel.attach');
+    const final = result.value.steps.find((s) => s.id === 'tri-zip.final.join-front-back')!;
+    expect(final.dependsOn).toContain('tri-zip.top-panel.attach');
+  });
+});

@@ -4,8 +4,8 @@
  * back panel round a block of the finished size, the perimeter gusset turned
  * into its U and seamed to both. Coordinates are flat pattern mm per piece.
  *
- * Not modelled: the top of the pack. The pattern's gusset covers the bottom and
- * sides only and no piece closes the top, so the check leaves it open.
+ * The top panel lies flat over the block, seamed to the back and front top
+ * edges and to both gusset ends, so the block is fully enclosed.
  */
 import type { Piece } from '../../lib/pattern-engine/graph/Piece.js';
 import type { Point } from '../../lib/pattern-engine/graph/Point.js';
@@ -36,7 +36,8 @@ export function triZipAssembly(pieces: Piece[], r: ResolvedInputs): TriZipAssemb
   const wing = pieces.find((p) => p.id === 'front-wing');
   const zip = pieces.find((p) => p.id === 'tri-zip-subsystem');
   const gusset = pieces.find((p) => p.id === 'perimeter-gusset');
-  if (!back || !centre || !wing || !zip || !gusset || r.zipper_method !== 'gusseted') return null;
+  const top = pieces.find((p) => p.id === 'top-panel');
+  if (!back || !centre || !wing || !zip || !gusset || !top || r.zipper_method !== 'gusseted') return null;
 
   const { width, height, depth } = r;
   const wingW = frontWingWidth(r);
@@ -46,7 +47,7 @@ export function triZipAssembly(pieces: Piece[], r: ResolvedInputs): TriZipAssemb
   // drawings are the RIGHT-hand parts; the left-hand parts are their mirrors.
   const wingLeft = mirrorPieceX(wing, WING_LEFT, 'Front Wing (left)');
   const zipLeft = mirrorPieceX(zip, ZIP_LEFT, 'Tri-Zip Gusset Strip (left)');
-  const body: Piece[] = [back, wingLeft, zipLeft, centre, zip, wing, gusset];
+  const body: Piece[] = [back, wingLeft, zipLeft, centre, zip, wing, gusset, top];
   const extras = pieces.filter((p) => !body.includes(p) && p.id !== 'front-wing' && p.id !== 'tri-zip-subsystem');
 
   const front = depth + 2;
@@ -65,6 +66,8 @@ export function triZipAssembly(pieces: Piece[], r: ResolvedInputs): TriZipAssemb
     // Gusset: flat strip = left side | bottom | right side. Root on the bottom, turn the sides up
     // (rx −90° lays the strip's depth along z), and slide it so the bottom sits under the panels.
     'perimeter-gusset': { rootPoint: { x: height + width / 2, y: depth / 2 }, rx: -90, dx: -height, dy: height, dz: 0, keep: true },
+    // Top panel: laid flat over the block (its depth along z), back edge (flat y = 0) at the back.
+    'top-panel': { rx: -90, dx: 0, dy: 0, dz: 0, keep: true },
   };
 
   const v = (pieceId: string, x: number, y0: number, y1: number) => ({ pieceId, from: { x, y: y0 }, to: { x, y: y1 } });
@@ -89,12 +92,23 @@ export function triZipAssembly(pieces: Piece[], r: ResolvedInputs): TriZipAssemb
     { label: 'gusset ↔ back left', a: gLeft(0, height, 0), b: v('back-panel', 0, 0, height) },
     { label: 'gusset ↔ back bottom', a: gLeft(height, height + width, 0), b: h('back-panel', height, 0, width) },
     { label: 'gusset ↔ back right', a: gLeft(height + width, 2 * height + width, 0), b: v('back-panel', width, height, 0) },
+    // Top panel: back edge to the back's top, front edge to the five front tops, short sides to the gusset ends.
+    { label: 'top ↔ back top', a: h('top-panel', 0, 0, width), b: h('back-panel', 0, 0, width) },
+    { label: 'top ↔ left wing top', a: h('top-panel', depth, 0, wingW), b: h(WING_LEFT, 0, 0, wingW) },
+    { label: 'top ↔ left zip strip top', a: h('top-panel', depth, wingW, wingW + zipW), b: h(ZIP_LEFT, 0, 0, zipW) },
+    { label: 'top ↔ centre top', a: h('top-panel', depth, wingW + zipW, wingW + zipW + centreW), b: h('front-center-panel', 0, 0, centreW) },
+    { label: 'top ↔ right zip strip top', a: h('top-panel', depth, wingW + zipW + centreW, wingW + 2 * zipW + centreW), b: h(ZIP_RIGHT, 0, 0, zipW) },
+    { label: 'top ↔ right wing top', a: h('top-panel', depth, wingW + 2 * zipW + centreW, width), b: h(WING_RIGHT, 0, 0, wingW) },
+    { label: 'top ↔ gusset left end', a: v('top-panel', 0, 0, depth), b: v(G, 0, 0, depth) },
+    { label: 'top ↔ gusset right end', a: v('top-panel', width, 0, depth), b: v(G, 2 * height + width, 0, depth) },
   ];
 
   return {
     pieces: [...body, ...extras],
     object: {
-      width, depth, height, label: 'contents', pin: 'footprint',
+      // The pack is closed top and bottom, so the block leaves a cloth thickness at each end
+      // (the viewer lifts an object 1.5 mm off its base; an open mouth would not care).
+      width, depth, height: height - 4, label: 'contents', pin: 'footprint',
       base: { pieceId: 'back-panel', point: { x: width / 2, y: height }, direction: { x: 0, y: -1 } },
     },
     placements,

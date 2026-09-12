@@ -287,10 +287,12 @@ flaps ride inside their covers and seam at the outer edge and hems; the
 Tri-Zip body (`assembly3d.ts`) assembles wings, zip strips, centre, back
 and a gusset turned into its U round the finished block. That found the
 gusseted front 50 mm wider than the back (wings now give up the zip strip
-width) and left one open design gap: nothing closes the top of the pack —
-the gusset stops at the top corners and the front and back top edges are
-not joined. A top panel or a gusset that runs over the top is the next
-Tri-Zip design decision, and the check will confirm it.
+width) and one design gap: nothing closed the top of the pack. Decision
+(2026-09-11): a **top panel**, finished width × depth, sewn to the back top
+edge and both gusset ends before the final front seam, with the top handle
+on it. The assembly now encloses the block completely. Still approximate:
+the rounded/tactical back panel's shaped top corners are seamed as if
+square.
 
 Still outside the check: Tool Roll (not on the pattern engine), Tri-Zip
 with `split_gusset` or the direct zipper method (assembly returns null and

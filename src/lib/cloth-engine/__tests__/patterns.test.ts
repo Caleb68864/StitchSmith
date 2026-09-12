@@ -208,9 +208,9 @@ describe('tri-zip backpack cloth', () => {
     const asm = triZipAssembly(built.value.pieces, r);
     expect(asm).not.toBeNull();
     if (!asm) return;
-    const bodyIds = ['back-panel', WING_LEFT, ZIP_LEFT, 'front-center-panel', 'tri-zip-subsystem', 'front-wing', 'perimeter-gusset'];
+    const bodyIds = ['back-panel', WING_LEFT, ZIP_LEFT, 'front-center-panel', 'tri-zip-subsystem', 'front-wing', 'perimeter-gusset', 'top-panel'];
     const body = asm.pieces.filter((p) => bodyIds.includes(p.id));
-    expect(body).toHaveLength(7);
+    expect(body).toHaveLength(8);
     const { world, bounds } = assemble(body, asm.placements, asm.seams, asm.object, 12);
     // Rigid start: the gusset stands as a U under and beside the block, sides up to the top.
     const g0 = bounds('perimeter-gusset');
@@ -220,6 +220,10 @@ describe('tri-zip backpack cloth', () => {
     // The assembled front is exactly the back panel's width (the wings gave up the zip strips' width).
     const wl = bounds(WING_LEFT), wr = bounds('front-wing');
     expect(wl.lo[0]).toBeCloseTo(0, 0); expect(wr.hi[0]).toBeCloseTo(r.width, 0);
+    // Top panel lies flat over the block at the top, spanning the depth.
+    const t0 = bounds('top-panel');
+    expect(t0.hi[1] - t0.lo[1]).toBeLessThan(1); expect(t0.hi[1]).toBeCloseTo(0, 0);
+    expect(t0.lo[2]).toBeCloseTo(0, 0); expect(t0.hi[2]).toBeCloseTo(r.depth, 0);
     relax(world, 500);
     expect(seamResidual(world).mean).toBeLessThan(1);
     expect(seamResidual(world).max).toBeLessThan(4);
@@ -230,6 +234,10 @@ describe('tri-zip backpack cloth', () => {
     expect(c.lo[2]).toBeGreaterThan(r.depth - 8);
     const g = bounds('perimeter-gusset');
     expect(g.hi[2] - g.lo[2]).toBeGreaterThan(r.depth - 6);
+    // The top stays closed over the block.
+    const t = bounds('top-panel');
+    expect(t.lo[1]).toBeGreaterThan(-12);
+    expect(t.hi[2] - t.lo[2]).toBeGreaterThan(r.depth - 8);
   });
 });
 

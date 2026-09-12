@@ -4,6 +4,7 @@ import type { Path } from '../../../lib/pattern-engine/graph/Path.js';
 import type { Piece } from '../../../lib/pattern-engine/graph/Piece.js';
 import type { ResolvedInputs, ModuleResult } from '../types.js';
 import { perimeterGussetSteps } from '../steps.js';
+import { TOP_GUSSET_END_SEAM_PATH_ID } from './topPanel.js';
 
 function pt(x: number, y: number) { return { x, y }; }
 
@@ -24,6 +25,16 @@ function cornerFolds(idPrefix: string, xs: number[], depth: number, length: numb
         label: 'Corner — notch and turn up the side (90°)',
       };
     });
+}
+
+/** The gusset's top end (x = 0 or x = length) meets a short side of the top panel: same depth, checked by verifySharedSeams. */
+function endSeam(idSuffix: string, x: number, depth: number): Path {
+  const eid = makeEdgeIdGen(`${TOP_GUSSET_END_SEAM_PATH_ID}-${idSuffix}`);
+  return {
+    id: TOP_GUSSET_END_SEAM_PATH_ID,
+    edges: [{ kind: 'straight', id: eid(), role: 'seam', start: pt(x, 0), end: pt(x, depth) }],
+    closed: false,
+  };
 }
 
 function makeGussetPath(id: string, length: number, depth: number): Path {
@@ -58,7 +69,7 @@ export function buildPerimeterGusset(r: ResolvedInputs): ModuleResult {
       name: 'Perimeter Gusset A',
       mirror: false,
       quantity: 1,
-      paths: [pathA, ...cornerFolds('gusset-a', [height], depth, halfLen)],
+      paths: [pathA, ...cornerFolds('gusset-a', [height], depth, halfLen), endSeam('a', 0, depth)],
       annotations: [{ kind: 'label', label: `Gusset A\n${Math.round(halfLen)}×${depth} mm` }],
     });
     pieces.push({
@@ -66,7 +77,7 @@ export function buildPerimeterGusset(r: ResolvedInputs): ModuleResult {
       name: 'Perimeter Gusset B',
       mirror: false,
       quantity: 1,
-      paths: [pathB, ...cornerFolds('gusset-b', [halfLen - height], depth, halfLen)],
+      paths: [pathB, ...cornerFolds('gusset-b', [halfLen - height], depth, halfLen), endSeam('b', halfLen, depth)],
       annotations: [{ kind: 'label', label: `Gusset B\n${Math.round(halfLen)}×${depth} mm` }],
     });
   } else {
@@ -76,7 +87,7 @@ export function buildPerimeterGusset(r: ResolvedInputs): ModuleResult {
       name: 'Perimeter Gusset',
       mirror: false,
       quantity: 1,
-      paths: [path, ...cornerFolds('gusset', [height, height + width], depth, perimeterLength)],
+      paths: [path, ...cornerFolds('gusset', [height, height + width], depth, perimeterLength), endSeam('l', 0, depth), endSeam('r', perimeterLength, depth)],
       annotations: [{ kind: 'label', label: `Perimeter Gusset\n${Math.round(perimeterLength)}×${depth} mm` }],
     });
   }

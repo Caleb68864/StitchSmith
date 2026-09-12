@@ -84,6 +84,27 @@ export function perimeterGussetSteps(): Step[] {
   ];
 }
 
+export function topPanelSteps(): Step[] {
+  return [
+    {
+      id: 'tri-zip.top-panel.cut',
+      title: 'Cut top panel',
+      body: 'Cut the top panel at finished width × depth. Mark the centre of its long sides for the top handle.',
+      dependsOn: [],
+      refsPieces: ['top-panel'],
+      group: 'Top Panel',
+    },
+    {
+      id: 'tri-zip.top-panel.attach',
+      title: 'Attach top panel',
+      body: 'With the handle already on it, pin the top panel to the back panel top edge and to both gusset ends; stitch. Its front edge joins the front assembly in the final seam.',
+      dependsOn: ['tri-zip.top-panel.cut', 'tri-zip.gusset.attach', 'tri-zip.top-handle.attach'],
+      refsPieces: ['top-panel', 'back-panel', 'perimeter-gusset', 'top-handle'],
+      group: 'Top Panel',
+    },
+  ];
+}
+
 export function triZipSubsystemSteps(): Step[] {
   return [
     {
@@ -143,10 +164,10 @@ export function topHandleSteps(): Step[] {
     },
     {
       id: 'tri-zip.top-handle.attach',
-      title: 'Attach top handle to back panel',
-      body: 'Box-stitch handle to back panel at the marked positions.',
-      dependsOn: ['tri-zip.top-handle.cut', 'tri-zip.back-panel.cut'],
-      refsPieces: ['top-handle', 'back-panel'],
+      title: 'Attach top handle to top panel',
+      body: 'Box-stitch the handle to the top panel at the marked centre positions, before the top panel is sewn in.',
+      dependsOn: ['tri-zip.top-handle.cut', 'tri-zip.top-panel.cut'],
+      refsPieces: ['top-handle', 'top-panel'],
       group: 'Handles',
     },
   ];
@@ -195,14 +216,15 @@ export function finalAssemblySteps(): Step[] {
   return [
     {
       id: 'tri-zip.final.join-front-back',
-      title: 'Join front assembly to gusset',
-      body: 'Pin the assembled front panel (center + wings) to the gusset. Clip corners. Stitch all around.',
+      title: 'Join front assembly to gusset and top panel',
+      body: 'Pin the assembled front panel (center + wings) to the gusset down both sides and across the bottom, and to the top panel across the top. Clip corners. Stitch all around.',
       dependsOn: [
         'tri-zip.gusset.attach',
+        'tri-zip.top-panel.attach',
         'tri-zip.front-center.attach-zipper',
         'tri-zip.front-wing.attach-zipper',
       ],
-      refsPieces: ['front-center-panel', 'front-wing', 'perimeter-gusset', 'back-panel'],
+      refsPieces: ['front-center-panel', 'front-wing', 'perimeter-gusset', 'top-panel', 'back-panel'],
       group: 'Final Assembly',
     },
     {
