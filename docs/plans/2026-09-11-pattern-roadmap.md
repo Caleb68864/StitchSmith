@@ -71,9 +71,33 @@ Engines: `pattern-engine` (graph, geometry, exporters), `pouch-engine`
    17 / M&P / 1911 mag and add presets with a `pistol` platform. Cell span
    under a PALS mount rounds to 1.5" (one column) or 3" (two) — surface the
    choice.
+   **BLOCKED (checked 2026-11-09): open question.** No pistol magazine
+   dimensions are sourced in the repo (`src/generators/mag-pouch/magazines.ts`
+   has rifle presets only) and the vault note says the cell width is unknown.
+   Needed before any code: measured width × thickness × length for a Glock 17,
+   M&P and 1911 magazine (manufacturer sheet or calipers, ±0.05"), and the
+   pistol cell ease. Do not add placeholder numbers.
 2. **Stacked (two-deep) cells.** `rigs/stacked-mag-cell-geometry.md` carries a
    full parametric block with a .308 test case (mag_depth 2.9, thick 1.1,
    length 5.75 must reproduce its table). Add `cells_deep` to the card.
+   **Status 2026-11-09:** the block itself is done — built on the micro rig
+   (`stacked_cells`, pattern #4) and now lifted into the pouch engine
+   (`src/lib/pouch-engine/fit/stacked.ts`: `stackedCellGeometry` +
+   `validateStackedCells`, .308 table pinned in
+   `src/lib/pouch-engine/__tests__/stacked.test.ts`); the micro rig consumes
+   it with no change to its output. Hardened: a cradle drop deeper than the
+   uncovered magazine length (magazine top below the mouth, negative exposed
+   height) is now rejected. **Still open:**
+   - 2a. `cells_deep` on the standalone Mag Pouch card: the rear self-lined
+     pouch / front pouch / divider / bridge / cradle pieces are drawn only in
+     `src/generators/micro-rig/buildPattern.ts` (`buildStackedPieces`). Move
+     them into a pouch-engine construction (or a `pleated_card` option) so
+     both generators draw them from one place, then add the input, BOM, steps
+     and a 3D assembly to the Mag Pouch.
+   - 2b. Open question for 2a: the standalone card has no host panel, so the
+     back the rear pouch sews to (and its height above the pouch) is not in
+     any sourced note the repo cites. Carry it as an input with a
+     mock-derived warning, or source it, before 2a draws a back.
 3. DONE 2026-09-12 — **One-piece lid with pull channel** (`rigs/subgun-lid-pull-channel.md`):
    lid_cut = wrap + 1.5" channel + velcro overrun; overrun ≥ tallest-mag delta
    + 3" purchase. Replace the derived lid with this when a lid is chosen.

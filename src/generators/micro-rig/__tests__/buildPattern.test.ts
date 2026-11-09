@@ -186,6 +186,9 @@ describe('stacked cells (.308 test case from the vault)', () => {
     expect(validateInputs({ ...R308, wrap_allowance: 0.1 }).ok).toBe(false);
     expect(validateInputs({ ...R308, wrap_allowance: 1.5 }).ok).toBe(false);
     expect(validateInputs({ ...R308, cells_deep: 3 }).ok).toBe(false);
+    // A cradle drop deeper than the uncovered length sinks the magazine below the mouth (0.35 × 5.75 ≈ 2.01").
+    expect(validateInputs({ ...R308, cradle_drop: 2.5 }).ok).toBe(false);
+    expect(validateInputs({ ...R308, cradle_drop: 1 }).ok).toBe(true);
     expect(validateInputs({ ...R308, stack_ease: 0.1 }).ok).toBe(false);
   });
   it('one deep drops the front pouch, divider and bridge', () => {
