@@ -35,6 +35,8 @@ export { buildDrainage, GROMMET_EXPOSURE_WARNING } from './components/drainage.j
 
 export type { CarriedObject } from './object/index.js';
 export type { FitParams } from './fit/index.js';
+export type { StackedCellInput, StackedCellGeometry, StackedCellError } from './fit/stacked.js';
+export { stackedCellGeometry, validateStackedCells } from './fit/stacked.js';
 export type {
   PouchSpec,
   PouchResult,
