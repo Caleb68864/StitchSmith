@@ -212,6 +212,52 @@ hydration carrier interfaces as pieces, laser-cut slotted shoulder straps.
 reconciled builds. Circle Skirt already covers the apparel entry point. Hold
 until the tactical line is done.
 
+**Status 2026-11-16: PROPOSAL ONLY, nothing built. Waiting on the owner.**
+Checked against the code: there is nothing for shelter or sleep in `src/`
+(no tarp, quilt, hammock, bivy or net generator, and no helper for them).
+Apparel is the Circle Skirt only. Three reasons not to build:
+
+- The item names a category, not a pattern. Every pattern from 1 to 9 was
+  built from a reconciled vault build with a `## For the generator` block.
+  This entry says those blocks do not exist for this category.
+- The vault was not on the machine that ran this check
+  (`~/Documents/Notes/Caleb's Vault/` is missing). None of the 87 notes could
+  be read, so none could be confirmed as a reconciled build. A generator
+  built now would have no sourced numbers behind it. CLAUDE.md forbids that:
+  an Open number is an input with a warning, never a hard default.
+- The hold condition is half met. Patterns 1 to 9 are done, but the pouch
+  line ("Pouch styles beyond the mag pouch") and follow-ups 2a, 4, 7 and 10
+  are still open.
+
+Candidates, ordered by how well the existing engine fits each:
+
+| # | Pattern | What the engine already has | What it still needs | Owner or vault input needed |
+|---|---|---|---|---|
+| a | **Flat / A-frame tarp** (rectangle, optional cat-cut ridge and edges) | Flat panels. The Circle Skirt's `fabric_width` panel split for yardage seams. Tiled print and DXF for large pieces. Grommet patch placement from `pouch-engine/components/drainage.ts`. A fold line at the ridge for the fold preview. | A catenary (or parabola) edge curve; `geometry/arc.ts` has only Bézier and spline fits. The **Hem primitive** from the engine list below. Tie-out reinforcement patches as pieces. A ridge seam choice (flat-felled or `frenchSeam.ts`). | Footprint, cat-cut sag ratio, number and position of tie-outs, hem depth, fabric (sewn silnylon vs taped or bonded DCF, which the engine cannot express). |
+| b | **Gathered-end hammock** | A rectangle with channel hems at the ends. BOM and steps machinery. | Hem primitive (channel = hem). A whipping or channel end choice. A structural-ridgeline length (a derived number). A load warning. | Length, width and fabric. Whether to encode the common ~83 % ridgeline figure (not a vault number as far as the roadmap records). A safety disclaimer policy. |
+| c | **Top quilt / underquilt** | Tapered outline via spline fits. Fabric-width panel splitting. | A baffle-chamber primitive (sewn-through vs baffled; baffle height; differential cut between shell and liner). A fill-weight calculation per chamber (volume × overstuff / fill power) in the BOM, in grams. A footbox closure (zip or sewn). | Target loft, fill power, overstuff %, baffle spacing and height, taper. All are reference-grade at best, so inputs with `mock-derived` warnings. |
+| d | **Bivy / bathtub floor or bug net** | Boxed corners (`geometry/boxedCorner.ts`). Zipper pieces from the pouch and pack generators. | A long zipper on a curved edge. A mesh material on its own cut sheet (already an open engine item). | Body length, shoulder girth, tub height, zipper layout. |
+| e | **Apparel beyond the skirt** (gaiters first, then a wind shirt or beanie) | Circle Skirt measurement handling and units conversion. Cone-wrap 3D placements over a body form. | Body-measurement drafting: slopers, grading, curved armholes and necklines. There is no drafting primitive, so this is the largest lift. Gaiters are the exception: a shaped tube plus an instep strap. | Which garment. A measurement set. A sizing source. |
+
+Already covered and not needed: stuff sacks and ditty bags (Roll-Top Stuff
+Sack, Zip Pouch). A drawstring compression-sack mode on the Roll-Top is the
+cheapest "sleep" item if one is wanted.
+
+Recommended order once released: **a → b → c → d → e**. The tarp and hammock
+share the Hem primitive and flat-panel layout, and building them pays for
+that engine item. The quilt adds the baffle primitive. Apparel waits for a
+drafting engine.
+
+Before the first one is built, the owner needs to:
+
+1. Release the hold, or say which open tactical items must land first.
+2. Pick the first pattern. The recommendation is the tarp.
+3. Make the vault readable to the agent, or list which of the 87 notes (if
+   any) carry a `## For the generator` block. Otherwise every number is
+   `mock-derived`.
+4. Say whether DCF (taped or bonded, not sewn) is in scope. The engine models
+   only sewn seams.
+
 ## Pouch styles beyond the mag pouch
 
 Not needed yet. The two mag-pouch constructions (folded-T single, SOE pleated
