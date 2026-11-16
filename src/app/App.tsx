@@ -18,6 +18,7 @@ import { useSlingProject } from '../state/useSlingProject.js';
 import { useOrganizerProject } from '../state/useOrganizerProject.js';
 import { useLbvProject } from '../state/useLbvProject.js';
 import { useTarpProject } from '../state/useTarpProject.js';
+import { useHammockProject } from '../state/useHammockProject.js';
 import { usePlateCarrierProject } from '../state/usePlateCarrierProject.js';
 import { useClamshellPackProject } from '../state/useClamshellPackProject.js';
 import { useFannyPackProject } from '../state/useFannyPackProject.js';
@@ -73,6 +74,9 @@ const ClamshellPackPage = lazy(() =>
 const TarpPage = lazy(() =>
   import('../components/tarp/TarpPage.js').then(m => ({ default: m.TarpPage }))
 );
+const HammockPage = lazy(() =>
+  import('../components/hammock/HammockPage.js').then(m => ({ default: m.HammockPage }))
+);
 const FannyPackPage = lazy(() =>
   import('../components/fanny-pack/FannyPackPage.js').then(m => ({ default: m.FannyPackPage }))
 );
@@ -95,6 +99,7 @@ const HEADER_SUBTITLES: Partial<Record<View, string>> = {
   'plate-carrier': 'Plate Carrier Generator',
   'lbv': 'Modular LBV Generator',
   'tarp': 'Tarp Generator',
+  'hammock': 'Hammock Generator',
 };
 
 const VIEW_TITLES: Record<View, string> = {
@@ -115,6 +120,7 @@ const VIEW_TITLES: Record<View, string> = {
   'clamshell-pack': 'StitchSmith — Clamshell Pack',
   'fanny-pack': 'StitchSmith — Fanny Pack',
   'tarp': 'StitchSmith — Tarp',
+  'hammock': 'StitchSmith — Hammock',
 };
 
 type View = 'landing' | PatternEntry['route'];
@@ -155,6 +161,7 @@ export function App() {
   const clamshell_packState = useClamshellPackProject();
   const fanny_packState = useFannyPackProject();
   const tarpState = useTarpProject();
+  const hammockState = useHammockProject();
 
   useEffect(() => {
     document.title = VIEW_TITLES[view] ?? 'StitchSmith';
@@ -344,6 +351,14 @@ export function App() {
             updateInputs={tarpState.updateInputs}
             resetProject={tarpState.resetProject}
             importProject={tarpState.importProject}
+          />
+        )}
+        {view === 'hammock' && (
+          <HammockPage
+            project={hammockState.project}
+            updateInputs={hammockState.updateInputs}
+            resetProject={hammockState.resetProject}
+            importProject={hammockState.importProject}
           />
         )}
         {view === 'lbv' && (

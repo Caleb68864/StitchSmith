@@ -37,6 +37,8 @@ import { makeDefaultPlateCarrierProject } from '../../../state/usePlateCarrierPr
 import { LbvSettingsPanel } from '../../lbv/LbvSettingsPanel.js';
 import { TarpSettingsPanel } from '../../tarp/TarpSettingsPanel.js';
 import { makeDefaultTarpProject } from '../../../state/useTarpProject.js';
+import { HammockSettingsPanel } from '../../hammock/HammockSettingsPanel.js';
+import { makeDefaultHammockProject } from '../../../state/useHammockProject.js';
 import { makeDefaultLbvProject } from '../../../state/useLbvProject.js';
 
 const noop = vi.fn();
@@ -57,6 +59,7 @@ const PANELS: { name: string; element: () => ReactElement }[] = [
   { name: 'Plate Carrier', element: () => <PlateCarrierSettingsPanel inputs={makeDefaultPlateCarrierProject().inputs} errors={{}} onChange={noop} /> },
   { name: 'Modular LBV', element: () => <LbvSettingsPanel inputs={makeDefaultLbvProject().inputs} errors={{}} onChange={noop} /> },
   { name: 'Tarp', element: () => <TarpSettingsPanel inputs={makeDefaultTarpProject().inputs} errors={{}} onChange={noop} /> },
+  { name: 'Hammock', element: () => <HammockSettingsPanel inputs={makeDefaultHammockProject().inputs} errors={{}} onChange={noop} /> },
 ];
 
 function hasAccessibleName(el: HTMLElement): boolean {

@@ -8,7 +8,7 @@ Everything runs locally in your browser. No accounts, no servers, no telemetry, 
 
 ## What it makes
 
-Sixteen generators, grouped the way the app groups them.
+Seventeen generators, grouped the way the app groups them.
 
 **Pouches**
 
@@ -49,6 +49,7 @@ Sixteen generators, grouped the way the app groups them.
 | Generator | What it produces |
 | --- | --- |
 | Tarp | A-frame tarp: two panels on a flat-felled ridge seam (or one panel), catenary cat cuts on the ridge and eaves, hems marked at double, box-X tie-outs with grosgrain loops, a pitch check on a ridgeline. Sewn fabrics only; every number is a placeholder until checked |
+| Hammock | Gathered-end hammock: rolled side hems (or the selvedge), channel or whipped ends from the Hem primitive, a derived structural ridgeline and a standing load warning. Sewn fabrics only; every number is a placeholder until checked; no 3D check yet |
 
 **Apparel**
 

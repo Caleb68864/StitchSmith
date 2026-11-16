@@ -11,7 +11,7 @@ export interface PatternEntry {
   summary?: string;
   /** Search terms beyond the title (vault names, platforms, materials). */
   tags?: string[];
-  route: 'tool-roll' | 'tri-zip' | 'roll-top' | 'mag-pouch' | 'book-cover' | 'zip-pouch' | 'circle-skirt' | 'padded-strap' | 'micro-rig' | 'sling' | 'organizer' | 'fanny-pack' | 'clamshell-pack' | 'plate-carrier' | 'lbv' | 'tarp';
+  route: 'tool-roll' | 'tri-zip' | 'roll-top' | 'mag-pouch' | 'book-cover' | 'zip-pouch' | 'circle-skirt' | 'padded-strap' | 'micro-rig' | 'sling' | 'organizer' | 'fanny-pack' | 'clamshell-pack' | 'plate-carrier' | 'lbv' | 'tarp' | 'hammock';
 }
 
 export const PATTERNS: PatternEntry[] = [
@@ -167,6 +167,15 @@ registerPattern({
   route: 'tarp',
 });
 
+// Register the hammock entry (idempotent — safe to call multiple times)
+registerPattern({
+  id: 'hammock',
+  title: 'Hammock',
+  description: 'Gathered-end hammock: one body with rolled side hems (or the selvedge), channel or whipped ends from the Hem primitive, a structural ridgeline derived from the length, and a standing load warning. Sewn fabrics only; every number is a placeholder until checked against the vault.',
+  available: true,
+  route: 'hammock',
+});
+
 // ─── Landing-page metadata ─────────────────────────────────────────────────────
 // Category, one-line summary and search tags per generator. Kept here (not in
 // the entries above) so the append-only registry stays untouched; a new
@@ -177,7 +186,7 @@ export const CATEGORIES: { id: PatternCategory; title: string; blurb: string }[]
   { id: 'packs', title: 'Packs and bags', blurb: 'Backpacks, sacks, clamshells and covers.' },
   { id: 'rigs', title: 'Rigs and carriers', blurb: 'Chest rigs, load-bearing vests and plate carriers on a torso.' },
   { id: 'straps', title: 'Straps and slings', blurb: 'Padded straps, harnesses and rifle slings from the strap engine.' },
-  { id: 'shelter', title: 'Shelter and sleep', blurb: 'Tarps on the pattern engine; sewn fabrics only.' },
+  { id: 'shelter', title: 'Shelter and sleep', blurb: 'Tarps and hammocks on the pattern engine; sewn fabrics only.' },
   { id: 'apparel', title: 'Apparel', blurb: 'Garments on the pattern engine.' },
 ];
 
@@ -197,6 +206,7 @@ export const PATTERN_META: Record<string, { category: PatternCategory; summary: 
   'padded-strap': { category: 'straps', summary: 'Pack strap pair or the H-harness from the strap engine, checked on a torso.', tags: ['shoulder strap', 'harness', 'foam', 'J-curve', 'S-curve'] },
   'sling': { category: 'straps', summary: 'Padded two-point rifle sling: turned tube, tuck rule, adapter.', tags: ['rifle', 'sling', 'two-point', 'QD', 'tri-glide'] },
   'tarp': { category: 'shelter', summary: 'A-frame tarp: ridge seam, catenary cat cuts, hems and tie-outs.', tags: ['tarp', 'shelter', 'cat cut', 'catenary', 'silnylon', 'ridgeline', 'tie-out', 'hem', 'camping'] },
+  'hammock': { category: 'shelter', summary: 'Gathered-end hammock: channel or whipped ends, hems and a structural ridgeline.', tags: ['hammock', 'sleep', 'shelter', 'gathered end', 'channel', 'whipping', 'ridgeline', 'hem', 'camping'] },
   'circle-skirt': { category: 'apparel', summary: 'Quarter to double circle skirt with waistband and closure options.', tags: ['skirt', 'garment', 'waist', 'zipper', 'elastic'] },
 };
 
