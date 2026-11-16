@@ -212,7 +212,7 @@ hydration carrier interfaces as pieces, laser-cut slotted shoulder straps.
 reconciled builds. Circle Skirt already covers the apparel entry point. Hold
 until the tactical line is done.
 
-**Status 2026-11-16: PROPOSAL ONLY, nothing built. Waiting on the owner.**
+**Status 2026-11-16 (morning): proposal only, nothing built.**
 Checked against the code: there is nothing for shelter or sleep in `src/`
 (no tarp, quilt, hammock, bivy or net generator, and no helper for them).
 Apparel is the Circle Skirt only. Three reasons not to build:
@@ -257,6 +257,19 @@ Before the first one is built, the owner needs to:
    `mock-derived`.
 4. Say whether DCF (taped or bonded, not sewn) is in scope. The engine models
    only sewn seams.
+
+**Owner decisions, 2026-11-16:**
+
+1. The hold on item 10 is lifted.
+2. The tarp (10a) goes first.
+3. The vault will not be made available. Build with placeholder numbers and
+   give every one a `mock-derived` warning, so it is clear each still has to
+   be checked against the vault.
+4. **DCF is out of scope for now.** Sewn seams and sewn fabrics only
+   (silnylon, silpoly and the like). No taped or bonded construction.
+
+**10a status:** the two engine pieces it needs are built (catenary edge
+curve, Hem primitive; see "Engine work"). The generator is next.
 
 ## Pouch styles beyond the mag pouch
 
@@ -431,8 +444,19 @@ which (the tri-zip `seam:` path convention is the seed).
 - DONE 2026-09-12 (`src/lib/pattern-engine/primitives/palsField.ts`) — **PALS field primitive** on any panel: rows × columns, bartack map, laser-cut
   variant, edge margin ≥ 0.25". Needed by 2, 5, 7, 8, 9.
   `plate-carriers/pals-spec-1in-spacing.md`, `plate-carriers/pals-laser-cut-laminate.md`.
-- **Hem primitive**: per-edge hem depth, mark-at-double line, cut = finished +
+- DONE 2026-11-16 (`src/lib/pattern-engine/primitives/hem.ts`) — **Hem primitive**: per-edge hem depth, mark-at-double line, cut = finished +
   hems, `production_mode` forcing ≥ 0.5". Needed everywhere SOE-style.
+  `resolveHem` (single fold per the vault rule, or a double/rolled fold at
+  2 × depth), `hemmedCut`, and `hemLines`, which draws the raw edge, the
+  creases (labelled so the 3D preview folds them 180°) and the mark on a
+  straight or shallow curved edge. The organizer and the mag-pouch card still
+  compute their hems inline; moving them onto the primitive is a follow-up.
+- DONE 2026-11-16 (`src/lib/pattern-engine/geometry/catenary.ts`) — **Catenary
+  edge curve** for cat cuts: `catenary(span, sag)` solves the curve through
+  both ends with the given mid-span sag (depth, slope, arc length), and
+  `catenaryPoints` samples it on any chord. Tests pin it against the
+  parabola and the shallow-curve arc-length estimate. Needed by 10a and any
+  tensioned edge.
 - **Layer budget per seam**: emit max stack per seam and a machine-class
   requirement; annotate "sew forward only" above ~8 layers.
   `reference/technique-sewing-through-bulk.md`, `rigs/splitfront-technique-layer-budgeting.md`.

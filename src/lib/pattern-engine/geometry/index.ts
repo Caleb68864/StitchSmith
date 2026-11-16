@@ -42,3 +42,5 @@ export {
   makeHorizLine,
   makePathFromPoints,
 } from './paths.js';
+export type { Catenary, CatenaryResult } from './catenary.js';
+export { catenary, catenaryPoints, polylineLength, MAX_SAG_RATIO } from './catenary.js';
