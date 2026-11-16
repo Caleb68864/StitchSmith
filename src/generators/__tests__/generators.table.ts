@@ -34,6 +34,8 @@ import * as sling from '../sling/index.js';
 import { makeDefaultSlingProject } from '../../state/useSlingProject.js';
 import * as tarp from '../tarp/index.js';
 import { makeDefaultTarpProject } from '../../state/useTarpProject.js';
+import * as hammock from '../hammock/index.js';
+import { makeDefaultHammockProject } from '../../state/useHammockProject.js';
 import * as triZip from '../tri-zip-backpack/index.js';
 import { makeDefaultTriZipProject } from '../../state/useTriZipProject.js';
 import * as zipPouch from '../zip-pouch/index.js';
@@ -153,6 +155,13 @@ export const GENERATORS: Gen[] = [
     defaults: () => makeDefaultTarpProject().inputs as unknown as AnyInputs,
     validate: (i) => listErrors(tarp.validateInputs(i as never)),
     build: (i) => resultPieces(tarp.buildPattern(i as never)),
+  },
+  {
+    name: 'hammock',
+    keys: ['units', 'end_style', 'side_edge', 'length', 'width', 'fabric_width', 'side_hem_depth', 'channel_depth', 'whip_tail', 'hem_fold', 'production_mode', 'ridgeline_pct', 'seam_allowance', 'occupant_weight', 'fabric_rating'],
+    defaults: () => makeDefaultHammockProject().inputs as unknown as AnyInputs,
+    validate: (i) => listErrors(hammock.validateInputs(i as never)),
+    build: (i) => resultPieces(hammock.buildPattern(i as never)),
   },
   {
     name: 'tri-zip-backpack',

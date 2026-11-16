@@ -1133,3 +1133,44 @@ DCF out of scope (sewn fabrics only).
   the footprint; an assembly-sweep case (p99 0.2 %, seam 0.05 mm); e2e target
   `tarp (single panel)`.
 
+
+## 2026-11-16 — Gathered-end hammock (roadmap #10b, branch `pattern/10b-hammock`)
+
+**Context.** Second item-10 pattern, built to the tarp's standard under the
+same owner decisions: no vault (placeholders flagged `[mock-derived]`), sewn
+fabrics only, rolled hems by default.
+
+**Decisions.**
+- `src/generators/hammock/` (schemaVersion 16, generatorId `hammock`, storage
+  `stitchsmith.hammock.project`), in the "Shelter and sleep" category.
+  Convention B: one body at cut size, explicit 0 on every edge, the channel
+  stitch lines drawn.
+- Channel = hem. The end channel is the Hem primitive at the channel depth
+  (rolled by default, so the raw edge is enclosed inside the channel); the
+  side hems are the same primitive at the side hem depth. Sides are hemmed
+  first and run the full cut length, so the channels fold over them.
+- End choice: `channel` (default) or `whipping`. A whipped end is a tail beyond
+  a marked whip line (`notch` role), and the tail's raw end gets the side hem's
+  rolled finish so it cannot fray back to the whipping. End allowance =
+  channel allowance, or tail + tail hem.
+- Side choice: hemmed (default) or the selvedge (no side allowance).
+- Fabric width follows the tarp pattern: cut width over the fabric is a
+  validation error on `width`; leftover fabric is an info note on a hemmed
+  body and a warning on a selvedge body (one side would be a cut edge).
+- Structural ridgeline is derived: `ridgeline_pct` × length, with the common
+  83 % as a `[mock-derived]` placeholder (not a vault number) and a warning
+  outside a 78–88 % band (also a placeholder).
+- Safety policy (the roadmap's open question; proposed here, owner to
+  confirm): one standing `load-safety` warning on every build — the pattern
+  does not rate fabric, stitching, ends or suspension; hang low, load slowly.
+  Optional `occupant_weight` and `fabric_rating` (lb with inches, kg with
+  millimetres) turn it into a ratio, or into `load-over-rating` when the
+  occupant is heavier than the rating. It never blocks export.
+- `seam_allowance` is accepted (generator contract) but resolves to 0: the
+  body is one piece with no joining seam. A non-zero entry gets an info note.
+- **No 3D tab.** The cloth engine pins rectangles in place; it cannot draw a
+  whole end into one gather point, so a hung hammock cannot be simulated
+  honestly. The page shows the disabled tab with that reason. Needs a
+  "gather to a point" pin (or a seam from an edge to a point) in the cloth
+  engine first.
+- Suspension (straps, whoopie slings) is out of scope; the steps say so.

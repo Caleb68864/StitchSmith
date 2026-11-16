@@ -25,6 +25,7 @@ import { ClamshellPackPage } from '../clamshell-pack/ClamshellPackPage.js';
 import { FannyPackPage } from '../fanny-pack/FannyPackPage.js';
 import { LbvPage } from '../lbv/LbvPage.js';
 import { TarpPage } from '../tarp/TarpPage.js';
+import { HammockPage } from '../hammock/HammockPage.js';
 import { MagPouchPage } from '../mag-pouch/MagPouchPage.js';
 import { MicroRigPage } from '../micro-rig/MicroRigPage.js';
 import { OrganizerPage } from '../organizer/OrganizerPage.js';
@@ -46,6 +47,7 @@ const PAGES: Record<string, { Page: ComponentType<Record<string, unknown>>; subt
   'fanny-pack': { Page: FannyPackPage as never, subtitle: /Fanny Pack Generator/i },
   'lbv': { Page: LbvPage as never, subtitle: /Modular LBV Generator/i },
   'tarp': { Page: TarpPage as never, subtitle: /Tarp Generator/i },
+  'hammock': { Page: HammockPage as never, subtitle: /Hammock Generator/i },
   'mag-pouch': { Page: MagPouchPage as never, subtitle: /Mag Pouch Generator/i },
   'micro-rig': { Page: MicroRigPage as never, subtitle: /Micro Rig Generator/i },
   'organizer': { Page: OrganizerPage as never, subtitle: /Tactical Organizer Generator/i },

@@ -207,7 +207,7 @@ Every number the transcripts never state is a mock-derived input. Left: the
 front column count (count bartacks on a video frame), the butt pack and
 hydration carrier interfaces as pieces, laser-cut slotted shoulder straps.
 
-### 10. Shelter, sleep, apparel — 10a DONE 2026-11-16, 10b–10e open
+### 10. Shelter, sleep, apparel — 10a and 10b DONE 2026-11-16, 10c–10e open
 87 notes but almost all reference material (LearnMYOG, materials), not
 reconciled builds. Circle Skirt already covers the apparel entry point. Hold
 until the tactical line is done.
@@ -340,8 +340,54 @@ unchanged (one piece, a (0°) ridge line). Tests: `assembly3d.test.ts`
 and an e2e target `tarp (single panel)`, all on a 56" panel under a 24"
 ridgeline (28" a side does not reach the ground from the 42" placeholder).
 
-**Order for the rest of item 10:** 10b gathered-end hammock (reuses the
-Hem primitive as the end channels), then 10c quilt (needs a baffle-chamber
+#### 10b. Gathered-end hammock — DONE 2026-11-16 (`pattern/10b-hammock`, no 3D)
+`src/generators/hammock/`, page `src/components/hammock/`, project
+schemaVersion 16, "Shelter and sleep" category. One body: long sides hemmed
+(or the selvedge), ends as channels (the Hem primitive at the channel depth:
+channel = hem) or whipped (a tail beyond a marked whip line, the tail's raw
+end rolled). Rolled hems by default, single fold marked at double
+selectable, production floor. Convention B (cut size, explicit 0, channel
+stitch lines drawn). Fabric-width check like the tarp's (error on `width`;
+leftover fabric is an info note, or a warning on a selvedge body). Derived
+structural ridgeline (percentage of the length). A standing load warning,
+with an optional occupant weight against the fabric maker's rating. BOM:
+body, fabric length off the roll, end cords or whipping cord, the ridgeline.
+Registered in every shared table (generators, inputs review, persistence,
+export sweep, export matrix, page composition and error states, warning
+links, settings a11y, App smoke).
+
+Every number is a placeholder with no vault source, listed in `PLACEHOLDERS`
+(`src/generators/hammock/defaults.ts`), left empty in the default project and
+named in one `[mock-derived]` note. **Check each against the vault:**
+
+| Placeholder | Value |
+|---|---|
+| Length gather to gather | 132" (11') |
+| Finished width | 58" |
+| Usable fabric width | 60" |
+| Side hem depth (also the whip-tail hem) | 1/2" |
+| Channel depth (channel ends) | 1 1/4" |
+| Whip tail beyond the whip line (whipped ends) | 3" |
+| Structural ridgeline | 83 % of the length (109.56" at 132") |
+
+Also `[mock-derived]`: the 78–88 % ridgeline band the range warning uses.
+With the defaults the body cuts 137" × 60" (two 2.5" rolled channels, two
+1" rolled side hems) and fills the 60" fabric exactly; whipped ends cut 140".
+
+**No 3D tab (recorded):** the cloth engine holds pinned rectangles in place
+and cannot gather a whole end to a point, so a hung hammock is not
+simulated. The page shows the disabled tab with the reason. Needed first: a
+"gather to a point" pin or an edge-to-point seam in the cloth engine; then
+an `assembly3d.ts` hung from two points a ridgeline apart, with a sag/lay
+report.
+
+Open for the owner: confirm the safety policy (one standing load warning,
+never blocks export; decisions.md 2026-11-16) and whether to keep the 83 %
+figure. Follow-ups: 3D (above), bug-net zip or double-layer option,
+suspension hardware on the BOM, a wider body from two widths joined by a
+flat-felled centre seam (would give `seam_allowance` a job).
+
+**Order for the rest of item 10:** 10b gathered-end hammock (done above), then 10c quilt (needs a baffle-chamber
 primitive and fill-weight maths), 10d bivy or bug net (curved long zipper,
 mesh cut sheet), 10e apparel beyond the skirt (gaiters first; a garment
 drafting engine before anything with sleeves). Each builds the same way as

@@ -22,6 +22,7 @@ import { makeDefaultMicroRigProject } from '../../../state/useMicroRigProject.js
 import { makeDefaultSlingProject } from '../../../state/useSlingProject.js';
 import { makeDefaultOrganizerProject } from '../../../state/useOrganizerProject.js';
 import { makeDefaultTarpProject } from '../../../state/useTarpProject.js';
+import { makeDefaultHammockProject } from '../../../state/useHammockProject.js';
 import { makeDefaultFannyPackProject } from '../../../state/useFannyPackProject.js';
 import { makeDefaultClamshellPackProject } from '../../../state/useClamshellPackProject.js';
 import { makeDefaultPlateCarrierProject } from '../../../state/usePlateCarrierProject.js';
@@ -38,6 +39,7 @@ import { buildPattern as buildRig } from '../../../generators/micro-rig/index.js
 import { buildPattern as buildSling } from '../../../generators/sling/index.js';
 import { buildPattern as buildOrg } from '../../../generators/organizer/index.js';
 import { buildPattern as buildTarp } from '../../../generators/tarp/index.js';
+import { buildPattern as buildHammock } from '../../../generators/hammock/index.js';
 import { buildPattern as buildFanny } from '../../../generators/fanny-pack/index.js';
 import { buildPattern as buildClam } from '../../../generators/clamshell-pack/index.js';
 import { buildPattern as buildPlate } from '../../../generators/plate-carrier/index.js';
@@ -94,6 +96,8 @@ const CASES: Case[] = [
   { name: 'modular lbv', convention: 'A', build: () => pieces('lbv', buildLbv(lbv)) },
   { name: 'tarp (ridge seam, cat cut)', convention: 'B', build: () => pieces('tarp', buildTarp(tarp)) },
   { name: 'tarp (single panel, straight, rolled hems, production)', convention: 'B', build: () => pieces('tarp', buildTarp({ units: 'in', construction: 'single_panel', cut_style: 'flat', width: 56, hem_fold: 'double', production_mode: true, eave_tieouts: 2, ridge_tieouts: false })) },
+  { name: 'hammock (channel ends, hemmed sides)', convention: 'B', build: () => pieces('hammock', buildHammock(makeDefaultHammockProject().inputs)) },
+  { name: 'hammock (whipped ends, selvedge, single fold, production)', convention: 'B', build: () => pieces('hammock', buildHammock({ units: 'in', end_style: 'whipping', side_edge: 'selvedge', width: 60, hem_fold: 'single', production_mode: true })) },
 ];
 
 describe('export sweep — every generator through every exporter', () => {
