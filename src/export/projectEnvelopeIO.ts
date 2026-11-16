@@ -24,6 +24,7 @@ export const KNOWN_SCHEMA_VERSIONS: Readonly<Record<string, number>> = Object.fr
   'clamshell-pack': 12,
   'plate-carrier': 13,
   'lbv': 14,
+  'tarp': 15,
 });
 
 /** Generator id → the name the user sees on the landing page and the page header. */
@@ -43,6 +44,7 @@ export const GENERATOR_TITLES: Readonly<Record<string, string>> = Object.freeze(
   'clamshell-pack': 'Clamshell Pack',
   'plate-carrier': 'Plate Carrier',
   'lbv': 'Modular LBV',
+  'tarp': 'Tarp',
 });
 
 /** The user-facing name for a generator id; unknown ids come back quoted so the message still reads. */

@@ -13,6 +13,8 @@ export function CategoryGlyph({ category, className }: { category: PatternCatego
       return (<svg viewBox="0 0 24 24" className={cls} aria-hidden="true" {...common}><path d="M8 3l4 3 4-3" /><path d="M8 3v7a4 4 0 0 0 8 0V3" /><rect x="4" y="12" width="16" height="9" rx="2" /><path d="M8 12v9M12 12v9M16 12v9" /></svg>);
     case 'straps':
       return (<svg viewBox="0 0 24 24" className={cls} aria-hidden="true" {...common}><path d="M4 18c4-8 6-12 10-14" /><path d="M8 20c4-8 6-12 10-14" /><path d="M4 18l4 2M14 4l4 2" /></svg>);
+    case 'shelter':
+      return (<svg viewBox="0 0 24 24" className={cls} aria-hidden="true" {...common}><path d="M2 20L12 6l10 14" /><path d="M12 6V3" /><path d="M7 20l5-7 5 7" /></svg>);
     case 'apparel':
       return (<svg viewBox="0 0 24 24" className={cls} aria-hidden="true" {...common}><path d="M8 4h8l1 4H7z" /><path d="M7 8L3 20h18L17 8" /></svg>);
   }

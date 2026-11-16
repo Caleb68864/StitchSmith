@@ -18,6 +18,7 @@ import * as paddedStrap from '../padded-strap/index.js';
 import * as plateCarrier from '../plate-carrier/index.js';
 import * as rollTop from '../roll-top-sack/index.js';
 import * as sling from '../sling/index.js';
+import * as tarp from '../tarp/index.js';
 import * as zipPouch from '../zip-pouch/index.js';
 
 type Resolver = (i: AnyInputs) => Record<string, unknown>;
@@ -34,6 +35,7 @@ const RESOLVERS: Record<string, Resolver> = {
   'plate-carrier': (i) => plateCarrier.resolveInputs(i as never) as never,
   'roll-top-sack': (i) => rollTop.resolveInputs(i as never) as never,
   sling: (i) => sling.resolveInputs(i as never) as never,
+  tarp: (i) => tarp.resolveInputs(i as never) as never,
   'zip-pouch': (i) => zipPouch.resolveInputs(i as never) as never,
 };
 
@@ -76,7 +78,7 @@ describe('validation messages read as English, not as field keys', () => {
     const mods: Record<string, { validateInputs: (i: never) => unknown }> = {
       'book-cover': bookCover, 'circle-skirt': circleSkirt, 'clamshell-pack': clamshell, 'fanny-pack': fanny,
       lbv, 'micro-rig': microRig, organizer, 'padded-strap': paddedStrap, 'plate-carrier': plateCarrier,
-      'roll-top-sack': rollTop, sling, 'zip-pouch': zipPouch,
+      'roll-top-sack': rollTop, sling, tarp, 'zip-pouch': zipPouch,
     } as never;
     const mod = mods[name];
     return mod ? mod.validateInputs(inputs as never) : { ok: true };

@@ -1035,3 +1035,36 @@ file ownership. Per-area reports in `docs/reviews/`.
   and refreshed.
 
 **Commit:** dbb1087
+
+## 2026-11-16 — Tarp generator, catenary curve and Hem primitive (roadmap #10a)
+
+**Context.** Item 10 (shelter, sleep, apparel) had no reconciled vault build
+and the vault was not available. The owner lifted the hold, chose the tarp
+first, asked for placeholder numbers each flagged `mock-derived`, and ruled
+DCF out of scope (sewn fabrics only).
+
+**Decisions.**
+- Engine: `geometry/catenary.ts` (cat cuts: catenary through both ends with a
+  given mid-span sag; depth, slope, arc length, sampled points) and
+  `primitives/hem.ts` (the roadmap's Hem primitive: single fold marked at
+  double or a rolled hem, production floor 1/2", cut = finished + hems, crease
+  and mark lines on straight or shallow curved edges). Each has its own tests.
+- `src/generators/tarp/` (schemaVersion 15, generatorId `tarp`, storage
+  `stitchsmith.tarp.project`), new landing category "Shelter and sleep".
+  Convention B: panels at cut size with the ridge seam allowance and hems
+  baked in, explicit 0 on every edge, ridge stitch line drawn.
+- No vault numbers. All twelve placeholders live in `PLACEHOLDERS` and the
+  default project leaves them empty, so the fields show placeholders with the
+  "measure" chip and one `[mock-derived]` note names every unentered value.
+  The LBV fills its defaults instead; the tarp does not, because the owner
+  wants every placeholder flagged from the first load.
+- Inside each end hem the cat-cut curves are mirrored about the end crease so
+  the hem folds back flat on its panel.
+- 3D: two panels leaned out from the ridge by ±(90° − pitch), the pitch from
+  the ridgeline height with the eaves staked to the ground (capped at 70°
+  when the eaves cannot reach). One seam per segment of the cat-cut ridge
+  stitch line; every tie-out held on both panels. Written pitch report.
+- Found in the browser, not in the unit test: the viewer drops a
+  rotation-only placement and lays the piece flat, while the cloth harness
+  applies it. The tarp passes explicit zero offsets like every other
+  assembly, and a test pins it. The viewer/harness gap is left on the roadmap.

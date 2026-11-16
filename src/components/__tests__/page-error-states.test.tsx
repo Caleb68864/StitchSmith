@@ -18,6 +18,7 @@ import { CircleSkirtPage } from '../circle-skirt/CircleSkirtPage.js';
 import { ClamshellPackPage } from '../clamshell-pack/ClamshellPackPage.js';
 import { FannyPackPage } from '../fanny-pack/FannyPackPage.js';
 import { LbvPage } from '../lbv/LbvPage.js';
+import { TarpPage } from '../tarp/TarpPage.js';
 import { MagPouchPage } from '../mag-pouch/MagPouchPage.js';
 import { MicroRigPage } from '../micro-rig/MicroRigPage.js';
 import { OrganizerPage } from '../organizer/OrganizerPage.js';
@@ -36,6 +37,7 @@ const PAGES: Record<string, ComponentType<Record<string, unknown>>> = {
   'clamshell-pack': ClamshellPackPage as never,
   'fanny-pack': FannyPackPage as never,
   'lbv': LbvPage as never,
+  'tarp': TarpPage as never,
   'mag-pouch': MagPouchPage as never,
   'micro-rig': MicroRigPage as never,
   'organizer': OrganizerPage as never,
@@ -66,8 +68,15 @@ function Host({ Page, initial, breakInputs }: { Page: ComponentType<Record<strin
   );
 }
 
+/**
+ * Projects whose defaults hold no numbers (the tarp leaves every placeholder
+ * empty so the page lists it as mock-derived) name the field to break instead.
+ */
+const BREAK_KEY: Record<string, string> = { tarp: 'ridge_length' };
+
 /** First numeric input in the defaults — set to NaN it must fail every generator's validation. */
-function firstNumericKey(inputs: Record<string, unknown>): string {
+function firstNumericKey(inputs: Record<string, unknown>, generatorId?: string): string {
+  if (generatorId && BREAK_KEY[generatorId]) return BREAK_KEY[generatorId];
   const key = Object.keys(inputs).find((k) => typeof inputs[k] === 'number');
   if (!key) throw new Error('no numeric input to break');
   return key;
@@ -83,7 +92,7 @@ describe('pages degrade when the inputs go invalid', () => {
 
     it(`${entry.generatorId}: shows an explanation, hides the stale drawing and blocks exports`, () => {
       const initial = entry.makeDefault();
-      const key = firstNumericKey(initial.inputs);
+      const key = firstNumericKey(initial.inputs, entry.generatorId);
       render(<Host Page={Page} initial={initial} breakInputs={{ [key]: NaN }} />);
 
       // Healthy first: the drawing is on screen.

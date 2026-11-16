@@ -32,6 +32,8 @@ import * as rollTop from '../roll-top-sack/index.js';
 import { makeDefaultRollTopSackProject } from '../../state/useRollTopSackProject.js';
 import * as sling from '../sling/index.js';
 import { makeDefaultSlingProject } from '../../state/useSlingProject.js';
+import * as tarp from '../tarp/index.js';
+import { makeDefaultTarpProject } from '../../state/useTarpProject.js';
 import * as triZip from '../tri-zip-backpack/index.js';
 import { makeDefaultTriZipProject } from '../../state/useTriZipProject.js';
 import * as zipPouch from '../zip-pouch/index.js';
@@ -144,6 +146,13 @@ export const GENERATORS: Gen[] = [
     defaults: () => makeDefaultSlingProject().inputs as unknown as AnyInputs,
     validate: (i) => listErrors(sling.validateInputs(i as never)),
     build: (i) => resultPieces(sling.buildPattern(i as never)),
+  },
+  {
+    name: 'tarp',
+    keys: ['units', 'construction', 'cut_style', 'ridge_length', 'width', 'ridge_sag', 'eave_sag', 'fabric_width', 'seam_allowance', 'hem_depth', 'hem_fold', 'production_mode', 'eave_tieouts', 'ridge_tieouts', 'patch_size', 'loop_length', 'loop_width', 'ridge_height'],
+    defaults: () => makeDefaultTarpProject().inputs as unknown as AnyInputs,
+    validate: (i) => listErrors(tarp.validateInputs(i as never)),
+    build: (i) => resultPieces(tarp.buildPattern(i as never)),
   },
   {
     name: 'tri-zip-backpack',

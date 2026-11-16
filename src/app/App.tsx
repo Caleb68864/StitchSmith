@@ -17,6 +17,7 @@ import { useMicroRigProject } from '../state/useMicroRigProject.js';
 import { useSlingProject } from '../state/useSlingProject.js';
 import { useOrganizerProject } from '../state/useOrganizerProject.js';
 import { useLbvProject } from '../state/useLbvProject.js';
+import { useTarpProject } from '../state/useTarpProject.js';
 import { usePlateCarrierProject } from '../state/usePlateCarrierProject.js';
 import { useClamshellPackProject } from '../state/useClamshellPackProject.js';
 import { useFannyPackProject } from '../state/useFannyPackProject.js';
@@ -69,6 +70,9 @@ const PlateCarrierPage = lazy(() =>
 const ClamshellPackPage = lazy(() =>
   import('../components/clamshell-pack/ClamshellPackPage.js').then(m => ({ default: m.ClamshellPackPage }))
 );
+const TarpPage = lazy(() =>
+  import('../components/tarp/TarpPage.js').then(m => ({ default: m.TarpPage }))
+);
 const FannyPackPage = lazy(() =>
   import('../components/fanny-pack/FannyPackPage.js').then(m => ({ default: m.FannyPackPage }))
 );
@@ -90,6 +94,7 @@ const HEADER_SUBTITLES: Partial<Record<View, string>> = {
   'clamshell-pack': 'Clamshell Pack Generator',
   'plate-carrier': 'Plate Carrier Generator',
   'lbv': 'Modular LBV Generator',
+  'tarp': 'Tarp Generator',
 };
 
 const VIEW_TITLES: Record<View, string> = {
@@ -109,6 +114,7 @@ const VIEW_TITLES: Record<View, string> = {
   'plate-carrier': 'StitchSmith — Plate Carrier',
   'clamshell-pack': 'StitchSmith — Clamshell Pack',
   'fanny-pack': 'StitchSmith — Fanny Pack',
+  'tarp': 'StitchSmith — Tarp',
 };
 
 type View = 'landing' | PatternEntry['route'];
@@ -148,6 +154,7 @@ export function App() {
   const plate_carrierState = usePlateCarrierProject();
   const clamshell_packState = useClamshellPackProject();
   const fanny_packState = useFannyPackProject();
+  const tarpState = useTarpProject();
 
   useEffect(() => {
     document.title = VIEW_TITLES[view] ?? 'StitchSmith';
@@ -329,6 +336,14 @@ export function App() {
             updateInputs={organizerState.updateInputs}
             resetProject={organizerState.resetProject}
             importProject={organizerState.importProject}
+          />
+        )}
+        {view === 'tarp' && (
+          <TarpPage
+            project={tarpState.project}
+            updateInputs={tarpState.updateInputs}
+            resetProject={tarpState.resetProject}
+            importProject={tarpState.importProject}
           />
         )}
         {view === 'lbv' && (

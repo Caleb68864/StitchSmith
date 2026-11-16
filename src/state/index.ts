@@ -16,6 +16,7 @@ import { makeDefaultPaddedStrapProject, _resetPaddedStrapStorage, usePaddedStrap
 import { makeDefaultPlateCarrierProject, _resetPlateCarrierStorage, usePlateCarrierProject, STORAGE_KEY as PlateCarrierKey } from './usePlateCarrierProject.js';
 import { makeDefaultRollTopSackProject, _resetRollTopSackStorage, useRollTopSackProject, STORAGE_KEY as RollTopSackKey } from './useRollTopSackProject.js';
 import { makeDefaultSlingProject, _resetSlingStorage, useSlingProject, STORAGE_KEY as SlingKey } from './useSlingProject.js';
+import { makeDefaultTarpProject, _resetTarpStorage, useTarpProject, STORAGE_KEY as TarpKey } from './useTarpProject.js';
 import { makeDefaultTriZipProject, _resetTriZipStorage, useTriZipProject, STORAGE_KEY as TriZipKey } from './useTriZipProject.js';
 import { makeDefaultZipPouchProject, _resetZipPouchStorage, useZipPouchProject, STORAGE_KEY as ZipPouchKey } from './useZipPouchProject.js';
 import { STORAGE_KEY as toolRollKey } from '../storage/localStorage.js';
@@ -63,6 +64,7 @@ export const PROJECT_HOOKS: readonly ProjectHookEntry[] = [
   { generatorId: 'plate-carrier', schemaVersion: 13, storageKey: PlateCarrierKey, makeDefault: makeDefaultPlateCarrierProject as unknown as () => ProjectEnvelope, reset: _resetPlateCarrierStorage, useHook: usePlateCarrierProject as unknown as () => ProjectHookApi, generatorDir: 'plate-carrier' },
   { generatorId: 'roll-top-sack', schemaVersion: 1, storageKey: RollTopSackKey, makeDefault: makeDefaultRollTopSackProject as unknown as () => ProjectEnvelope, reset: _resetRollTopSackStorage, useHook: useRollTopSackProject as unknown as () => ProjectHookApi, generatorDir: 'roll-top-sack' },
   { generatorId: 'sling', schemaVersion: 9, storageKey: SlingKey, makeDefault: makeDefaultSlingProject as unknown as () => ProjectEnvelope, reset: _resetSlingStorage, useHook: useSlingProject as unknown as () => ProjectHookApi, generatorDir: 'sling' },
+  { generatorId: 'tarp', schemaVersion: 15, storageKey: TarpKey, makeDefault: makeDefaultTarpProject as unknown as () => ProjectEnvelope, reset: _resetTarpStorage, useHook: useTarpProject as unknown as () => ProjectHookApi, generatorDir: 'tarp' },
   { generatorId: 'tri-zip-backpack', schemaVersion: 2, storageKey: TriZipKey, makeDefault: makeDefaultTriZipProject as unknown as () => ProjectEnvelope, reset: _resetTriZipStorage, useHook: useTriZipProject as unknown as () => ProjectHookApi, generatorDir: 'tri-zip-backpack' },
   { generatorId: 'zip-pouch', schemaVersion: 5, storageKey: ZipPouchKey, makeDefault: makeDefaultZipPouchProject as unknown as () => ProjectEnvelope, reset: _resetZipPouchStorage, useHook: useZipPouchProject as unknown as () => ProjectHookApi, generatorDir: 'zip-pouch' },
 ];

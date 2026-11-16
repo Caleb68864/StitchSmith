@@ -207,7 +207,7 @@ Every number the transcripts never state is a mock-derived input. Left: the
 front column count (count bartacks on a video frame), the butt pack and
 hydration carrier interfaces as pieces, laser-cut slotted shoulder straps.
 
-### 10. Shelter, sleep, apparel
+### 10. Shelter, sleep, apparel — 10a DONE 2026-11-16, 10b–10e open
 87 notes but almost all reference material (LearnMYOG, materials), not
 reconciled builds. Circle Skirt already covers the apparel entry point. Hold
 until the tactical line is done.
@@ -268,8 +268,66 @@ Before the first one is built, the owner needs to:
 4. **DCF is out of scope for now.** Sewn seams and sewn fabrics only
    (silnylon, silpoly and the like). No taped or bonded construction.
 
-**10a status:** the two engine pieces it needs are built (catenary edge
-curve, Hem primitive; see "Engine work"). The generator is next.
+#### 10a. Flat / A-frame tarp — DONE 2026-11-16
+`src/generators/tarp/`, page `src/components/tarp/`, project schemaVersion 15,
+new landing category "Shelter and sleep". Two panels on a flat-felled ridge
+seam, or one panel when the width fits the fabric. Catenary cat cuts on the
+ridge and both eaves (`geometry/catenary.ts`). Cat-cut stations in the
+steps for marking the curve on cloth. Ends and eaves hemmed through the Hem
+primitive (single fold marked at double, or rolled; production floor). Every
+curve is mirrored inside the end hems so they fold flat. Box-X patches with
+grosgrain loops at the corners, along the eaves and at both ridge ends. A
+fabric-width check (an error, on the field that fixes it). Convention B (cut
+size, explicit 0 on every edge, ridge stitch line drawn). BOM in fabric
+length off the roll. 3D check: the two panels pitched as an A-frame from the
+ridgeline height, sewn along the cat-cut ridge, held at every tie-out, with
+a written pitch report (angle and footprint).
+
+Every number is a placeholder with no vault source, listed in `PLACEHOLDERS`
+(`src/generators/tarp/defaults.ts`). The default project leaves them all empty,
+so each field shows its placeholder with a "measure" chip and the page raises
+one `[mock-derived]` note naming every one still unentered. **Check each
+against the vault:**
+
+| Placeholder | Value |
+|---|---|
+| Ridge length | 120" (10') |
+| Width eave to eave | 96" (8') |
+| Ridge cat-cut depth at mid-span | 2" |
+| Eave cat-cut depth at mid-span | 3" |
+| Usable fabric width | 58" |
+| Ridge seam allowance (flat-felled) | 12.7 mm (1/2") |
+| Hem depth | 1/2" |
+| Tie-outs per eave between the corners | 1 |
+| Reinforcement patch | 3" square |
+| Grosgrain per tie-out loop | 5" |
+| Grosgrain width | 5/8" |
+| Ridgeline height (pitch check only) | 42" |
+
+Choices with no number are not mock-derived: two-panel ridge seam (default)
+vs single panel, cat cut (default) vs straight edges, the vault's single-fold
+hem marked at double (default) vs a rolled hem, ridge-end tie-outs on.
+
+Found while building: the viewer keeps a placement only when it carries an
+offset, drape, cone or attach. A rotation-only placement (`rx` alone) is
+dropped and the piece is laid out flat, while the test harness applies the
+rotation, so a cloth test can pass on a scene the browser never shows. The
+tarp passes explicit zero offsets, as every other assembly already does, and
+a test pins that. Making the viewer honour `rx`/`rz` alone (or the harness
+drop them) would close the gap for good.
+
+Follow-ups: cat-cut ends (the short edges are straight), guyline and
+line-lock hardware, ridge pull-outs mid-panel, a 3D check for the single
+panel (a 0° ridge line today), a doorway or beak variant, and moving the
+organizer and pleated-card hems onto the Hem primitive.
+
+**Order for the rest of item 10:** 10b gathered-end hammock (reuses the
+Hem primitive as the end channels), then 10c quilt (needs a baffle-chamber
+primitive and fill-weight maths), 10d bivy or bug net (curved long zipper,
+mesh cut sheet), 10e apparel beyond the skirt (gaiters first; a garment
+drafting engine before anything with sleeves). Each builds the same way as
+the tarp, with placeholders flagged `mock-derived`, sewn fabrics only, until
+the vault is available.
 
 ## Pouch styles beyond the mag pouch
 
