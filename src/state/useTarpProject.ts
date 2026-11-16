@@ -36,7 +36,7 @@ export function makeDefaultTarpProject(): TarpProject {
       units: 'in',
       construction: 'ridge_seam',
       cut_style: 'cat_cut',
-      hem_fold: 'single',
+      hem_fold: 'double',
       ridge_tieouts: true,
     },
     createdAt: now,

@@ -60,8 +60,8 @@ export function TarpSettingsPanel({ inputs, errors, onChange }: Props) {
             <NumericField id="seam-allowance" label="Ridge seam allowance (mm)" value={inputs.seam_allowance} error={errors['seam_allowance']} step={0.5} placeholder={String(Math.round(SEAM_ALLOWANCE_MM * 10) / 10)} mockDerived onChange={(v) => onChange({ seam_allowance: v })} />
           )}
           <NumericField id="hem-depth" label={`Hem depth (${units})`} value={inputs.hem_depth} error={errors['hem_depth']} step={step} placeholder={ph(HEM_DEPTH_MM)} mockDerived onChange={(v) => onChange({ hem_depth: v })} />
-          <SelectField<HemFold> id="hem-fold" label="Hem" value={inputs.hem_fold ?? 'single'} error={errors['hem_fold']}
-            options={[{ value: 'single', label: 'Single fold, marked at double' }, { value: 'double', label: 'Double fold (rolled)' }]}
+          <SelectField<HemFold> id="hem-fold" label="Hem" value={inputs.hem_fold ?? 'double'} error={errors['hem_fold']}
+            options={[{ value: 'double', label: 'Double fold (rolled) — encloses the raw edge' }, { value: 'single', label: 'Single fold, marked at double (raw edge exposed)' }]}
             onChange={(v) => onChange({ hem_fold: v })} />
         </div>
         <Toggle label='Production mode — every hem at least 1/2"' value={inputs.production_mode ?? false} onChange={(v) => onChange({ production_mode: v })} />

@@ -33,9 +33,10 @@ describe('tarp pitched on a ridgeline', () => {
     expect(a.hi[2]).toBeLessThan(20);
     expect(b.lo[2]).toBeGreaterThan(-20);
     expect(a.hi[1]).toBeLessThan(5);
-    // Eaves come down to about the 42" ridgeline height (plus hem and seam allowance).
+    // Eaves come down to about the 42" ridgeline height, plus the 1" rolled-hem and
+    // 1/2" seam allowances on the slope and the cloth's sag between tie-outs.
     expect(-a.lo[1]).toBeGreaterThan(42 * IN - 10);
-    expect(-a.lo[1]).toBeLessThan(44 * IN);
+    expect(-a.lo[1]).toBeLessThan(45 * IN);
     // Half the footprint each side.
     expect(b.hi[2] - a.lo[2]).toBeGreaterThan(v.resolved.footprint_width - 20);
     expect(asm.report[0]).toMatch(/footprint/);

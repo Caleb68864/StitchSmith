@@ -151,7 +151,9 @@ numbers. Rules already encoded, with the note that justifies each:
   project leaves them empty on purpose. Sewn fabrics only: DCF and other
   taped or bonded construction are out of scope (owner decision 2026-11-16).
   Cat cuts come from `geometry/catenary.ts`, hems from
-  `primitives/hem.ts`; inside an end hem every curve is mirrored about the
+  `primitives/hem.ts`. Tarp hems default to rolled (double fold, raw edge
+  enclosed: silnylon frays; owner decision 2026-11-16), an exception to the
+  single-fold rule above, which stays selectable. Inside an end hem every curve is mirrored about the
   end crease so the hem folds flat.
 - Straps that must run beside the neck on the torso form kick out from
   their panel landing to the shoulder line (`overShoulder(..., xStart)` in

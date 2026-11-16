@@ -46,7 +46,7 @@ export interface TarpInputs {
   seam_allowance?: number;
   /** Finished hem depth on the ends and eaves, display units. Placeholder 1/2" — mock-derived. */
   hem_depth?: number;
-  /** Single fold marked at double (the vault's hem rule, default) or a double-fold rolled hem. */
+  /** Double-fold rolled hem (default: silnylon frays, the roll encloses the raw edge) or the vault's single fold marked at double. */
   hem_fold?: HemFold;
   /** Floor every hem at 1/2" (the vault's production rule). Default false. */
   production_mode?: boolean;

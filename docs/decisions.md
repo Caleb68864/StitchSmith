@@ -1089,3 +1089,25 @@ DCF out of scope (sewn fabrics only).
   the page-built assemblies (mag pouch, roll-top, book cover) all carry
   offsets, so no existing scene changes. The tarp drops its zero offsets.
 
+**Tarp hems default to rolled.**
+- Context: the tarp shipped with the vault's general hem rule (single fold,
+  marked at double; `bags/construction-hem-mark-at-double.md`). That rule
+  comes from pack and pouch builds, where the raw edge sits inside a lined
+  or bound item. A tarp hem is exposed to weather and flapping, and silnylon
+  frays readily from a cut edge; a single fold leaves the raw edge open on
+  the inside of the hem.
+- Decision (owner, 2026-11-16): the tarp defaults to a double-fold rolled hem,
+  which encloses the raw edge. The single fold marked at double stays a
+  choice in the Hem select. A project with no hem choice also resolves to
+  rolled. The vault rule in CLAUDE.md is unchanged for every other generator.
+- Effect: the rolled hem takes twice the depth, so the placeholder panels cut
+  122" × 49.5" instead of 121" × 49" and the fabric to buy is 244" instead of
+  242". The hem depth (1/2") is still a placeholder flagged `[mock-derived]`;
+  the fold choice is not a number and is not flagged.
+- Not checked: no vault note says which hem a sewn silnylon tarp uses. The
+  fraying reason is the owner's call, not a vault source.
+- Tests: `buildPattern.test.ts` "the default hem is rolled…" fails on the old
+  default; the hand-checked panel-geometry block now sets the single fold
+  explicitly, and a new case checks the rolled creases (1/2" and 1" in from
+  each end).
+

@@ -274,7 +274,8 @@ new landing category "Shelter and sleep". Two panels on a flat-felled ridge
 seam, or one panel when the width fits the fabric. Catenary cat cuts on the
 ridge and both eaves (`geometry/catenary.ts`). Cat-cut stations in the
 steps for marking the curve on cloth. Ends and eaves hemmed through the Hem
-primitive (single fold marked at double, or rolled; production floor). Every
+primitive (rolled by default, or the vault's single fold marked at double;
+production floor). Every
 curve is mirrored inside the end hems so they fold flat. Box-X patches with
 grosgrain loops at the corners, along the eaves and at both ridge ends. A
 fabric-width check (an error, on the field that fixes it). Convention B (cut
@@ -305,8 +306,11 @@ against the vault:**
 | Ridgeline height (pitch check only) | 42" |
 
 Choices with no number are not mock-derived: two-panel ridge seam (default)
-vs single panel, cat cut (default) vs straight edges, the vault's single-fold
-hem marked at double (default) vs a rolled hem, ridge-end tie-outs on.
+vs single panel, cat cut (default) vs straight edges, a rolled hem (default
+since 2026-11-16: silnylon frays, see decisions.md) vs the vault's
+single-fold hem marked at double, ridge-end tie-outs on. With the rolled
+default the placeholder panels cut 122" × 49.5" (244" of fabric); the hem
+depth placeholder (1/2") stays `[mock-derived]`.
 
 Found while building: the viewer kept a placement only when it carried an
 offset, drape, cone or attach. A rotation-only placement (`rx` alone) was
