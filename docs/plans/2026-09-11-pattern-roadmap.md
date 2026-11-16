@@ -207,10 +207,127 @@ Every number the transcripts never state is a mock-derived input. Left: the
 front column count (count bartacks on a video frame), the butt pack and
 hydration carrier interfaces as pieces, laser-cut slotted shoulder straps.
 
-### 10. Shelter, sleep, apparel
+### 10. Shelter, sleep, apparel — 10a DONE 2026-11-16, 10b–10e open
 87 notes but almost all reference material (LearnMYOG, materials), not
 reconciled builds. Circle Skirt already covers the apparel entry point. Hold
 until the tactical line is done.
+
+**Status 2026-11-16 (morning): proposal only, nothing built.**
+Checked against the code: there is nothing for shelter or sleep in `src/`
+(no tarp, quilt, hammock, bivy or net generator, and no helper for them).
+Apparel is the Circle Skirt only. Three reasons not to build:
+
+- The item names a category, not a pattern. Every pattern from 1 to 9 was
+  built from a reconciled vault build with a `## For the generator` block.
+  This entry says those blocks do not exist for this category.
+- The vault was not on the machine that ran this check
+  (`~/Documents/Notes/Caleb's Vault/` is missing). None of the 87 notes could
+  be read, so none could be confirmed as a reconciled build. A generator
+  built now would have no sourced numbers behind it. CLAUDE.md forbids that:
+  an Open number is an input with a warning, never a hard default.
+- The hold condition is half met. Patterns 1 to 9 are done, but the pouch
+  line ("Pouch styles beyond the mag pouch") and follow-ups 2a, 4, 7 and 10
+  are still open.
+
+Candidates, ordered by how well the existing engine fits each:
+
+| # | Pattern | What the engine already has | What it still needs | Owner or vault input needed |
+|---|---|---|---|---|
+| a | **Flat / A-frame tarp** (rectangle, optional cat-cut ridge and edges) | Flat panels. The Circle Skirt's `fabric_width` panel split for yardage seams. Tiled print and DXF for large pieces. Grommet patch placement from `pouch-engine/components/drainage.ts`. A fold line at the ridge for the fold preview. | A catenary (or parabola) edge curve; `geometry/arc.ts` has only Bézier and spline fits. The **Hem primitive** from the engine list below. Tie-out reinforcement patches as pieces. A ridge seam choice (flat-felled or `frenchSeam.ts`). | Footprint, cat-cut sag ratio, number and position of tie-outs, hem depth, fabric (sewn silnylon vs taped or bonded DCF, which the engine cannot express). |
+| b | **Gathered-end hammock** | A rectangle with channel hems at the ends. BOM and steps machinery. | Hem primitive (channel = hem). A whipping or channel end choice. A structural-ridgeline length (a derived number). A load warning. | Length, width and fabric. Whether to encode the common ~83 % ridgeline figure (not a vault number as far as the roadmap records). A safety disclaimer policy. |
+| c | **Top quilt / underquilt** | Tapered outline via spline fits. Fabric-width panel splitting. | A baffle-chamber primitive (sewn-through vs baffled; baffle height; differential cut between shell and liner). A fill-weight calculation per chamber (volume × overstuff / fill power) in the BOM, in grams. A footbox closure (zip or sewn). | Target loft, fill power, overstuff %, baffle spacing and height, taper. All are reference-grade at best, so inputs with `mock-derived` warnings. |
+| d | **Bivy / bathtub floor or bug net** | Boxed corners (`geometry/boxedCorner.ts`). Zipper pieces from the pouch and pack generators. | A long zipper on a curved edge. A mesh material on its own cut sheet (already an open engine item). | Body length, shoulder girth, tub height, zipper layout. |
+| e | **Apparel beyond the skirt** (gaiters first, then a wind shirt or beanie) | Circle Skirt measurement handling and units conversion. Cone-wrap 3D placements over a body form. | Body-measurement drafting: slopers, grading, curved armholes and necklines. There is no drafting primitive, so this is the largest lift. Gaiters are the exception: a shaped tube plus an instep strap. | Which garment. A measurement set. A sizing source. |
+
+Already covered and not needed: stuff sacks and ditty bags (Roll-Top Stuff
+Sack, Zip Pouch). A drawstring compression-sack mode on the Roll-Top is the
+cheapest "sleep" item if one is wanted.
+
+Recommended order once released: **a → b → c → d → e**. The tarp and hammock
+share the Hem primitive and flat-panel layout, and building them pays for
+that engine item. The quilt adds the baffle primitive. Apparel waits for a
+drafting engine.
+
+Before the first one is built, the owner needs to:
+
+1. Release the hold, or say which open tactical items must land first.
+2. Pick the first pattern. The recommendation is the tarp.
+3. Make the vault readable to the agent, or list which of the 87 notes (if
+   any) carry a `## For the generator` block. Otherwise every number is
+   `mock-derived`.
+4. Say whether DCF (taped or bonded, not sewn) is in scope. The engine models
+   only sewn seams.
+
+**Owner decisions, 2026-11-16:**
+
+1. The hold on item 10 is lifted.
+2. The tarp (10a) goes first.
+3. The vault will not be made available. Build with placeholder numbers and
+   give every one a `mock-derived` warning, so it is clear each still has to
+   be checked against the vault.
+4. **DCF is out of scope for now.** Sewn seams and sewn fabrics only
+   (silnylon, silpoly and the like). No taped or bonded construction.
+
+#### 10a. Flat / A-frame tarp — DONE 2026-11-16
+`src/generators/tarp/`, page `src/components/tarp/`, project schemaVersion 15,
+new landing category "Shelter and sleep". Two panels on a flat-felled ridge
+seam, or one panel when the width fits the fabric. Catenary cat cuts on the
+ridge and both eaves (`geometry/catenary.ts`). Cat-cut stations in the
+steps for marking the curve on cloth. Ends and eaves hemmed through the Hem
+primitive (single fold marked at double, or rolled; production floor). Every
+curve is mirrored inside the end hems so they fold flat. Box-X patches with
+grosgrain loops at the corners, along the eaves and at both ridge ends. A
+fabric-width check (an error, on the field that fixes it). Convention B (cut
+size, explicit 0 on every edge, ridge stitch line drawn). BOM in fabric
+length off the roll. 3D check: the two panels pitched as an A-frame from the
+ridgeline height, sewn along the cat-cut ridge, held at every tie-out, with
+a written pitch report (angle and footprint).
+
+Every number is a placeholder with no vault source, listed in `PLACEHOLDERS`
+(`src/generators/tarp/defaults.ts`). The default project leaves them all empty,
+so each field shows its placeholder with a "measure" chip and the page raises
+one `[mock-derived]` note naming every one still unentered. **Check each
+against the vault:**
+
+| Placeholder | Value |
+|---|---|
+| Ridge length | 120" (10') |
+| Width eave to eave | 96" (8') |
+| Ridge cat-cut depth at mid-span | 2" |
+| Eave cat-cut depth at mid-span | 3" |
+| Usable fabric width | 58" |
+| Ridge seam allowance (flat-felled) | 12.7 mm (1/2") |
+| Hem depth | 1/2" |
+| Tie-outs per eave between the corners | 1 |
+| Reinforcement patch | 3" square |
+| Grosgrain per tie-out loop | 5" |
+| Grosgrain width | 5/8" |
+| Ridgeline height (pitch check only) | 42" |
+
+Choices with no number are not mock-derived: two-panel ridge seam (default)
+vs single panel, cat cut (default) vs straight edges, the vault's single-fold
+hem marked at double (default) vs a rolled hem, ridge-end tie-outs on.
+
+Found while building: the viewer keeps a placement only when it carries an
+offset, drape, cone or attach. A rotation-only placement (`rx` alone) is
+dropped and the piece is laid out flat, while the test harness applies the
+rotation, so a cloth test can pass on a scene the browser never shows. The
+tarp passes explicit zero offsets, as every other assembly already does, and
+a test pins that. Making the viewer honour `rx`/`rz` alone (or the harness
+drop them) would close the gap for good.
+
+Follow-ups: cat-cut ends (the short edges are straight), guyline and
+line-lock hardware, ridge pull-outs mid-panel, a 3D check for the single
+panel (a 0° ridge line today), a doorway or beak variant, and moving the
+organizer and pleated-card hems onto the Hem primitive.
+
+**Order for the rest of item 10:** 10b gathered-end hammock (reuses the
+Hem primitive as the end channels), then 10c quilt (needs a baffle-chamber
+primitive and fill-weight maths), 10d bivy or bug net (curved long zipper,
+mesh cut sheet), 10e apparel beyond the skirt (gaiters first; a garment
+drafting engine before anything with sleeves). Each builds the same way as
+the tarp, with placeholders flagged `mock-derived`, sewn fabrics only, until
+the vault is available.
 
 ## Pouch styles beyond the mag pouch
 
@@ -385,8 +502,19 @@ which (the tri-zip `seam:` path convention is the seed).
 - DONE 2026-09-12 (`src/lib/pattern-engine/primitives/palsField.ts`) — **PALS field primitive** on any panel: rows × columns, bartack map, laser-cut
   variant, edge margin ≥ 0.25". Needed by 2, 5, 7, 8, 9.
   `plate-carriers/pals-spec-1in-spacing.md`, `plate-carriers/pals-laser-cut-laminate.md`.
-- **Hem primitive**: per-edge hem depth, mark-at-double line, cut = finished +
+- DONE 2026-11-16 (`src/lib/pattern-engine/primitives/hem.ts`) — **Hem primitive**: per-edge hem depth, mark-at-double line, cut = finished +
   hems, `production_mode` forcing ≥ 0.5". Needed everywhere SOE-style.
+  `resolveHem` (single fold per the vault rule, or a double/rolled fold at
+  2 × depth), `hemmedCut`, and `hemLines`, which draws the raw edge, the
+  creases (labelled so the 3D preview folds them 180°) and the mark on a
+  straight or shallow curved edge. The organizer and the mag-pouch card still
+  compute their hems inline; moving them onto the primitive is a follow-up.
+- DONE 2026-11-16 (`src/lib/pattern-engine/geometry/catenary.ts`) — **Catenary
+  edge curve** for cat cuts: `catenary(span, sag)` solves the curve through
+  both ends with the given mid-span sag (depth, slope, arc length), and
+  `catenaryPoints` samples it on any chord. Tests pin it against the
+  parabola and the shallow-curve arc-length estimate. Needed by 10a and any
+  tensioned edge.
 - **Layer budget per seam**: emit max stack per seam and a machine-class
   requirement; annotate "sew forward only" above ~8 layers.
   `reference/technique-sewing-through-bulk.md`, `rigs/splitfront-technique-layer-budgeting.md`.

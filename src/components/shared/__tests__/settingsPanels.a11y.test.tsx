@@ -35,6 +35,8 @@ import { makeDefaultClamshellPackProject } from '../../../state/useClamshellPack
 import { PlateCarrierSettingsPanel } from '../../plate-carrier/PlateCarrierSettingsPanel.js';
 import { makeDefaultPlateCarrierProject } from '../../../state/usePlateCarrierProject.js';
 import { LbvSettingsPanel } from '../../lbv/LbvSettingsPanel.js';
+import { TarpSettingsPanel } from '../../tarp/TarpSettingsPanel.js';
+import { makeDefaultTarpProject } from '../../../state/useTarpProject.js';
 import { makeDefaultLbvProject } from '../../../state/useLbvProject.js';
 
 const noop = vi.fn();
@@ -54,6 +56,7 @@ const PANELS: { name: string; element: () => ReactElement }[] = [
   { name: 'Clamshell Pack', element: () => <ClamshellPackSettingsPanel inputs={makeDefaultClamshellPackProject().inputs} errors={{}} onChange={noop} /> },
   { name: 'Plate Carrier', element: () => <PlateCarrierSettingsPanel inputs={makeDefaultPlateCarrierProject().inputs} errors={{}} onChange={noop} /> },
   { name: 'Modular LBV', element: () => <LbvSettingsPanel inputs={makeDefaultLbvProject().inputs} errors={{}} onChange={noop} /> },
+  { name: 'Tarp', element: () => <TarpSettingsPanel inputs={makeDefaultTarpProject().inputs} errors={{}} onChange={noop} /> },
 ];
 
 function hasAccessibleName(el: HTMLElement): boolean {

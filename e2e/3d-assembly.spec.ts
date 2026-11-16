@@ -64,6 +64,7 @@ const TARGETS: Record<string, Target> = {
   'clamshell pack': { open: /Open Clamshell Pack/i, seams: true, fitReport: true },
   'plate carrier': { open: /Open Plate Carrier/i, seams: true, fitReport: false },
   'modular lbv': { open: /Open Modular LBV/i, seams: true, fitReport: false },
+  'tarp': { open: /Open Tarp/i, seams: true, fitReport: false },
   'micro rig (.308 stacked)': {
     open: /Open Micro Rig/i, seams: true, fitReport: true, maxStretch: 70,
     seed: { key: 'stitchsmith.micro-rig.project', project: { schemaVersion: 8, generatorId: 'micro-rig', projectName: 'E2E', ...stamp, inputs: { units: 'in', panel_width_preset: 'r308_14', pocket_set: 'stacked_cells', magazine_preset_id: 'pmag_308_20', cell_count: 2, cells_deep: 2 } } },

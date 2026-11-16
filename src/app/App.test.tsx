@@ -163,6 +163,7 @@ describe('App integration', () => {
     { open: /Open Plate Carrier/i, subtitle: /Plate Carrier Generator/i },
     { open: /Open Clamshell Pack/i, subtitle: /Clamshell Pack Generator/i },
     { open: /Open Fanny Pack/i, subtitle: /Fanny Pack Generator/i },
+    { open: /Open Tarp/i, subtitle: /Tarp Generator/i },
   ] as const;
 
   for (const { open, subtitle } of SMOKE_TARGETS) {
@@ -190,6 +191,7 @@ describe('landing page navigation', () => {
     render(<App />);
     expect(screen.getByRole('heading', { name: /Pouches/i })).toBeTruthy();
     expect(screen.getByRole('heading', { name: /Rigs and carriers/i })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: /Shelter and sleep/i })).toBeTruthy();
     fireEvent.change(screen.getByRole('searchbox', { name: /Find a generator/i }), { target: { value: 'sling' } });
     expect(screen.getByRole('button', { name: /Open Padded Sling/i })).toBeTruthy();
     expect(screen.queryByRole('button', { name: /Open Zip Pouch/i })).toBeNull();
@@ -317,6 +319,7 @@ describe('landing search', () => {
     ['rifle', /Open Padded Sling/i],
     ['notebook', /Open Tactical Organizer/i],
     ['armor', /Open Plate Carrier/i],
+    ['ridgeline', /Open Tarp/i],
   ];
   for (const [term, expected] of CASES) {
     it(`finds the right generator for "${term}"`, () => {
@@ -329,6 +332,6 @@ describe('landing search', () => {
   it('announces how many generators match', () => {
     render(<App />);
     fireEvent.change(screen.getByLabelText(/Find a generator/i), { target: { value: 'zipper' } });
-    expect(screen.getByRole('status').textContent).toMatch(/of 15 generators match zipper/);
+    expect(screen.getByRole('status').textContent).toMatch(/of 16 generators match zipper/);
   });
 });

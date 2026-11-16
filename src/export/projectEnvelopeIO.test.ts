@@ -64,8 +64,9 @@ describe('parseProjectJson — schema versions and names (H5)', () => {
     expect(() => parseProjectJson(JSON.stringify({ ...base, projectName: '' }), 'zip-pouch')).toThrow(/projectName/);
   });
   it('the version table covers every generator in CLAUDE.md', () => {
-    expect(Object.keys(KNOWN_SCHEMA_VERSIONS)).toHaveLength(15);
+    expect(Object.keys(KNOWN_SCHEMA_VERSIONS)).toHaveLength(16);
     expect(KNOWN_SCHEMA_VERSIONS['lbv']).toBe(14);
+    expect(KNOWN_SCHEMA_VERSIONS['tarp']).toBe(15);
   });
 });
 

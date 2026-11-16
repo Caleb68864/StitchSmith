@@ -43,7 +43,7 @@ A generator using this convention MUST:
 Consequence: no SA-offset cut line is drawn, because the cut line *is* the
 outer line. That is expected under this convention, not a defect.
 
-Used by: **Zip Pouch** (see `src/generators/zip-pouch/dimensions.ts`), the **Padded Sling** (tube cut with allowance and turning ease included), the **Tactical Organizer** (hems marked at double, baked into the cut), the **Fanny Pack** (allowance and, for the fold finish, the zipper lip baked in) and the
+Used by: **Zip Pouch** (see `src/generators/zip-pouch/dimensions.ts`), the **Padded Sling** (tube cut with allowance and turning ease included), the **Tactical Organizer** (hems marked at double, baked into the cut), the **Fanny Pack** (allowance and, for the fold finish, the zipper lip baked in), the **Tarp** (ridge seam allowance and hems baked into each panel; hems from the Hem primitive) and the
 **Mag Pouch pleated card** construction (`src/lib/pouch-engine/construction/pleatedCard.ts`,
 dimensions resolved in `src/generators/mag-pouch/resolve.ts`). The card is
 hemmed, not seam-allowanced: cut = finished + hems, hem folds are `fold`-role
@@ -144,6 +144,15 @@ numbers. Rules already encoded, with the note that justifies each:
   loops per panel, never three; loop on any face that gets sewn through.
   Panel outline, row pitch, pad size, cross piece angle and front strap
   positions are never stated — inputs with mock-derived warnings.
+- Tarp (roadmap 10a, `src/generators/tarp/`): NO vault numbers. The vault
+  was not available, so every length, the tie-out count and the seam
+  allowance is a placeholder listed in `PLACEHOLDERS` (`defaults.ts`) and
+  named in one `[mock-derived]` note until the user enters it; the default
+  project leaves them empty on purpose. Sewn fabrics only: DCF and other
+  taped or bonded construction are out of scope (owner decision 2026-11-16).
+  Cat cuts come from `geometry/catenary.ts`, hems from
+  `primitives/hem.ts`; inside an end hem every curve is mirrored about the
+  end crease so the hem folds flat.
 - Straps that must run beside the neck on the torso form kick out from
   their panel landing to the shoulder line (`overShoulder(..., xStart)` in
   the LBV assembly); a strap drawn long in x drapes with `along: 'x'`.
@@ -217,7 +226,7 @@ numbers. Rules already encoded, with the note that justifies each:
 
 ## Engine usage
 
-All generators (Tool Roll, Tri-Zip, Roll-Top Sack, Mag Pouch, Book Cover, Zip Pouch, Circle Skirt, Padded Strap, Micro Rig, Padded Sling, Tactical Organizer, Fanny Pack, Clamshell Pack, Plate Carrier, Modular LBV) consume `src/lib/pattern-engine/` for graph types (`Point`, `Edge`, `Path`, `Piece`, `Pattern`), geometry helpers (offset, arc, bbox), and exporters (SVG, PDF, DXF, project JSON). New generators must use the engine — do not fork geometry or export code into the generator directory.
+All generators (Tool Roll, Tri-Zip, Roll-Top Sack, Mag Pouch, Book Cover, Zip Pouch, Circle Skirt, Padded Strap, Micro Rig, Padded Sling, Tactical Organizer, Fanny Pack, Clamshell Pack, Plate Carrier, Modular LBV, Tarp) consume `src/lib/pattern-engine/` for graph types (`Point`, `Edge`, `Path`, `Piece`, `Pattern`), geometry helpers (offset, arc, bbox), and exporters (SVG, PDF, DXF, project JSON). New generators must use the engine — do not fork geometry or export code into the generator directory.
 
 ## Project JSON envelope
 
@@ -234,6 +243,7 @@ All generators (Tool Roll, Tri-Zip, Roll-Top Sack, Mag Pouch, Book Cover, Zip Po
 - `schemaVersion: 8` → Micro Rig
 - `schemaVersion: 9` → Padded Sling
 - `schemaVersion: 10` → Tactical Organizer
+- `schemaVersion: 15` → Tarp
 - `schemaVersion: 14` → Modular LBV
 - `schemaVersion: 13` → Plate Carrier
 - `schemaVersion: 12` → Clamshell Pack

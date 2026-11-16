@@ -24,6 +24,7 @@ import { makeDefaultFannyPackProject } from '../../state/useFannyPackProject.js'
 import { makeDefaultClamshellPackProject } from '../../state/useClamshellPackProject.js';
 import { makeDefaultPlateCarrierProject } from '../../state/usePlateCarrierProject.js';
 import { makeDefaultLbvProject } from '../../state/useLbvProject.js';
+import { makeDefaultTarpProject } from '../../state/useTarpProject.js';
 
 import { buildPattern as buildTriZip, getPreset, resolveInputs as resolveTriZip } from '../tri-zip-backpack/index.js';
 import { triZipAssembly } from '../tri-zip-backpack/assembly3d.js';
@@ -40,6 +41,7 @@ import { buildPattern as buildFanny, fannyPackAssembly } from '../fanny-pack/ind
 import { buildPattern as buildClam, clamshellAssembly } from '../clamshell-pack/index.js';
 import { buildPattern as buildPlate, plateCarrierAssembly } from '../plate-carrier/index.js';
 import { buildPattern as buildLbv, lbvAssembly } from '../lbv/index.js';
+import { buildPattern as buildTarp, tarpAssembly } from '../tarp/index.js';
 
 interface Asm {
   pieces: Piece[];
@@ -105,6 +107,8 @@ const CASES: Case[] = [
   { name: 'clamshell pack', maxStretch: 0.04, maxSeamMean: 3, build: () => { const v = ok(buildClam(clam)); return clamshellAssembly(v.pieces, v.resolved); } },
   { name: 'plate carrier', maxStretch: 0.03, maxSeamMean: 3, build: () => { const v = ok(buildPlate(plate)); return plateCarrierAssembly(v.pieces, v.resolved); } },
   { name: 'modular lbv', maxStretch: 0.01, maxSeamMean: 3, build: () => { const v = ok(buildLbv(lbv)); return lbvAssembly(v.pieces, v.resolved); } },
+  // A 10' tarp: a coarse mesh keeps the case inside the suite's time budget (the viewer picks its own).
+  { name: 'tarp (ridge seam, cat cut)', spacing: 60, maxStretch: 0.02, maxSeamMean: 3, build: () => { const v = ok(buildTarp(makeDefaultTarpProject().inputs)); return tarpAssembly(v.pieces, v.resolved); } },
 ];
 
 /** The pieces the viewer simulates in an assembled scene: placed pieces and the object's host. */

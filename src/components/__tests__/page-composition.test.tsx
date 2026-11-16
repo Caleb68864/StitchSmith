@@ -14,6 +14,7 @@ import { CircleSkirtPage } from '../circle-skirt/CircleSkirtPage.js';
 import { ClamshellPackPage } from '../clamshell-pack/ClamshellPackPage.js';
 import { FannyPackPage } from '../fanny-pack/FannyPackPage.js';
 import { LbvPage } from '../lbv/LbvPage.js';
+import { TarpPage } from '../tarp/TarpPage.js';
 import { MagPouchPage } from '../mag-pouch/MagPouchPage.js';
 import { MicroRigPage } from '../micro-rig/MicroRigPage.js';
 import { OrganizerPage } from '../organizer/OrganizerPage.js';
@@ -30,6 +31,7 @@ const PAGES: Record<string, ComponentType<Record<string, unknown>>> = {
   'clamshell-pack': ClamshellPackPage as never,
   'fanny-pack': FannyPackPage as never,
   'lbv': LbvPage as never,
+  'tarp': TarpPage as never,
   'mag-pouch': MagPouchPage as never,
   'micro-rig': MicroRigPage as never,
   'organizer': OrganizerPage as never,

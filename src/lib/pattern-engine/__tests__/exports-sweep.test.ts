@@ -21,6 +21,7 @@ import { makeDefaultPaddedStrapProject } from '../../../state/usePaddedStrapProj
 import { makeDefaultMicroRigProject } from '../../../state/useMicroRigProject.js';
 import { makeDefaultSlingProject } from '../../../state/useSlingProject.js';
 import { makeDefaultOrganizerProject } from '../../../state/useOrganizerProject.js';
+import { makeDefaultTarpProject } from '../../../state/useTarpProject.js';
 import { makeDefaultFannyPackProject } from '../../../state/useFannyPackProject.js';
 import { makeDefaultClamshellPackProject } from '../../../state/useClamshellPackProject.js';
 import { makeDefaultPlateCarrierProject } from '../../../state/usePlateCarrierProject.js';
@@ -36,6 +37,7 @@ import { buildPattern as buildStrap } from '../../../generators/padded-strap/ind
 import { buildPattern as buildRig } from '../../../generators/micro-rig/index.js';
 import { buildPattern as buildSling } from '../../../generators/sling/index.js';
 import { buildPattern as buildOrg } from '../../../generators/organizer/index.js';
+import { buildPattern as buildTarp } from '../../../generators/tarp/index.js';
 import { buildPattern as buildFanny } from '../../../generators/fanny-pack/index.js';
 import { buildPattern as buildClam } from '../../../generators/clamshell-pack/index.js';
 import { buildPattern as buildPlate } from '../../../generators/plate-carrier/index.js';
@@ -62,6 +64,7 @@ const fanny = makeDefaultFannyPackProject().inputs;
 const clam = makeDefaultClamshellPackProject().inputs;
 const plate = makeDefaultPlateCarrierProject().inputs;
 const lbv = makeDefaultLbvProject().inputs;
+const tarp = makeDefaultTarpProject().inputs;
 
 const CASES: Case[] = [
   { name: 'mag pouch (folded-T)', convention: 'A', build: () => buildMag(mag).pattern },
@@ -89,6 +92,8 @@ const CASES: Case[] = [
   { name: 'clamshell pack', convention: 'A', build: () => pieces('clam', buildClam(clam)) },
   { name: 'plate carrier', convention: 'A', build: () => pieces('plate', buildPlate(plate)) },
   { name: 'modular lbv', convention: 'A', build: () => pieces('lbv', buildLbv(lbv)) },
+  { name: 'tarp (ridge seam, cat cut)', convention: 'B', build: () => pieces('tarp', buildTarp(tarp)) },
+  { name: 'tarp (single panel, straight, rolled hems, production)', convention: 'B', build: () => pieces('tarp', buildTarp({ units: 'in', construction: 'single_panel', cut_style: 'flat', width: 56, hem_fold: 'double', production_mode: true, eave_tieouts: 2, ridge_tieouts: false })) },
 ];
 
 describe('export sweep — every generator through every exporter', () => {

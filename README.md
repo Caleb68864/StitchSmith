@@ -8,7 +8,7 @@ Everything runs locally in your browser. No accounts, no servers, no telemetry, 
 
 ## What it makes
 
-Fifteen generators, grouped the way the app groups them.
+Sixteen generators, grouped the way the app groups them.
 
 **Pouches**
 
@@ -43,6 +43,12 @@ Fifteen generators, grouped the way the app groups them.
 | --- | --- |
 | Padded Strap | Pack strap pair or the H-harness, checked on a torso form |
 | Padded Sling | Padded two-point rifle sling: turned tube, foam setback, webbing tuck rule |
+
+**Shelter and sleep**
+
+| Generator | What it produces |
+| --- | --- |
+| Tarp | A-frame tarp: two panels on a flat-felled ridge seam (or one panel), catenary cat cuts on the ridge and eaves, hems marked at double, box-X tie-outs with grosgrain loops, a pitch check on a ridgeline. Sewn fabrics only; every number is a placeholder until checked |
 
 **Apparel**
 
