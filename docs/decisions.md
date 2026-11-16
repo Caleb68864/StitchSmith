@@ -1068,3 +1068,24 @@ DCF out of scope (sewn fabrics only).
   rotation-only placement and lays the piece flat, while the cloth harness
   applies it. The tarp passes explicit zero offsets like every other
   assembly, and a test pins it. The viewer/harness gap is left on the roadmap.
+
+## 2026-11-16 — Tarp follow-ups (branch `fix/tarp-followups`)
+
+**Viewer and harness place pieces the same way.**
+- Context: the viewer laid a rotation-only placement (`rx` or `rz`, no
+  offset) flat in its side-by-side row; the cloth harness rotated it. A 3D
+  test could pass on a scene the browser never showed. Every assembly so far
+  dodged it by passing explicit zero offsets.
+- Decision: the viewer honours the rotation (the harness was right). One
+  predicate, `isScenePlaced` in `fold-engine/placement.ts`, decides whether a
+  placement puts a piece in the scene: any offset, `rx`, `rz`, drape, cone or
+  attach. `keep` and `rootPoint` alone still do not. The viewer's layout is
+  now `src/components/shared/viewer/layout.ts` so it can be tested without
+  WebGL; the harness exports `harnessEntries` and `placedPoints`.
+- Tests: `src/components/shared/__tests__/viewer-layout.test.ts` (rx-only and
+  rz-only placements; fails on the old rule) and a per-case check in the
+  assembly sweep (`viewerAgreement.ts`) that the viewer puts every scene piece
+  where the harness does. All 19 sweep cases agreed on the old code too, and
+  the page-built assemblies (mag pouch, roll-top, book cover) all carry
+  offsets, so no existing scene changes. The tarp drops its zero offsets.
+

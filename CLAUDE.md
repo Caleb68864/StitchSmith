@@ -214,6 +214,10 @@ numbers. Rules already encoded, with the note that justifies each:
 - Placements also take `rz` (turn a piece upside down) and `cone` (skirt
   panels wrapped from an apex); `placementMap` gives the direct flat→3D map
   for draped or cone pieces. Pages may pass extra `solids` (a hip form).
+- A placement moves a piece into the scene when `isScenePlaced` says so (any
+  offset, `rx`, `rz`, drape, cone or attach); a rotation alone is enough, and
+  the viewer (`viewer/layout.ts`) and the cloth harness agree on it. The
+  assembly sweep checks that agreement for every case.
 - Every page shows its preview through `PreviewTabs` (Pattern / 3D
   assembly); a new generator supplies an `assembly3d.ts` and passes its
   object, placements, pins and seams to `FoldPreview3D` with

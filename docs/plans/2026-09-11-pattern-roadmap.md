@@ -308,13 +308,17 @@ Choices with no number are not mock-derived: two-panel ridge seam (default)
 vs single panel, cat cut (default) vs straight edges, the vault's single-fold
 hem marked at double (default) vs a rolled hem, ridge-end tie-outs on.
 
-Found while building: the viewer keeps a placement only when it carries an
-offset, drape, cone or attach. A rotation-only placement (`rx` alone) is
-dropped and the piece is laid out flat, while the test harness applies the
-rotation, so a cloth test can pass on a scene the browser never shows. The
-tarp passes explicit zero offsets, as every other assembly already does, and
-a test pins that. Making the viewer honour `rx`/`rz` alone (or the harness
-drop them) would close the gap for good.
+Found while building: the viewer kept a placement only when it carried an
+offset, drape, cone or attach. A rotation-only placement (`rx` alone) was
+dropped and the piece laid out flat, while the test harness applied the
+rotation, so a cloth test could pass on a scene the browser never showed.
+**Fixed 2026-11-16 (`fix/tarp-followups`):** the viewer's layout moved to
+`src/components/shared/viewer/layout.ts` and places a piece in the scene
+whenever `isScenePlaced` (`fold-engine/placement.ts`) says so, which counts a
+rotation alone. `viewer-layout.test.ts` fails on the old rule; every
+assembly-sweep case now also checks that the viewer puts each scene piece
+where the harness does (all 19 cases agreed before and after, so no
+existing scene changed). The tarp now uses rotation-only placements.
 
 Follow-ups: cat-cut ends (the short edges are straight), guyline and
 line-lock hardware, ridge pull-outs mid-panel, a 3D check for the single

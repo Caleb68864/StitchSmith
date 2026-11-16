@@ -4,6 +4,7 @@ import { buildPattern, tarpAssembly, PANEL_ID, PANEL_B_ID } from '../index.js';
 import type { TarpInputs } from '../types.js';
 import { makeDefaultTarpProject } from '../../../state/useTarpProject.js';
 import { assemble } from '../../../lib/cloth-engine/__tests__/harness.js';
+import { expectViewerMatchesHarness } from '../../../components/shared/__tests__/viewerAgreement.js';
 import { relax, seamResidual, maxPenetration, stretchReport } from '../../../lib/cloth-engine/index.js';
 
 const IN = 25.4;
@@ -20,12 +21,8 @@ describe('tarp pitched on a ridgeline', () => {
     expect(asm.seams.length).toBeGreaterThanOrEqual(24);
     // Every tie-out held on both panels.
     expect(asm.pins).toHaveLength(2 * v.tieouts.length);
-    // The viewer keeps a placement only when it carries an offset; a rotation-only
-    // placement is dropped and both panels lay flat side by side (found in the browser).
-    for (const id of [PANEL_ID, PANEL_B_ID]) {
-      const pl = asm.placements[id];
-      expect(pl.dx !== undefined || pl.dy !== undefined || pl.dz !== undefined, `${id} placement has no offset`).toBe(true);
-    }
+    // The browser shows what the harness simulates (rotation-only placements included).
+    expectViewerMatchesHarness(asm.pieces, asm.placements);
     const { world, bounds } = assemble(asm.pieces, asm.placements, asm.seams, null, 60, asm.pins, asm.gravity);
     relax(world, 300);
     expect(seamResidual(world).mean).toBeLessThan(3);

@@ -23,14 +23,19 @@ export type Pin = PinSpec;
  * offsets, riding on a host region), mesh it, seam it, and stand the object's box
  * on the host. Mirrors FoldViewer's simulate mode so a page and its test agree.
  */
-export function assemble(pieces: Piece[], placements: Record<string, PiecePlacement>, seams: SeamSpec[], object: AssemblyObject | null, spacing: number, pins: Pin[] = [], gravity?: Vec3, extraSolids: Solid[] = [], selfCollision = true) {
-  const entries: (PlacedEntry & { piece: Piece })[] = pieces.map((piece) => {
+/** Each piece folded and placed as the harness places it: its placement's offsets (0 when absent), rotation and attach. */
+export function harnessEntries(pieces: Piece[], placements: Record<string, PiecePlacement>, object: AssemblyObject | null): (PlacedEntry & { piece: Piece })[] {
+  return pieces.map((piece) => {
     const pl = placements[piece.id];
     let rootPoint = pl?.rootPoint;
     if (!rootPoint && object?.base && object.base.pieceId === piece.id) rootPoint = { x: object.base.point.x + object.base.direction.x, y: object.base.point.y + object.base.direction.y };
     const model = buildFoldModel(piece, { rootPoint })!;
     return { piece, model, offsetX: pl?.dx ?? 0, offsetY: pl?.dy ?? 0, offsetZ: pl?.dz ?? 0, placement: pl };
   });
+}
+
+export function assemble(pieces: Piece[], placements: Record<string, PiecePlacement>, seams: SeamSpec[], object: AssemblyObject | null, spacing: number, pins: Pin[] = [], gravity?: Vec3, extraSolids: Solid[] = [], selfCollision = true) {
+  const entries = harnessEntries(pieces, placements, object);
   const anglesOf = (e: PlacedEntry) => defaultFoldAngles(e.model);
   const placer = makePlacer(entries, anglesOf, 1);
   const meshes = entries.map((e) => buildClothMesh(e.piece, {
@@ -92,4 +97,14 @@ export function assemble(pieces: Piece[], placements: Record<string, PiecePlacem
     return { lo, hi };
   };
   return { world, meshes, ids, bounds };
+}
+
+/**
+ * Where flat points of `entry` land in the scene at the default fold angles, as both the harness
+ * and the viewer compute it from a laid-out entry list (fold, rotation, offsets, attach, drape).
+ */
+export function placedPoints(entries: PlacedEntry[], entry: PlacedEntry, flat: Point[]): Vec3[] {
+  const placer = makePlacer(entries, (e) => defaultFoldAngles(e.model), 1);
+  const at = foldedInitial({ model: entry.model, angles: defaultFoldAngles(entry.model), transform: placer(entry), drape: placementMap(entry.placement) ?? undefined });
+  return flat.map(at);
 }

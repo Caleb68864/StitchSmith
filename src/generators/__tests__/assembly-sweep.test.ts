@@ -12,6 +12,7 @@ import { assemble, type AssemblyObject } from '../../lib/cloth-engine/__tests__/
 import { relax, seamResidual, maxStretch, stretchReport, maxPenetration, type SeamSpec, type Solid, type Vec3, type PinSpec } from '../../lib/cloth-engine/index.js';
 import { buildFoldModel, pathToPolygon, area } from '../../lib/fold-engine/index.js';
 import type { PiecePlacement } from '../../lib/fold-engine/index.js';
+import { expectViewerMatchesHarness } from '../../components/shared/__tests__/viewerAgreement.js';
 
 import { makeDefaultTriZipProject } from '../../state/useTriZipProject.js';
 import { makeDefaultZipPouchProject } from '../../state/useZipPouchProject.js';
@@ -144,6 +145,13 @@ describe('assembly sweep — every generator with a 3D assembly', () => {
       expect(pen, `${c.name} penetration`).toBeLessThan(world.params.thickness);
       expect(seam, `${c.name} seam mean`).toBeLessThan(c.maxSeamMean);
       expect(stretch, `${c.name} stretch (99th pct)`).toBeLessThan(c.maxStretch);
+    });
+  }
+  for (const c of CASES) {
+    it(`${c.name}: the viewer places every scene piece where the cloth harness does`, () => {
+      const asm = c.build();
+      if (!asm) throw new Error(`${c.name}: no assembly`);
+      expectViewerMatchesHarness(scenePieces(asm), asm.placements, asm.object ?? null);
     });
   }
   it('prints the sweep table', () => {

@@ -52,12 +52,11 @@ export function tarpAssembly(pieces: Piece[], r: ResolvedInputs): TarpAssembly |
   const a: Piece = { ...panel, quantity: 1, name: 'Panel' };
   const b = mirrorPieceX(a, PANEL_B_ID, 'Panel (second)');
   const lean = 90 - pitchDeg;
-  // Explicit zero offsets: the viewer keeps a placement only when it carries an
-  // offset (or a drape, cone or attach); a rotation-only placement is dropped and
-  // the piece is laid out flat beside the others (the test harness applies it).
+  // Rotation only: both panels hinge on the ridge at the origin. The viewer and the
+  // cloth harness both honour a rotation-only placement (`isScenePlaced`).
   const placements: Record<string, PiecePlacement> = {
-    [PANEL_ID]: { keep: true, rx: lean, dx: 0, dy: 0, dz: 0 },
-    [PANEL_B_ID]: { keep: true, rx: -lean, dx: 0, dy: 0, dz: 0 },
+    [PANEL_ID]: { keep: true, rx: lean },
+    [PANEL_B_ID]: { keep: true, rx: -lean },
   };
   const seams: SeamSpec[] = [];
   for (let i = 1; i < g.xs.length; i++) {
