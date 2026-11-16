@@ -60,7 +60,7 @@ export function HammockPage({ project, updateInputs, resetProject, importProject
           {r && (
             <DerivedNumbers rows={[
               { label: 'Body cut', value: <>{inch(r.cut_length)} × {inch(r.cut_width)}" ({r.end_style === 'channel' ? 'channels' : 'whip tails'}{r.side_edge === 'hem' ? ' and side hems' : ''} included)</> },
-              { label: 'Fabric', value: <>{inch(r.fabric_length)}" of {inch(r.fabric_width)}" fabric{r.fabric_trim > 0 ? `, ${inch(r.fabric_trim)}" left across` : ''}</> },
+              { label: 'Fabric', value: <>{inch(r.fabric_length)}" of {inch(r.fabric_width)}" fabric{r.fabric_trim > 1e-6 ? `, ${inch(r.fabric_trim)}" left across` : ''}</> },
               { label: 'Ends', value: r.end_style === 'channel' ? <>{inch(r.channel_depth)}" channel, {inch(r.end_allowance)}" of fabric each end</> : <>{inch(r.whip_tail)}" whip tail, {inch(r.end_allowance)}" of fabric each end</> },
               { label: 'Ridgeline', value: <>{inch(r.ridgeline_length)}" eye to eye ({r.ridgeline_pct} % of {inch(r.length)}")</> },
             ]} />
