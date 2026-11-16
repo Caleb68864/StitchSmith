@@ -57,7 +57,8 @@ export function resolveInputs(inputs: TarpInputs): ResolvedInputs {
   const eave_sag = catCut ? d(inputs.eave_sag, EAVE_SAG_MM) : 0;
   const fabric_width = d(inputs.fabric_width, FABRIC_WIDTH_MM);
   const seam_allowance = construction === 'ridge_seam' ? (fin(inputs.seam_allowance) ? inputs.seam_allowance : SEAM_ALLOWANCE_MM) : 0;
-  const hem_fold = inputs.hem_fold === 'double' ? 'double' : 'single';
+  // Rolled by default: silnylon frays, and a rolled hem encloses the raw edge (decisions.md 2026-11-16).
+  const hem_fold = inputs.hem_fold === 'single' ? 'single' : 'double';
   const production_mode = inputs.production_mode === true;
   const hemReq = d(inputs.hem_depth, HEM_DEPTH_MM);
   const hemR = resolveHem({ depth: Math.max(0, hemReq), fold: hem_fold, productionMode: production_mode });

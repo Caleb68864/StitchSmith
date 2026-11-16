@@ -39,6 +39,16 @@ export interface PiecePlacement {
   cone?: { apex: Point; apex3: Vec3; halfAngle: number; angleScale: number; angle0: number };
 }
 
+/**
+ * Does this placement put the piece in the scene frame (rather than the viewer's side-by-side row)?
+ * Any offset, rotation, drape, cone or attach does. A rotation alone counts: the cloth harness
+ * always applies `rx`/`rz`, so the viewer must too or a test passes on a scene it never shows.
+ * `keep` and `rootPoint` alone do not move a piece.
+ */
+export function isScenePlaced(pl: PiecePlacement | undefined): pl is PiecePlacement {
+  return !!pl && (pl.dx !== undefined || pl.dy !== undefined || pl.dz !== undefined || !!pl.rx || !!pl.rz || !!pl.drape || !!pl.cone || !!pl.attach);
+}
+
 /** Flat point → 3D for a cone-wrapped piece. */
 export function conePoint(cone: NonNullable<PiecePlacement['cone']>, flat: Point): Vec3 {
   const dx = flat.x - cone.apex.x;

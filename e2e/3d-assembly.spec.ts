@@ -65,6 +65,10 @@ const TARGETS: Record<string, Target> = {
   'plate carrier': { open: /Open Plate Carrier/i, seams: true, fitReport: false },
   'modular lbv': { open: /Open Modular LBV/i, seams: true, fitReport: false },
   'tarp': { open: /Open Tarp/i, seams: true, fitReport: false },
+  'tarp (single panel)': {
+    open: /Open Tarp/i, seams: true, fitReport: false,
+    seed: { key: 'stitchsmith.tarp.project', project: { schemaVersion: 15, generatorId: 'tarp', projectName: 'E2E', ...stamp, inputs: { units: 'in', construction: 'single_panel', cut_style: 'cat_cut', hem_fold: 'double', ridge_tieouts: true, width: 56, ridge_height: 24 } } },
+  },
   'micro rig (.308 stacked)': {
     open: /Open Micro Rig/i, seams: true, fitReport: true, maxStretch: 70,
     seed: { key: 'stitchsmith.micro-rig.project', project: { schemaVersion: 8, generatorId: 'micro-rig', projectName: 'E2E', ...stamp, inputs: { units: 'in', panel_width_preset: 'r308_14', pocket_set: 'stacked_cells', magazine_preset_id: 'pmag_308_20', cell_count: 2, cells_deep: 2 } } },

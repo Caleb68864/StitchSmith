@@ -151,7 +151,9 @@ numbers. Rules already encoded, with the note that justifies each:
   project leaves them empty on purpose. Sewn fabrics only: DCF and other
   taped or bonded construction are out of scope (owner decision 2026-11-16).
   Cat cuts come from `geometry/catenary.ts`, hems from
-  `primitives/hem.ts`; inside an end hem every curve is mirrored about the
+  `primitives/hem.ts`. Tarp hems default to rolled (double fold, raw edge
+  enclosed: silnylon frays; owner decision 2026-11-16), an exception to the
+  single-fold rule above, which stays selectable. Inside an end hem every curve is mirrored about the
   end crease so the hem folds flat.
 - Straps that must run beside the neck on the torso form kick out from
   their panel landing to the shoulder line (`overShoulder(..., xStart)` in
@@ -214,6 +216,10 @@ numbers. Rules already encoded, with the note that justifies each:
 - Placements also take `rz` (turn a piece upside down) and `cone` (skirt
   panels wrapped from an apex); `placementMap` gives the direct flat→3D map
   for draped or cone pieces. Pages may pass extra `solids` (a hip form).
+- A placement moves a piece into the scene when `isScenePlaced` says so (any
+  offset, `rx`, `rz`, drape, cone or attach); a rotation alone is enough, and
+  the viewer (`viewer/layout.ts`) and the cloth harness agree on it. The
+  assembly sweep checks that agreement for every case.
 - Every page shows its preview through `PreviewTabs` (Pattern / 3D
   assembly); a new generator supplies an `assembly3d.ts` and passes its
   object, placements, pins and seams to `FoldPreview3D` with

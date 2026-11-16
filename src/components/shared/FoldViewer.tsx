@@ -2,10 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
-import type { Pattern } from '../../lib/pattern-engine/graph/Pattern.js';
-import { bboxFromPiece } from '../../lib/pattern-engine/geometry/bbox.js';
 import {
-  buildFoldModel,
   defaultFoldAngles,
   foldModel,
   measureCavity,
@@ -15,7 +12,6 @@ import {
   onAnyFold,
   makePlacer,
   placementMap,
-  type FoldModel,
   type FoldedModel,
   type CavityReport,
 } from '../../lib/fold-engine/index.js';
@@ -23,6 +19,7 @@ import type { FoldPreview3DProps, PiecePlacement, SeamSpec } from './FoldPreview
 import { validateSeams, clothSpacingFor, hasNonFinite, STAT_HELP } from './viewer/validate.js';
 import { solveKey, getSolve, putSolve } from './viewer/settleCache.js';
 import { ViewerLegend } from './viewer/Legend.js';
+import { layoutPieces, type PieceEntry } from './viewer/layout.js';
 import {
   buildClothMesh,
   createWorld,
@@ -54,54 +51,6 @@ const CLOTH_STEPS = 360;
 const FRAME_BUDGET_MS = 10;
 
 const DEG = Math.PI / 180;
-const PIECE_GAP = 20;
-const PALETTE = [0x4f7cac, 0xc98b4a, 0x6aa36f, 0xa66a9e, 0xd0b04d, 0x5d8f9e, 0xb3675b, 0x8b8b8b];
-
-interface PieceEntry {
-  model: FoldModel;
-  /** Flat-frame translation applied before folding. */
-  offsetX: number;
-  offsetY: number;
-  offsetZ: number;
-  color: number;
-  placement?: PiecePlacement;
-}
-
-function layoutPieces(pattern: Pattern, allPieces: boolean, placements: Record<string, PiecePlacement>, base?: FoldPreview3DProps['object'] extends infer O ? (O extends { base?: infer B } ? B : never) : never): PieceEntry[] {
-  const entries: PieceEntry[] = [];
-  let x = 0;
-  const models = pattern.pieces.map((piece) => {
-    let rootPoint = placements[piece.id]?.rootPoint;
-    // The object stands on the root by definition: root the host piece just inside its base edge.
-    if (!rootPoint && base && base.pieceId === piece.id) {
-      rootPoint = { x: base.point.x + base.direction.x, y: base.point.y + base.direction.y };
-    }
-    return buildFoldModel(piece, { rootPoint });
-  });
-  const anyFolds = models.some((m) => m && m.folds.length > 0);
-  const assembled = Object.keys(placements).length > 0;
-  pattern.pieces.forEach((piece, i) => {
-    const model = models[i];
-    if (!model) return;
-    const pl = placements[piece.id];
-    // By default show the pieces that actually fold (or every piece when none do). In an
-    // assembled scene show only the placed pieces and the object's host: every other piece is
-    // a loose strip or pocket that would only clutter the sewn-up view.
-    const isHost = base?.pieceId === piece.id;
-    if (!allPieces && assembled && !pl && !isHost) return;
-    if (!allPieces && !assembled && anyFolds && model.folds.length === 0 && !pl?.keep) return;
-    const bb = bboxFromPiece(piece);
-    if (pl && (pl.dx !== undefined || pl.dy !== undefined || pl.dz !== undefined || pl.drape || pl.cone || pl.attach)) {
-      // Placed pieces (offsets, a drape path, or riding on another piece) sit in the scene frame
-      // instead of the side-by-side row.
-      entries.push({ model, offsetX: pl.dx ?? 0, offsetY: pl.dy ?? 0, offsetZ: pl.dz ?? 0, color: PALETTE[i % PALETTE.length], placement: pl });
-      return;
-    }
-    entries.push({ model, offsetX: x - bb.minX, offsetY: 0, offsetZ: 0, color: PALETTE[i % PALETTE.length] });
-    x += bb.width + PIECE_GAP;
-  });
-  return entries;
-}
 
 /** Is flat point `f` on the host panel under the object's back face (inset by most of a cloth cell)? */
 function underObject(f: { x: number; y: number }, object: NonNullable<FoldPreview3DProps['object']>): boolean {

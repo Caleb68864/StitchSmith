@@ -162,7 +162,7 @@ registerPattern({
 registerPattern({
   id: 'tarp',
   title: 'Tarp',
-  description: 'Flat / A-frame tarp: two panels on a flat-felled ridge seam (or one panel), catenary cat cuts on the ridge and eaves, hems marked at double, box-X tie-out patches with grosgrain loops, and a pitch check on a ridgeline. Sewn fabrics only; every number is a placeholder until checked against the vault.',
+  description: 'Flat / A-frame tarp: two panels on a flat-felled ridge seam (or one panel), catenary cat cuts on the ridge and eaves, rolled hems (silnylon frays; the single fold marked at double is still an option), box-X tie-out patches with grosgrain loops, and a pitch check on a ridgeline. Sewn fabrics only; every number is a placeholder until checked against the vault.',
   available: true,
   route: 'tarp',
 });

@@ -10,22 +10,39 @@ import type { Piece } from '../../../lib/pattern-engine/graph/Piece.js';
 
 const IN = 25.4;
 const DEF: TarpInputs = makeDefaultTarpProject().inputs;
+/** The vault's single-fold hem, for the hand-checked panel geometry below (the default is rolled). */
+const SINGLE: TarpInputs = { ...DEF, hem_fold: 'single' };
 const built = (i: TarpInputs) => { const b = buildPattern(i); if (!b.ok) throw new Error(JSON.stringify(b.errors)); return b.value; };
 const panelOf = (pieces: Piece[]) => pieces.find((p) => p.id === PANEL_ID)!;
 const errorFields = (i: TarpInputs) => { const v = validateInputs(i); return v.ok ? [] : v.errors.map((e) => e.field); };
 
 describe('resolve — cut sizes from the placeholders', () => {
-  it('default: two 121" × 49" panels (10\' ridge + two 1/2" hems; 1/2" seam + 48" + 1/2" hem), 242" of fabric, 8 tie-outs', () => {
+  it('default: two 122" × 49.5" panels (10\' ridge + two 1" rolled-hem allowances; 1/2" seam + 48" + 1"), 244" of fabric, 8 tie-outs', () => {
     const r = resolveInputs(DEF);
     expect(r.panel_count).toBe(2);
-    expect(r.panel_cut_length).toBeCloseTo(121 * IN, 6);
-    expect(r.panel_cut_width).toBeCloseTo(49 * IN, 6);
-    expect(r.fabric_length).toBeCloseTo(242 * IN, 6);
+    expect(r.hem_allowance).toBeCloseTo(1 * IN, 6);
+    expect(r.panel_cut_length).toBeCloseTo(122 * IN, 6);
+    expect(r.panel_cut_width).toBeCloseTo(49.5 * IN, 6);
+    expect(r.fabric_length).toBeCloseTo(244 * IN, 6);
     expect(r.panel_finished_width).toBeCloseTo(48 * IN, 6);
     // 48" less the 2" ridge cut and the 3" eave cut.
     expect(r.panel_mid_width).toBeCloseTo(43 * IN, 6);
     expect(r.hem_mark).toBeCloseTo(1 * IN, 6);
     expect(r.tieout_count).toBe(8);
+  });
+
+  it('the default hem is rolled (silnylon frays): raw edge enclosed, twice the depth in the cut; the vault single fold stays selectable', () => {
+    expect(DEF.hem_fold).toBe('double');
+    // An old or hand-written project with no hem choice resolves the same way.
+    const { hem_fold: _h, ...noChoice } = DEF;
+    expect(resolveInputs(noChoice).hem_fold).toBe('double');
+    const v = built(DEF);
+    expect(v.resolved.hem_fold).toBe('double');
+    expect(v.steps.map((s) => s.body).join(' ')).toMatch(/roll it: turn the raw edge under/);
+    const single = resolveInputs({ ...DEF, hem_fold: 'single' });
+    expect(single.hem_fold).toBe('single');
+    expect(single.hem_allowance).toBeCloseTo(0.5 * IN, 6);
+    expect(single.panel_cut_length).toBeCloseTo(121 * IN, 6);
   });
 
   it('pitch check: a 42" ridgeline under 48" panels sits at asin(42/48) with a 2·√(48² − 42²) footprint', () => {
@@ -39,8 +56,9 @@ describe('resolve — cut sizes from the placeholders', () => {
   });
 
   it('a rolled hem takes twice the depth; production mode floors a 1/4" hem at 1/2"', () => {
+    expect(resolveInputs(SINGLE).panel_cut_length).toBeCloseTo(121 * IN, 6);
     expect(resolveInputs({ ...DEF, hem_fold: 'double' }).panel_cut_length).toBeCloseTo(122 * IN, 6);
-    const p = resolveInputs({ ...DEF, hem_depth: 0.25, production_mode: true });
+    const p = resolveInputs({ ...SINGLE, hem_depth: 0.25, production_mode: true });
     expect(p.hem_depth).toBeCloseTo(0.5 * IN, 6);
     expect(p.hem_raised).toBe(true);
     expect(p.panel_cut_length).toBeCloseTo(121 * IN, 6);
@@ -49,7 +67,9 @@ describe('resolve — cut sizes from the placeholders', () => {
   it('single panel: one piece, both edges hemmed, no seam allowance, no ridge cut', () => {
     const r = resolveInputs({ ...DEF, construction: 'single_panel', width: 56 });
     expect(r.panel_count).toBe(1);
-    expect(r.panel_cut_width).toBeCloseTo(57 * IN, 6);
+    // 56" + a 1" rolled-hem allowance on each eave: exactly the 58" fabric.
+    expect(r.panel_cut_width).toBeCloseTo(58 * IN, 6);
+    expect(resolveInputs({ ...SINGLE, construction: 'single_panel', width: 56 }).panel_cut_width).toBeCloseTo(57 * IN, 6);
     expect(r.ridge_sag).toBe(0);
     expect(r.seam_allowance).toBe(0);
     expect(r.panel_mid_width).toBeCloseTo((56 - 6) * IN, 6);
@@ -89,8 +109,8 @@ describe('validation', () => {
   });
 });
 
-describe('pattern — Convention B panel', () => {
-  const v = built(DEF);
+describe('pattern — Convention B panel (single-fold hem, hand-checked numbers)', () => {
+  const v = built(SINGLE);
   const r = v.resolved;
   const panel = panelOf(v.pieces);
   const g = panelGeometry(r);
@@ -147,6 +167,15 @@ describe('pattern — Convention B panel', () => {
     eaveMark.edges.forEach((e) => expect(g.bottomCut(e.start.x) - e.start.y).toBeCloseTo(r.hem_mark, 6));
   });
 
+  it('the default rolled hem: two creases per end (first turn at 1/2", finished edge at 1"), outline 122" × 49.5"', () => {
+    const rp = panelOf(built(DEF).pieces);
+    const bb = bboxFromPiece(rp);
+    expect(bb.width).toBeCloseTo(122 * IN, 6);
+    expect(bb.height).toBeCloseTo(49.5 * IN, 6);
+    const ends = rp.paths.filter((p) => !p.closed && p.edges.every((e) => e.role === 'fold') && p.id.includes('-end-'));
+    expect(ends.map((f) => f.edges[0].start.x).sort((a, b) => a - b)).toEqual([0.5, 1, 121, 121.5].map((x) => expect.closeTo(x * IN, 6)));
+  });
+
   it('tie-outs: four corners, one mid-eave and both ridge ends per panel, each patch inside the finished panel', () => {
     expect(v.tieouts.map((t) => t.kind).sort()).toEqual(['corner', 'corner', 'eave', 'ridge', 'ridge']);
     for (const t of v.tieouts) {
@@ -164,7 +193,7 @@ describe('pattern — Convention B panel', () => {
   });
 
   it('straight edges draw a straight ridge and eave', () => {
-    const flat = built({ ...DEF, cut_style: 'flat' });
+    const flat = built({ ...SINGLE, cut_style: 'flat' });
     const fg = panelGeometry(flat.resolved);
     for (const x of fg.xs) { expect(fg.topCut(x)).toBe(0); expect(fg.bottomCut(x)).toBeCloseTo(49 * IN, 6); }
   });
@@ -225,7 +254,7 @@ describe('steps and BOM', () => {
   it('steps state the cut size with the allowances included, mark the cat cut by stations, and depend only on earlier steps', () => {
     const v = built(DEF);
     const cut = v.steps.find((s) => s.id === 'tarp.cut')!;
-    expect(cut.body).toMatch(/3073 mm \(121"\) × 1245 mm \(49"\)/);
+    expect(cut.body).toMatch(/3099 mm \(122"\) × 1257 mm \(49.5"\)/);
     expect(cut.body).toMatch(/included/);
     expect(cut.body).toMatch(/Sewn fabric only/);
     expect(v.steps.find((s) => s.id === 'tarp.cat-cut')!.body).toMatch(/ridge 2"/);
@@ -246,8 +275,9 @@ describe('steps and BOM', () => {
 
   it('BOM: panels at cut size, fabric to buy, grosgrain total, sealer', () => {
     const rows = buildBom(DEF);
-    expect(rows.find((r) => r.id === `piece-${PANEL_ID}`)!.unit).toBe('pc — 3073 × 1245 mm');
-    expect(rows.find((r) => r.id === 'material-silnylon')!.quantity).toBe(Math.ceil((242 * IN) / 10) * 10);
+    expect(rows.find((r) => r.id === `piece-${PANEL_ID}`)!.unit).toBe('pc — 3099 × 1257 mm');
+    expect(rows.find((r) => r.id === 'material-silnylon')!.quantity).toBe(Math.ceil((244 * IN) / 10) * 10);
+    expect(buildBom(SINGLE).find((r) => r.id === `piece-${PANEL_ID}`)!.unit).toBe('pc — 3073 × 1245 mm');
     expect(rows.find((r) => r.id === 'material-webbing-16')!.quantity).toBe(Math.ceil((8 * 5 * IN) / 10) * 10);
     expect(rows.some((r) => r.id === 'hw-seam-sealer')).toBe(true);
     expect(buildBom({ ...DEF, width: 120 })).toEqual([]);

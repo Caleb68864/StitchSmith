@@ -1068,3 +1068,68 @@ DCF out of scope (sewn fabrics only).
   rotation-only placement and lays the piece flat, while the cloth harness
   applies it. The tarp passes explicit zero offsets like every other
   assembly, and a test pins it. The viewer/harness gap is left on the roadmap.
+
+## 2026-11-16 — Tarp follow-ups (branch `fix/tarp-followups`)
+
+**Viewer and harness place pieces the same way.**
+- Context: the viewer laid a rotation-only placement (`rx` or `rz`, no
+  offset) flat in its side-by-side row; the cloth harness rotated it. A 3D
+  test could pass on a scene the browser never showed. Every assembly so far
+  dodged it by passing explicit zero offsets.
+- Decision: the viewer honours the rotation (the harness was right). One
+  predicate, `isScenePlaced` in `fold-engine/placement.ts`, decides whether a
+  placement puts a piece in the scene: any offset, `rx`, `rz`, drape, cone or
+  attach. `keep` and `rootPoint` alone still do not. The viewer's layout is
+  now `src/components/shared/viewer/layout.ts` so it can be tested without
+  WebGL; the harness exports `harnessEntries` and `placedPoints`.
+- Tests: `src/components/shared/__tests__/viewer-layout.test.ts` (rx-only and
+  rz-only placements; fails on the old rule) and a per-case check in the
+  assembly sweep (`viewerAgreement.ts`) that the viewer puts every scene piece
+  where the harness does. All 19 sweep cases agreed on the old code too, and
+  the page-built assemblies (mag pouch, roll-top, book cover) all carry
+  offsets, so no existing scene changes. The tarp drops its zero offsets.
+
+**Tarp hems default to rolled.**
+- Context: the tarp shipped with the vault's general hem rule (single fold,
+  marked at double; `bags/construction-hem-mark-at-double.md`). That rule
+  comes from pack and pouch builds, where the raw edge sits inside a lined
+  or bound item. A tarp hem is exposed to weather and flapping, and silnylon
+  frays readily from a cut edge; a single fold leaves the raw edge open on
+  the inside of the hem.
+- Decision (owner, 2026-11-16): the tarp defaults to a double-fold rolled hem,
+  which encloses the raw edge. The single fold marked at double stays a
+  choice in the Hem select. A project with no hem choice also resolves to
+  rolled. The vault rule in CLAUDE.md is unchanged for every other generator.
+- Effect: the rolled hem takes twice the depth, so the placeholder panels cut
+  122" × 49.5" instead of 121" × 49" and the fabric to buy is 244" instead of
+  242". The hem depth (1/2") is still a placeholder flagged `[mock-derived]`;
+  the fold choice is not a number and is not flagged.
+- Not checked: no vault note says which hem a sewn silnylon tarp uses. The
+  fraying reason is the owner's call, not a vault source.
+- Tests: `buildPattern.test.ts` "the default hem is rolled…" fails on the old
+  default; the hand-checked panel-geometry block now sets the single fold
+  explicitly, and a new case checks the rolled creases (1/2" and 1" in from
+  each end).
+
+**Single-panel tarp gets a 3D view and check.**
+- Context: `tarpAssembly` returned null for the single panel, so its page had
+  no 3D tab content and there was no cloth check.
+- Decision: the 3D copy of the single panel is split at its ridge reference
+  line into two halves joined there by a zero-allowance seam ("ridge fold"),
+  each pitched like the two-panel tarp (rx ±(90° − pitch)). The panel is
+  symmetric about the ridge line, so the second half is the first mirrored;
+  the second eave's tie-outs are reflected into it and the ridge-end tie-outs
+  hold both halves. The exported pattern is unchanged.
+- Rejected: relabelling the (0°) ridge line with the fold angle (2 × pitch)
+  in the 3D copy. The ridge line crosses the 180° end-hem creases; the fold
+  engine's hinge tree reaches some end-hem regions through the ridge fold in
+  a frame already flipped by the hem, which folds them the wrong way (half of
+  each end hem pointed up above the ridge in the rigid view). The cloth
+  pulled them back, so a cloth-only test would have passed; the rigid view
+  would not. Fixing that is engine work (consistent multi-fold vertices).
+- Tests: `tarp/__tests__/assembly3d.test.ts` single-panel case (fails on the
+  old code), checking the rigid fold sits below the ridge before the cloth
+  moves, the fold seam closes, eaves either side at the ridgeline height and
+  the footprint; an assembly-sweep case (p99 0.2 %, seam 0.05 mm); e2e target
+  `tarp (single panel)`.
+

@@ -274,7 +274,8 @@ new landing category "Shelter and sleep". Two panels on a flat-felled ridge
 seam, or one panel when the width fits the fabric. Catenary cat cuts on the
 ridge and both eaves (`geometry/catenary.ts`). Cat-cut stations in the
 steps for marking the curve on cloth. Ends and eaves hemmed through the Hem
-primitive (single fold marked at double, or rolled; production floor). Every
+primitive (rolled by default, or the vault's single fold marked at double;
+production floor). Every
 curve is mirrored inside the end hems so they fold flat. Box-X patches with
 grosgrain loops at the corners, along the eaves and at both ridge ends. A
 fabric-width check (an error, on the field that fixes it). Convention B (cut
@@ -305,21 +306,39 @@ against the vault:**
 | Ridgeline height (pitch check only) | 42" |
 
 Choices with no number are not mock-derived: two-panel ridge seam (default)
-vs single panel, cat cut (default) vs straight edges, the vault's single-fold
-hem marked at double (default) vs a rolled hem, ridge-end tie-outs on.
+vs single panel, cat cut (default) vs straight edges, a rolled hem (default
+since 2026-11-16: silnylon frays, see decisions.md) vs the vault's
+single-fold hem marked at double, ridge-end tie-outs on. With the rolled
+default the placeholder panels cut 122" × 49.5" (244" of fabric); the hem
+depth placeholder (1/2") stays `[mock-derived]`.
 
-Found while building: the viewer keeps a placement only when it carries an
-offset, drape, cone or attach. A rotation-only placement (`rx` alone) is
-dropped and the piece is laid out flat, while the test harness applies the
-rotation, so a cloth test can pass on a scene the browser never shows. The
-tarp passes explicit zero offsets, as every other assembly already does, and
-a test pins that. Making the viewer honour `rx`/`rz` alone (or the harness
-drop them) would close the gap for good.
+Found while building: the viewer kept a placement only when it carried an
+offset, drape, cone or attach. A rotation-only placement (`rx` alone) was
+dropped and the piece laid out flat, while the test harness applied the
+rotation, so a cloth test could pass on a scene the browser never showed.
+**Fixed 2026-11-16 (`fix/tarp-followups`):** the viewer's layout moved to
+`src/components/shared/viewer/layout.ts` and places a piece in the scene
+whenever `isScenePlaced` (`fold-engine/placement.ts`) says so, which counts a
+rotation alone. `viewer-layout.test.ts` fails on the old rule; every
+assembly-sweep case now also checks that the viewer puts each scene piece
+where the harness does (all 19 cases agreed before and after, so no
+existing scene changed). The tarp now uses rotation-only placements.
 
 Follow-ups: cat-cut ends (the short edges are straight), guyline and
-line-lock hardware, ridge pull-outs mid-panel, a 3D check for the single
-panel (a 0° ridge line today), a doorway or beak variant, and moving the
-organizer and pleated-card hems onto the Hem primitive.
+line-lock hardware, ridge pull-outs mid-panel, a doorway or beak variant,
+and moving the organizer and pleated-card hems onto the Hem primitive.
+
+**Single-panel 3D check — DONE 2026-11-16 (`fix/tarp-followups`).** The
+single panel is folded over the ridgeline in the 3D tab and the cloth test.
+The 3D copy splits the panel at its ridge reference line and joins the two
+halves there with a zero-allowance seam, then pitches them like the two
+panels. A rigid hinge along the ridge line cannot be used: it crosses the
+180° end hems, the fold engine's hinge tree cannot fold that consistently,
+and half of each end hem flips up over the ridge. The exported pattern is
+unchanged (one piece, a (0°) ridge line). Tests: `assembly3d.test.ts`
+(fails on the old code, which returned no assembly), an assembly-sweep case
+and an e2e target `tarp (single panel)`, all on a 56" panel under a 24"
+ridgeline (28" a side does not reach the ground from the 42" placeholder).
 
 **Order for the rest of item 10:** 10b gathered-end hammock (reuses the
 Hem primitive as the end channels), then 10c quilt (needs a baffle-chamber
