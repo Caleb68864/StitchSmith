@@ -325,9 +325,20 @@ where the harness does (all 19 cases agreed before and after, so no
 existing scene changed). The tarp now uses rotation-only placements.
 
 Follow-ups: cat-cut ends (the short edges are straight), guyline and
-line-lock hardware, ridge pull-outs mid-panel, a 3D check for the single
-panel (a 0° ridge line today), a doorway or beak variant, and moving the
-organizer and pleated-card hems onto the Hem primitive.
+line-lock hardware, ridge pull-outs mid-panel, a doorway or beak variant,
+and moving the organizer and pleated-card hems onto the Hem primitive.
+
+**Single-panel 3D check — DONE 2026-11-16 (`fix/tarp-followups`).** The
+single panel is folded over the ridgeline in the 3D tab and the cloth test.
+The 3D copy splits the panel at its ridge reference line and joins the two
+halves there with a zero-allowance seam, then pitches them like the two
+panels. A rigid hinge along the ridge line cannot be used: it crosses the
+180° end hems, the fold engine's hinge tree cannot fold that consistently,
+and half of each end hem flips up over the ridge. The exported pattern is
+unchanged (one piece, a (0°) ridge line). Tests: `assembly3d.test.ts`
+(fails on the old code, which returned no assembly), an assembly-sweep case
+and an e2e target `tarp (single panel)`, all on a 56" panel under a 24"
+ridgeline (28" a side does not reach the ground from the 42" placeholder).
 
 **Order for the rest of item 10:** 10b gathered-end hammock (reuses the
 Hem primitive as the end channels), then 10c quilt (needs a baffle-chamber

@@ -110,6 +110,7 @@ const CASES: Case[] = [
   { name: 'modular lbv', maxStretch: 0.01, maxSeamMean: 3, build: () => { const v = ok(buildLbv(lbv)); return lbvAssembly(v.pieces, v.resolved); } },
   // A 10' tarp: a coarse mesh keeps the case inside the suite's time budget (the viewer picks its own).
   { name: 'tarp (ridge seam, cat cut)', spacing: 60, maxStretch: 0.02, maxSeamMean: 3, build: () => { const v = ok(buildTarp(makeDefaultTarpProject().inputs)); return tarpAssembly(v.pieces, v.resolved); } },
+  { name: 'tarp (single panel over the ridgeline)', spacing: 60, maxStretch: 0.01, maxSeamMean: 3, build: () => { const v = ok(buildTarp({ ...makeDefaultTarpProject().inputs, construction: 'single_panel', width: 56, ridge_height: 24 })); return tarpAssembly(v.pieces, v.resolved); } },
 ];
 
 /** The pieces the viewer simulates in an assembled scene: placed pieces and the object's host. */

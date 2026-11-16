@@ -1111,3 +1111,25 @@ DCF out of scope (sewn fabrics only).
   explicitly, and a new case checks the rolled creases (1/2" and 1" in from
   each end).
 
+**Single-panel tarp gets a 3D view and check.**
+- Context: `tarpAssembly` returned null for the single panel, so its page had
+  no 3D tab content and there was no cloth check.
+- Decision: the 3D copy of the single panel is split at its ridge reference
+  line into two halves joined there by a zero-allowance seam ("ridge fold"),
+  each pitched like the two-panel tarp (rx ±(90° − pitch)). The panel is
+  symmetric about the ridge line, so the second half is the first mirrored;
+  the second eave's tie-outs are reflected into it and the ridge-end tie-outs
+  hold both halves. The exported pattern is unchanged.
+- Rejected: relabelling the (0°) ridge line with the fold angle (2 × pitch)
+  in the 3D copy. The ridge line crosses the 180° end-hem creases; the fold
+  engine's hinge tree reaches some end-hem regions through the ridge fold in
+  a frame already flipped by the hem, which folds them the wrong way (half of
+  each end hem pointed up above the ridge in the rigid view). The cloth
+  pulled them back, so a cloth-only test would have passed; the rigid view
+  would not. Fixing that is engine work (consistent multi-fold vertices).
+- Tests: `tarp/__tests__/assembly3d.test.ts` single-panel case (fails on the
+  old code), checking the rigid fold sits below the ridge before the cloth
+  moves, the fold seam closes, eaves either side at the ridgeline height and
+  the footprint; an assembly-sweep case (p99 0.2 %, seam 0.05 mm); e2e target
+  `tarp (single panel)`.
+

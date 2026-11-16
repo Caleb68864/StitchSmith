@@ -49,8 +49,51 @@ describe('tarp pitched on a ridgeline', () => {
     expect(asm.report[0]).toMatch(/hang 2" off the ground/);
   });
 
-  it('the single panel is not assembled', () => {
-    const v = built({ ...DEF, construction: 'single_panel', width: 56 });
-    expect(tarpAssembly(v.pieces, v.resolved)).toBeNull();
+  it('the single panel folds over the ridgeline at its ridge line: both halves lean out, the fold closes, held at every tie-out, eaves down at the ridgeline height', () => {
+    // 56" wide: with 1" rolled hems on both eaves it cuts at the full 58" fabric width.
+    // 28" a side reaches the ground only from a lower ridgeline: 24" (a low storm pitch).
+    const v = built({ ...DEF, construction: 'single_panel', width: 56, ridge_height: 24 });
+    const r = v.resolved;
+    const asm = tarpAssembly(v.pieces, r)!;
+    expect(asm).not.toBeNull();
+    // Split at the ridge line and joined there (see assembly3d.ts): two halves, one fold seam per segment.
+    expect(asm.pieces.map((p) => p.id)).toEqual([PANEL_ID, PANEL_B_ID]);
+    expect(asm.seams.length).toBeGreaterThanOrEqual(24);
+    // Each eave's tie-outs on its half; the two ridge ends on both.
+    expect(asm.pins).toHaveLength(v.tieouts.length + v.tieouts.filter((t) => t.kind === 'ridge').length);
+    // The halves add up to the cut panel.
+    const area = (p: typeof asm.pieces[number]) => { const o = p.paths.find((x) => x.closed)!; let s2 = 0; for (const e of o.edges) s2 += e.start.x * e.end.y - e.end.x * e.start.y; return Math.abs(s2) / 2; };
+    const full = v.pieces.find((p) => p.id === PANEL_ID)!;
+    expect(area(asm.pieces[0]) + area(asm.pieces[1])).toBeCloseTo(area(full), 0);
+    expect(asm.pitchDeg).toBeCloseTo(r.pitch_deg, 9);
+    expectViewerMatchesHarness(asm.pieces, asm.placements);
+    // The exported pattern keeps its (0°) reference line; only the 3D copy folds it.
+    expect(v.pieces[0].paths.find((x) => x.id.endsWith('-ridge-line'))!.label).toMatch(/\(0°\)/);
+    const { world, bounds } = assemble(asm.pieces, asm.placements, asm.seams, null, 60, asm.pins, asm.gravity);
+    // Before the cloth moves: the rigid fold (hems folded, halves leaned out) already sits below
+    // the ridge — no hem strip flipped up over it, as a hinge across the end hems would put it.
+    for (const id of [PANEL_ID, PANEL_B_ID]) expect(bounds(id).hi[1], `${id} rigid top`).toBeLessThan(5);
+    relax(world, 300);
+    expect(seamResidual(world).mean).toBeLessThan(3);
+    expect(maxPenetration(world)).toBeLessThan(world.params.thickness);
+    expect(stretchReport(world, 0.99).value).toBeLessThan(0.02);
+    const ba = bounds(PANEL_ID), bb = bounds(PANEL_B_ID);
+    // Opposite sides of the ridge.
+    expect(ba.hi[2]).toBeLessThan(20);
+    expect(bb.lo[2]).toBeGreaterThan(-20);
+    const b = { lo: ba.lo.map((x, i) => Math.min(x, bb.lo[i])), hi: ba.hi.map((x, i) => Math.max(x, bb.hi[i])) };
+    // The ridge is the top of the panel, at y = 0 and z = 0; the eaves hang either side of it.
+    expect(b.hi[1]).toBeLessThan(5);
+    expect(b.hi[1]).toBeGreaterThan(-20);
+    expect(b.lo[2]).toBeLessThan(-0.4 * r.footprint_width);
+    expect(b.hi[2]).toBeGreaterThan(0.4 * r.footprint_width);
+    // Eaves down to about the 24" ridgeline height (plus the rolled hem and sag between tie-outs).
+    expect(-b.lo[1]).toBeGreaterThan(24 * IN - 10);
+    expect(-b.lo[1]).toBeLessThan(27 * IN);
+    // Footprint: eave to eave across the ridge.
+    expect(b.hi[2] - b.lo[2]).toBeGreaterThan(r.footprint_width - 20);
+    expect(b.hi[2] - b.lo[2]).toBeLessThan(r.footprint_width + 4 * IN);
+    expect(asm.report[0]).toMatch(/footprint/);
+    expect(asm.report.join(' ')).toMatch(/one panel folded over the ridgeline/i);
   });
 });
