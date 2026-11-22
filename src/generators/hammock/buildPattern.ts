@@ -10,6 +10,7 @@
  * Flat frame: x runs along the length (cut end at x = 0), y across the width
  * (cut side at y = 0). Grain runs along the length.
  */
+import { assignAssemblies } from '../../lib/pattern-engine/graph/Piece.js';
 import type { Piece } from '../../lib/pattern-engine/graph/Piece.js';
 import type { Path } from '../../lib/pattern-engine/graph/Path.js';
 import type { Point } from '../../lib/pattern-engine/graph/Point.js';
@@ -247,5 +248,6 @@ export function buildPattern(inputs: HammockInputs): Result<HammockBuildResult> 
       { id: 'carabiner', name: 'Load-rated carabiner', quantity: 2, notes: 'one per end, strap to the end loop; check its rating against the load' },
     );
   }
+  assignAssemblies(pieces, [[/net/, 'Bug net'], [/body|joined|panel/, 'Body'], [/suspension|strap|whoopie|tree/, 'Suspension']]);
   return { ok: true, value: { pieces, steps: buildSteps(r, g), warnings: buildWarnings(inputs, r), hardware, resolved: r } };
 }

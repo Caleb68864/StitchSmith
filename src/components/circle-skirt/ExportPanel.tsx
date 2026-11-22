@@ -15,6 +15,7 @@ export function ExportPanel({ inputs, project, hasErrors }: Props) {
     generatorId: 'circle-skirt',
     projectName: project.projectName,
     hasErrors,
+    groupByAssembly: true,
     defaultSeamAllowance: inputs.seam_allowance ?? 15,
     buildPattern: () => ({ id: 'circle-skirt', name: project.projectName, pieces: buildPattern(inputs).pieces }),
     steps: () => buildPattern(inputs).steps,

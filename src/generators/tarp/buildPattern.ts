@@ -10,6 +10,7 @@
  * ridge cut edge (y ≈ 0) to the eave. Inside the end-hem allowance every curve
  * is mirrored about the end crease, so the hem folds back flat onto its panel.
  */
+import { assignAssemblies } from '../../lib/pattern-engine/graph/Piece.js';
 import type { Piece } from '../../lib/pattern-engine/graph/Piece.js';
 import type { Path } from '../../lib/pattern-engine/graph/Path.js';
 import type { Point } from '../../lib/pattern-engine/graph/Point.js';
@@ -435,5 +436,6 @@ export function buildPattern(inputs: TarpInputs): Result<TarpBuildResult> {
     if (r.line_locks) hardware.push({ id: 'line-lock', name: 'Line-lock tensioner', quantity: r.tieout_count, notes: 'one per guyline, sized to the cord' });
     hardware.push({ id: 'stake', name: 'Stake', quantity: r.tieout_count, notes: 'one per guyline' });
   }
+  assignAssemblies(pieces, [[/panel|door|beak/, 'Canopy'], [/patch|loop/, 'Tie-outs']]);
   return { ok: true, value: { pieces, steps: buildSteps(r, g), warnings: buildWarnings(inputs, r), hardware, resolved: r, tieouts: ties } };
 }

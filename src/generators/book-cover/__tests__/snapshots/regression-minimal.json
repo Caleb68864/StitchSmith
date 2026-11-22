@@ -223,7 +223,8 @@
         "cover-panel-outline:e1": 0,
         "cover-panel-outline:e2": 0,
         "cover-panel-outline:e3": 0
-      }
+      },
+      "assembly": "Cover"
     },
     {
       "id": "inner-flap-left",
@@ -321,7 +322,8 @@
         "inner-flap-left-outline:e1": 0,
         "inner-flap-left-outline:e2": 0,
         "inner-flap-left-outline:e3": 0
-      }
+      },
+      "assembly": "Flaps and closure"
     },
     {
       "id": "inner-flap-right",
@@ -419,7 +421,8 @@
         "inner-flap-right-outline:e1": 0,
         "inner-flap-right-outline:e2": 0,
         "inner-flap-right-outline:e3": 0
-      }
+      },
+      "assembly": "Flaps and closure"
     }
   ],
   "steps": [

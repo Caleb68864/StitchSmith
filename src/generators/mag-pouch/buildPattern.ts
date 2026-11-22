@@ -10,6 +10,7 @@
  *   - `AK_WARNING_COPY`       — canonical warning string for tests / UI
  */
 
+import { assignAssemblies } from '../../lib/pattern-engine/graph/Piece.js';
 import type { Pattern } from '../../lib/pattern-engine/graph/Pattern.js';
 import type { Piece } from '../../lib/pattern-engine/graph/Piece.js';
 import type { Step } from '../../lib/pattern-engine/instructions/Step.js';
@@ -179,7 +180,11 @@ export function cardStacks(r: ResolvedMagPouch) {
   const atDivision: StackLayer[] = [];
   const atBottom: StackLayer[] = [];
   if (r.interiorLoop) { atDivision.push({ what: 'interior loop (both walls)', count: 2 }); atBottom.push({ what: 'interior loop ends', count: 2 }); }
-  if (r.isPalsMount) atDivision.push({ what: 'PALS back row', count: 1 }, { what: 'mount strap', count: 1 });
+  if (r.isPalsMount) {
+    atDivision.push({ what: 'PALS back row', count: 1 }, { what: 'mount strap', count: 1 });
+    // The mount strap's tuck/snap tab folds back on itself at the bottom: two thicknesses of webbing.
+    atBottom.push({ what: 'mount strap end (tab folded back)', count: 2 });
+  }
   if (r.facePals) atDivision.push({ what: 'face PALS bar', count: 1 });
   return pleatedCardStacks(toCardParams(r), { atDivision, atBottom });
 }
@@ -360,6 +365,7 @@ export function buildPattern(inputs: MagPouchInputs): MagPouchBuildResult {
 
   const defaultSaMm = isCard ? 0 : inToMm(r.seamAllowanceIn);
   const bom = buildBom(inputs, r, pattern, palsRows);
+  assignAssemblies(pattern.pieces, [[/^pals-/, 'PALS'], [/.*/, 'Pouch']]);
   const cutPieces = cutPiecesFromPattern(pattern, defaultSaMm);
 
   const derived: MagPouchDerived = {
@@ -374,7 +380,8 @@ export function buildPattern(inputs: MagPouchInputs): MagPouchBuildResult {
     exposedHeightIn: r.exposedHeightIn,
     flapLengthIn: r.flapLengthIn,
     palsRows,
-    maxLayers: isCard ? (r.bottomStyle === 'pleat' ? 14 : 8) : 8,
+    // The card's worst stack from the seam-stack model (was a fixed 14 / 8).
+    maxLayers: isCard ? Math.max(8, layerBudget(cardStacks(r)).max) : 8,
     caliberLocked: r.retention === 'open_top_bungee',
   };
 

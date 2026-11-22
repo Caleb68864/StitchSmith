@@ -1553,6 +1553,11 @@ baffle-chamber primitive and a fill-weight calculation.
   On the SOE 4-pack that gives 8 at each division (the vault's "about 8")
   and 10 at a pleat (the vault says 12–14 there: webbing and bar ends the
   model does not count yet; the vault text in the steps stays as written).
+  Follow-up 2026-11-22: the mount strap's tuck/snap tab folds back at the
+  bottom (2) and a pleat carries the face bottom hem (2), so a pleat is 12
+  (14 with the AK face hem), matching the vault. The default 4-pack's
+  cradle bottom is now 10, so it shows the layer-budget note; the
+  "no warnings" test allows only that note.
 - The Mag Pouch warns only when a seam is over 8, with every seam's count.
 
 ## 2026-11-22 — Padded strap: LBV shoulder set mode

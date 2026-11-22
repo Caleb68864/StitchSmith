@@ -1,4 +1,5 @@
 /** Tactical Organizer — pattern builder (Convention B: cut sizes include hems; explicit 0 on every edge). */
+import { assignAssemblies } from '../../lib/pattern-engine/graph/Piece.js';
 import type { Piece } from '../../lib/pattern-engine/graph/Piece.js';
 import type { Path } from '../../lib/pattern-engine/graph/Path.js';
 import type { Edge, EdgeId } from '../../lib/pattern-engine/graph/Edge.js';
@@ -182,5 +183,6 @@ export function buildPattern(inputs: OrganizerInputs): Result<OrganizerBuildResu
   if (r.pals_back) pieces.push(strip('organizer-pals-row', 'PALS row', r.clear_width + 1 * IN, 1 * IN, Math.floor(r.clear_height / (2 * IN)) * q, 'webbing-25', 'Cut 1" long, trim flush after sewing'));
   if (r.name_tape_loop) pieces.push(strip('organizer-name-loop', 'Name tape loop patch', Math.max(0, r.wide_pocket_width - 0.5 * IN), 1 * IN, q, 'velcro-loop', 'On the wide pocket face'));
   const hardware: HardwareItem[] = r.grommets ? [{ id: 'grommet', name: '#0 grommet', quantity: 2 * q, notes: 'For 550 cord' }] : [];
+  assignAssemblies(pieces, [[/velcro|hook|loop/, 'Closure'], [/^organizer-/, 'Body']]);
   return { ok: true, value: { pieces, steps: buildSteps(r), warnings: buildWarnings(r), hardware, resolved: r } };
 }

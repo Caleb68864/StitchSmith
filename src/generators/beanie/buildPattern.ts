@@ -5,6 +5,7 @@
  * band folded lengthwise. Every cut edge carries an explicit 0; sew lines,
  * the hem fold and the cuff fold are drawn.
  */
+import { assignAssemblies } from '../../lib/pattern-engine/graph/Piece.js';
 import type { Piece } from '../../lib/pattern-engine/graph/Piece.js';
 import type { Path } from '../../lib/pattern-engine/graph/Path.js';
 import type { Point } from '../../lib/pattern-engine/graph/Point.js';
@@ -129,5 +130,6 @@ export function buildPattern(inputs: BeanieInputs): Result<BeanieBuildResult> {
   if (r.finish === 'cuff') pieces.push(buildCuff(r));
   const warnings = mockDerived(inputs, r);
   if (r.ease < 0) warnings.push({ id: 'negative-ease', severity: 'info', field: 'ease', message: `${fmtIn(-r.ease)}" of negative ease: a stretch fabric (fleece, jersey) only. A woven fabric needs positive ease.` });
+  assignAssemblies(pieces, [[/gore/, 'Crown'], [/cuff/, 'Cuff']]);
   return { ok: true, value: { pieces, steps: buildSteps(r), warnings, hardware: [], resolved: r } };
 }

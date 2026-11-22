@@ -102,8 +102,10 @@ describe('pleated card — SOE 4-pack single rifle mag card', () => {
     expect(renderHtml(result.steps).ok).toBe(true);
   });
 
-  it('a well-proportioned card raises no warnings and renders to SVG', () => {
-    expect(result.warnings).toEqual([]);
+  it('a well-proportioned card raises no warnings beyond the layer budget and renders to SVG', () => {
+    // The bottom, where the mount strap tabs fold under, is over 8: the budget note is the only one.
+    expect(result.warnings.filter((w) => !w.startsWith('Layer budget'))).toEqual([]);
+    expect(result.warnings.find((w) => w.startsWith('Layer budget'))).toMatch(/Over 8 at the bottom/);
     expect(patternToSvg(result.pattern, { defaultSeamAllowance: 0 })).toContain('<svg');
   });
 });
@@ -152,7 +154,8 @@ describe('pleated card — variants', () => {
   it('pleated and open bottoms drop the cradle and warn', () => {
     const pleat = buildPattern(fourPack({ bottom_style: 'pleat' }));
     expect(pleat.pattern.pieces.find((p) => p.id === 'cradle-strip')).toBeUndefined();
-    expect(pleat.derived.maxLayers).toBe(14);
+    // From the seam-stack model: 12 with raw face edges (the vault: 12–14).
+    expect(pleat.derived.maxLayers).toBe(12);
     expect(pleat.warnings.some((w) => w.includes('ride height'))).toBe(true);
     const open = buildPattern(fourPack({ bottom_style: 'open', retention: 'kydex_wedge' }));
     expect(open.bom.hardware.find((h) => h.type === 'wedge')?.quantity).toBe(4);
@@ -229,6 +232,12 @@ describe('layer budget on the card (seam-stack model)', () => {
     expect(w).toBeTruthy();
     expect(w).toMatch(/each cell division 8/);
     expect(w).toMatch(/Over 8 at each pleat: sew forward only/);
+    // The vault's 12–14 where webbing and hems stack: 12 with raw face edges, 14 with the AK face hem.
+    expect(w).toMatch(/each pleat 12/);
+    const ak = (buildPattern(fourPack({ bottom_style: 'pleat', ak_face_hem: true })) as { warnings: string[] }).warnings.find((x) => x.startsWith('Layer budget'));
+    expect(ak).toMatch(/each pleat 14/);
+    // The derived worst stack shown on the page comes from the same model.
+    expect((buildPattern(fourPack({ bottom_style: 'pleat' })) as { derived: { maxLayers: number } }).derived.maxLayers).toBe(12);
   });
   it('the folded-T has no card stacks', () => {
     const v = buildPattern(fourPack({ construction: 'folded_t', cell_count: 1 }));

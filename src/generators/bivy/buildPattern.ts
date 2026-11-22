@@ -8,6 +8,7 @@
  * short edges sew to the arched edges of the head and foot gussets, whose
  * chords sew to the tub's end top edges (`geometry/chordArc.ts`).
  */
+import { assignAssemblies } from '../../lib/pattern-engine/graph/Piece.js';
 import type { Piece } from '../../lib/pattern-engine/graph/Piece.js';
 import type { Path } from '../../lib/pattern-engine/graph/Path.js';
 import type { Point } from '../../lib/pattern-engine/graph/Point.js';
@@ -221,5 +222,6 @@ export function buildPattern(inputs: BivyInputs): Result<BivyBuildResult> {
     ...(r.brim ? [{ id: 'brim-wire', name: 'Brim wire or short pole', quantity: 1, notes: `about ${dim(r.top_width)}, cut to hold the top off the face` }] : []),
     { id: 'seam-sealer', name: 'Seam sealer for the floor fabric', quantity: 1, notes: 'the four folded corner seams' },
   ];
+  assignAssemblies(pieces, [[/floor/, 'Floor'], [/top|gusset|brim|net/, 'Top and ends']]);
   return { ok: true, value: { pieces, steps: buildSteps(r), warnings: buildWarnings(inputs, r), hardware, resolved: r } };
 }

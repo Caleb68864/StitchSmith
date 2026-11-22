@@ -3,6 +3,7 @@
  * cut size with its allowance included and every edge carries an explicit 0;
  * webbing and foam are cut to net).
  */
+import { assignAssemblies } from '../../lib/pattern-engine/graph/Piece.js';
 import type { Piece } from '../../lib/pattern-engine/graph/Piece.js';
 import type { Path } from '../../lib/pattern-engine/graph/Path.js';
 import type { Edge, EdgeId } from '../../lib/pattern-engine/graph/Edge.js';
@@ -133,5 +134,6 @@ export function buildPattern(inputs: SlingInputs): Result<SlingBuildResult> {
       ? strip('sling-anchor-strap', 'Adapter anchor strap', wb, r.anchor_strap_length, 1, `webbing-${Math.round(wb)}`, `Anchor strap — holds the tension adapter to the pad's front end`)
       : strip('sling-adjust-tail', 'Separate adjustment tail', wb, r.adjustment_webbing_length, 1, `webbing-${Math.round(wb)}`, 'Runs through the tension adapter'),
   ];
+  assignAssemblies(pieces, [[/pad-tube|foam/, 'Pad'], [/tail|webbing|anchor/, 'Webbing']]);
   return { ok: true, value: { pieces, steps: buildSteps(r), warnings: buildWarnings(inputs, r), hardware: buildHardware(r), resolved: r } };
 }

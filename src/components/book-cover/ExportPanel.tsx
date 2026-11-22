@@ -16,6 +16,7 @@ export function ExportPanel({ inputs, project, hasErrors }: Props) {
     generatorId: 'book-cover',
     projectName: project.projectName,
     hasErrors,
+    groupByAssembly: true,
     defaultSeamAllowance: inputs.seam_allowance ?? 9.5,
     buildPattern: () => { const r = build(); return r ? { id: 'book-cover', name: project.projectName, pieces: r.pieces } : null; },
     steps: () => build()?.steps ?? null,
