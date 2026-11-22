@@ -658,8 +658,10 @@ which (the tri-zip `seam:` path convention is the seed).
   with twelve strips is very wide. Row-wrap by a page width.
 - DONE 2026-09-12 (grain arrows, notch ticks, wrapped notes in SVG) — **Annotations in exports**: `PieceAnnotation` labels are not drawn by the SVG
   exporter (only the piece name). Draw grain arrows and notch marks.
-- **Foam / mesh on separate cut sheets** (different blade) — `materialId` is
-  set; the exporters need a per-material split.
+- DONE 2026-09-12 (`9100d20`; verified 2026-11-21) — **Foam / mesh on separate cut sheets** (different blade): `patternToSvgByMaterial`
+  (`src/lib/pattern-engine/exports/svg.ts`) gives one SVG per `materialId`, the
+  shared `PatternExportPanel` exports them, and the export sweep checks every
+  generator's per-material sheets (`exports-sweep.test.ts`).
 
 ## Vault items deliberately not encoded
 
