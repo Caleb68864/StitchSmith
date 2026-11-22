@@ -1,7 +1,7 @@
 import type { TarpInputs, ResolvedInputs, ValidationResult, BuildPatternError } from './types.js';
 import {
   DEFAULT_UNITS, RIDGE_LENGTH_MM, WIDTH_MM, RIDGE_SAG_MM, EAVE_SAG_MM, FABRIC_WIDTH_MM, SEAM_ALLOWANCE_MM, HEM_DEPTH_MM,
-  EAVE_TIEOUTS, PATCH_SIZE_MM, LOOP_LENGTH_MM, LOOP_WIDTH_MM, RIDGE_HEIGHT_MM, MAX_EAVE_TIEOUTS, GUYLINE_LENGTH_MM,
+  EAVE_TIEOUTS, PATCH_SIZE_MM, LOOP_LENGTH_MM, LOOP_WIDTH_MM, RIDGE_HEIGHT_MM, MAX_EAVE_TIEOUTS, GUYLINE_LENGTH_MM, END_SAG_MM,
 } from './defaults.js';
 import { sweepInputs, stripNulls, unitsOf, type GuardSpec } from '../../utils/inputGuards.js';
 import { resolveHem } from '../../lib/pattern-engine/primitives/hem.js';
@@ -30,6 +30,8 @@ const GUARD_SPEC: GuardSpec = {
   guylines: { kind: 'bool' },
   guyline_length: { kind: 'length' },
   line_locks: { kind: 'bool' },
+  cut_ends: { kind: 'bool' },
+  end_sag: { kind: 'length' },
 };
 
 const IN = 25.4;
@@ -75,6 +77,7 @@ export function resolveInputs(inputs: TarpInputs): ResolvedInputs {
   const guylines = inputs.guylines !== false;
   const guyline_length = d(inputs.guyline_length, GUYLINE_LENGTH_MM);
   const line_locks = inputs.line_locks !== false;
+  const end_sag = catCut && inputs.cut_ends === true ? d(inputs.end_sag, END_SAG_MM) : 0;
 
   const panel_count = construction === 'ridge_seam' ? 2 : 1;
   const panel_finished_width = construction === 'ridge_seam' ? width / 2 : width;
@@ -87,7 +90,9 @@ export function resolveInputs(inputs: TarpInputs): ResolvedInputs {
   return {
     units, construction, cut_style, ridge_length, width, ridge_sag, eave_sag, fabric_width, seam_allowance,
     hem_depth: hem.depth, hem_depth_requested: hemReq, hem_raised: hem.raised, hem_fold, production_mode,
-    eave_tieouts, ridge_tieouts, patch_size, loop_length, loop_width, ridge_height, guylines, guyline_length, line_locks,
+    eave_tieouts, ridge_tieouts, patch_size, loop_length, loop_width, ridge_height, guylines, guyline_length, line_locks, end_sag,
+    // Each panel's end runs ridge to eave; a single panel's end is cut as two halves either side of the ridge line.
+    end_span: width / 2,
     hem_allowance: allow,
     hem_mark: hem.markFromRaw,
     panel_count,
@@ -120,6 +125,7 @@ export function validateInputs(inputs: TarpInputs): ValidationResult {
   pos('fabric_width', 'Fabric width');
   nonNeg('ridge_sag', 'Ridge cat-cut depth');
   nonNeg('eave_sag', 'Eave cat-cut depth');
+  nonNeg('end_sag', 'End cat-cut depth');
   nonNeg('seam_allowance', 'Ridge seam allowance');
   nonNeg('patch_size', 'Patch size');
   pos('loop_length', 'Loop length');
@@ -141,6 +147,7 @@ export function validateInputs(inputs: TarpInputs): ValidationResult {
         : `Each panel needs ${inch(r.panel_cut_width)} of fabric across (half the width, the seam allowance and the hem) and the fabric is ${inch(r.fabric_width)}. Narrow the tarp or use wider fabric.`,
     });
   }
+  if (r.end_sag > MAX_SAG_RATIO * r.end_span) errors.push({ field: 'end_sag', message: `A ${inch(r.end_sag)} end cut on a ${inch(r.end_span)} end is deeper than a quarter of the span; that is no longer a cat cut.` });
   const tieGap = r.ridge_length / (r.eave_tieouts + 1);
   if (r.patch_size > 0 && r.patch_size >= tieGap - 1e-6) errors.push({ field: 'patch_size', message: `${inch(r.patch_size)} patches overlap: the eave tie-outs are only ${inch(tieGap)} apart. Use smaller patches or fewer tie-outs.` });
   // The panel must keep room for a patch below the ridge and above the eave at mid-span.

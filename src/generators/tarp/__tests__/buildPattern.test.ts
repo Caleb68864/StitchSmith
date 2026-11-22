@@ -212,7 +212,7 @@ describe('pattern — Convention B panel (single-fold hem, hand-checked numbers)
 describe('mock-derived placeholders', () => {
   it('every number the tarp takes is a listed placeholder', () => {
     const keys = GENERATORS.find((x) => x.name === 'tarp')!.keys;
-    const choices = ['units', 'construction', 'cut_style', 'hem_fold', 'production_mode', 'ridge_tieouts', 'guylines', 'line_locks'];
+    const choices = ['units', 'construction', 'cut_style', 'hem_fold', 'production_mode', 'ridge_tieouts', 'guylines', 'line_locks', 'cut_ends'];
     expect(PLACEHOLDERS.map((p) => p.field).sort()).toEqual(keys.filter((k) => !choices.includes(k)).sort());
   });
 
@@ -222,7 +222,8 @@ describe('mock-derived placeholders', () => {
     expect(mock).toHaveLength(1);
     expect(mock[0].severity).toBe('info');
     expect(mock[0].message).toMatch(/^\[mock-derived\] 13 placeholders/);
-    for (const p of PLACEHOLDERS) expect(mock[0].message).toContain(p.label);
+    // The end cut is off by default, so its depth is not in use (asserted in the cat-cut ends block).
+    for (const p of PLACEHOLDERS.filter((x) => x.field !== 'end_sag')) expect(mock[0].message).toContain(p.label);
     // Shown as the field shows it: 5/8" is 0.625", not a rounded 0.63".
     expect(mock[0].message).toContain('Grosgrain width 0.625"');
     expect(mock[0].message).toContain('Ridge length 120"');
@@ -314,5 +315,56 @@ describe('guylines and line-locks (roadmap 10a follow-up)', () => {
   it('a non-positive guyline length is an error on its field', () => {
     expect(errorFields({ ...DEF, guyline_length: 0 })).toEqual(['guyline_length']);
     expect(errorFields({ ...DEF, guylines: false, guyline_length: 0 })).toEqual([]);
+  });
+});
+
+describe('cat-cut ends (roadmap 10a follow-up)', () => {
+  const ENDS: TarpInputs = { ...DEF, cut_ends: true };
+  const outlineOf = (i: TarpInputs) => panelOf(built(i).pieces).paths.find((p) => p.id === `${PANEL_ID}-outline`)!;
+  const xsAt = (i: TarpInputs, y: number, tol = 1) => outlineOf(i).edges.map((e) => e.start).filter((p) => Math.abs(p.y - y) < tol).map((p) => p.x);
+
+  it('off by default: the ends stay straight and nothing new is flagged', () => {
+    const r = resolveInputs(DEF);
+    expect(r.end_sag).toBe(0);
+    expect(built(DEF).warnings.find((w) => w.id === 'mock-derived')!.message).not.toContain('End cat-cut');
+  });
+
+  it('on: each panel end goes the 1" placeholder in at the middle of its 48" ridge-to-eave span, and comes back to the corners', () => {
+    const r = resolveInputs(ENDS);
+    expect(r.end_sag).toBeCloseTo(1 * IN, 6);
+    expect(r.end_span).toBeCloseTo(48 * IN, 6);
+    const g = panelGeometry(r);
+    const mid = r.seam_allowance + 24 * IN;
+    expect(g.endIn(mid)).toBeCloseTo(1 * IN, 6);
+    expect(g.endIn(r.seam_allowance)).toBeCloseTo(0, 6);
+    expect(g.endIn(r.seam_allowance + 48 * IN)).toBeCloseTo(0, 6);
+    // Mirrored inside the eave hem and the ridge allowance.
+    expect(g.endIn(r.seam_allowance - 5)).toBeCloseTo(g.endIn(r.seam_allowance + 5), 9);
+    // The raw end is 1" inside the straight end at mid-span, at both ends of the panel.
+    const xs = xsAt(ENDS, mid);
+    expect(Math.min(...xs)).toBeCloseTo(1 * IN, 3);
+    expect(Math.max(...xs)).toBeCloseTo(g.cutLength - 1 * IN, 3);
+    // The end crease follows it.
+    const crease = panelOf(built(ENDS).pieces).paths.find((p) => p.id.startsWith(`${PANEL_ID}-end-0-hem-fold`) && p.label?.includes('finished crease'))!;
+    const nearMid = crease.edges.map((e) => e.start).reduce((a, b) => (Math.abs(b.y - mid) < Math.abs(a.y - mid) ? b : a));
+    expect(nearMid.x - g.endX[0]).toBeCloseTo(g.endIn(nearMid.y), 6);
+  });
+
+  it('single panel: two curves per end, meeting at the ridge line', () => {
+    const i: TarpInputs = { ...ENDS, construction: 'single_panel', width: 56 };
+    const r = resolveInputs(i);
+    const g = panelGeometry(r);
+    expect(g.endIn(g.ridgeY!)).toBeCloseTo(0, 6);
+    expect(g.endIn(g.ridgeY! - 14 * IN)).toBeCloseTo(1 * IN, 6);
+    expect(g.endIn(g.ridgeY! + 14 * IN)).toBeCloseTo(1 * IN, 6);
+    expect(built(i).steps.find((s) => s.id === 'tarp.cat-cut')!.body).toMatch(/two curves per end/);
+  });
+
+  it('the end depth is a flagged placeholder; straight edges ignore it; too deep is an error', () => {
+    expect(built(ENDS).warnings.find((w) => w.id === 'mock-derived')!.message).toContain('End cat-cut depth');
+    expect(built(ENDS).steps.find((s) => s.id === 'tarp.cat-cut')!.body).toMatch(/Each end is cut too/);
+    expect(resolveInputs({ ...ENDS, cut_style: 'flat' }).end_sag).toBe(0);
+    expect(errorFields({ ...ENDS, end_sag: 13 })).toEqual(['end_sag']);
+    expect(errorFields({ ...ENDS, end_sag: 2 })).toEqual([]);
   });
 });

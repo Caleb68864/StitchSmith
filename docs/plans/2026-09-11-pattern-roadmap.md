@@ -316,6 +316,7 @@ against the vault:**
 | Grosgrain width | 5/8" |
 | Ridgeline height (pitch check only) | 42" |
 | Cord per guyline (added 2026-11-21) | 96" (8') |
+| End cat-cut depth (added 2026-11-21, ends cut only) | 1" |
 
 Choices with no number are not mock-derived: two-panel ridge seam (default)
 vs single panel, cat cut (default) vs straight edges, a rolled hem (default
@@ -336,7 +337,12 @@ assembly-sweep case now also checks that the viewer puts each scene piece
 where the harness does (all 19 cases agreed before and after, so no
 existing scene changed). The tarp now uses rotation-only placements.
 
-Follow-ups: cat-cut ends (the short edges are straight), ~~guyline and
+Follow-ups: ~~cat-cut ends~~ (DONE 2026-11-21: `cut_ends` toggle, off by
+default so existing projects keep straight ends; each ridge-to-eave edge
+cut as a catenary of `end_sag`, a single panel's end as two curves meeting
+at the ridge line; mirrored inside the eave hem and ridge allowance; end
+hem creases follow the curve; stations in the cat-cut step. The 3D check
+still draws straight ends, a slight over-size there), ~~guyline and
 line-lock hardware~~ (DONE 2026-11-21: a guyline, line-lock and stake per
 tie-out on the BOM, `guylines` / `line_locks` toggles, cord per guyline a
 `[mock-derived]` placeholder, a Guylines step; tests in

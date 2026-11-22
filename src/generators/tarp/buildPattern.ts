@@ -70,6 +70,14 @@ export interface PanelGeometry {
   /** Finished bottom eave. */
   bottom: (x: number) => number;
   bottomCut: (x: number) => number;
+  /**
+   * How far the finished end crease sits inside the straight end at cut y
+   * (0 everywhere on straight ends). Mirrored about each span end, so inside
+   * the eave hem and the ridge allowance it folds flat like the other curves.
+   */
+  endIn: (y: number) => number;
+  /** Cat-cut ends: the finished spans the end curve runs over (start y, count of spans of `endSpan`), or null. */
+  endSpans: { y0: number; n: number; span: number } | null;
   /** Single panel: the ridge reference line. */
   ridgeY?: number;
   cutLength: number;
@@ -90,10 +98,22 @@ export function panelGeometry(r: ResolvedInputs): PanelGeometry {
   if (e > 0) xs.push(0);
   for (let i = 0; i <= CURVE_SEGMENTS; i++) xs.push(e + (L * i) / CURVE_SEGMENTS);
   if (e > 0) xs.push(L + 2 * e);
+  const endC = catenary(r.end_span, r.end_sag);
+  const endDepth = r.end_sag > 0 && endC.ok ? endC.value.depth : () => 0;
+  const S = r.end_span;
+  /** Depth over spans [y0, y0 + S], [y0 + S, y0 + 2S]..., mirrored outside the first and last. */
+  const spanIn = (y0: number, n: number) => (y: number) => {
+    let v = y - y0;
+    if (v < 0) v = -v;
+    if (v > n * S) v = 2 * n * S - v;
+    v = Math.min(n * S, Math.max(0, v));
+    const k = Math.min(n - 1, Math.floor(v / S));
+    return endDepth(v - k * S);
+  };
   if (r.construction === 'ridge_seam') {
     const s = r.seam_allowance;
     return {
-      hem, endX: [e, e + L], xs,
+      hem, endX: [e, e + L], xs, endIn: spanIn(s, 1), endSpans: r.end_sag > 0 ? { y0: s, n: 1, span: S } : null,
       top: (x) => s + d.ridge(u(x)),
       topCut: (x) => d.ridge(u(x)),
       bottom: (x) => s + H - d.eave(u(x)),
@@ -103,7 +123,7 @@ export function panelGeometry(r: ResolvedInputs): PanelGeometry {
     };
   }
   return {
-    hem, endX: [e, e + L], xs,
+    hem, endX: [e, e + L], xs, endIn: spanIn(e, 2), endSpans: r.end_sag > 0 ? { y0: e, n: 2, span: S } : null,
     top: (x) => e + d.eave(u(x)),
     topCut: (x) => d.eave(u(x)),
     bottom: (x) => e + H - d.eave(u(x)),
@@ -147,6 +167,16 @@ export function tieOuts(r: ResolvedInputs, g: PanelGeometry): TieOut[] {
   return out;
 }
 
+/** Sample y positions down a cat-cut end (cut frame, 0 to the cut width), or null for straight ends. */
+export function endYs(g: PanelGeometry): number[] | null {
+  const sp = g.endSpans;
+  if (!sp) return null;
+  const per = Math.max(4, Math.round(CURVE_SEGMENTS / sp.n));
+  const ys = [0, g.cutWidth];
+  for (let k = 0; k < sp.n; k++) for (let i = 0; i <= per; i++) ys.push(sp.y0 + sp.span * (k + i / per));
+  return [...new Set(ys.map((y) => Math.round(y * 1e6) / 1e6))].filter((y) => y >= 0 && y <= g.cutWidth).sort((a, b) => a - b);
+}
+
 function buildPanel(r: ResolvedInputs, g: PanelGeometry, ties: TieOut[]): Piece {
   const eid = makeEdgeIdGen(PANEL_ID);
   const xs = g.xs;
@@ -154,7 +184,23 @@ function buildPanel(r: ResolvedInputs, g: PanelGeometry, ties: TieOut[]): Piece 
   const topRaw = xs.map((x) => ({ x, y: g.topCut(x) }));
   const botRaw = xs.map((x) => ({ x, y: g.bottomCut(x) }));
   // Outline: top raw edge left → right, right end down, bottom raw edge right → left, left end up.
-  const ring: Point[] = [...topRaw, ...[...botRaw].reverse()];
+  let ring: Point[] = [...topRaw, ...[...botRaw].reverse()];
+  const ys = endYs(g);
+  if (ys) {
+    // Cat-cut ends: the raw end is the finished crease moved out by the hem allowance.
+    const yT = topRaw[0].y, yB = botRaw[0].y;
+    const inner = ys.filter((y) => y > yT + 1e-6 && y < yB - 1e-6);
+    topRaw[0] = { x: g.endIn(yT), y: yT };
+    topRaw[topRaw.length - 1] = { x: W - g.endIn(topRaw[topRaw.length - 1].y), y: topRaw[topRaw.length - 1].y };
+    botRaw[0] = { x: g.endIn(yB), y: yB };
+    botRaw[botRaw.length - 1] = { x: W - g.endIn(botRaw[botRaw.length - 1].y), y: botRaw[botRaw.length - 1].y };
+    ring = [
+      ...topRaw,
+      ...inner.map((y) => ({ x: W - g.endIn(y), y })),
+      ...[...botRaw].reverse(),
+      ...[...inner].reverse().map((y) => ({ x: g.endIn(y), y })),
+    ];
+  }
   const edges: Edge[] = ring.map((pt, i) => seg(eid, 'cut', pt, ring[(i + 1) % ring.length]));
   const outline: Path = { id: `${PANEL_ID}-outline`, closed: true, edges };
   const paths: Path[] = [outline];
@@ -166,10 +212,11 @@ function buildPanel(r: ResolvedInputs, g: PanelGeometry, ties: TieOut[]): Piece 
   if (r.construction === 'single_panel') {
     paths.push(...hemLines({ hem: g.hem, finished: xs.map((x) => ({ x, y: g.top(x) })), outward: { x: 0, y: -1 }, idPrefix: `${PANEL_ID}-eave2`, eid, name: 'Eave hem (second eave)' }).paths);
   }
-  // End hems: straight creases across the full cut width.
+  // End hems: creases across the full cut width, straight or along the end cat cut.
   const [xa, xb] = g.endX;
-  paths.push(...hemLines({ hem: g.hem, finished: [{ x: xa, y: 0 }, { x: xa, y: g.cutWidth }], outward: { x: -1, y: 0 }, idPrefix: `${PANEL_ID}-end-0`, eid, name: 'End hem' }).paths);
-  paths.push(...hemLines({ hem: g.hem, finished: [{ x: xb, y: 0 }, { x: xb, y: g.cutWidth }], outward: { x: 1, y: 0 }, idPrefix: `${PANEL_ID}-end-1`, eid, name: 'End hem' }).paths);
+  const endPts = ys ?? [0, g.cutWidth];
+  paths.push(...hemLines({ hem: g.hem, finished: endPts.map((y) => ({ x: xa + g.endIn(y), y })), outward: { x: -1, y: 0 }, idPrefix: `${PANEL_ID}-end-0`, eid, name: 'End hem' }).paths);
+  paths.push(...hemLines({ hem: g.hem, finished: endPts.map((y) => ({ x: xb - g.endIn(y), y })), outward: { x: 1, y: 0 }, idPrefix: `${PANEL_ID}-end-1`, eid, name: 'End hem' }).paths);
 
   if (r.construction === 'ridge_seam') {
     paths.push(polyline(eid, `${PANEL_ID}-ridge-stitch`, xs.map((x) => ({ x, y: g.top(x) })), 'stitch',
@@ -207,6 +254,15 @@ function strip(id: string, name: string, w: number, h: number, quantity: number,
   return { id, name, mirror: false, quantity, materialId, paths: [outline], seamAllowances: zeroSa(outline), annotations: [{ kind: 'label', label, point: { x: w / 2, y: h / 2 } }] };
 }
 
+/** The end cut's marking stations, as a sentence (empty on straight ends). */
+function endStationText(r: ResolvedInputs): string {
+  if (!(r.end_sag > 0)) return '';
+  const c = catenary(r.end_span, r.end_sag);
+  if (!c.ok) return '';
+  const st = [1, 2, 3, 4].map((i) => { const t = (r.end_span * i) / 8; return `${fmtIn(t)}": ${fmtIn(c.value.depth(t))}"`; });
+  return `Each end is cut too, ${fmtIn(r.end_sag)}" in at the middle of every ${fmtIn(r.end_span)}" ridge-to-eave edge${r.construction === 'single_panel' ? ' (two curves per end, meeting at the ridge line)' : ''}, measured in from the straight end from the corner: ${st.join('; ')}.`;
+}
+
 /** Offsets of each cat cut from its straight chord at eighth stations, for marking the curve on the cloth. */
 export function catCutStations(r: ResolvedInputs): { t: number; ridge: number; eave: number }[] {
   const d = depths(r);
@@ -221,10 +277,10 @@ function buildSteps(r: ResolvedInputs, g: PanelGeometry): Step[] {
   const steps: Step[] = [
     { id: 'tarp.cut', title: 'Cut the panels', body: `${two ? 'Two panels' : 'One panel'}, each ${dim(g.cutLength)} × ${dim(g.cutWidth)} — ${two ? 'the ridge seam allowance and the hems are' : 'the hems are'} included in the cut. Lay ${two ? 'them end to end' : 'it'} along the roll so the grain runs along the ridge: ${dim(r.fabric_length)} (${fmtFt(r.fabric_length)}) of ${fmtIn(r.fabric_width)}" fabric. Sewn fabric only (silnylon, silpoly); this pattern has no taped or bonded option.`, dependsOn: [], refsPieces: [PANEL_ID], group: 'Cut' },
   ];
-  if (r.cut_style === 'cat_cut' && (r.ridge_sag > 0 || r.eave_sag > 0)) {
+  if (r.cut_style === 'cat_cut' && (r.ridge_sag > 0 || r.eave_sag > 0 || r.end_sag > 0)) {
     const st = catCutStations(r).slice(1, 5);
     const parts = st.map((s) => `${fmtIn(s.t)}": ${[r.ridge_sag > 0 ? `ridge ${fmtIn(s.ridge)}"` : null, r.eave_sag > 0 ? `eave ${fmtIn(s.eave)}"` : null].filter(Boolean).join(', ')}`);
-    steps.push({ id: 'tarp.cat-cut', title: 'Mark the cat-cut curves', body: `Before cutting, draw the straight edge, then measure in from it at each station (from either end; the curve is symmetric) and join the marks with a long batten: ${parts.join('; ')}. The curve is a catenary: ${r.ridge_sag > 0 ? `the ridge goes ${fmtIn(r.ridge_sag)}" in at mid-span` : ''}${r.ridge_sag > 0 && r.eave_sag > 0 ? ', ' : ''}${r.eave_sag > 0 ? `each eave ${fmtIn(r.eave_sag)}"` : ''}. Inside the end hems the curve is mirrored so the hem folds flat. Cut the outer line, which already includes the allowances.`, dependsOn: ['tarp.cut'], refsPieces: [PANEL_ID], group: 'Cut' });
+    steps.push({ id: 'tarp.cat-cut', title: 'Mark the cat-cut curves', body: `Before cutting, draw the straight edge, then measure in from it at each station (from either end; the curve is symmetric) and join the marks with a long batten: ${parts.join('; ')}. The curve is a catenary: ${r.ridge_sag > 0 ? `the ridge goes ${fmtIn(r.ridge_sag)}" in at mid-span` : ''}${r.ridge_sag > 0 && r.eave_sag > 0 ? ', ' : ''}${r.eave_sag > 0 ? `each eave ${fmtIn(r.eave_sag)}"` : ''}. ${endStationText(r)} Inside the end hems the curve is mirrored so the hem folds flat. Cut the outer line, which already includes the allowances.`, dependsOn: ['tarp.cut'], refsPieces: [PANEL_ID], group: 'Cut' });
   }
   const afterCut = steps[steps.length - 1].id;
   if (two) {
@@ -263,6 +319,7 @@ function mockDerived(inputs: TarpInputs, r: ResolvedInputs): GeneratorWarning[] 
     if (f === 'seam_allowance') return r.construction === 'ridge_seam';
     if (f === 'patch_size' || f === 'loop_length' || f === 'loop_width') return r.tieout_count > 0;
     if (f === 'guyline_length') return r.guylines && r.tieout_count > 0;
+    if (f === 'end_sag') return r.end_sag > 0;
     return true;
   };
   const open = PLACEHOLDERS.filter((p) => applies(p.field) && (inputs[p.field] === undefined || inputs[p.field] === null));

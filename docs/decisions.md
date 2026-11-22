@@ -1232,3 +1232,18 @@ baffle-chamber primitive and a fill-weight calculation.
 - Cord per guyline is a `[mock-derived]` placeholder, 8' (a common
   pre-cut guyline length, not a vault number), editable, named in the one
   mock-derived note; the total cord is on the BOM.
+
+
+## 2026-11-21 — Tarp cat-cut ends (roadmap 10a follow-up)
+
+- Decided by agent 2026-11-21 (owner may revisit): `cut_ends` is a toggle,
+  off by default, so saved projects and the default keep straight ends.
+- Each end is cut per ridge-to-eave edge (span = width / 2): the end is
+  tensioned between the ridge-end and corner tie-outs, so the curve runs
+  between them. A single panel's end is two curves meeting at the ridge
+  line, where the ridge-end tie-out sits.
+- `end_sag` placeholder 1" (`[mock-derived]`, editable, no vault source),
+  capped at a quarter of the span like the other cuts. The curve is
+  mirrored about each span end inside the eave hem and the ridge
+  allowance, as the other cuts are mirrored inside the end hems.
+- The 3D assembly still builds straight-ended panels.

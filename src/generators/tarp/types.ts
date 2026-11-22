@@ -62,6 +62,10 @@ export interface TarpInputs {
   loop_width?: number;
   /** Ridgeline height for the pitch check (eaves staked to the ground), display units. Placeholder 42" — mock-derived. */
   ridge_height?: number;
+  /** Cat-cut the ends too (each ridge-to-eave edge). Default false: straight ends. Cat-cut style only. */
+  cut_ends?: boolean;
+  /** Cat-cut depth of each end at mid-span (ridge to eave), display units. Placeholder 1" — mock-derived. */
+  end_sag?: number;
   /** A guyline on every tie-out, on the BOM. Default true. */
   guylines?: boolean;
   /** Cord per guyline, display units. Placeholder 8' — mock-derived. */
@@ -103,6 +107,10 @@ export interface ResolvedInputs {
   ridge_height: number;
   guylines: boolean;
   guyline_length: number;
+  /** End cat-cut depth, 0 when the ends are straight. */
+  end_sag: number;
+  /** Finished span each end cut runs over (ridge to eave). */
+  end_span: number;
   line_locks: boolean;
   // Derived
   /** Fabric beyond each finished hemmed edge (depth single, 2 × depth double). */

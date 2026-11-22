@@ -3,11 +3,11 @@ import type { TarpInputs, TarpConstruction, TarpCutStyle } from '../../generator
 import type { HemFold } from '../../lib/pattern-engine/primitives/hem.js';
 import {
   RIDGE_LENGTH_MM, WIDTH_MM, RIDGE_SAG_MM, EAVE_SAG_MM, FABRIC_WIDTH_MM, SEAM_ALLOWANCE_MM, HEM_DEPTH_MM, EAVE_TIEOUTS,
-  PATCH_SIZE_MM, LOOP_LENGTH_MM, LOOP_WIDTH_MM, RIDGE_HEIGHT_MM, MAX_EAVE_TIEOUTS, GUYLINE_LENGTH_MM,
+  PATCH_SIZE_MM, LOOP_LENGTH_MM, LOOP_WIDTH_MM, RIDGE_HEIGHT_MM, MAX_EAVE_TIEOUTS, GUYLINE_LENGTH_MM, END_SAG_MM,
 } from '../../generators/tarp/defaults.js';
 import { convertLengthValues, type UnitSystem } from '../../utils/units.js';
 
-const DISPLAY_UNIT_FIELDS = ['ridge_length', 'width', 'ridge_sag', 'eave_sag', 'fabric_width', 'hem_depth', 'patch_size', 'loop_length', 'loop_width', 'ridge_height', 'guyline_length'] as const;
+const DISPLAY_UNIT_FIELDS = ['ridge_length', 'width', 'ridge_sag', 'eave_sag', 'fabric_width', 'hem_depth', 'patch_size', 'loop_length', 'loop_width', 'ridge_height', 'guyline_length', 'end_sag'] as const;
 
 interface Props { inputs: TarpInputs; errors: Record<string, string>; onChange: (changes: Partial<TarpInputs>) => void }
 
@@ -51,6 +51,12 @@ export function TarpSettingsPanel({ inputs, errors, onChange }: Props) {
             <NumericField id="eave-sag" label={`Eave cat-cut depth (${units})`} value={inputs.eave_sag} error={errors['eave_sag']} step={step} placeholder={ph(EAVE_SAG_MM)} mockDerived onChange={(v) => onChange({ eave_sag: v })} />
           )}
         </div>
+        {cutStyle === 'cat_cut' && <Toggle label="Cat-cut the ends too (ridge to eave)" value={inputs.cut_ends ?? false} onChange={(v) => onChange({ cut_ends: v })} />}
+        {cutStyle === 'cat_cut' && (inputs.cut_ends ?? false) && (
+          <div className="grid grid-cols-2 gap-3">
+            <NumericField id="end-sag" label={`End cat-cut depth (${units})`} value={inputs.end_sag} error={errors['end_sag']} step={step} placeholder={ph(END_SAG_MM)} mockDerived onChange={(v) => onChange({ end_sag: v })} />
+          </div>
+        )}
       </CollapsibleSection>
 
       <CollapsibleSection title="Fabric, seam and hems" defaultOpen>
