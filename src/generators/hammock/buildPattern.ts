@@ -108,9 +108,9 @@ function buildBody(r: ResolvedInputs, g: BodyGeometry): Piece {
   paths.push(line(eid, `${BODY_ID}-centre-b`, { x: L / 2, y: Math.max(0, W - 2 * IN) }, { x: L / 2, y: W }, 'notch'));
   return {
     id: BODY_ID,
-    name: 'Hammock body',
+    name: r.layers === 2 ? 'Hammock body (cut 2)' : 'Hammock body',
     mirror: false,
-    quantity: 1,
+    quantity: r.layers,
     materialId: FABRIC_ID,
     paths,
     seamAllowances: zeroSa(outline),
@@ -127,9 +127,13 @@ function buildSteps(r: ResolvedInputs, g: BodyGeometry): Step[] {
     ? `roll it: turn the raw edge under ${fmtIn(depth)}", then again on the ${fmtIn(mark)}" mark`
     : `mark ${fmtIn(mark)}" in from the raw edge (double the ${fmtIn(depth)}" hem) and fold the raw edge to the mark`;
   const steps: Step[] = [
-    { id: 'hammock.cut', title: 'Cut the body', body: `One piece, ${dim(g.cutLength)} × ${dim(g.cutWidth)} — the ${r.end_style === 'channel' ? 'end channels' : 'whip tails'}${r.side_edge === 'hem' ? ' and side hems are' : ' are'} included in the cut. Grain along the length: ${dim(r.fabric_length)} (${fmtFt(r.fabric_length)}) of ${fmtIn(r.fabric_width)}" fabric.${r.side_edge === 'selvedge' ? ' Cut so both long sides are the selvedge.' : ''} Mark the centre on both long sides. Sewn fabric only.`, dependsOn: [], refsPieces: [BODY_ID], group: 'Cut' },
+    { id: 'hammock.cut', title: 'Cut the body', body: `${r.layers === 2 ? 'Two layers' : 'One piece'}, ${dim(g.cutLength)} × ${dim(g.cutWidth)} — the ${r.end_style === 'channel' ? 'end channels' : 'whip tails'}${r.side_edge === 'hem' ? ' and side hems are' : ' are'} included in the cut. Grain along the length: ${dim(r.fabric_length)} (${fmtFt(r.fabric_length)}) of ${fmtIn(r.fabric_width)}" fabric.${r.side_edge === 'selvedge' ? ' Cut so both long sides are the selvedge.' : ''} Mark the centre on both long sides. Sewn fabric only.`, dependsOn: [], refsPieces: [BODY_ID], group: 'Cut' },
   ];
   let prev = 'hammock.cut';
+  if (r.layers === 2) {
+    steps.push({ id: 'hammock.layers', title: 'Two layers', body: 'Lay the two bodies wrong sides together and treat them as one through the side hems and the ends: the hems and the channels (or whippings) catch both layers. Leave one side hem unstitched for a hand span at the middle if a pad will slide in between.', dependsOn: ['hammock.cut'], refsPieces: [BODY_ID], group: 'Layers' });
+    prev = 'hammock.layers';
+  }
   if (r.side_edge === 'hem') {
     steps.push({ id: 'hammock.sides', title: 'Hem both long sides', body: `Along each long side, ${hemWord(g.side.depth, g.side.markFromRaw)}, then stitch the full length. Hem the sides before the ends so the ${r.end_style === 'channel' ? 'channels fold' : 'tail hems fold'} over them.`, dependsOn: [prev], refsPieces: [BODY_ID], group: 'Hems' });
     prev = 'hammock.sides';
@@ -157,6 +161,7 @@ function mockDerived(inputs: HammockInputs, r: ResolvedInputs): GeneratorWarning
     if (f === 'channel_depth') return r.end_style === 'channel';
     if (f === 'whip_tail') return r.end_style === 'whipping';
     if (f === 'side_hem_depth') return r.side_edge === 'hem' || r.end_style === 'whipping';
+    if (f === 'strap_length') return r.suspension === 'tree_straps';
     return true;
   };
   const open = PLACEHOLDERS.filter((p) => applies(p.field) && (inputs[p.field] === undefined || inputs[p.field] === null));
@@ -204,5 +209,11 @@ export function buildPattern(inputs: HammockInputs): Result<HammockBuildResult> 
       : { id: 'whipping-cord', name: 'Whipping cord', quantity: 2, notes: 'one length per end' },
     { id: 'ridgeline', name: 'Structural ridgeline', quantity: 1, notes: `${dim(r.ridgeline_length)} eye to eye (${r.ridgeline_pct.toFixed(0)} % of the length; mock-derived)` },
   ];
+  if (r.suspension === 'tree_straps') {
+    hardware.push(
+      { id: 'tree-strap', name: 'Tree strap (wide, tree-friendly webbing)', quantity: 2, notes: `${dim(r.strap_length)} each (mock-derived); rated for the load` },
+      { id: 'carabiner', name: 'Load-rated carabiner', quantity: 2, notes: 'one per end, strap to the end loop; check its rating against the load' },
+    );
+  }
   return { ok: true, value: { pieces, steps: buildSteps(r, g), warnings: buildWarnings(inputs, r), hardware, resolved: r } };
 }

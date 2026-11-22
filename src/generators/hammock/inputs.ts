@@ -1,5 +1,5 @@
 import type { HammockInputs, ResolvedInputs, ValidationResult, BuildPatternError } from './types.js';
-import { DEFAULT_UNITS, LENGTH_MM, WIDTH_MM, FABRIC_WIDTH_MM, SIDE_HEM_DEPTH_MM, CHANNEL_DEPTH_MM, WHIP_TAIL_MM, RIDGELINE_PCT } from './defaults.js';
+import { DEFAULT_UNITS, LENGTH_MM, WIDTH_MM, FABRIC_WIDTH_MM, SIDE_HEM_DEPTH_MM, CHANNEL_DEPTH_MM, WHIP_TAIL_MM, RIDGELINE_PCT, STRAP_LENGTH_MM } from './defaults.js';
 import { sweepInputs, stripNulls, unitsOf, type GuardSpec } from '../../utils/inputGuards.js';
 import { resolveHem } from '../../lib/pattern-engine/primitives/hem.js';
 
@@ -20,6 +20,9 @@ const GUARD_SPEC: GuardSpec = {
   seam_allowance: { kind: 'number', min: 0, max: 100, label: 'Seam allowance' },
   occupant_weight: { kind: 'number', min: 0, max: 1000, label: 'Occupant weight' },
   fabric_rating: { kind: 'number', min: 0, max: 1000, label: 'Fabric rating' },
+  layers: { kind: 'count', max: 2 },
+  suspension: { kind: 'enum', allowed: ['none', 'tree_straps'] },
+  strap_length: { kind: 'length' },
 };
 
 const IN = 25.4;
@@ -61,6 +64,9 @@ export function resolveInputs(inputs: HammockInputs): ResolvedInputs {
     units, end_style, side_edge, length, width, fabric_width,
     side_hem_depth: side.depth, channel_depth: chan.depth, whip_tail, hem_fold, production_mode,
     ridgeline_pct,
+    layers: inputs.layers === 2 ? 2 : 1,
+    suspension: inputs.suspension === 'tree_straps' ? 'tree_straps' : 'none',
+    strap_length: d(inputs.strap_length, STRAP_LENGTH_MM),
     // No joining seam on a one-piece hammock.
     seam_allowance: 0,
     occupant_kg: fin(inputs.occupant_weight) ? toKg(inputs.occupant_weight, units) : NaN,
@@ -68,7 +74,7 @@ export function resolveInputs(inputs: HammockInputs): ResolvedInputs {
     side_allowance, end_allowance,
     hem_raised: (side_edge === 'hem' || end_style === 'whipping' ? side.raised : false) || (end_style === 'channel' ? chan.raised : false),
     cut_length, cut_width,
-    fabric_length: cut_length,
+    fabric_length: (inputs.layers === 2 ? 2 : 1) * cut_length,
     fabric_trim: fabric_width - cut_width,
     ridgeline_length: (ridgeline_pct / 100) * length,
   };
@@ -101,6 +107,8 @@ export function validateInputs(inputs: HammockInputs): ValidationResult {
         : `On the selvedge the body is the fabric's width: ${inch(r.width)} is wider than the ${inch(r.fabric_width)} fabric. Narrow the hammock or use wider fabric.`,
     });
   }
+  if (inputs.layers !== undefined && inputs.layers !== 1 && inputs.layers !== 2) errors.push({ field: 'layers', message: 'Layers must be 1 or 2.' });
+  if (r.suspension === 'tree_straps' && !(r.strap_length > 0)) errors.push({ field: 'strap_length', message: 'Tree strap must be a positive number.' });
   if (r.end_style === 'channel' && r.channel_depth * 2 >= r.length) errors.push({ field: 'channel_depth', message: `Two ${inch(r.channel_depth)} channels take up the whole ${inch(r.length)} length.` });
   return errors.length ? { ok: false, errors } : { ok: true };
 }

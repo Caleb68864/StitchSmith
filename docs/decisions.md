@@ -1470,3 +1470,14 @@ baffle-chamber primitive and a fill-weight calculation.
   the beak shows as the roof carried on (staking needs a pin that moves a
   point to the ground, which pins cannot do). At the sweep's 60 mm mesh the
   door seams settle at 4.6 mm; at 40 mm, 1.8 mm, so those cases run at 40.
+
+
+## 2026-11-22 — Hammock double layer and suspension (roadmap 10b follow-ups)
+
+- Decided by agent 2026-11-22 (owner may revisit): `layers: 2` cuts the body
+  twice and sews the layers as one through the side hems and the ends (a
+  pad slides between through a gap left at the middle of one side);
+  `suspension: 'tree_straps'` (default none, so existing BOMs are
+  unchanged) adds two tree straps and two load-rated carabiners. The strap
+  length is a flagged placeholder (10', a common length, not a vault
+  number). The standing load warning is unchanged.

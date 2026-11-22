@@ -154,7 +154,7 @@ describe('warnings — mock-derived placeholders and load', () => {
   it('one [mock-derived] note names every applicable placeholder until it is entered', () => {
     const w = built(DEF).warnings.filter((x) => x.id === 'mock-derived');
     expect(w).toHaveLength(1);
-    for (const p of PLACEHOLDERS.filter((x) => x.field !== 'whip_tail')) expect(w[0].message).toContain(p.label);
+    for (const p of PLACEHOLDERS.filter((x) => x.field !== 'whip_tail' && x.field !== 'strap_length')) expect(w[0].message).toContain(p.label);
     expect(w[0].message).not.toContain('Whip tail');
     expect(built(WHIP).warnings.find((x) => x.id === 'mock-derived')!.message).not.toContain('Channel depth');
     const all: HammockInputs = { ...DEF, length: 132, width: 58, fabric_width: 60, side_hem_depth: 0.5, channel_depth: 1.25, ridgeline_pct: 83 };
@@ -163,7 +163,7 @@ describe('warnings — mock-derived placeholders and load', () => {
 
   it('every placeholder is a typical gathered-end value', () => {
     const v = Object.fromEntries(PLACEHOLDERS.map((p) => [p.field, p.kind === 'length' ? Math.round((p.mm / IN) * 1000) / 1000 : p.mm]));
-    expect(v).toEqual({ length: 132, width: 58, fabric_width: 60, side_hem_depth: 0.5, channel_depth: 1.25, whip_tail: 3, ridgeline_pct: 83 });
+    expect(v).toEqual({ length: 132, width: 58, fabric_width: 60, side_hem_depth: 0.5, channel_depth: 1.25, whip_tail: 3, ridgeline_pct: 83, strap_length: 120 });
   });
 
   it('the load warning always stands; over the rating it changes to load-over-rating', () => {
@@ -184,5 +184,26 @@ describe('BOM', () => {
     expect(rows.find((r) => r.id === 'hw-ridgeline')!.notes).toMatch(/2783 mm/);
     expect(buildBom(WHIP).some((r) => r.id === 'hw-whipping-cord')).toBe(true);
     expect(buildBom({ ...DEF, length: -1 })).toEqual([]);
+  });
+});
+
+describe('double layer and suspension (roadmap 10b follow-ups)', () => {
+  it('two layers: the body cut twice, twice the fabric, a layering step before the hems', () => {
+    const v = built({ ...DEF, layers: 2 });
+    expect(body(v.pieces).quantity).toBe(2);
+    expect(v.resolved.fabric_length).toBeCloseTo(2 * resolveInputs(DEF).fabric_length, 6);
+    const ids2 = v.steps.map((s) => s.id);
+    expect(ids2.indexOf('hammock.layers')).toBeLessThan(ids2.indexOf('hammock.sides'));
+    expect(body(built(DEF).pieces).quantity).toBe(1);
+  });
+  it('tree straps and carabiners on the BOM when asked, the strap a flagged placeholder', () => {
+    expect(built(DEF).hardware.some((h) => h.id === 'tree-strap')).toBe(false);
+    const v = built({ ...DEF, suspension: 'tree_straps' });
+    expect(v.hardware.find((h) => h.id === 'tree-strap')!.quantity).toBe(2);
+    expect(v.hardware.find((h) => h.id === 'carabiner')!.quantity).toBe(2);
+    expect(v.warnings.find((w) => w.id === 'mock-derived')!.message).toContain('Tree strap');
+    expect(built(DEF).warnings.find((w) => w.id === 'mock-derived')!.message).not.toContain('Tree strap');
+    expect(errorFields({ ...DEF, suspension: 'tree_straps', strap_length: 0 })).toEqual(['strap_length']);
+    expect(buildBom({ ...DEF, suspension: 'tree_straps' }).some((r) => r.id === 'hw-tree-strap')).toBe(true);
   });
 });

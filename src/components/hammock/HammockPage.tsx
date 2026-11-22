@@ -17,7 +17,7 @@ type HammockPageProps = Pick<UseHammockProjectReturn, 'project' | 'updateInputs'
 const FIELD_LABELS: Record<string, string> = {
   end_style: 'Gathered ends', side_edge: 'Long sides', length: 'Length', width: 'Width', fabric_width: 'Fabric width',
   side_hem_depth: 'Side hem depth', channel_depth: 'Channel depth', whip_tail: 'Whip tail', hem_fold: 'Hem',
-  ridgeline_pct: 'Structural ridgeline', seam_allowance: 'Seam allowance', occupant_weight: 'Occupant weight', fabric_rating: 'Fabric rating',
+  ridgeline_pct: 'Structural ridgeline', seam_allowance: 'Seam allowance', occupant_weight: 'Occupant weight', fabric_rating: 'Fabric rating', layers: 'Layers', suspension: 'Suspension', strap_length: 'Tree strap',
 };
 const IN = 25.4;
 const inch = (mm: number) => (mm / IN).toFixed(2).replace(/\.?0+$/, '');

@@ -1,10 +1,10 @@
 import { NumericField, SelectField, Toggle, UnitToggle, CollapsibleSection, VaultOpenNote } from '../shared/fields/index.js';
 import type { HammockInputs, HammockEndStyle, HammockSideEdge } from '../../generators/hammock/types.js';
 import type { HemFold } from '../../lib/pattern-engine/primitives/hem.js';
-import { LENGTH_MM, WIDTH_MM, FABRIC_WIDTH_MM, SIDE_HEM_DEPTH_MM, CHANNEL_DEPTH_MM, WHIP_TAIL_MM, RIDGELINE_PCT } from '../../generators/hammock/defaults.js';
+import { LENGTH_MM, WIDTH_MM, FABRIC_WIDTH_MM, SIDE_HEM_DEPTH_MM, CHANNEL_DEPTH_MM, WHIP_TAIL_MM, RIDGELINE_PCT, STRAP_LENGTH_MM } from '../../generators/hammock/defaults.js';
 import { convertLengthValues, type UnitSystem } from '../../utils/units.js';
 
-const DISPLAY_UNIT_FIELDS = ['length', 'width', 'fabric_width', 'side_hem_depth', 'channel_depth', 'whip_tail'] as const;
+const DISPLAY_UNIT_FIELDS = ['length', 'width', 'fabric_width', 'side_hem_depth', 'channel_depth', 'whip_tail', 'strap_length'] as const;
 const LB = 0.45359237;
 
 interface Props { inputs: HammockInputs; errors: Record<string, string>; onChange: (changes: Partial<HammockInputs>) => void }
@@ -38,6 +38,9 @@ export function HammockSettingsPanel({ inputs, errors, onChange }: Props) {
           <NumericField id="length" label={`Length gather to gather (${units})`} value={inputs.length} error={errors['length']} step={step} placeholder={ph(LENGTH_MM)} mockDerived onChange={(v) => onChange({ length: v })} />
           <NumericField id="width" label={`Finished width (${units})`} value={inputs.width} error={errors['width']} step={step} placeholder={ph(WIDTH_MM)} mockDerived onChange={(v) => onChange({ width: v })} />
           <NumericField id="fabric-width" label={`Usable fabric width (${units})`} value={inputs.fabric_width} error={errors['fabric_width']} step={step} placeholder={ph(FABRIC_WIDTH_MM)} mockDerived onChange={(v) => onChange({ fabric_width: v })} />
+          <SelectField<'1' | '2'> id="layers" label="Layers" value={String(inputs.layers ?? 1) as '1' | '2'} error={errors['layers']}
+            options={[{ value: '1', label: 'Single layer' }, { value: '2', label: 'Double layer (pad pocket between)' }]}
+            onChange={(v) => onChange({ layers: v === '2' ? 2 : 1 })} />
           <SelectField<HammockSideEdge> id="side-edge" label="Long sides" value={sideEdge} error={errors['side_edge']}
             options={[{ value: 'hem', label: 'Hemmed' }, { value: 'selvedge', label: 'Selvedge (no hem)' }]}
             onChange={(v) => onChange({ side_edge: v })} />
@@ -67,6 +70,12 @@ export function HammockSettingsPanel({ inputs, errors, onChange }: Props) {
       <CollapsibleSection title="Ridgeline and load" defaultOpen>
         <div className="grid grid-cols-2 gap-3">
           <NumericField id="ridgeline-pct" label="Structural ridgeline (% of length)" value={inputs.ridgeline_pct} error={errors['ridgeline_pct']} step={0.5} placeholder={String(RIDGELINE_PCT)} mockDerived onChange={(v) => onChange({ ridgeline_pct: v })} />
+          <SelectField<'none' | 'tree_straps'> id="suspension" label="Suspension on the BOM" value={inputs.suspension ?? 'none'} error={errors['suspension']}
+            options={[{ value: 'none', label: 'None (your own)' }, { value: 'tree_straps', label: 'Tree straps and carabiners' }]}
+            onChange={(v) => onChange({ suspension: v })} />
+          {(inputs.suspension ?? 'none') === 'tree_straps' && (
+            <NumericField id="strap-length" label={`Tree strap (${units})`} value={inputs.strap_length} error={errors['strap_length']} step={step} placeholder={ph(STRAP_LENGTH_MM)} mockDerived onChange={(v) => onChange({ strap_length: v })} />
+          )}
           <NumericField id="occupant-weight" label={`Occupant weight (${weightUnit})`} value={inputs.occupant_weight} error={errors['occupant_weight']} step={1} help="Optional. With the fabric rating, drives the load check." onChange={(v) => onChange({ occupant_weight: v })} />
           <NumericField id="fabric-rating" label={`Fabric rating (${weightUnit})`} value={inputs.fabric_rating} error={errors['fabric_rating']} step={1} help="The fabric maker's rated load for a hammock." onChange={(v) => onChange({ fabric_rating: v })} />
         </div>
