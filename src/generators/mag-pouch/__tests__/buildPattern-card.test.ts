@@ -154,7 +154,8 @@ describe('pleated card — variants', () => {
   it('pleated and open bottoms drop the cradle and warn', () => {
     const pleat = buildPattern(fourPack({ bottom_style: 'pleat' }));
     expect(pleat.pattern.pieces.find((p) => p.id === 'cradle-strip')).toBeUndefined();
-    expect(pleat.derived.maxLayers).toBe(14);
+    // From the seam-stack model: 12 with raw face edges (the vault: 12–14).
+    expect(pleat.derived.maxLayers).toBe(12);
     expect(pleat.warnings.some((w) => w.includes('ride height'))).toBe(true);
     const open = buildPattern(fourPack({ bottom_style: 'open', retention: 'kydex_wedge' }));
     expect(open.bom.hardware.find((h) => h.type === 'wedge')?.quantity).toBe(4);
@@ -235,6 +236,8 @@ describe('layer budget on the card (seam-stack model)', () => {
     expect(w).toMatch(/each pleat 12/);
     const ak = (buildPattern(fourPack({ bottom_style: 'pleat', ak_face_hem: true })) as { warnings: string[] }).warnings.find((x) => x.startsWith('Layer budget'));
     expect(ak).toMatch(/each pleat 14/);
+    // The derived worst stack shown on the page comes from the same model.
+    expect((buildPattern(fourPack({ bottom_style: 'pleat' })) as { derived: { maxLayers: number } }).derived.maxLayers).toBe(12);
   });
   it('the folded-T has no card stacks', () => {
     const v = buildPattern(fourPack({ construction: 'folded_t', cell_count: 1 }));

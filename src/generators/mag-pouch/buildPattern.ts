@@ -378,7 +378,8 @@ export function buildPattern(inputs: MagPouchInputs): MagPouchBuildResult {
     exposedHeightIn: r.exposedHeightIn,
     flapLengthIn: r.flapLengthIn,
     palsRows,
-    maxLayers: isCard ? (r.bottomStyle === 'pleat' ? 14 : 8) : 8,
+    // The card's worst stack from the seam-stack model (was a fixed 14 / 8).
+    maxLayers: isCard ? Math.max(8, layerBudget(cardStacks(r)).max) : 8,
     caliberLocked: r.retention === 'open_top_bungee',
   };
 
