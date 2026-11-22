@@ -587,10 +587,11 @@ garment depends on a later step:
    the measurements (chest girth as a 1.4:1 ellipse, nape to waist,
    shoulder width, neck), arms held out 45° so the side seams pass under
    them, shoulder and side seams closed. Tests: `assembly3d.test.ts`, an
-   assembly-sweep case (p99 stretch ~6 %), an e2e target. **Still open:**
-   the sleeves in 3D — a tube placement along a sloping axis (the `cone`
-   placement only hangs straight down) so a sleeve can wrap its arm and seam
-   into the armhole.
+   assembly-sweep case, an e2e target. **Sleeves in 3D — DONE 2026-11-22:**
+   the `cone` placement takes an `axis` (and `ref`), so each sleeve wraps a
+   cone along its arm (apex past the wrist, the underseam under the arm),
+   its cap seamed half by half into the front and back armholes and its
+   underseam closed; seams close to < 1 mm, p99 stretch ~10 % at the caps.
 
 **Beanie — DONE 2026-11-22 (before the engine, no 3D).** Engine:
 `src/lib/pattern-engine/geometry/gore.ts` — gores of a half-ellipsoid dome

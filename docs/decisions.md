@@ -1444,3 +1444,15 @@ baffle-chamber primitive and a fill-weight calculation.
   `holdHost` (default true, every existing page unchanged); the shirt page
   passes false so the torso and arms carry it (seam gap < 1 mm in the
   viewer). Pinning discs on the pieces instead raised the stretch to 12 %.
+
+
+## 2026-11-22 — Sleeves in the wind shirt's 3D check
+
+- The `cone` placement gained `axis` and `ref` (default straight down and
+  +x: every existing cone unchanged). A sleeve is the frustum between its
+  underseams: apex where the underseams meet past the wrist, half-angle
+  from the taper, the axis from the wrist end toward the shoulder, angle 0
+  up off the arm so the underseams land underneath. The cap above the bicep
+  line wraps as the frustum's continuation and the cloth seams it into the
+  armhole; its 1/2" of cap ease shows as ~10 % p99 stretch at the caps
+  (the cloth has no easing model), so the sweep ceiling is 11 %.

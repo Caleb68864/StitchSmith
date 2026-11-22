@@ -187,8 +187,8 @@ numbers. Rules already encoded, with the note that justifies each:
   garment outline by hand. Measurements are inputs; the default project
   drafts from a flagged example body, never a size chart. Every seam pair is
   tested to match (`wind-shirt/__tests__`). The 3D check hangs the body on a
-  torso of the measurements with `armForms` held out 45°; sleeves are not
-  assembled yet.
+  torso of the measurements with `armForms` held out 45°; each sleeve wraps
+  a cone along its arm (`cone.axis`), cap seamed into the armhole.
 - Straps that must run beside the neck on the torso form kick out from
   their panel landing to the shoulder line (`overShoulder(..., xStart)` in
   the LBV assembly); a strap drawn long in x drapes with `along: 'x'`.
@@ -248,7 +248,8 @@ numbers. Rules already encoded, with the note that justifies each:
   constraint so they stay straight where cloth curls. Gravity is on in the
   viewer (0.01 mm/step² along −up; a page may pass its own).
 - Placements also take `rz` (turn a piece upside down) and `cone` (skirt
-  panels wrapped from an apex); `placementMap` gives the direct flat→3D map
+  panels wrapped from an apex; `cone.axis` wraps along any direction, a
+  sleeve on a sloping arm); `placementMap` gives the direct flat→3D map
   for draped or cone pieces. Pages may pass extra `solids` (a hip form).
 - A placement moves a piece into the scene when `isScenePlaced` says so (any
   offset, `rx`, `rz`, drape, cone or attach); a rotation alone is enough, and
