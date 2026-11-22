@@ -1,5 +1,5 @@
 import type { HammockInputs, ResolvedInputs, ValidationResult, BuildPatternError } from './types.js';
-import { DEFAULT_UNITS, LENGTH_MM, WIDTH_MM, FABRIC_WIDTH_MM, SIDE_HEM_DEPTH_MM, CHANNEL_DEPTH_MM, WHIP_TAIL_MM, RIDGELINE_PCT, STRAP_LENGTH_MM } from './defaults.js';
+import { DEFAULT_UNITS, LENGTH_MM, WIDTH_MM, FABRIC_WIDTH_MM, SIDE_HEM_DEPTH_MM, CHANNEL_DEPTH_MM, WHIP_TAIL_MM, RIDGELINE_PCT, STRAP_LENGTH_MM, SEAM_ALLOWANCE_MM } from './defaults.js';
 import { sweepInputs, stripNulls, unitsOf, type GuardSpec } from '../../utils/inputGuards.js';
 import { resolveHem } from '../../lib/pattern-engine/primitives/hem.js';
 
@@ -23,6 +23,8 @@ const GUARD_SPEC: GuardSpec = {
   layers: { kind: 'count', max: 2 },
   suspension: { kind: 'enum', allowed: ['none', 'tree_straps'] },
   strap_length: { kind: 'length' },
+  join_widths: { kind: 'bool' },
+  bug_net: { kind: 'bool' },
 };
 
 const IN = 25.4;
@@ -59,23 +61,30 @@ export function resolveInputs(inputs: HammockInputs): ResolvedInputs {
   // A whipping tail's raw end gets the side hem's rolled finish so it cannot fray back to the whipping.
   const end_allowance = end_style === 'channel' ? chan.allowance : whip_tail + side.allowance;
   const cut_length = length + 2 * end_allowance;
-  const cut_width = width + 2 * side_allowance;
+  const join_widths = inputs.join_widths === true;
+  const bug_net = inputs.bug_net === true;
+  // Only a joining seam (the centre of a joined body, the bug net's edges) uses the seam allowance.
+  const sa = join_widths || bug_net ? (fin(inputs.seam_allowance) ? inputs.seam_allowance : SEAM_ALLOWANCE_MM) : 0;
+  // A joined body is cut as two halves: half the width, one side hem, and the centre seam allowance.
+  const cut_width = join_widths ? width / 2 + side_allowance + sa : width + 2 * side_allowance;
+  const layers = inputs.layers === 2 ? 2 : 1;
+  const perLayer = join_widths ? (2 * cut_width <= fabric_width ? 1 : 2) : 1;
   return {
     units, end_style, side_edge, length, width, fabric_width,
     side_hem_depth: side.depth, channel_depth: chan.depth, whip_tail, hem_fold, production_mode,
     ridgeline_pct,
-    layers: inputs.layers === 2 ? 2 : 1,
+    layers,
+    join_widths, bug_net, net_cut_width: width + 2 * sa,
     suspension: inputs.suspension === 'tree_straps' ? 'tree_straps' : 'none',
     strap_length: d(inputs.strap_length, STRAP_LENGTH_MM),
-    // No joining seam on a one-piece hammock.
-    seam_allowance: 0,
+    seam_allowance: sa,
     occupant_kg: fin(inputs.occupant_weight) ? toKg(inputs.occupant_weight, units) : NaN,
     rating_kg: fin(inputs.fabric_rating) ? toKg(inputs.fabric_rating, units) : NaN,
     side_allowance, end_allowance,
     hem_raised: (side_edge === 'hem' || end_style === 'whipping' ? side.raised : false) || (end_style === 'channel' ? chan.raised : false),
     cut_length, cut_width,
-    fabric_length: (inputs.layers === 2 ? 2 : 1) * cut_length,
-    fabric_trim: fabric_width - cut_width,
+    fabric_length: layers * perLayer * cut_length,
+    fabric_trim: join_widths ? 0 : fabric_width - cut_width,
     ridgeline_length: (ridgeline_pct / 100) * length,
   };
 }
@@ -103,7 +112,9 @@ export function validateInputs(inputs: HammockInputs): ValidationResult {
     errors.push({
       field: 'width',
       message: r.side_edge === 'hem'
-        ? `The body needs ${inch(r.cut_width)} of fabric across (the width and both side hems) and the fabric is ${inch(r.fabric_width)}. Narrow the hammock, use the selvedge as the side edge or use wider fabric.`
+        ? r.join_widths
+          ? `Even joined down the middle, each half needs ${inch(r.cut_width)} of fabric across and the fabric is ${inch(r.fabric_width)}.`
+          : `The body needs ${inch(r.cut_width)} of fabric across (the width and both side hems) and the fabric is ${inch(r.fabric_width)}. Narrow the hammock, use the selvedge as the side edge, join two widths or use wider fabric.`
         : `On the selvedge the body is the fabric's width: ${inch(r.width)} is wider than the ${inch(r.fabric_width)} fabric. Narrow the hammock or use wider fabric.`,
     });
   }

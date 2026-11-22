@@ -52,6 +52,10 @@ export interface HammockInputs {
   seam_allowance?: number;
   /** Heaviest occupant, lb (in) or kg (mm). Optional; with `fabric_rating` it drives the load check. */
   occupant_weight?: number;
+  /** Join two fabric widths down the middle with a flat-felled seam, for a body wider than the fabric. Default false. */
+  join_widths?: boolean;
+  /** A mesh bug net the body's size, sewn to one long side and zipped to the other. Default false. */
+  bug_net?: boolean;
   /** One layer (default) or two, sewn together at the side hems and ends with a pad pocket between. */
   layers?: 1 | 2;
   /** Suspension on the BOM: none (default) or a tree strap and a carabiner at each end. */
@@ -76,6 +80,10 @@ export interface ResolvedInputs {
   production_mode: boolean;
   ridgeline_pct: number;
   layers: 1 | 2;
+  join_widths: boolean;
+  bug_net: boolean;
+  /** Bug net cut size (the body's finished width plus a seam allowance each side, the body's cut length). */
+  net_cut_width: number;
   suspension: 'none' | 'tree_straps';
   strap_length: number;
   seam_allowance: number;

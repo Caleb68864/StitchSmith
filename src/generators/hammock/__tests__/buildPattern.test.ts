@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest';
-import { buildPattern, buildBom, validateInputs, resolveInputs, bodyGeometry, BODY_ID, PLACEHOLDERS } from '../index.js';
+import { buildPattern, buildBom, validateInputs, resolveInputs, bodyGeometry, BODY_ID, NET_ID, PLACEHOLDERS } from '../index.js';
 import type { HammockInputs } from '../types.js';
 import { makeDefaultHammockProject } from '../../../state/useHammockProject.js';
 import { bboxFromPiece } from '../../../lib/pattern-engine/geometry/bbox.js';
@@ -154,7 +154,7 @@ describe('warnings — mock-derived placeholders and load', () => {
   it('one [mock-derived] note names every applicable placeholder until it is entered', () => {
     const w = built(DEF).warnings.filter((x) => x.id === 'mock-derived');
     expect(w).toHaveLength(1);
-    for (const p of PLACEHOLDERS.filter((x) => x.field !== 'whip_tail' && x.field !== 'strap_length')) expect(w[0].message).toContain(p.label);
+    for (const p of PLACEHOLDERS.filter((x) => x.field !== 'whip_tail' && x.field !== 'strap_length' && x.field !== 'seam_allowance')) expect(w[0].message).toContain(p.label);
     expect(w[0].message).not.toContain('Whip tail');
     expect(built(WHIP).warnings.find((x) => x.id === 'mock-derived')!.message).not.toContain('Channel depth');
     const all: HammockInputs = { ...DEF, length: 132, width: 58, fabric_width: 60, side_hem_depth: 0.5, channel_depth: 1.25, ridgeline_pct: 83 };
@@ -163,7 +163,7 @@ describe('warnings — mock-derived placeholders and load', () => {
 
   it('every placeholder is a typical gathered-end value', () => {
     const v = Object.fromEntries(PLACEHOLDERS.map((p) => [p.field, p.kind === 'length' ? Math.round((p.mm / IN) * 1000) / 1000 : p.mm]));
-    expect(v).toEqual({ length: 132, width: 58, fabric_width: 60, side_hem_depth: 0.5, channel_depth: 1.25, whip_tail: 3, ridgeline_pct: 83, strap_length: 120 });
+    expect(v).toEqual({ length: 132, width: 58, fabric_width: 60, side_hem_depth: 0.5, channel_depth: 1.25, whip_tail: 3, ridgeline_pct: 83, strap_length: 120, seam_allowance: 12.7 });
   });
 
   it('the load warning always stands; over the rating it changes to load-over-rating', () => {
@@ -205,5 +205,38 @@ describe('double layer and suspension (roadmap 10b follow-ups)', () => {
     expect(built(DEF).warnings.find((w) => w.id === 'mock-derived')!.message).not.toContain('Tree strap');
     expect(errorFields({ ...DEF, suspension: 'tree_straps', strap_length: 0 })).toEqual(['strap_length']);
     expect(buildBom({ ...DEF, suspension: 'tree_straps' }).some((r) => r.id === 'hw-tree-strap')).toBe(true);
+  });
+});
+
+describe('joined widths and bug net (roadmap 10b follow-ups)', () => {
+  it('a body wider than the fabric is an error until joined; joined, two halves with a centre seam use the seam allowance', () => {
+    const WIDE: HammockInputs = { ...DEF, width: 100 };
+    expect(errorFields(WIDE)).toEqual(['width']);
+    const J = { ...WIDE, join_widths: true };
+    expect(errorFields(J)).toEqual([]);
+    const r = resolveInputs(J);
+    expect(r.seam_allowance).toBeCloseTo(12.7, 9);
+    expect(r.cut_width).toBeCloseTo(50 * IN + 1 * IN + 12.7, 6);
+    const v = built(J);
+    const b = body(v.pieces);
+    expect(b.quantity).toBe(2);
+    expect(b.paths.some((p) => p.id === `${BODY_ID}-centre-seam`)).toBe(true);
+    // One side hemmed, the other the centre seam.
+    expect(b.paths.filter((p) => p.id.startsWith(`${BODY_ID}-side-1`))).toHaveLength(0);
+    expect(v.steps.map((s) => s.id).indexOf('hammock.join')).toBeLessThan(v.steps.map((s) => s.id).indexOf('hammock.sides'));
+    // Halves 51.5" each do not fit side by side on 60": two lengths.
+    expect(r.fabric_length).toBeCloseTo(2 * r.cut_length, 6);
+    expect(ids(J)).not.toContain('seam-allowance-ignored');
+  });
+  it('bug net: a mesh piece the body long and its width plus two allowances, a two-way zipper, attached before the ends', () => {
+    const v = built({ ...DEF, bug_net: true });
+    const net = v.pieces.find((p) => p.id === NET_ID)!;
+    const bb = bboxFromPiece(net);
+    expect(bb.width).toBeCloseTo(v.resolved.cut_length, 6);
+    expect(bb.height).toBeCloseTo(58 * IN + 2 * 12.7, 6);
+    expect(v.hardware.find((h) => h.id === 'net-zipper')!.notes).toContain(`${Math.round(132 * IN)} mm`);
+    const order = v.steps.map((s) => s.id);
+    expect(order.indexOf('hammock.net')).toBeLessThan(order.indexOf('hammock.channels'));
+    expect(buildBom({ ...DEF, bug_net: true }).some((r) => r.id === 'material-hammock-mesh')).toBe(true);
   });
 });

@@ -25,13 +25,15 @@ export const WHIP_TAIL_MM = 3 * IN;
 export const RIDGELINE_PCT = 83;
 /** Placeholder 10' tree strap (a common length, not a vault number). */
 export const STRAP_LENGTH_MM = 120 * IN;
+/** Placeholder 1/2" seam allowance, mm: used only by the centre seam of a joined body and the bug net. */
+export const SEAM_ALLOWANCE_MM = 12.7;
 
 /**
  * Every placeholder input with its label and value (mm for lengths, a percentage
  * for the ridgeline). The mock-derived note and the tests walk this list, so a
  * new placeholder cannot go unflagged.
  */
-export const PLACEHOLDERS: readonly { field: keyof HammockInputs; label: string; mm: number; kind: 'length' | 'percent' }[] = [
+export const PLACEHOLDERS: readonly { field: keyof HammockInputs; label: string; mm: number; kind: 'length' | 'percent' | 'sa' }[] = [
   { field: 'length', label: 'Length gather to gather', mm: LENGTH_MM, kind: 'length' },
   { field: 'width', label: 'Finished width', mm: WIDTH_MM, kind: 'length' },
   { field: 'fabric_width', label: 'Usable fabric width', mm: FABRIC_WIDTH_MM, kind: 'length' },
@@ -40,4 +42,5 @@ export const PLACEHOLDERS: readonly { field: keyof HammockInputs; label: string;
   { field: 'whip_tail', label: 'Whip tail', mm: WHIP_TAIL_MM, kind: 'length' },
   { field: 'ridgeline_pct', label: 'Structural ridgeline', mm: RIDGELINE_PCT, kind: 'percent' },
   { field: 'strap_length', label: 'Tree strap', mm: STRAP_LENGTH_MM, kind: 'length' },
+  { field: 'seam_allowance', label: 'Seam allowance', mm: SEAM_ALLOWANCE_MM, kind: 'sa' },
 ];

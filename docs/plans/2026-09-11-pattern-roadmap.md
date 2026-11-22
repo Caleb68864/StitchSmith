@@ -426,11 +426,14 @@ report.
 
 Open for the owner: confirm the safety policy (one standing load warning,
 never blocks export; decisions.md 2026-11-16) and whether to keep the 83 %
-figure. Follow-ups: 3D (above), bug-net zip, ~~double-layer option~~ (DONE
+figure. Follow-ups: 3D (above), ~~bug-net zip~~ (DONE 2026-11-22: `bug_net`, a mesh net the body long and
+wide plus an allowance each side, sewn to one long side and zipped to the
+other, its ends into the channels with the body), ~~double-layer option~~ (DONE
 2026-11-22: `layers: 2`, the body cut twice and sewn as one through the
 hems and ends), ~~suspension hardware on the BOM~~ (DONE 2026-11-22:
 `suspension: 'tree_straps'` adds two tree straps, `strap_length`
-placeholder 10' flagged, and two load-rated carabiners), a wider body from two widths joined by a
+placeholder 10' flagged, and two load-rated carabiners), ~~a wider body~~ (DONE 2026-11-22: `join_widths`, two halves joined by a
+flat-felled centre seam; the fabric check then uses the half) from two widths joined by a
 flat-felled centre seam (would give `seam_allowance` a job).
 
 #### 10c. Top quilt — DONE 2026-11-21 (`pattern/10c-quilt`, no 3D)

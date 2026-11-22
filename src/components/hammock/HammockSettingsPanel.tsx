@@ -1,7 +1,7 @@
 import { NumericField, SelectField, Toggle, UnitToggle, CollapsibleSection, VaultOpenNote } from '../shared/fields/index.js';
 import type { HammockInputs, HammockEndStyle, HammockSideEdge } from '../../generators/hammock/types.js';
 import type { HemFold } from '../../lib/pattern-engine/primitives/hem.js';
-import { LENGTH_MM, WIDTH_MM, FABRIC_WIDTH_MM, SIDE_HEM_DEPTH_MM, CHANNEL_DEPTH_MM, WHIP_TAIL_MM, RIDGELINE_PCT, STRAP_LENGTH_MM } from '../../generators/hammock/defaults.js';
+import { LENGTH_MM, WIDTH_MM, FABRIC_WIDTH_MM, SIDE_HEM_DEPTH_MM, CHANNEL_DEPTH_MM, WHIP_TAIL_MM, RIDGELINE_PCT, STRAP_LENGTH_MM, SEAM_ALLOWANCE_MM } from '../../generators/hammock/defaults.js';
 import { convertLengthValues, type UnitSystem } from '../../utils/units.js';
 
 const DISPLAY_UNIT_FIELDS = ['length', 'width', 'fabric_width', 'side_hem_depth', 'channel_depth', 'whip_tail', 'strap_length'] as const;
@@ -64,6 +64,11 @@ export function HammockSettingsPanel({ inputs, errors, onChange }: Props) {
             options={[{ value: 'double', label: 'Double fold (rolled) — encloses the raw edge' }, { value: 'single', label: 'Single fold, marked at double (raw edge exposed)' }]}
             onChange={(v) => onChange({ hem_fold: v })} />
         </div>
+        <Toggle id="join-widths" label="Join two fabric widths down the middle (a wide body)" value={inputs.join_widths ?? false} onChange={(v) => onChange({ join_widths: v })} />
+        <Toggle id="bug-net" label="Bug net (sewn one side, zipped the other)" value={inputs.bug_net ?? false} onChange={(v) => onChange({ bug_net: v })} />
+        {((inputs.join_widths ?? false) || (inputs.bug_net ?? false)) && (
+          <NumericField id="seam-allowance" label="Seam allowance (mm)" value={inputs.seam_allowance} error={errors['seam_allowance']} step={0.5} placeholder={String(SEAM_ALLOWANCE_MM)} mockDerived help="The centre seam and the net's edges." onChange={(v) => onChange({ seam_allowance: v })} />
+        )}
         <Toggle label='Production mode — every hem at least 1/2"' value={inputs.production_mode ?? false} onChange={(v) => onChange({ production_mode: v })} />
       </CollapsibleSection>
 
