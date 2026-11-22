@@ -23,6 +23,7 @@ import { makeDefaultSlingProject } from '../../../state/useSlingProject.js';
 import { makeDefaultOrganizerProject } from '../../../state/useOrganizerProject.js';
 import { makeDefaultTarpProject } from '../../../state/useTarpProject.js';
 import { makeDefaultHammockProject } from '../../../state/useHammockProject.js';
+import { makeDefaultQuiltProject } from '../../../state/useQuiltProject.js';
 import { makeDefaultFannyPackProject } from '../../../state/useFannyPackProject.js';
 import { makeDefaultClamshellPackProject } from '../../../state/useClamshellPackProject.js';
 import { makeDefaultPlateCarrierProject } from '../../../state/usePlateCarrierProject.js';
@@ -40,6 +41,7 @@ import { buildPattern as buildSling } from '../../../generators/sling/index.js';
 import { buildPattern as buildOrg } from '../../../generators/organizer/index.js';
 import { buildPattern as buildTarp } from '../../../generators/tarp/index.js';
 import { buildPattern as buildHammock } from '../../../generators/hammock/index.js';
+import { buildPattern as buildQuilt } from '../../../generators/quilt/index.js';
 import { buildPattern as buildFanny } from '../../../generators/fanny-pack/index.js';
 import { buildPattern as buildClam } from '../../../generators/clamshell-pack/index.js';
 import { buildPattern as buildPlate } from '../../../generators/plate-carrier/index.js';
@@ -98,6 +100,8 @@ const CASES: Case[] = [
   { name: 'tarp (single panel, straight, rolled hems, production)', convention: 'B', build: () => pieces('tarp', buildTarp({ units: 'in', construction: 'single_panel', cut_style: 'flat', width: 56, hem_fold: 'double', production_mode: true, eave_tieouts: 2, ridge_tieouts: false })) },
   { name: 'hammock (channel ends, hemmed sides)', convention: 'B', build: () => pieces('hammock', buildHammock(makeDefaultHammockProject().inputs)) },
   { name: 'hammock (whipped ends, selvedge, single fold, production)', convention: 'B', build: () => pieces('hammock', buildHammock({ units: 'in', end_style: 'whipping', side_edge: 'selvedge', width: 60, hem_fold: 'single', production_mode: true })) },
+  { name: 'top quilt (baffled, sewn footbox)', convention: 'B', build: () => pieces('quilt', buildQuilt(makeDefaultQuiltProject().inputs)) },
+  { name: 'top quilt (sewn through, zip footbox, mm)', convention: 'B', build: () => pieces('quilt', buildQuilt({ units: 'mm', construction: 'sewn_through', footbox: 'zip', length: 1900, shoulder_width: 1300, foot_width: 950, seam_allowance: 10 })) },
 ];
 
 describe('export sweep — every generator through every exporter', () => {

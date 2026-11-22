@@ -36,6 +36,8 @@ import * as tarp from '../tarp/index.js';
 import { makeDefaultTarpProject } from '../../state/useTarpProject.js';
 import * as hammock from '../hammock/index.js';
 import { makeDefaultHammockProject } from '../../state/useHammockProject.js';
+import * as quilt from '../quilt/index.js';
+import { makeDefaultQuiltProject } from '../../state/useQuiltProject.js';
 import * as triZip from '../tri-zip-backpack/index.js';
 import { makeDefaultTriZipProject } from '../../state/useTriZipProject.js';
 import * as zipPouch from '../zip-pouch/index.js';
@@ -162,6 +164,13 @@ export const GENERATORS: Gen[] = [
     defaults: () => makeDefaultHammockProject().inputs as unknown as AnyInputs,
     validate: (i) => listErrors(hammock.validateInputs(i as never)),
     build: (i) => resultPieces(hammock.buildPattern(i as never)),
+  },
+  {
+    name: 'quilt',
+    keys: ['units', 'construction', 'footbox', 'length', 'shoulder_width', 'foot_width', 'footbox_length', 'fabric_width', 'loft', 'baffle_spacing', 'shell_differential', 'fill_power', 'overstuff', 'seam_allowance'],
+    defaults: () => makeDefaultQuiltProject().inputs as unknown as AnyInputs,
+    validate: (i) => listErrors(quilt.validateInputs(i as never)),
+    build: (i) => resultPieces(quilt.buildPattern(i as never)),
   },
   {
     name: 'tri-zip-backpack',

@@ -39,6 +39,8 @@ import { TarpSettingsPanel } from '../../tarp/TarpSettingsPanel.js';
 import { makeDefaultTarpProject } from '../../../state/useTarpProject.js';
 import { HammockSettingsPanel } from '../../hammock/HammockSettingsPanel.js';
 import { makeDefaultHammockProject } from '../../../state/useHammockProject.js';
+import { QuiltSettingsPanel } from '../../quilt/QuiltSettingsPanel.js';
+import { makeDefaultQuiltProject } from '../../../state/useQuiltProject.js';
 import { makeDefaultLbvProject } from '../../../state/useLbvProject.js';
 
 const noop = vi.fn();
@@ -60,6 +62,7 @@ const PANELS: { name: string; element: () => ReactElement }[] = [
   { name: 'Modular LBV', element: () => <LbvSettingsPanel inputs={makeDefaultLbvProject().inputs} errors={{}} onChange={noop} /> },
   { name: 'Tarp', element: () => <TarpSettingsPanel inputs={makeDefaultTarpProject().inputs} errors={{}} onChange={noop} /> },
   { name: 'Hammock', element: () => <HammockSettingsPanel inputs={makeDefaultHammockProject().inputs} errors={{}} onChange={noop} /> },
+  { name: 'Top Quilt', element: () => <QuiltSettingsPanel inputs={makeDefaultQuiltProject().inputs} errors={{}} onChange={noop} /> },
 ];
 
 function hasAccessibleName(el: HTMLElement): boolean {

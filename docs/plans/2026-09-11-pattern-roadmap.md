@@ -104,6 +104,13 @@ Engines: `pattern-engine` (graph, geometry, exporters), `pouch-engine`
 4. **Mouth hem to the outside** for lugged magazines
    (`rigs/subgun-hem-to-outside-mag-mouth.md`): 1" hem, cell loses the hem from
    its cut height.
+   **Not started (checked 2026-11-21): needs a decision.** Neither mag-pouch
+   construction has a hemmed single-layer mouth: the pleated card's face is
+   folded double at the mouth and the folded-T mouth is seam-allowanced
+   (decisions.md 2026-09-12). The owner has to say which construction gets
+   it (a new single-layer cell for the subgun rig, or an option on one of
+   the two), and the vault note has to be read for the hem's direction and
+   what "loses the hem from its cut height" means before any code.
 5. DONE 2026-09-12 — **Hourglass aesthetic** (`mag-pouches/mag-pouch-hourglass-aesthetic.md`):
    optional, default off, +0.25" per side, labor-cost note.
 6. DONE 2026-09-12 — **MALICE clip alternative** in the mount options (clip count = columns,
@@ -119,6 +126,10 @@ Engines: `pattern-engine` (graph, geometry, exporters), `pouch-engine`
 10. **Prototype vs final cut sheet labelling** and a per-pattern change log
     (`mag-pouches/construction-prototype-in-solid.md`,
     `reference/soe-production-principles.md`).
+    **Not started (checked 2026-11-21): needs the vault.** Nothing in the repo
+    says what a prototype sheet changes (fabric, tolerances, marks) or what a
+    change-log entry holds; both live in the two notes, which agents cannot
+    read. Needs the owner to state the rule or make the notes readable.
 
 ## Next patterns, in order
 
@@ -207,7 +218,7 @@ Every number the transcripts never state is a mock-derived input. Left: the
 front column count (count bartacks on a video frame), the butt pack and
 hydration carrier interfaces as pieces, laser-cut slotted shoulder straps.
 
-### 10. Shelter, sleep, apparel — 10a and 10b DONE 2026-11-16, 10c–10e open
+### 10. Shelter, sleep, apparel — 10a and 10b DONE 2026-11-16, 10c DONE 2026-11-21, 10d–10e open
 87 notes but almost all reference material (LearnMYOG, materials), not
 reconciled builds. Circle Skirt already covers the apparel entry point. Hold
 until the tactical line is done.
@@ -268,7 +279,7 @@ Before the first one is built, the owner needs to:
 4. **DCF is out of scope for now.** Sewn seams and sewn fabrics only
    (silnylon, silpoly and the like). No taped or bonded construction.
 
-#### 10a. Flat / A-frame tarp — DONE 2026-11-16
+#### 10a. Flat / A-frame tarp — DONE 2026-11-16 (`pattern/10-shelter-sleep-apparel`, `b6f8ede` + `c59af98`, merged to main as PR #1 `3a6d4a9`)
 `src/generators/tarp/`, page `src/components/tarp/`, project schemaVersion 15,
 new landing category "Shelter and sleep". Two panels on a flat-felled ridge
 seam, or one panel when the width fits the fabric. Catenary cat cuts on the
@@ -387,8 +398,58 @@ figure. Follow-ups: 3D (above), bug-net zip or double-layer option,
 suspension hardware on the BOM, a wider body from two widths joined by a
 flat-felled centre seam (would give `seam_allowance` a job).
 
-**Order for the rest of item 10:** 10b gathered-end hammock (done above), then 10c quilt (needs a baffle-chamber
-primitive and fill-weight maths), 10d bivy or bug net (curved long zipper,
+#### 10c. Top quilt — DONE 2026-11-21 (`pattern/10c-quilt`, no 3D)
+Engine: `src/lib/pattern-engine/primitives/chambers.ts`, the baffle-chamber
+primitive: `layoutChambers` (walls at an even pitch no longer than the
+spacing, a volume and fill per chamber, Simpson over a tapered width) and
+`fillGrams` (volume in³ × (1 + overstuff) / fill power in³/oz, in grams).
+Baffled = a box of the loft height; sewn-through = a parabolic lens, 2/3 of
+the box. Tests: `pattern-engine/__tests__/chambers.test.ts`.
+
+Generator: `src/generators/quilt/`, page `src/components/quilt/`, project
+schemaVersion 17, "Shelter and sleep" category. A tapered shell and liner
+(straight taper shoulders to foot), chambers across the width, baffled
+(one trapezoid mesh baffle per wall: shell edge to the shell's width, liner
+edge to the liner's) or sewn through. Shell differential across the width
+(sewn-through forces 0). Fill per chamber written in each chamber on the
+liner and listed in the fill step; total in grams on the BOM. Sewn or zipped
+footbox (zipper = half the foot width + the footbox length). Convention B:
+cut size, explicit 0 on every edge, perimeter sew line and every wall drawn.
+Fabric-width check on the wider of the two cuts (error on `shoulder_width`).
+Registered in every shared table (generators, inputs review, persistence,
+export sweep, export matrix, page composition and error states, warning
+links, settings a11y, App smoke and search).
+
+Every number is a placeholder with no vault source, listed in `PLACEHOLDERS`
+(`src/generators/quilt/defaults.ts`), left empty in the default project and
+named in one `[mock-derived]` note. **Check each against the vault:**
+
+| Placeholder | Value |
+|---|---|
+| Length head to foot | 78" |
+| Shoulder width | 54" |
+| Foot width | 40" |
+| Footbox length | 20" |
+| Usable fabric width | 58" |
+| Loft (baffle height / sewn-through peak) | 2" |
+| Chamber spacing (largest pitch) | 6" |
+| Shell differential (baffled only) | 3 % |
+| Fill power | 850 in³/oz |
+| Overstuff | 10 % |
+| Seam allowance | 12.7 mm (1/2") |
+
+Also `[mock-derived]` in effect: the 2/3 sewn-through volume factor (a
+parabola, not a measured loft). With the defaults: 13 chambers at 6", 12
+baffles 3" tall cut, liner ≈ 55" × 79", shell ≈ 56.7" × 79", fill ≈ 269 g
+(9.5 oz).
+
+**No 3D tab (recorded):** the cloth engine has no loft or fill model (the
+chambers would lie flat) and no lying body form. Follow-ups: an underquilt
+mode (on the same chamber primitive), a neck drawcord/snap and pad straps,
+vertical side baffles, joining fabric widths for a wider quilt, synthetic
+batting instead of a fill weight.
+
+**Order for the rest of item 10:** 10b gathered-end hammock and 10c top quilt (done above), then 10d bivy or bug net (curved long zipper,
 mesh cut sheet), 10e apparel beyond the skirt (gaiters first; a garment
 drafting engine before anything with sleeves). Each builds the same way as
 the tarp, with placeholders flagged `mock-derived`, sewn fabrics only, until
@@ -580,6 +641,10 @@ which (the tri-zip `seam:` path convention is the seed).
   `catenaryPoints` samples it on any chord. Tests pin it against the
   parabola and the shallow-curve arc-length estimate. Needed by 10a and any
   tensioned edge.
+- DONE 2026-11-21 (`src/lib/pattern-engine/primitives/chambers.ts`) — **Baffle-chamber
+  primitive and fill weight**: chamber walls at an even pitch, volume and
+  fill per chamber (baffled box or sewn-through lens), fill in grams from
+  fill power and overstuff. Needed by 10c and an underquilt.
 - **Layer budget per seam**: emit max stack per seam and a machine-class
   requirement; annotate "sew forward only" above ~8 layers.
   `reference/technique-sewing-through-bulk.md`, `rigs/splitfront-technique-layer-budgeting.md`.

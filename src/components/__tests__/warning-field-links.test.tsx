@@ -16,6 +16,7 @@ import { FannyPackPage } from '../fanny-pack/FannyPackPage.js';
 import { LbvPage } from '../lbv/LbvPage.js';
 import { TarpPage } from '../tarp/TarpPage.js';
 import { HammockPage } from '../hammock/HammockPage.js';
+import { QuiltPage } from '../quilt/QuiltPage.js';
 import { OrganizerPage } from '../organizer/OrganizerPage.js';
 import { PlateCarrierPage } from '../plate-carrier/PlateCarrierPage.js';
 import { SlingPage } from '../sling/SlingPage.js';
@@ -26,6 +27,7 @@ const PAGES: Record<string, ComponentType<Record<string, unknown>>> = {
   'lbv': LbvPage as never,
   'tarp': TarpPage as never,
   'hammock': HammockPage as never,
+  'quilt': QuiltPage as never,
   'organizer': OrganizerPage as never,
   'plate-carrier': PlateCarrierPage as never,
   'sling': SlingPage as never,

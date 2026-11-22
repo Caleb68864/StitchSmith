@@ -20,6 +20,7 @@ import * as rollTop from '../roll-top-sack/index.js';
 import * as sling from '../sling/index.js';
 import * as tarp from '../tarp/index.js';
 import * as hammock from '../hammock/index.js';
+import * as quilt from '../quilt/index.js';
 import * as zipPouch from '../zip-pouch/index.js';
 
 type Resolver = (i: AnyInputs) => Record<string, unknown>;
@@ -38,6 +39,7 @@ const RESOLVERS: Record<string, Resolver> = {
   sling: (i) => sling.resolveInputs(i as never) as never,
   tarp: (i) => tarp.resolveInputs(i as never) as never,
   hammock: (i) => hammock.resolveInputs(i as never) as never,
+  quilt: (i) => quilt.resolveInputs(i as never) as never,
   'zip-pouch': (i) => zipPouch.resolveInputs(i as never) as never,
 };
 
@@ -80,7 +82,7 @@ describe('validation messages read as English, not as field keys', () => {
     const mods: Record<string, { validateInputs: (i: never) => unknown }> = {
       'book-cover': bookCover, 'circle-skirt': circleSkirt, 'clamshell-pack': clamshell, 'fanny-pack': fanny,
       lbv, 'micro-rig': microRig, organizer, 'padded-strap': paddedStrap, 'plate-carrier': plateCarrier,
-      'roll-top-sack': rollTop, sling, tarp, hammock, 'zip-pouch': zipPouch,
+      'roll-top-sack': rollTop, sling, tarp, hammock, quilt, 'zip-pouch': zipPouch,
     } as never;
     const mod = mods[name];
     return mod ? mod.validateInputs(inputs as never) : { ok: true };
