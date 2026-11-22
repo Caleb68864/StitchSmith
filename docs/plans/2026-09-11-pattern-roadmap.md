@@ -387,7 +387,9 @@ hemmed; the beaked panel end loses its hem for the seam allowance; the
 ridge-end tie-out moves to the tip; `beak_length` placeholder 18",
 `[mock-derived]`; refuses doors and cat-cut ends; in the 3D check since 2026-11-22 as the
 roof carried on past the end, seamed to the panel end and along the ridge;
-the tip is not staked down in the check),
+~~the tip is not staked down in the check~~ staked since 2026-11-22: each
+half hangs from its panel end with its ridge edge run out and down 30° in
+the centre plane, both tips pinned at the one stake point),
 and moving the organizer and pleated-card hems onto the Hem primitive.
 
 **Single-panel 3D check — DONE 2026-11-16 (`fix/tarp-followups`).** The

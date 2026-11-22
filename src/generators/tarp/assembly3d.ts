@@ -165,12 +165,16 @@ export function tarpAssembly(pieces: Piece[], r: ResolvedInputs): TarpAssembly |
   report.push('Held at every tie-out and at both ridge ends; the ridge between them hangs from the seam alone, as it does on a sagging ridgeline.');
   const extra = endPieces(pieces, r, g, lean);
   seams.push(...extra.seams);
+  pins.push(...extra.pins);
   Object.assign(placements, extra.placements);
   if (extra.report) report.push(extra.report);
   return { pieces: [a, b, ...extra.pieces], placements, seams, pins, gravity: [0, -0.01, 0], pitchDeg, report };
 }
 
 const DEG = Math.PI / 180;
+/** The 3D check's pose for a staked beak: its ridge runs out from the panel end this far below horizontal (a check pose, not a sewing number). */
+export const BEAK_STAKE_DEG = 30;
+const BEAK_TIP_PIN_MM = 30;
 
 /**
  * Doors and beaks on a ridge-seam tarp. Panel A leans to −z (rx = +lean), panel B to +z.
@@ -179,13 +183,14 @@ const DEG = Math.PI / 180;
  * (flat y down the centre edge, flat x out along ∓z), its long edge seamed to its panel's
  * end and the two centre edges (the zipper) to each other.
  *
- * Beaks lie in their panel's plane, past the end: each half is rotated like its panel and
- * offset so its panel edge meets the panel's end line; seamed to the panel end and the two
- * halves to each other along the ridge. The tip is not staked down in the check, so a beak
- * shows as the roof carried on past the end.
+ * Beaks are staked: each half hangs from its panel's end line with its ridge edge run out
+ * and down at BEAK_STAKE_DEG in the centre plane (flat x along that line, flat y down the
+ * panel end), so both halves' ridge edges start on the same line and their tips on the same
+ * stake point. The tip is pinned there; the half is seamed to the panel end and the two
+ * halves to each other along the ridge.
  */
-function endPieces(pieces: Piece[], r: ResolvedInputs, g: PanelGeometry, lean: number): { pieces: Piece[]; placements: Record<string, PiecePlacement>; seams: SeamSpec[]; report: string | null } {
-  const out: Piece[] = [], placements: Record<string, PiecePlacement> = {}, seams: SeamSpec[] = [];
+function endPieces(pieces: Piece[], r: ResolvedInputs, g: PanelGeometry, lean: number): { pieces: Piece[]; placements: Record<string, PiecePlacement>; seams: SeamSpec[]; pins: PinSpec[]; report: string | null } {
+  const out: Piece[] = [], placements: Record<string, PiecePlacement> = {}, seams: SeamSpec[] = [], pins: PinSpec[] = [];
   const s = r.seam_allowance, H = r.panel_finished_width;
   const ends: [0 | 1, number][] = [[0, g.endX[0]], [1, g.endX[1]]];
   const sides: [string, 1 | -1][] = [[PANEL_ID, 1], [PANEL_B_ID, -1]];
@@ -227,14 +232,20 @@ function endPieces(pieces: Piece[], r: ResolvedInputs, g: PanelGeometry, lean: n
         const piece = i === 0 ? { ...beak, id, quantity: 1, mirror: false } : mirrorPieceX(beak, id);
         const [rr, e] = [mx(R), mx(E)];
         out.push({ ...piece, name: `Beak half (end ${i + 1}, ${panelId === PANEL_ID ? 'first' : 'second'} panel)` });
-        // Offset so the beak's R lands on the panel's ridge end, in the panel's leaning plane.
-        const off = world(sign, { x: x - rr.x, y: s - rr.y });
-        placements[id] = { keep: true, rx: sign * lean, dx: off[0], dy: -off[1], dz: off[2] };
+        // Staked: flat x runs along the beak ridge, out from the panel end and down; flat y down the panel end.
+        const R3 = world(sign, { x, y: s }), E3 = world(sign, { x, y: s + H });
+        const out3: Vec3 = [i === 0 ? -Math.cos(BEAK_STAKE_DEG * DEG) : Math.cos(BEAK_STAKE_DEG * DEG), -Math.sin(BEAK_STAKE_DEG * DEG), 0];
+        // Flat x grows toward the panel on end 0 (tip at small x) and toward the tip on end 1.
+        const v: Vec3 = i === 0 ? [-out3[0], -out3[1], -out3[2]] : out3;
+        const start: Vec3 = [R3[0] - rr.x * v[0], R3[1] - rr.x * v[1], R3[2] - rr.x * v[2]];
+        const far = rr.x + 4 * (r.beak_length + 200);
+        placements[id] = { keep: true, drape: { path: [start, [start[0] + far * v[0], start[1] + far * v[1], start[2] + far * v[2]]], across: [E3[0] - R3[0], E3[1] - R3[1], E3[2] - R3[2]], x0: rr.y, along: 'x' } };
+        pins.push({ pieceId: id, point: mx(T), radius: BEAK_TIP_PIN_MM });
         seams.push({ label: `${id} ↔ panel end`, a: { pieceId: id, from: rr, to: e }, b: { pieceId: panelId, from: { x, y: s }, to: { x, y: s + H } } });
       }
       seams.push({ label: `beak ${i + 1} ridge`, a: { pieceId: ids[0], from: mx(T), to: mx(R) }, b: { pieceId: ids[1], from: mx(T), to: mx(R) } });
     });
   }
-  const parts = [r.door_ends > 0 ? `${r.door_ends === 2 ? 'both ends closed by doors' : 'one end closed by a door'}` : null, r.beaks !== 'none' ? `${r.beaks === 'both_ends' ? 'beaks on both ends' : 'a beak on one end'} (carried on as the roof; the tip is not staked down in this check)` : null].filter(Boolean);
-  return { pieces: out, placements, seams, report: parts.length ? `Ends: ${parts.join('; ')}.` : null };
+  const parts = [r.door_ends > 0 ? `${r.door_ends === 2 ? 'both ends closed by doors' : 'one end closed by a door'}` : null, r.beaks !== 'none' ? `${r.beaks === 'both_ends' ? 'beaks on both ends' : 'a beak on one end'} (each tip staked out and down at ${BEAK_STAKE_DEG}° below the ridge)` : null].filter(Boolean);
+  return { pieces: out, placements, seams, pins, report: parts.length ? `Ends: ${parts.join('; ')}.` : null };
 }

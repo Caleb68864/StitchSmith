@@ -132,4 +132,28 @@ describe('tarp ends in 3D: doors and beaks (ridge-seam tarp)', () => {
     expect(b1.hi[0]).toBeGreaterThan(panel.hi[0] + 18 * IN - 60);
     expect(asm.report.join(' ')).toMatch(/beaks on both ends/);
   });
+  it('a staked beak: both halves pinned at one tip, out and down from the ridge end, the ridge seam closed', () => {
+    const v = built({ ...DEF, beaks: 'one_end' });
+    const asm = tarpAssembly(v.pieces, v.resolved)!;
+    const tipPins = asm.pins.filter((p) => p.pieceId.startsWith('tarp-beak-'));
+    expect(tipPins).toHaveLength(2);
+    expectViewerMatchesHarness(asm.pieces, asm.placements);
+    const { world, bounds, ids, meshes } = assemble(asm.pieces, asm.placements, asm.seams, null, 40, asm.pins, asm.gravity);
+    relax(world, 300);
+    expect(seamResidual(world).mean).toBeLessThan(3);
+    const panel = bounds(PANEL_ID), a = bounds('tarp-beak-0-a'), b = bounds('tarp-beak-0-b');
+    const L = v.resolved.beak_length;
+    // Out past the end by the reach's run, and the tip well below the ridge (the drop at 30°).
+    expect(a.lo[0]).toBeLessThan(panel.lo[0] - L * Math.cos(Math.PI / 6) + 60);
+    expect(a.lo[0]).toBeGreaterThan(panel.lo[0] - L - 60);
+    // Each half's lowest-x point is its tip, in the centre plane at the stake drop.
+    const tip = (id: string) => { const mi = ids.indexOf(id); let best = [Infinity, 0, 0]; for (let k = 0; k < meshes[mi].vertexCount; k++) { const o = 3 * (world.base[mi] + k); if (world.pos[o] < best[0]) best = [world.pos[o], world.pos[o + 1], world.pos[o + 2]]; } return best; };
+    for (const id of ['tarp-beak-0-a', 'tarp-beak-0-b']) {
+      const t = tip(id);
+      expect(Math.abs(t[2])).toBeLessThan(40);
+      expect(-t[1]).toBeGreaterThan(L * 0.5 - 40);
+    }
+    expect(b.lo[0]).toBeCloseTo(a.lo[0], -2);
+    expect(asm.report.join(' ')).toMatch(/staked out and down/);
+  });
 });
