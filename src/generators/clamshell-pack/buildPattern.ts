@@ -121,6 +121,13 @@ function hoopStrip(r: ResolvedInputs, id: string, name: string, depthPart: numbe
       pals.push({ rows: f.rows, cols: f.cols, webbingLength: f.webbing.lengthMm, quantity: f.webbing.quantity, warnings: f.warnings, where: palsWhere });
     }
   }
+  if (lipAtTop && r.hydration_port) {
+    // The port: a slot across the top centre of the lid strip, a patch 1/2" past it all round.
+    const cx = u + H + W / 2, cy = f0 + depthPart / 2, half = r.port_length / 2, ph = half + D.GROMMET_INSET_MM, pv = D.GROMMET_INSET_MM + 0.25 * IN;
+    const pts = [{ x: cx - ph, y: cy - pv }, { x: cx + ph, y: cy - pv }, { x: cx + ph, y: cy + pv }, { x: cx - ph, y: cy + pv }];
+    paths.push({ id: `${id}-port-patch`, closed: true, label: 'Port patch — sew it inside first', edges: pts.map((p, i) => ({ kind: 'straight' as const, id: eid(), role: 'stitch' as const, start: p, end: pts[(i + 1) % 4] })) });
+    paths.push(line(eid, `${id}-port-slot`, 'notch', { x: cx - half, y: cy }, { x: cx + half, y: cy }, `Hydration port — cut this ${fmtIn(r.port_length)}" slot through strip and patch after sewing, hot-knife or bind the edges`));
+  }
   if (withPals && r.handle) {
     const hx = u + H + (W - r.handle_core_length) / 2;
     paths.push(line(eid, `${id}-handle`, 'stitch', { x: hx, y: f0 + depthPart / 2 }, { x: hx + r.handle_core_length, y: f0 + depthPart / 2 }, `Top handle lands here — ${fmtIn(r.handle_fold_under)}" folded under each end, box-X, PALS start 1" below`));
@@ -142,6 +149,12 @@ function hoopStrip(r: ResolvedInputs, id: string, name: string, depthPart: numbe
   return { id, name, mirror: false, quantity: 1, materialId: 'cordura-500', paths, seamAllowances: sa(outline, lipAtTop ? [0, S, S, S] : [S, S, 0, S]), annotations };
 }
 
+/** Grommet x positions on the bottom strip: evenly inside the fold-in marks. */
+export function grommetXs(r: ResolvedInputs): number[] {
+  const L = r.bottom_nominal_length, fi = r.fold_in, n = r.bottom_grommets;
+  return Array.from({ length: n }, (_, k) => 2 * fi + ((L - 4 * fi) * (k + 1)) / (n + 1));
+}
+
 function bottomStrip(r: ResolvedInputs, pals: PalsUse[]): Piece {
   const id = BOTTOM_ID;
   const eid = makeEdgeIdGen(id);
@@ -161,6 +174,17 @@ function bottomStrip(r: ResolvedInputs, pals: PalsUse[]): Piece {
     paths.push(...f.paths);
     pals.push({ rows: f.rows, cols: f.cols, webbingLength: f.webbing.lengthMm, quantity: f.webbing.quantity, warnings: f.warnings, where: palsWhere });
   }
+  // Drainage grommets on the centre line, each over a reinforcement patch, set while flat.
+  grommetXs(r).forEach((x, i) => {
+    const h = D.GROMMET_PATCH_MM / 2, y = Wd / 2;
+    paths.push({ id: `${id}-grommet-patch-${i}`, closed: true, label: i === 0 ? `Grommet patch ${fmtIn(D.GROMMET_PATCH_MM)}" — sew it first, then set the grommet while flat` : undefined, edges: [
+      { kind: 'straight', id: eid(), role: 'stitch', start: { x: x - h, y: y - h }, end: { x: x + h, y: y - h } },
+      { kind: 'straight', id: eid(), role: 'stitch', start: { x: x + h, y: y - h }, end: { x: x + h, y: y + h } },
+      { kind: 'straight', id: eid(), role: 'stitch', start: { x: x + h, y: y + h }, end: { x: x - h, y: y + h } },
+      { kind: 'straight', id: eid(), role: 'stitch', start: { x: x - h, y: y + h }, end: { x: x - h, y: y - h } },
+    ] });
+    paths.push(line(eid, `${id}-grommet-${i}`, 'notch', { x: x - 6, y }, { x: x + 6, y }, i === 0 ? 'Grommet centre' : undefined));
+  });
   const annotations: PieceAnnotation[] = [
     { kind: 'grain', label: 'grain', point: { x: L / 2, y: Wd / 2 }, angle: 0 },
     { kind: 'label', label: `Bottom (alligator mouth) — nominal ${dim(L)} × ${dim(Wd)}. CUT AFTER THE HOOP: length = measured gap + ${fmtIn(2 * fi)}"`, point: { x: L / 2, y: Wd / 2 } },
@@ -176,6 +200,8 @@ function buildSteps(r: ResolvedInputs): Step[] {
     { id: 'cs.velcro', title: 'Loop Velcro on the inside walls — now, not later', body: `${r.interior_loop ? `${r.loop_strips_per_wall} strips of ${fmtIn(r.loop_strip_width)}" loop per wall, ${fmtIn(r.loop_gap)}" apart, cut ${fmtIn(r.loop_strip_cut_length)}" and trimmed after: the panel shrinks about 1/2" under the Velcro.` : 'No interior loop chosen.'} "I will forget to put the Velcro on and you cannot really go put the Velcro on after the fact." The Velcro is also what makes the panels hold their shape.`, dependsOn: ['cs.cut'], refsPieces: [FACE_ID, BACK_ID], group: 'Flat work' },
     { id: 'cs.pals', title: 'PALS on every flat piece', body: `Sides: ${r.pals_rows_side} rows of ${r.pals_cols_side} columns on the ${fmtIn(r.side_work_area)}" work area of each side run, starting ${fmtIn(r.edge_offset)}" below the top corner and clear of the underwrap. Face: ${r.pals_rows_face} rows of ${r.face_pals_cols}. Bottom: ${r.pals_rows_bottom} rows (on the bottom strip, later, in the alligator mouth). Mark column lines as running sums from one datum (1 1/2, 3, 4 1/2); gauge with a piece of 1" webbing and re-check — crossing sewn rows shifts the gauge and a 10" work area creeps to 10 1/2. Sew all the columns in one direction.${r.pals_style === 'fabricated' ? ' Fabricated PALS: 2" Cordura folded to 1" and edge taped; woven webbing for anything that carries a buckle.' : ''}`, dependsOn: ['cs.zipper'], refsPieces: [GUSSET_ID, FACE_ID], group: 'Flat work' },
   ];
+  if (r.bottom_grommets > 0) steps.push({ id: 'cs.grommets', title: 'Drainage grommets while the bottom is flat', body: `Sew a ${fmtIn(D.GROMMET_PATCH_MM)}" patch under each grommet mark on the bottom strip, pre-burn the holes at 750°F and set the ${r.bottom_grommets} grommet${r.bottom_grommets === 1 ? '' : 's'} now, in one press visit: nothing goes through a closed hoop. Each sits at least ${fmtIn(D.GROMMET_INSET_MM)}" from a seam.`, dependsOn: ['cs.pals'], refsPieces: [BOTTOM_ID, 'clamshell-grommet-patch'], group: 'Flat work' });
+  if (r.hydration_port) steps.push({ id: 'cs.port', title: 'Hydration port in the lid', body: `Sew the port patch inside the lid strip at the top centre, then cut the ${fmtIn(r.port_length)}" slot through both and hot-knife or bind the edges.`, dependsOn: ['cs.zipper'], refsPieces: [LID_STRIP_ID, 'clamshell-port-patch'], group: 'Flat work' });
   if (r.handle) steps.push({ id: 'cs.handle', title: 'Top handle on the gusset', body: `${fmtIn(r.handle_cut_length)}" of 2" webbing over a ${fmtIn(r.handle_core_length)}" 1" core, ${fmtIn(r.handle_fold_under)}" folded under each end, box-X with the same stitch count both ends (count them — ten). It bows because the cut is ${fmtIn(r.handle_bow)}" longer than the footprint; size the bow to a gloved hand. Sew it beside the seam, not in it, with a hidden backup line.`, dependsOn: ['cs.pals'], refsPieces: [GUSSET_ID], group: 'Flat work' });
   if (r.compression_straps_per_side > 0) steps.push({ id: 'cs.compression', title: 'Compression strap tabs from a shared datum', body: `${r.compression_straps_per_side} per side, webbing tabs sewn under the PALS field on both mating pieces from the same datum so they meet after assembly. Straps ${fmtIn(r.compression_strap_length)}" (${fmtIn(r.depth)}" depth + ${fmtIn(r.compression_extra)}"): male buckle on the bag tab, tri-glide on the strap. Every wrap length scales with the depth — the standard cut list is ${fmtIn(r.depth - D.STANDARD_DEPTH_MM)}" short on this bag.`, dependsOn: ['cs.pals'], refsPieces: [GUSSET_ID], group: 'Flat work' });
   if (r.strap_provision !== 'none') steps.push({ id: 'cs.tabs', title: 'Shoulder strap tabs on the back', body: `Six 3" pieces of 2" webbing: two into the top seam ${fmtIn(r.strap_tab_spacing)}" apart (find centre, come ${fmtIn(r.strap_tab_spacing / 2)}" each way), lower anchors 1" up and kicked outboard of the closing seam so the seam is not the load path. Male buckles on the tabs, never captive females. Straps are slick 2" webbing that stow in the back pocket; padded straps must end in the same male-buckle spec. Sternum straps 18" and 24".${r.strap_provision === 'tabs_and_stow' ? ' Sew the stow pocket sheet to the back before the panel goes on; it must swallow two rolled straps and their hardware.' : ' Provision only: the tabs trim off without opening a structural seam.'}`, dependsOn: ['cs.velcro'], refsPieces: [BACK_ID], group: 'Flat work' });
@@ -199,6 +225,13 @@ function buildWarnings(r: ResolvedInputs, pals: PalsUse[]): GeneratorWarning[] {
   w.push({ id: 'compression-extra', severity: 'info', field: 'compression_extra', tag: 'mock-derived', message: `Compression strap length = depth + ${fmtIn(r.compression_extra)}" (12" and 14" straps at 6" depth on camera). Drape webbing over the gusset before cutting.` });
   for (const p of pals) for (const m of p.warnings) if (!w.some((x) => x.message === m)) w.push({ id: `pals-${w.length}`, severity: 'warning', message: m });
   if (r.pocket_grid !== 'custom') w.push({ id: 'pocket-grid', severity: 'info', field: 'pocket_grid', message: `Footprint ${fmtIn(r.width)} × ${fmtIn(r.height)}" comes from the ${r.pocket_grid} mesh-pocket grid — the pocket grid drives the panel, not the reverse.` });
+  if (r.bottom_grommets > 0) {
+    // Vault rule: the grommet sits at least 1/2" from any seam over its patch.
+    const clear = r.bottom_cut_width / 2 - r.fold_in;
+    if (clear < D.GROMMET_INSET_MM) w.push({ id: 'grommet-tight', severity: 'warning', field: 'bottom_grommets', message: `The grommets sit ${fmtIn(clear)}" from the bottom seams: under ${fmtIn(D.GROMMET_INSET_MM)}" the ring fouls the stitching. Use a #0 grommet or a deeper bag.` });
+    if (r.pals_rows_bottom > 0) w.push({ id: 'grommet-pals', severity: 'info', field: 'bottom_grommets', message: 'The bottom has PALS rows: set each grommet between rows, not through the webbing.' });
+  }
+  if (r.hydration_port) w.push({ id: 'port-length', severity: 'info', field: 'port_length', tag: 'mock-derived', message: `Port slot ${fmtIn(r.port_length)}" is a starting point (mock-derived): size it to the tube and its bite valve.` });
   if (r.strap_provision === 'none') w.push({ id: 'strap-trap', severity: 'info', message: 'No strap provision: at this size you will want shoulder straps, and adding them later means opening a structural seam. Provision the tabs now and trim them if the answer is no (the tool pod post-mortem).' });
   return w;
 }
@@ -236,10 +269,13 @@ export function buildPattern(inputs: ClamshellPackInputs): Result<ClamshellPackB
   [...byLength.entries()].sort((x, y) => y[0] - x[0]).forEach(([len, e], i) => {
     pieces.push(strip(`clamshell-pals-row-${i}`, r.pals_style === 'fabricated' ? 'Fabricated PALS row (2" Cordura → 1")' : 'PALS webbing row', len, PALS_ROW_WIDTH_MM, e.qty, r.pals_style === 'fabricated' ? 'cordura-500' : 'webbing-25', `${e.qty} rows of ${fmtIn(len)}" (${[...e.where].join(', ')}) — cut 1" long, trim after sewing`));
   });
+  if (r.bottom_grommets > 0) pieces.push(strip('clamshell-grommet-patch', 'Grommet reinforcement patch', D.GROMMET_PATCH_MM, D.GROMMET_PATCH_MM, r.bottom_grommets, 'cordura-1000', '1000D under each grommet, sewn before the hole is burnt'));
+  if (r.hydration_port) pieces.push(strip('clamshell-port-patch', 'Port reinforcement patch', r.port_length + 2 * D.GROMMET_INSET_MM, 2 * D.GROMMET_INSET_MM + 0.5 * IN, 1, 'cordura-1000', 'Inside the lid strip, the slot cut through both'));
   const hardware: HardwareItem[] = [
     { id: 'zipper', name: 'Coil zipper, two sliders, non-locking', quantity: 1, notes: `${fmtIn(r.hoop_length)}" of chain round the hoop` },
   ];
   if (r.compression_straps_per_side > 0) hardware.push({ id: 'sr-buckle', name: '1" side-release buckle', quantity: 2 * r.compression_straps_per_side, notes: 'male on the bag tab' }, { id: 'triglide-25', name: '1" tri-glide', quantity: 2 * r.compression_straps_per_side });
   if (r.strap_provision !== 'none') hardware.push({ id: 'sr-buckle-50', name: '2" side-release buckle', quantity: 4, notes: 'male on the tabs' }, { id: 'triglide-50', name: '2" tri-glide', quantity: 4 }, { id: 'sternum', name: 'Sternum strap', quantity: 1, notes: `18" or 24"` });
+  if (r.bottom_grommets > 0) hardware.push({ id: 'grommet', name: '#0–#2 grommet', quantity: r.bottom_grommets, notes: 'Set while flat; pre-burn the hole' });
   return { ok: true, value: { pieces, steps: buildSteps(r), warnings: buildWarnings(r, pals), hardware, resolved: r } };
 }

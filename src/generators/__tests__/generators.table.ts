@@ -91,7 +91,7 @@ export const GENERATORS: Gen[] = [
   },
   {
     name: 'clamshell-pack',
-    keys: ['units', 'pocket_grid', 'width', 'height', 'depth', 'lid_depth', 'equal_split', 'zipper_lip', 'zipper_underwrap', 'hoop_overcut', 'seam_allowance', 'fold_in', 'zipper_clearance', 'pals_style', 'pals_rows_side', 'pals_rows_face', 'pals_rows_bottom', 'pals_cols_side', 'edge_offset', 'handle', 'handle_bow', 'handle_fold_under', 'compression_straps_per_side', 'compression_extra', 'interior_loop', 'loop_strip_width', 'loop_gap', 'strap_provision', 'strap_tab_spacing'],
+    keys: ['units', 'pocket_grid', 'width', 'height', 'depth', 'lid_depth', 'equal_split', 'zipper_lip', 'zipper_underwrap', 'hoop_overcut', 'seam_allowance', 'fold_in', 'zipper_clearance', 'pals_style', 'pals_rows_side', 'pals_rows_face', 'pals_rows_bottom', 'pals_cols_side', 'edge_offset', 'handle', 'handle_bow', 'handle_fold_under', 'compression_straps_per_side', 'compression_extra', 'interior_loop', 'loop_strip_width', 'loop_gap', 'strap_provision', 'strap_tab_spacing', 'bottom_grommets', 'hydration_port', 'port_length'],
     defaults: () => makeDefaultClamshellPackProject().inputs as unknown as AnyInputs,
     validate: (i) => listErrors(clamshell.validateInputs(i as never)),
     build: (i) => resultPieces(clamshell.buildPattern(i as never)),

@@ -196,7 +196,12 @@ and bottom through the shared `buildPalsField` primitive, bowed handle,
 depth-scaled compression straps, removable-strap tabs and stow pocket,
 interior loop walls, pocket-grid footprints, 3D hoop assembly round the
 block. Follow-ups: padded straps through the strap engine terminating in the
-same male-buckle spec; drainage grommet / seam-slot port; hydration port.
+same male-buckle spec; ~~drainage grommet~~ (DONE 2026-11-22: `bottom_grommets`
+0–2 on the bottom centre line, each over a 1.5" patch, set flat and
+pre-burnt per the vault grommet rule, with a warning under 1/2" from the
+seam; a seam-slot port is still open); ~~hydration port~~ (DONE 2026-11-22: a
+slot and patch at the lid strip's top centre, the slot length a flagged
+placeholder).
 
 ### 8. Plate carrier — DONE 2026-09-12
 `src/generators/plate-carrier/`: plate presets and cuts (SAPI / shooter /

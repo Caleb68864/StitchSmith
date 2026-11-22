@@ -77,6 +77,12 @@ export interface ClamshellPackInputs {
   compression_extra?: number;
   /** Loop Velcro walls inside. Default true. */
   interior_loop?: boolean;
+  /** Drainage grommets on the bottom strip: 0 (default), 1 or 2. */
+  bottom_grommets?: number;
+  /** A hydration port slot in the top of the lid strip. Default false. */
+  hydration_port?: boolean;
+  /** Port slot length, display units. Placeholder 1.5" — mock-derived. */
+  port_length?: number;
   /** Loop strip width, display units. Default 2". */
   loop_strip_width?: number;
   /** Gap between loop strips, display units. Default 1/2". */
@@ -113,6 +119,9 @@ export interface ResolvedInputs {
   compression_straps_per_side: number;
   compression_extra: number;
   interior_loop: boolean;
+  bottom_grommets: number;
+  hydration_port: boolean;
+  port_length: number;
   loop_strip_width: number;
   loop_gap: number;
   strap_provision: StrapProvision;

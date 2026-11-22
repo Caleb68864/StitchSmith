@@ -34,6 +34,11 @@ export const STRAP_TAB_WEBBING_MM = 2 * IN;
 export const STRAP_TAB_COUNT = 6;
 export const LOWER_ANCHOR_RISE_MM = 1 * IN;
 export const STERNUM_LENGTHS_IN = [18, 24] as const;
+/** Grommets sit >= 1/2" from any seam, over a reinforcement patch (bags/fanny-pack-drainage-grommets.md). */
+export const GROMMET_INSET_MM = 0.5 * IN;
+export const GROMMET_PATCH_MM = 1.5 * IN;
+/** Placeholder 1.5" hydration port slot (mock-derived): a tube passes through it. */
+export const PORT_LENGTH_MM = 1.5 * IN;
 /** Pocket grid → footprint (medpack-pouch-system.md). */
 export const POCKET_GRID_FOOTPRINT_MM: Record<'2x2' | '3x3', { width: number; height: number }> = {
   '2x2': { width: 11 * IN, height: 16 * IN },
