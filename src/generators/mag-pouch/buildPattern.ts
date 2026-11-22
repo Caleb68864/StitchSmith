@@ -10,6 +10,7 @@
  *   - `AK_WARNING_COPY`       — canonical warning string for tests / UI
  */
 
+import { assignAssemblies } from '../../lib/pattern-engine/graph/Piece.js';
 import type { Pattern } from '../../lib/pattern-engine/graph/Pattern.js';
 import type { Piece } from '../../lib/pattern-engine/graph/Piece.js';
 import type { Step } from '../../lib/pattern-engine/instructions/Step.js';
@@ -364,6 +365,7 @@ export function buildPattern(inputs: MagPouchInputs): MagPouchBuildResult {
 
   const defaultSaMm = isCard ? 0 : inToMm(r.seamAllowanceIn);
   const bom = buildBom(inputs, r, pattern, palsRows);
+  assignAssemblies(pattern.pieces, [[/^pals-/, 'PALS'], [/.*/, 'Pouch']]);
   const cutPieces = cutPiecesFromPattern(pattern, defaultSaMm);
 
   const derived: MagPouchDerived = {

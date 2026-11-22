@@ -19,6 +19,7 @@ export function ExportPanel({ inputs, project, result, hasErrors }: Props) {
     projectName: project.projectName,
     hasErrors: hasErrors || !result,
     // Inputs are inches; the engine draws in mm.
+    groupByAssembly: true,
     defaultSeamAllowance: inputs.seamAllowance * 25.4,
     buildPattern: () => result?.pattern ?? null,
     steps: () => result?.steps ?? null,

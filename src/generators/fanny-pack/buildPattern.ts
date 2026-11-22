@@ -6,6 +6,7 @@
  * drawn as a stitch path inset by the allowance. Cut dimensions are derived
  * once in `resolveInputs` so the pattern, the steps and the BOM agree.
  */
+import { assignAssemblies } from '../../lib/pattern-engine/graph/Piece.js';
 import { buildPalsField, PALS_EDGE_MARGIN_MM } from '../../lib/pattern-engine/primitives/palsField.js';
 import type { Piece } from '../../lib/pattern-engine/graph/Piece.js';
 import type { Path } from '../../lib/pattern-engine/graph/Path.js';
@@ -224,5 +225,6 @@ export function buildPattern(inputs: FannyPackInputs): Result<FannyPackBuildResu
   if (r.bottom_grommets > 0) hardware.push({ id: 'grommet', name: '#0–#2 grommet', quantity: r.bottom_grommets, notes: 'Set while flat; pre-burn' });
   if (r.drawbridge_limiter) hardware.push({ id: 'cord', name: `550 cord, ${fmtIn(2 * r.drawbridge_cord_length)}" total`, quantity: 1, notes: 'Two loops' });
   if (r.zipper_edge_finish === 'tape') hardware.push({ id: 'edge-tape', name: `Edge tape (${r.edge_tape_color}), ${fmtIn(r.edge_tape_length)}"`, quantity: 1 });
+  assignAssemblies(pieces, [[/belt/, 'Belt'], [/^fanny-/, 'Body']]);
   return { ok: true, value: { pieces, steps: buildSteps(r), warnings: buildWarnings(r), hardware, resolved: r } };
 }

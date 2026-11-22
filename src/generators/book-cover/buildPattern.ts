@@ -1,3 +1,4 @@
+import { assignAssemblies } from '../../lib/pattern-engine/graph/Piece.js';
 import type { Step } from '../../lib/pattern-engine/instructions/Step.js';
 import type { Piece, PieceAnnotation } from '../../lib/pattern-engine/graph/Piece.js';
 import type { Path } from '../../lib/pattern-engine/graph/Path.js';
@@ -578,6 +579,7 @@ export function buildPattern(inputs: BookCoverInputs): Result<BookCoverBuildResu
     pieces.push(buildPenHolderPiece(r.pen_holder, SA));
   }
 
+  assignAssemblies(pieces, [[/cover-panel/, 'Cover'], [/flap|pocket|strap|closure|lining/, 'Flaps and closure']]);
   const { cutWidth, cutHeight } = coverPanelDims(r);
 
   const steps = buildSteps(r, cutWidth, cutHeight, pieces.length);

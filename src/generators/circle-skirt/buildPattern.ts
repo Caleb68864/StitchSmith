@@ -10,6 +10,7 @@
  *   - All coordinates are non-negative (panel_sweep_deg ≤ 90°)
  */
 
+import { assignAssemblies } from '../../lib/pattern-engine/graph/Piece.js';
 import type { Piece } from '../../lib/pattern-engine/graph/Piece.js';
 import type { Path } from '../../lib/pattern-engine/graph/Path.js';
 import type { ArcEdge, StraightEdge } from '../../lib/pattern-engine/graph/Edge.js';
@@ -290,5 +291,6 @@ export function buildPattern(inputs: CircleSkirtInputs): CircleSkirtBuildResult 
     warnings.push('Multi-circle skirt requires significant piecing — confirm yardage.');
   }
 
+  assignAssemblies(pieces, [[/^panel-/, 'Skirt panels'], [/waistband/, 'Waistband']]);
   return { pieces, steps, warnings };
 }

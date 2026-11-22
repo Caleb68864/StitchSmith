@@ -16,6 +16,7 @@ export function ExportPanel({ inputs, project, hasErrors }: Props) {
     generatorId: 'padded-strap',
     projectName: project.projectName,
     hasErrors,
+    groupByAssembly: true,
     defaultSeamAllowance: inputs.seam_allowance ?? 10,
     buildPattern: () => { const r = build(); return r ? { id: 'padded-strap', name: project.projectName, pieces: r.pieces } : null; },
     steps: () => build()?.steps ?? null,

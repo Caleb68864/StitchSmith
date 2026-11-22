@@ -879,8 +879,10 @@ which (the tri-zip `seam:` path convention is the seed).
   Shoulders and Cummerbund; since 2026-11-22 also the Tri-Zip, clamshell,
   LBV, micro rig, quilt and wind shirt (`assignAssemblies` rules by piece id;
   `generators/__tests__/assemblies.test.ts` checks every piece is tagged and
-  at most a quarter fall to Other). The rest are one- or two-piece patterns
-  where one sheet is the kit. The material ×
+  at most a quarter fall to Other). Since 2026-11-22 also the fanny pack,
+  sling, bivy, tarp, beanie, organizer, circle skirt, book cover, mag pouch,
+  padded strap and hammock (bug net). Untagged by design: roll-top sack,
+  gaiters, zip pouch and the tool roll (one kit each). The material ×
   width × length summary on SOE's drawer lengths was already in the cut
   list (2026-09-12). `reference/soe-production-principles.md`.
 - DONE 2026-11-22 (`exports/cutList.ts`, `shrinkageFor`) — **Stitch-shrinkage compensation**:

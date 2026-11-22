@@ -6,6 +6,7 @@
  * H-harness adds a slotted cross strap, four-corner hardware on the webbing
  * ends, hydration channels marked as unsewn spans, and front PALS rows.
  */
+import { assignAssemblies } from '../../lib/pattern-engine/graph/Piece.js';
 import type { Piece } from '../../lib/pattern-engine/graph/Piece.js';
 import type { Path } from '../../lib/pattern-engine/graph/Path.js';
 import type { Edge, EdgeId } from '../../lib/pattern-engine/graph/Edge.js';
@@ -127,6 +128,7 @@ export function buildPattern(inputs: PaddedStrapInputs): Result<PaddedStrapBuild
     warnings.push({ id: 'not-a-suspender', severity: 'info', message: 'This H set is a chest-rig suspension, not a belt suspender: there is not enough webbing by design to run it to a belt.' });
   }
 
+  assignAssemblies(pieces, [[/webbing|h-cross|h-channel|lbv-vertical/, 'Webbing'], [/^strap-pad|h-pals/, 'Pads']]);
   return {
     ok: true,
     value: { pieces, steps, warnings, hardware, derived: { ...strap.derived, resolved: r } },
