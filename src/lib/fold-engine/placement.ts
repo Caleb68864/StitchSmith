@@ -35,8 +35,11 @@ export interface PiecePlacement {
    * Wrap the piece into a cone: flat polar coordinates about `apex` (mm, radians) become a cone
    * of half-angle `halfAngle` hanging from `apex3` with its axis down −y. Flat angle θ maps to
    * cone angle `angle0 + θ · angleScale` (a half-circle sweep needs scale 2 to close). Skirt panels.
+   * `axis` (default [0, −1, 0]) turns it into a tube along any direction — a sleeve round a sloping
+   * arm; cone angle 0 then points along `ref` made square to the axis (default +x, or +z when the
+   * axis is along x).
    */
-  cone?: { apex: Point; apex3: Vec3; halfAngle: number; angleScale: number; angle0: number };
+  cone?: { apex: Point; apex3: Vec3; halfAngle: number; angleScale: number; angle0: number; axis?: Vec3; ref?: Vec3 };
 }
 
 /**
@@ -57,7 +60,32 @@ export function conePoint(cone: NonNullable<PiecePlacement['cone']>, flat: Point
   const theta = cone.angle0 + Math.atan2(dy, dx) * cone.angleScale;
   const rho = r * Math.sin(cone.halfAngle);
   const h = r * Math.cos(cone.halfAngle);
-  return [cone.apex3[0] + rho * Math.cos(theta), cone.apex3[1] - h, cone.apex3[2] + rho * Math.sin(theta)];
+  if (!cone.axis) return [cone.apex3[0] + rho * Math.cos(theta), cone.apex3[1] - h, cone.apex3[2] + rho * Math.sin(theta)];
+  const { a, e1, e2 } = coneFrame(cone.axis, cone.ref);
+  const c = Math.cos(theta), s = Math.sin(theta);
+  return [
+    cone.apex3[0] + h * a[0] + rho * (c * e1[0] + s * e2[0]),
+    cone.apex3[1] + h * a[1] + rho * (c * e1[1] + s * e2[1]),
+    cone.apex3[2] + h * a[2] + rho * (c * e1[2] + s * e2[2]),
+  ];
+}
+
+/**
+ * The orthonormal frame of a cone along `axis`: a (the axis), e1 (angle 0, `ref` made square to
+ * a) and e2 = a × e1. With the default axis [0, −1, 0] and ref +x this is the original frame
+ * (angle 0 along +x, 90° along +z).
+ */
+export function coneFrame(axis: Vec3, ref?: Vec3): { a: Vec3; e1: Vec3; e2: Vec3 } {
+  const n = Math.hypot(axis[0], axis[1], axis[2]) || 1;
+  const a: Vec3 = [axis[0] / n, axis[1] / n, axis[2] / n];
+  let r: Vec3 = ref ?? [1, 0, 0];
+  let d = r[0] * a[0] + r[1] * a[1] + r[2] * a[2];
+  if (Math.abs(Math.hypot(r[0] - d * a[0], r[1] - d * a[1], r[2] - d * a[2])) < 1e-9) { r = [0, 0, 1]; d = a[2]; }
+  const u: Vec3 = [r[0] - d * a[0], r[1] - d * a[1], r[2] - d * a[2]];
+  const un = Math.hypot(u[0], u[1], u[2]);
+  const e1: Vec3 = [u[0] / un, u[1] / un, u[2] / un];
+  const e2: Vec3 = [a[1] * e1[2] - a[2] * e1[1], a[2] * e1[0] - a[0] * e1[2], a[0] * e1[1] - a[1] * e1[0]];
+  return { a, e1, e2 };
 }
 
 /** The direct flat→3D map of a draped or cone-wrapped placement, or null when the piece folds normally. */
