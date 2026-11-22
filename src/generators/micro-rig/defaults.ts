@@ -49,6 +49,9 @@ export {
 } from '../../lib/pouch-engine/fit/stacked.js';
 export const CRADLE_WIDTH_MM = 2 * IN;
 export const MED_ZONE_MM = 3 * IN;
+/** Tear-off med pouch body: no vault numbers (mock-derived, editable inputs). */
+export const MED_POUCH_HEIGHT_MM = 6 * IN;
+export const MED_POUCH_DEPTH_MM = 2 * IN;
 export const PULL_TAB_MM = 3.5 * IN;
 export const CELL_VELCRO_MM = 2 * IN;
 export const FRONT_POUCH_BOTTOM_HEM_MM = 1 * IN;

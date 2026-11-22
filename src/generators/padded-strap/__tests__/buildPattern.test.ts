@@ -140,3 +140,32 @@ describe('BOM', () => {
     expect(bom.some((r) => r.id === `piece-${PAD_PIECE_ID}`)).toBe(true);
   });
 });
+
+describe('LBV shoulder set (third mode)', () => {
+  it('24" verticals with 1" tabs fund 12" of drop; tension locks on centre of each pad', () => {
+    const res = buildPattern({ mode: 'lbv_set' });
+    if (!res.ok) throw new Error(JSON.stringify(res.errors));
+    const v = res.value;
+    const vert = v.pieces.find((p) => p.id === 'lbv-vertical-strap')!;
+    expect(vert.quantity).toBe(4);
+    const o = vert.paths[0].edges;
+    expect(Math.max(...o.map((e) => e.end.y))).toBeCloseTo(24 * 25.4, 6);
+    expect(Math.max(...o.map((e) => e.end.x))).toBeCloseTo(1.5 * 25.4, 6);
+    const pad = v.pieces.find((p) => p.id === 'strap-pad')!;
+    const lock = pad.paths.find((p) => p.id.endsWith('-tension-lock'))!;
+    const ys = lock.edges.map((e) => e.start.y), xs = lock.edges.map((e) => e.start.x);
+    expect((Math.min(...ys) + Math.max(...ys)) / 2).toBeCloseTo(v.derived.resolved.pad_length / 2, 6);
+    expect((Math.min(...xs) + Math.max(...xs)) / 2).toBeCloseTo(v.derived.resolved.pad_width / 2, 6);
+    expect(v.derived.resolved.usable_adjustment).toBeCloseTo(22 * 25.4, 6);
+    expect(v.hardware.find((h) => h.id === 'tension-lock')!.quantity).toBe(4);
+    expect(v.steps.map((s) => s.id)).toEqual(expect.arrayContaining(['lbv.locks', 'lbv.verticals']));
+    expect(v.warnings.some((w) => w.id === 'lbv-drop-short')).toBe(false);
+    expect(v.warnings.some((w) => w.id === 'mock-derived-pad_length')).toBe(true);
+  });
+  it('a short vertical warns it cannot fund the drop; tabs longer than the strap are an error', () => {
+    const res = buildPattern({ mode: 'lbv_set', vertical_strap_len: 14 });
+    if (!res.ok) throw new Error('build');
+    expect(res.value.warnings.some((w) => w.id === 'lbv-drop-short')).toBe(true);
+    expect(buildPattern({ mode: 'lbv_set', vertical_strap_len: 1.5 }).ok).toBe(false);
+  });
+});

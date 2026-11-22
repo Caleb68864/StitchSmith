@@ -8,6 +8,9 @@
  *               1.5" webbing running the full pad length and out both ends to
  *               four side-release corners, hydration channels left unsewn
  *               (vault rigs/harness-h-geometry.md, rigs/harness-hydration-comms-routing.md).
+ *   lbv_set   — the LBV's padded shoulder set on its own: two pads with a 1.5"
+ *               tension lock sewn on centre, four 24" verticals with 1" fold-over
+ *               tabs giving 12" of drop (vault rigs/lbvmod-harness-geometry.md).
  *
  * Lengths the user types (pad, torso, gusset, tail, cross-strap height, drop
  * legs, pad spread) are in the display unit; allowances, foam and webbing
@@ -19,7 +22,7 @@ import type { StrapCurve, PadArchitecture, EdgeFinish, StrapHardware, StrapHardw
 
 export type { StrapCurve, PadArchitecture, EdgeFinish, StrapHardware };
 
-export type StrapMode = 'pack_pair' | 'h_harness';
+export type StrapMode = 'pack_pair' | 'h_harness' | 'lbv_set';
 export type RoutingSide = 'left' | 'right' | 'both' | 'none';
 
 export interface PaddedStrapInputs {
@@ -61,6 +64,10 @@ export interface PaddedStrapInputs {
   front_pals_rows?: number;
   /** h_harness: which shoulder carries the routing PALS. */
   routing_side?: RoutingSide;
+  /** lbv_set: cut length of each vertical strap, display units. Vault: 24". */
+  vertical_strap_len?: number;
+  /** lbv_set: drop the verticals must fund, display units. Vault: 12". */
+  drop_adjust?: number;
 }
 
 export interface ResolvedInputs {
@@ -92,6 +99,11 @@ export interface ResolvedInputs {
   cross_strap_length: number;
   /** h_harness: number of sewn slots across the adjustment range. */
   slot_count: number;
+  /** lbv_set: vertical cut length, fold-over tab, drop, and what is left after both tabs, mm. */
+  vertical_strap_len: number;
+  tab_foldover: number;
+  drop_adjust: number;
+  usable_adjustment: number;
 }
 
 export type WarningSeverity = 'error' | 'warning' | 'info';

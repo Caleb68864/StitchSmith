@@ -4,7 +4,7 @@ import {
   DEFAULT_UNITS, PANEL_WIDTH_PRESETS_MM, PANEL_HEIGHT_MM, UTILITY_W_MM, UTILITY_H_MM, UTILITY_D_MM,
   CLOSURE_VELCRO_DROP_MM, INTERIOR_VELCRO_DROP_MM, BUCKLE_EDGE_OFFSET_MM, GAP_WIDTH_MM, BUCKLE_SETBACK_MM,
   PALS_ROW_PITCH_MM, PALS_TOP_DROP_MM, PALS_COLUMN_PITCH_MM, FACE_EASE_MM, DEFAULT_SEAM_ALLOWANCE_MM, EDGE_MARGIN_MM, DEFAULT_MAGAZINE,
-  STACK_EASE_MM, WRAP_ALLOWANCE_MM, CRADLE_WIDTH_MM, MED_ZONE_MM, PULL_TAB_MM, MAG_WEIGHT_LB,
+  STACK_EASE_MM, WRAP_ALLOWANCE_MM, CRADLE_WIDTH_MM, MED_ZONE_MM, MED_POUCH_HEIGHT_MM, MED_POUCH_DEPTH_MM, PULL_TAB_MM, MAG_WEIGHT_LB,
 } from './defaults.js';
 import { stackedCellGeometry, validateStackedCells } from '../../lib/pouch-engine/fit/stacked.js';
 import { sweepInputs, stripNulls, unitsOf, type GuardSpec } from '../../utils/inputGuards.js';
@@ -29,6 +29,9 @@ const GUARD_SPEC: GuardSpec = {
   cradle_width: { kind: 'length' },
   cradle_drop: { kind: 'length' },
   med_zone: { kind: 'bool' },
+  med_pouch: { kind: 'bool' },
+  med_pouch_height: { kind: 'length' },
+  med_pouch_depth: { kind: 'length' },
   pull_tab_length: { kind: 'length' },
   side_pals_columns: { kind: 'count', max: 6 },
   bottom_loop_count: { kind: 'count', max: 8 },
@@ -134,6 +137,9 @@ export function resolveInputs(inputs: MicroRigInputs): ResolvedInputs {
     cradle_drop,
     med_zone,
     med_zone_width: MED_ZONE_MM,
+    med_pouch: med_zone && (inputs.med_pouch ?? false),
+    med_pouch_height: d(inputs.med_pouch_height, MED_POUCH_HEIGHT_MM),
+    med_pouch_depth: d(inputs.med_pouch_depth, MED_POUCH_DEPTH_MM),
     pull_tab_length: d(inputs.pull_tab_length, PULL_TAB_MM),
     rear_cell_width,
     front_cell_mark: stack.frontCellMark,
@@ -162,6 +168,10 @@ export function validateInputs(inputs: MicroRigInputs): ValidationResult {
   };
   pos('panel_width', 'Panel width');
   pos('panel_height', 'Panel height');
+  if (r.med_pouch) {
+    if (!Number.isFinite(r.med_pouch_height) || r.med_pouch_height < 2 * IN) errors.push({ field: 'med_pouch_height', message: 'Med pouch height must be at least 2"' });
+    if (!Number.isFinite(r.med_pouch_depth) || r.med_pouch_depth <= 0) errors.push({ field: 'med_pouch_depth', message: 'Med pouch depth must be a positive number' });
+  }
   if (!Number.isFinite(r.seam_allowance) || r.seam_allowance < 0) errors.push({ field: 'seam_allowance', message: 'Seam allowance must be 0 or greater' });
   if (!Number.isFinite(r.edge_margin) || r.edge_margin < 0) errors.push({ field: 'edge_margin', message: 'Edge margin must be 0 or greater' });
   if (r.pocket_set === 'stacked_cells') {

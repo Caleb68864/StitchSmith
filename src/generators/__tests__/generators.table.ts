@@ -91,7 +91,7 @@ export const GENERATORS: Gen[] = [
   },
   {
     name: 'clamshell-pack',
-    keys: ['units', 'pocket_grid', 'width', 'height', 'depth', 'lid_depth', 'equal_split', 'zipper_lip', 'zipper_underwrap', 'hoop_overcut', 'seam_allowance', 'fold_in', 'zipper_clearance', 'pals_style', 'pals_rows_side', 'pals_rows_face', 'pals_rows_bottom', 'pals_cols_side', 'edge_offset', 'handle', 'handle_bow', 'handle_fold_under', 'compression_straps_per_side', 'compression_extra', 'interior_loop', 'loop_strip_width', 'loop_gap', 'strap_provision', 'strap_tab_spacing', 'bottom_grommets', 'hydration_port', 'port_length'],
+    keys: ['units', 'pocket_grid', 'width', 'height', 'depth', 'lid_depth', 'equal_split', 'zipper_lip', 'zipper_underwrap', 'hoop_overcut', 'seam_allowance', 'fold_in', 'zipper_clearance', 'pals_style', 'pals_rows_side', 'pals_rows_face', 'pals_rows_bottom', 'pals_cols_side', 'edge_offset', 'handle', 'handle_bow', 'handle_fold_under', 'compression_straps_per_side', 'compression_extra', 'interior_loop', 'loop_strip_width', 'loop_gap', 'strap_provision', 'strap_tab_spacing', 'bottom_grommets', 'hydration_port', 'port_length', 'port_style'],
     defaults: () => makeDefaultClamshellPackProject().inputs as unknown as AnyInputs,
     validate: (i) => listErrors(clamshell.validateInputs(i as never)),
     build: (i) => resultPieces(clamshell.buildPattern(i as never)),
@@ -119,7 +119,7 @@ export const GENERATORS: Gen[] = [
   },
   {
     name: 'micro-rig',
-    keys: ['units', 'panel_width_preset', 'panel_width', 'panel_height', 'pocket_set', 'magazine_preset_id', 'cell_count', 'cell_span', 'face_per_cell', 'cell_height', 'utility_pocket', 'cells_deep', 'stack_ease', 'wrap_allowance', 'coverage', 'cradle_width', 'cradle_drop', 'med_zone', 'pull_tab_length', 'side_pals_columns', 'bottom_loop_count', 'split_front', 'gap_width', 'buckle_setback', 'suspension', 'dangler_field', 'seam_allowance', 'edge_margin'],
+    keys: ['units', 'panel_width_preset', 'panel_width', 'panel_height', 'pocket_set', 'magazine_preset_id', 'cell_count', 'cell_span', 'face_per_cell', 'cell_height', 'utility_pocket', 'cells_deep', 'stack_ease', 'wrap_allowance', 'coverage', 'cradle_width', 'cradle_drop', 'med_zone', 'med_pouch', 'med_pouch_height', 'med_pouch_depth', 'pull_tab_length', 'side_pals_columns', 'bottom_loop_count', 'split_front', 'gap_width', 'buckle_setback', 'suspension', 'dangler_field', 'seam_allowance', 'edge_margin'],
     defaults: () => makeDefaultMicroRigProject().inputs as unknown as AnyInputs,
     validate: (i) => listErrors(microRig.validateInputs(i as never)),
     build: (i) => resultPieces(microRig.buildPattern(i as never)),
@@ -133,7 +133,7 @@ export const GENERATORS: Gen[] = [
   },
   {
     name: 'padded-strap',
-    keys: ['units', 'mode', 'pad_length', 'pad_width', 'foam_thickness', 'curve', 'architecture', 'edge_finish', 'webbing_width', 'hardware', 'seam_allowance', 'torso_length', 'gusset_depth', 'tail_length', 'cross_strap_height', 'pad_spread', 'chest_adjust_range', 'slot_pitch', 'drop_leg_length', 'hydration_channels', 'front_pals_rows', 'routing_side'],
+    keys: ['units', 'mode', 'pad_length', 'pad_width', 'foam_thickness', 'curve', 'architecture', 'edge_finish', 'webbing_width', 'hardware', 'seam_allowance', 'torso_length', 'gusset_depth', 'tail_length', 'cross_strap_height', 'pad_spread', 'chest_adjust_range', 'slot_pitch', 'drop_leg_length', 'hydration_channels', 'front_pals_rows', 'routing_side', 'vertical_strap_len', 'drop_adjust'],
     defaults: () => makeDefaultPaddedStrapProject().inputs as unknown as AnyInputs,
     validate: (i) => listErrors(paddedStrap.validateInputs(i as never)),
     build: (i) => resultPieces(paddedStrap.buildPattern(i as never)),

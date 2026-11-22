@@ -4,6 +4,7 @@
  * fold regions on the piece (fold-role lines, `(180°)`), so a hemmed edge
  * carries 0 allowance and the sewn edges carry `seam_allowance`.
  */
+import { assignAssemblies } from '../../lib/pattern-engine/graph/Piece.js';
 import type { Piece, PieceAnnotation } from '../../lib/pattern-engine/graph/Piece.js';
 import type { Path } from '../../lib/pattern-engine/graph/Path.js';
 import type { Edge, EdgeId } from '../../lib/pattern-engine/graph/Edge.js';
@@ -121,7 +122,12 @@ function hoopStrip(r: ResolvedInputs, id: string, name: string, depthPart: numbe
       pals.push({ rows: f.rows, cols: f.cols, webbingLength: f.webbing.lengthMm, quantity: f.webbing.quantity, warnings: f.warnings, where: palsWhere });
     }
   }
-  if (lipAtTop && r.hydration_port) {
+  if (lipAtTop && r.hydration_port && r.port_style === 'seam') {
+    // In-seam port: a span of the lid strip's seam to the back panel left unsewn, bar-tacked at both ends.
+    const cx = u + H + W / 2, half = r.port_length / 2, y = cutW;
+    paths.push(line(eid, `${id}-port-seam-0`, 'notch', { x: cx - half, y: y - 0.5 * IN }, { x: cx - half, y }, `In-seam port — leave the seam open between these marks (${fmtIn(r.port_length)}"), bar-tack each end, turn the allowances in`));
+    paths.push(line(eid, `${id}-port-seam-1`, 'notch', { x: cx + half, y: y - 0.5 * IN }, { x: cx + half, y }));
+  } else if (lipAtTop && r.hydration_port) {
     // The port: a slot across the top centre of the lid strip, a patch 1/2" past it all round.
     const cx = u + H + W / 2, cy = f0 + depthPart / 2, half = r.port_length / 2, ph = half + D.GROMMET_INSET_MM, pv = D.GROMMET_INSET_MM + 0.25 * IN;
     const pts = [{ x: cx - ph, y: cy - pv }, { x: cx + ph, y: cy - pv }, { x: cx + ph, y: cy + pv }, { x: cx - ph, y: cy + pv }];
@@ -201,7 +207,8 @@ function buildSteps(r: ResolvedInputs): Step[] {
     { id: 'cs.pals', title: 'PALS on every flat piece', body: `Sides: ${r.pals_rows_side} rows of ${r.pals_cols_side} columns on the ${fmtIn(r.side_work_area)}" work area of each side run, starting ${fmtIn(r.edge_offset)}" below the top corner and clear of the underwrap. Face: ${r.pals_rows_face} rows of ${r.face_pals_cols}. Bottom: ${r.pals_rows_bottom} rows (on the bottom strip, later, in the alligator mouth). Mark column lines as running sums from one datum (1 1/2, 3, 4 1/2); gauge with a piece of 1" webbing and re-check — crossing sewn rows shifts the gauge and a 10" work area creeps to 10 1/2. Sew all the columns in one direction.${r.pals_style === 'fabricated' ? ' Fabricated PALS: 2" Cordura folded to 1" and edge taped; woven webbing for anything that carries a buckle.' : ''}`, dependsOn: ['cs.zipper'], refsPieces: [GUSSET_ID, FACE_ID], group: 'Flat work' },
   ];
   if (r.bottom_grommets > 0) steps.push({ id: 'cs.grommets', title: 'Drainage grommets while the bottom is flat', body: `Sew a ${fmtIn(D.GROMMET_PATCH_MM)}" patch under each grommet mark on the bottom strip, pre-burn the holes at 750°F and set the ${r.bottom_grommets} grommet${r.bottom_grommets === 1 ? '' : 's'} now, in one press visit: nothing goes through a closed hoop. Each sits at least ${fmtIn(D.GROMMET_INSET_MM)}" from a seam.`, dependsOn: ['cs.pals'], refsPieces: [BOTTOM_ID, 'clamshell-grommet-patch'], group: 'Flat work' });
-  if (r.hydration_port) steps.push({ id: 'cs.port', title: 'Hydration port in the lid', body: `Sew the port patch inside the lid strip at the top centre, then cut the ${fmtIn(r.port_length)}" slot through both and hot-knife or bind the edges.`, dependsOn: ['cs.zipper'], refsPieces: [LID_STRIP_ID, 'clamshell-port-patch'], group: 'Flat work' });
+  if (r.hydration_port && r.port_style === 'seam') steps.push({ id: 'cs.port', title: 'In-seam hydration port', body: `When the back panel goes on, leave the lid strip's seam open for ${fmtIn(r.port_length)}" at the top centre (the marks), bar-tack hard at both ends of the gap and turn the allowances in and topstitch them so the opening is clean. No slot is cut.`, dependsOn: ['cs.zipper'], refsPieces: [LID_STRIP_ID, BACK_ID], group: 'Flat work' });
+  else if (r.hydration_port) steps.push({ id: 'cs.port', title: 'Hydration port in the lid', body: `Sew the port patch inside the lid strip at the top centre, then cut the ${fmtIn(r.port_length)}" slot through both and hot-knife or bind the edges.`, dependsOn: ['cs.zipper'], refsPieces: [LID_STRIP_ID, 'clamshell-port-patch'], group: 'Flat work' });
   if (r.handle) steps.push({ id: 'cs.handle', title: 'Top handle on the gusset', body: `${fmtIn(r.handle_cut_length)}" of 2" webbing over a ${fmtIn(r.handle_core_length)}" 1" core, ${fmtIn(r.handle_fold_under)}" folded under each end, box-X with the same stitch count both ends (count them — ten). It bows because the cut is ${fmtIn(r.handle_bow)}" longer than the footprint; size the bow to a gloved hand. Sew it beside the seam, not in it, with a hidden backup line.`, dependsOn: ['cs.pals'], refsPieces: [GUSSET_ID], group: 'Flat work' });
   if (r.compression_straps_per_side > 0) steps.push({ id: 'cs.compression', title: 'Compression strap tabs from a shared datum', body: `${r.compression_straps_per_side} per side, webbing tabs sewn under the PALS field on both mating pieces from the same datum so they meet after assembly. Straps ${fmtIn(r.compression_strap_length)}" (${fmtIn(r.depth)}" depth + ${fmtIn(r.compression_extra)}"): male buckle on the bag tab, tri-glide on the strap. Every wrap length scales with the depth — the standard cut list is ${fmtIn(r.depth - D.STANDARD_DEPTH_MM)}" short on this bag.`, dependsOn: ['cs.pals'], refsPieces: [GUSSET_ID], group: 'Flat work' });
   if (r.strap_provision !== 'none') steps.push({ id: 'cs.tabs', title: 'Shoulder strap tabs on the back', body: `Six 3" pieces of 2" webbing: two into the top seam ${fmtIn(r.strap_tab_spacing)}" apart (find centre, come ${fmtIn(r.strap_tab_spacing / 2)}" each way), lower anchors 1" up and kicked outboard of the closing seam so the seam is not the load path. Male buckles on the tabs, never captive females. Straps are slick 2" webbing that stow in the back pocket; padded straps must end in the same male-buckle spec. Sternum straps 18" and 24".${r.strap_provision === 'tabs_and_stow' ? ' Sew the stow pocket sheet to the back before the panel goes on; it must swallow two rolled straps and their hardware.' : ' Provision only: the tabs trim off without opening a structural seam.'}`, dependsOn: ['cs.velcro'], refsPieces: [BACK_ID], group: 'Flat work' });
@@ -270,12 +277,13 @@ export function buildPattern(inputs: ClamshellPackInputs): Result<ClamshellPackB
     pieces.push(strip(`clamshell-pals-row-${i}`, r.pals_style === 'fabricated' ? 'Fabricated PALS row (2" Cordura → 1")' : 'PALS webbing row', len, PALS_ROW_WIDTH_MM, e.qty, r.pals_style === 'fabricated' ? 'cordura-500' : 'webbing-25', `${e.qty} rows of ${fmtIn(len)}" (${[...e.where].join(', ')}) — cut 1" long, trim after sewing`));
   });
   if (r.bottom_grommets > 0) pieces.push(strip('clamshell-grommet-patch', 'Grommet reinforcement patch', D.GROMMET_PATCH_MM, D.GROMMET_PATCH_MM, r.bottom_grommets, 'cordura-1000', '1000D under each grommet, sewn before the hole is burnt'));
-  if (r.hydration_port) pieces.push(strip('clamshell-port-patch', 'Port reinforcement patch', r.port_length + 2 * D.GROMMET_INSET_MM, 2 * D.GROMMET_INSET_MM + 0.5 * IN, 1, 'cordura-1000', 'Inside the lid strip, the slot cut through both'));
+  if (r.hydration_port && r.port_style === 'patch') pieces.push(strip('clamshell-port-patch', 'Port reinforcement patch', r.port_length + 2 * D.GROMMET_INSET_MM, 2 * D.GROMMET_INSET_MM + 0.5 * IN, 1, 'cordura-1000', 'Inside the lid strip, the slot cut through both'));
   const hardware: HardwareItem[] = [
     { id: 'zipper', name: 'Coil zipper, two sliders, non-locking', quantity: 1, notes: `${fmtIn(r.hoop_length)}" of chain round the hoop` },
   ];
   if (r.compression_straps_per_side > 0) hardware.push({ id: 'sr-buckle', name: '1" side-release buckle', quantity: 2 * r.compression_straps_per_side, notes: 'male on the bag tab' }, { id: 'triglide-25', name: '1" tri-glide', quantity: 2 * r.compression_straps_per_side });
   if (r.strap_provision !== 'none') hardware.push({ id: 'sr-buckle-50', name: '2" side-release buckle', quantity: 4, notes: 'male on the tabs' }, { id: 'triglide-50', name: '2" tri-glide', quantity: 4 }, { id: 'sternum', name: 'Sternum strap', quantity: 1, notes: `18" or 24"` });
   if (r.bottom_grommets > 0) hardware.push({ id: 'grommet', name: '#0–#2 grommet', quantity: r.bottom_grommets, notes: 'Set while flat; pre-burn the hole' });
+  assignAssemblies(pieces, [[/^clamshell-(face|back|gusset|lid-strip|bottom)$/, 'Shell and frame'], [/pals-row/, 'PALS'], [/handle|compression|strap-tab|stow/, 'Straps and handle'], [/loop-strip|grommet|port/, 'Interior and ports']]);
   return { ok: true, value: { pieces, steps: buildSteps(r), warnings: buildWarnings(r, pals), hardware, resolved: r } };
 }

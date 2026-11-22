@@ -4,6 +4,7 @@
  * an explicit 0; the sew lines are the finished edges, drawn per seam; the
  * hem and the cuff channels come from the Hem primitive.
  */
+import { assignAssemblies } from '../../lib/pattern-engine/graph/Piece.js';
 import type { Piece } from '../../lib/pattern-engine/graph/Piece.js';
 import type { Path } from '../../lib/pattern-engine/graph/Path.js';
 import type { Point } from '../../lib/pattern-engine/graph/Point.js';
@@ -145,5 +146,6 @@ export function buildPattern(inputs: WindShirtInputs): Result<WindShirtBuildResu
     { id: 'elastic', name: 'Cuff elastic', quantity: 2, notes: `${dim(r.elastic_length)} each (${r.elastic_pct} % of the wrist), narrower than the ${fmtIn(r.cuff_channel)}" channel` },
   ];
   const warnings = mockDerived(inputs, r);
+  assignAssemblies(pieces, [[/^shirt-(back|front)$/, 'Body'], [/sleeve/, 'Sleeves'], [/binding/, 'Neck']]);
   return { ok: true, value: { pieces, steps: buildSteps(r, d), warnings, hardware, resolved: r, seams } };
 }

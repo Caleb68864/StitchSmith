@@ -16,6 +16,7 @@ export function ExportPanel({ inputs, project, hasErrors }: Props) {
     generatorId: 'micro-rig',
     projectName: project.projectName,
     hasErrors,
+    groupByAssembly: true,
     defaultSeamAllowance: inputs.seam_allowance ?? 9.5,
     buildPattern: () => { const r = build(); return r ? { id: 'micro-rig', name: project.projectName, pieces: r.pieces } : null; },
     steps: () => build()?.steps ?? null,

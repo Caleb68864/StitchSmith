@@ -1539,3 +1539,34 @@ baffle-chamber primitive and a fill-weight calculation.
   button only when the adapter sets `groupByAssembly`, so generators opt in
   once their pieces are tagged; the plate carrier is the first (Front, Back,
   Shoulders, Cummerbund).
+
+
+## 2026-11-22 — Seam-stack model and the layer budget (engine)
+
+- `SeamStack` (pattern-engine/seams/stack.ts): a seam's layers, each with
+  what it is and how many thicknesses it adds. `layerBudget` totals them and
+  flags those over 8, the only threshold the vault states (sew forward
+  only); no machine-class limits are encoded because none is sourced.
+- The pleated card's stacks come from its construction (face double, back
+  plus hem where a seam crosses it, a flat pleat folding each face layer in
+  three, a doubled cradle strip) plus the components the Mag Pouch lays in.
+  On the SOE 4-pack that gives 8 at each division (the vault's "about 8")
+  and 10 at a pleat (the vault says 12–14 there: webbing and bar ends the
+  model does not count yet; the vault text in the steps stays as written).
+- The Mag Pouch warns only when a seam is over 8, with every seam's count.
+
+## 2026-11-22 — Padded strap: LBV shoulder set mode
+
+- Third mode `lbv_set` uses the LBV generator's vault numbers (24" verticals,
+  1" tabs, 12" drop, 1.5" tension locks on centre). The pad's 10" x 2.5" is
+  the LBV's mock default, flagged mock-derived. No outboard-lock option here
+  (the LBV page has it, tied to its chest circumference maths). Decided by
+  agent 2026-11-22 (owner may revisit).
+
+## 2026-11-22 — Micro rig: tear-off med pouch
+
+- No vault numbers for the pouch (the vault only fixes the 3" med zone with
+  face PALS). Built as common practice: platform weaves the zone's PALS and
+  stays on the rig, the body rides on hook-and-loop with a pull handle.
+  6" x 2" body is a mock-derived default, editable and flagged. Decided by
+  agent 2026-11-22 (owner may revisit).

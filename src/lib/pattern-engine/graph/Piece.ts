@@ -29,3 +29,16 @@ export interface Piece {
    */
   cutOnFold?: boolean;
 }
+
+/**
+ * Tag pieces with their sub-assembly for cut sheets grouped by assembly: the
+ * first rule whose pattern matches the piece id wins; unmatched pieces keep any
+ * assembly they already have, else `fallback`. Mutates and returns `pieces`.
+ */
+export function assignAssemblies(pieces: Piece[], rules: [RegExp, string][], fallback = 'Other'): Piece[] {
+  for (const p of pieces) {
+    const hit = rules.find(([re]) => re.test(p.id));
+    p.assembly = hit ? hit[1] : p.assembly ?? fallback;
+  }
+  return pieces;
+}

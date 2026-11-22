@@ -9,6 +9,7 @@
  *
  * Panel frame: y runs head to foot, x across. Grain along the length.
  */
+import { assignAssemblies } from '../../lib/pattern-engine/graph/Piece.js';
 import type { Piece } from '../../lib/pattern-engine/graph/Piece.js';
 import type { Path } from '../../lib/pattern-engine/graph/Path.js';
 import type { Point } from '../../lib/pattern-engine/graph/Point.js';
@@ -318,5 +319,6 @@ export function buildPattern(inputs: QuiltInputs): Result<QuiltBuildResult> {
     hardware.push({ id: 'shock-cord', name: 'Shock cord for the end channels', quantity: 2, notes: `one per end: the ${fmtIn(r.shoulder_width)}" width plus the reach to the hammock's suspension, cut to the hammock` });
     hardware.push({ id: 'cord-lock', name: 'Cord lock', quantity: 2, notes: 'one per end' });
   } else if (r.footbox === 'zip') hardware.push({ id: 'footbox-zip', name: 'Separating zipper for the footbox', quantity: 1, notes: `${dim(r.zipper_length)}` });
+  assignAssemblies(pieces, [[/^quilt-(shell|liner)$/, 'Shell and liner'], [/baffle/, 'Baffles']]);
   return { ok: true, value: { pieces, steps: buildSteps(r, g), warnings: buildWarnings(inputs, r), hardware, resolved: r } };
 }

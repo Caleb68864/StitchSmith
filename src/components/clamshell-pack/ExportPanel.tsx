@@ -16,6 +16,7 @@ export function ExportPanel({ inputs, project, hasErrors }: Props) {
     generatorId: 'clamshell-pack',
     projectName: project.projectName,
     hasErrors,
+    groupByAssembly: true,
     defaultSeamAllowance: 0,
     buildPattern: () => { const r = build(); return r ? { id: 'clamshell-pack', name: project.projectName, pieces: r.pieces } : null; },
     steps: () => build()?.steps ?? null,

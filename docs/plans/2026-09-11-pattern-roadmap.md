@@ -139,8 +139,12 @@ and the H-harness (1.5" webbing full length to four side-release corners,
 slotted cross strap with 8" adjustment, hydration channel bars sewn ends only,
 routing PALS). Open vault numbers are inputs with mock-derived warnings.
 Follow-ups: a torso block for the 3D preview so the J-curve and the H
-crossing can be checked; the LBV shoulder set variant (24" verticals, 12"
-drop, tension locks centred) as a third mode.
+crossing can be checked; ~~the LBV shoulder set variant (24" verticals, 12"
+drop, tension locks centred) as a third mode~~ DONE 2026-11-22: `mode:
+'lbv_set'` — pads with a tension lock box-sewn on centre, four 24" 1.5"
+verticals with 1" fold-over tabs (22" usable for 12" of drop, short-strap
+warning), tension locks in the hardware; pad length/width mock-derived as on
+the LBV.
 
 ### 2. Micro rig / chest rig platform — DONE 2026-09-11
 `src/generators/micro-rig/`: the panel-as-pocket chassis (10.5"–19" wide,
@@ -162,8 +166,11 @@ step one.
 `stacked_cells` pocket set on the micro rig: rear cell = depth + ease, front
 mark = rear + wrap, stack depth, coverage-driven pouch height, cradle depth
 stop with grommets, bungee over the top, split vs plain pulls, weight
-warning. The .308 test case reproduces the vault table. Left: the tear-off
-med pouch piece and a second magazine in the 3D view.
+warning. The .308 test case reproduces the vault table. ~~Left: the tear-off
+med pouch piece~~ DONE 2026-11-22 (`med_pouch`: a two-layer platform with a
+loop face weaving the med zone's PALS, a boxed body with a hook back, Velcro
+lid and pull handle; 3" wide, height/depth mock-derived inputs, tagged as
+its own assembly). Left: a second magazine in the 3D view.
 
 ### 5. Tactical organizer / pen-and-notebook organizer — DONE 2026-09-12
 `src/generators/organizer/`: folded body with hems marked at double, split
@@ -199,7 +206,9 @@ block. Follow-ups: padded straps through the strap engine terminating in the
 same male-buckle spec; ~~drainage grommet~~ (DONE 2026-11-22: `bottom_grommets`
 0–2 on the bottom centre line, each over a 1.5" patch, set flat and
 pre-burnt per the vault grommet rule, with a warning under 1/2" from the
-seam; a seam-slot port is still open); ~~hydration port~~ (DONE 2026-11-22: a
+seam; ~~a seam-slot port~~ DONE 2026-11-22: `port_style: 'seam'` leaves a
+span of the lid strip's seam to the back open, bar-tacked at both ends, no
+slot or patch); ~~hydration port~~ (DONE 2026-11-22: a
 slot and patch at the lid strip's top centre, the slot length a flagged
 placeholder).
 
@@ -378,7 +387,9 @@ hemmed; the beaked panel end loses its hem for the seam allowance; the
 ridge-end tie-out moves to the tip; `beak_length` placeholder 18",
 `[mock-derived]`; refuses doors and cat-cut ends; in the 3D check since 2026-11-22 as the
 roof carried on past the end, seamed to the panel end and along the ridge;
-the tip is not staked down in the check),
+~~the tip is not staked down in the check~~ staked since 2026-11-22: each
+half hangs from its panel end with its ridge edge run out and down 30° in
+the centre plane, both tips pinned at the one stake point),
 and moving the organizer and pleated-card hems onto the Hem primitive.
 
 **Single-panel 3D check — DONE 2026-11-16 (`fix/tarp-followups`).** The
@@ -851,18 +862,23 @@ which (the tri-zip `seam:` path convention is the seed).
 - **Layer budget per seam**: emit max stack per seam and a machine-class
   requirement; annotate "sew forward only" above ~8 layers.
   `reference/technique-sewing-through-bulk.md`, `rigs/splitfront-technique-layer-budgeting.md`.
-  **Assessed 2026-11-22, not built:** the forward-only rule ("~8 layers")
-  is already in the step text where the vault puts it (the pleated card's
-  divisions and pleats, the folded-T wing stack). A per-seam budget needs
-  every generator to declare each seam's layer stack (shell, hems, webbing,
-  Velcro, binding) — a seam model the engine does not have; the machine-
-  class thresholds are not in the vault either. Next step: a `SeamStack`
-  record on `SeamSpec`-like seam declarations, starting with the card.
+  **DONE 2026-11-22 for the pleated card** (`pattern-engine/seams/stack.ts`):
+  `SeamStack` records every thickness at a seam; `layerBudget` totals them
+  and marks those over 8 (the vault's forward-only rule; no machine-class
+  thresholds are encoded); `pleatedCardStacks` derives the card's stacks
+  from its construction plus the generator's components (loop, PALS row,
+  mount strap, face bar), and the Mag Pouch warns with the counts when a
+  seam is over 8 (the SOE 4-pack: 8 at each division, 10 at a pleat).
+  Other generators: declare their stacks the same way.
 - DONE 2026-11-22 (`Piece.assembly`, `patternToSvgByAssembly`) — **Cut sheets grouped by assembly**:
   a piece may name its sub-assembly; the export panel offers "Cut sheets by
   assembly" (one printable sheet per kit, untagged pieces under Other) when
   the adapter sets `groupByAssembly`. The plate carrier tags Front, Back,
-  Shoulders and Cummerbund; other generators can opt in. The material ×
+  Shoulders and Cummerbund; since 2026-11-22 also the Tri-Zip, clamshell,
+  LBV, micro rig, quilt and wind shirt (`assignAssemblies` rules by piece id;
+  `generators/__tests__/assemblies.test.ts` checks every piece is tagged and
+  at most a quarter fall to Other). The rest are one- or two-piece patterns
+  where one sheet is the kit. The material ×
   width × length summary on SOE's drawer lengths was already in the cut
   list (2026-09-12). `reference/soe-production-principles.md`.
 - DONE 2026-11-22 (`exports/cutList.ts`, `shrinkageFor`) — **Stitch-shrinkage compensation**:

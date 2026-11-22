@@ -1,3 +1,4 @@
+import { assignAssemblies } from '../../lib/pattern-engine/graph/Piece.js';
 import type { Pattern } from '../../lib/pattern-engine/graph/Pattern.js';
 import type { Piece } from '../../lib/pattern-engine/graph/Piece.js';
 import type { Step } from '../../lib/pattern-engine/instructions/Step.js';
@@ -171,5 +172,6 @@ export function buildPattern(inputs: TriZipInputs, preset: StylePreset): Result<
     units: r.units,
   };
 
+  assignAssemblies(allPieces, [[/^(back-panel|front-|perimeter-gusset|top-panel|tri-zip-subsystem)/, 'Body'], [/shoulder|sternum|hip-belt|top-handle|compression/, 'Straps'], [/laptop/, 'Laptop sleeve']]);
   return { ok: true, value: { ...pattern, steps: allSteps, warnings: allWarnings, hardware: buildTriZipBom(r, straps.hardware) } };
 }

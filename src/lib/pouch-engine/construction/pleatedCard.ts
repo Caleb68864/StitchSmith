@@ -23,6 +23,7 @@ import { makeEdgeIdGen } from '../../pattern-engine/graph/Edge.js';
 import type { Path } from '../../pattern-engine/graph/Path.js';
 import type { Step } from '../../pattern-engine/instructions/Step.js';
 import type { ConstructionStrategy, PouchSpec, PleatedCardParams } from './ConstructionStrategy.js';
+import type { SeamStack, StackLayer } from '../../pattern-engine/seams/stack.js';
 
 const IN = 25.4;
 
@@ -381,6 +382,36 @@ function buildSteps(c: PleatedCardParams, g: PleatedCardGeometry): Step[] {
   }
 
   return steps;
+}
+
+// ─── Seam stacks ─────────────────────────────────────────────────────────────
+
+/** Layers the generator adds on top of the card's own fabric (interior loop, PALS rows, mount straps). */
+export interface CardExtraLayers {
+  atDivision?: StackLayer[];
+  atBottom?: StackLayer[];
+}
+
+/**
+ * The card's seam stacks from its construction: the face is folded double (two
+ * layers everywhere), the back is one layer with a single-fold hem (one more
+ * thickness where a seam crosses the hem), a flat pleat folds each face layer
+ * into three, a cradle adds its strip doubled. `extras` are the components the
+ * generator lays in (loop strips, webbing).
+ */
+export function pleatedCardStacks(c: PleatedCardParams, extras: CardExtraLayers = {}): SeamStack[] {
+  const face: StackLayer = { what: 'face (folded double)', count: 2 };
+  const back: StackLayer = { what: 'back', count: 1 };
+  const stacks: SeamStack[] = [];
+  if (c.cellCount > 1) stacks.push({ seam: 'each cell division', layers: [face, back, ...(extras.atDivision ?? [])] });
+  stacks.push({ seam: 'the outer sides', layers: [{ what: 'face with its end hem', count: c.faceEndHem > 0 ? 4 : 2 }, { what: 'back with its side hem', count: c.backHem > 0 ? 2 : 1 }] });
+  const bottom: StackLayer[] =
+    c.bottomStyle === 'pleat' ? [{ what: 'face folded into a flat pleat', count: 6 }]
+      : c.bottomStyle === 'cradle' ? [face, { what: 'cradle strip (doubled)', count: 2 }]
+        : [face, ...(c.faceBottomHem > 0 ? [{ what: 'face bottom hem', count: 2 }] : [])];
+  if (c.bottomStyle !== 'open') bottom.push({ what: 'back with its bottom hem', count: c.backHem > 0 ? 2 : 1 });
+  stacks.push({ seam: c.bottomStyle === 'pleat' ? 'each pleat' : 'the bottom', layers: [...bottom, ...(extras.atBottom ?? [])] });
+  return stacks;
 }
 
 // ─── Warnings ─────────────────────────────────────────────────────────────────

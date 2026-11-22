@@ -7,6 +7,7 @@
  * Vault order: face features onto flat panels → zipper → foam → close and
  * edge-tape → belt loops → shoulder set → verticals → front straps.
  */
+import { assignAssemblies } from '../../lib/pattern-engine/graph/Piece.js';
 import type { Piece } from '../../lib/pattern-engine/graph/Piece.js';
 import type { Path } from '../../lib/pattern-engine/graph/Path.js';
 import type { Edge, EdgeId } from '../../lib/pattern-engine/graph/Edge.js';
@@ -284,6 +285,7 @@ export function buildPattern(inputs: LbvInputs): Result<LbvBuildResult> {
   if (r.tab_foldover < 0.75 * IN) warnings.push({ id: 'tab-onewrap', severity: 'warning', field: 'tab_foldover', message: 'Tabs under 3/4" will not pass One-Wrap; the old 3/4" tabs were enlarged for exactly that.' });
   if (r.foam_insert) warnings.push({ id: 'flotation', severity: 'info', message: 'Foam in every panel: rigidity transfers load to the belt; the 8-mag neutral-buoyancy claim is for a 5.56 loadout only.' });
 
+  assignAssemblies(pieces, [[/^lbv-(front|back|foam)/, 'Panels'], [/pals-row|row-loop|top-strip/, 'PALS'], [/shoulder|vertical|cross-piece|drag-handle/, 'Harness'], [/belt-loop|front-strap|side-strap/, 'Straps and belt']]);
   return { ok: true, value: { pieces, steps: buildSteps(r, pad.steps), warnings, hardware, resolved: r } };
 }
 
