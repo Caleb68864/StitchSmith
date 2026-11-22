@@ -34,6 +34,8 @@ export const LOOP_WIDTH_MM = 0.625 * IN;
 /** Placeholder 42" ridgeline for the pitch check. */
 export const RIDGE_HEIGHT_MM = 42 * IN;
 export const MAX_EAVE_TIEOUTS = 6;
+/** Placeholder 8' of cord per guyline (a common pre-cut guyline length; not a vault number). */
+export const GUYLINE_LENGTH_MM = 96 * IN;
 
 /**
  * Every placeholder input, with its label and its value in millimetres
@@ -54,4 +56,5 @@ export const PLACEHOLDERS: readonly { field: keyof TarpInputs; label: string; mm
   { field: 'loop_length', label: 'Tie-out loop grosgrain', mm: LOOP_LENGTH_MM, kind: 'length' },
   { field: 'loop_width', label: 'Grosgrain width', mm: LOOP_WIDTH_MM, kind: 'length' },
   { field: 'ridge_height', label: 'Ridgeline height (pitch check)', mm: RIDGE_HEIGHT_MM, kind: 'length' },
+  { field: 'guyline_length', label: 'Cord per guyline', mm: GUYLINE_LENGTH_MM, kind: 'length' },
 ];

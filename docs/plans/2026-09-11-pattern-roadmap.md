@@ -315,6 +315,7 @@ against the vault:**
 | Grosgrain per tie-out loop | 5" |
 | Grosgrain width | 5/8" |
 | Ridgeline height (pitch check only) | 42" |
+| Cord per guyline (added 2026-11-21) | 96" (8') |
 
 Choices with no number are not mock-derived: two-panel ridge seam (default)
 vs single panel, cat cut (default) vs straight edges, a rolled hem (default
@@ -335,8 +336,11 @@ assembly-sweep case now also checks that the viewer puts each scene piece
 where the harness does (all 19 cases agreed before and after, so no
 existing scene changed). The tarp now uses rotation-only placements.
 
-Follow-ups: cat-cut ends (the short edges are straight), guyline and
-line-lock hardware, ridge pull-outs mid-panel, a doorway or beak variant,
+Follow-ups: cat-cut ends (the short edges are straight), ~~guyline and
+line-lock hardware~~ (DONE 2026-11-21: a guyline, line-lock and stake per
+tie-out on the BOM, `guylines` / `line_locks` toggles, cord per guyline a
+`[mock-derived]` placeholder, a Guylines step; tests in
+`tarp/__tests__/buildPattern.test.ts`), ridge pull-outs mid-panel, a doorway or beak variant,
 and moving the organizer and pleated-card hems onto the Hem primitive.
 
 **Single-panel 3D check — DONE 2026-11-16 (`fix/tarp-followups`).** The

@@ -3,11 +3,11 @@ import type { TarpInputs, TarpConstruction, TarpCutStyle } from '../../generator
 import type { HemFold } from '../../lib/pattern-engine/primitives/hem.js';
 import {
   RIDGE_LENGTH_MM, WIDTH_MM, RIDGE_SAG_MM, EAVE_SAG_MM, FABRIC_WIDTH_MM, SEAM_ALLOWANCE_MM, HEM_DEPTH_MM, EAVE_TIEOUTS,
-  PATCH_SIZE_MM, LOOP_LENGTH_MM, LOOP_WIDTH_MM, RIDGE_HEIGHT_MM, MAX_EAVE_TIEOUTS,
+  PATCH_SIZE_MM, LOOP_LENGTH_MM, LOOP_WIDTH_MM, RIDGE_HEIGHT_MM, MAX_EAVE_TIEOUTS, GUYLINE_LENGTH_MM,
 } from '../../generators/tarp/defaults.js';
 import { convertLengthValues, type UnitSystem } from '../../utils/units.js';
 
-const DISPLAY_UNIT_FIELDS = ['ridge_length', 'width', 'ridge_sag', 'eave_sag', 'fabric_width', 'hem_depth', 'patch_size', 'loop_length', 'loop_width', 'ridge_height'] as const;
+const DISPLAY_UNIT_FIELDS = ['ridge_length', 'width', 'ridge_sag', 'eave_sag', 'fabric_width', 'hem_depth', 'patch_size', 'loop_length', 'loop_width', 'ridge_height', 'guyline_length'] as const;
 
 interface Props { inputs: TarpInputs; errors: Record<string, string>; onChange: (changes: Partial<TarpInputs>) => void }
 
@@ -75,6 +75,13 @@ export function TarpSettingsPanel({ inputs, errors, onChange }: Props) {
           <NumericField id="loop-width" label={`Grosgrain width (${units})`} value={inputs.loop_width} error={errors['loop_width']} step={step} placeholder={ph(LOOP_WIDTH_MM)} mockDerived onChange={(v) => onChange({ loop_width: v })} />
         </div>
         <Toggle label="Tie-outs at both ridge ends" value={inputs.ridge_tieouts ?? true} onChange={(v) => onChange({ ridge_tieouts: v })} />
+        <Toggle label="Guylines on the BOM (one per tie-out)" value={inputs.guylines ?? true} onChange={(v) => onChange({ guylines: v })} />
+        {(inputs.guylines ?? true) && (
+          <div className="grid grid-cols-2 gap-3">
+            <NumericField id="guyline-length" label={`Cord per guyline (${units})`} value={inputs.guyline_length} error={errors['guyline_length']} step={step} placeholder={ph(GUYLINE_LENGTH_MM)} mockDerived onChange={(v) => onChange({ guyline_length: v })} />
+          </div>
+        )}
+        {(inputs.guylines ?? true) && <Toggle label="Line-lock on each guyline" value={inputs.line_locks ?? true} onChange={(v) => onChange({ line_locks: v })} />}
       </CollapsibleSection>
 
       <CollapsibleSection title="Pitch check" defaultOpen>

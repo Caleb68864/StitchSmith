@@ -238,6 +238,9 @@ function buildSteps(r: ResolvedInputs, g: PanelGeometry): Step[] {
   if (r.tieout_count > 0) {
     steps.push({ id: 'tarp.tieouts', title: 'Tie-outs: patch, loop, box-X', body: `${r.tieout_count} tie-outs: four corners${r.eave_tieouts > 0 ? `, ${r.eave_tieouts} along each eave` : ''}${r.ridge_tieouts ? ', and both ridge ends' : ''}. At each one fold a ${fmtIn(r.loop_length)}" length of ${fmtIn(r.loop_width)}" grosgrain in half, set its ends under a ${fmtIn(r.patch_size)}" patch on the inside face at the marked square${r.ridge_tieouts && two ? ' (the ridge patches straddle the felled seam)' : ''}, and box-X through patch, loop and panel.`, dependsOn: ['tarp.eaves'], refsPieces: [PANEL_ID, PATCH_ID, LOOP_ID], group: 'Tie-outs' });
   }
+  if (r.guylines && r.tieout_count > 0) {
+    steps.push({ id: 'tarp.guylines', title: 'Guylines', body: `Cut ${r.tieout_count} guylines of ${fmtIn(r.guyline_length)}" (${dim(r.tieout_count * r.guyline_length)} of cord in all) and melt or whip the ends. Tie one to each loop with a bowline${r.line_locks ? ' and thread the free end through a line-lock, so it tensions at the stake' : '; tension each at the stake with a taut-line hitch'}. The ridge-end lines carry the pitch: guy them out along the ridgeline.`, dependsOn: ['tarp.tieouts'], refsPieces: [LOOP_ID], group: 'Tie-outs' });
+  }
   const last = steps[steps.length - 1].id;
   steps.push(
     { id: 'tarp.seal', title: 'Seal the stitching', body: `Seal ${two ? 'the ridge seam and ' : ''}every tie-out's stitching on the outside face with a sealer made for the fabric (silicone sealer for silnylon). Let it cure flat.`, dependsOn: [last], refsPieces: [PANEL_ID], group: 'Finish' },
@@ -259,6 +262,7 @@ function mockDerived(inputs: TarpInputs, r: ResolvedInputs): GeneratorWarning[] 
     if (f === 'eave_sag') return r.cut_style === 'cat_cut';
     if (f === 'seam_allowance') return r.construction === 'ridge_seam';
     if (f === 'patch_size' || f === 'loop_length' || f === 'loop_width') return r.tieout_count > 0;
+    if (f === 'guyline_length') return r.guylines && r.tieout_count > 0;
     return true;
   };
   const open = PLACEHOLDERS.filter((p) => applies(p.field) && (inputs[p.field] === undefined || inputs[p.field] === null));
@@ -288,5 +292,10 @@ export function buildPattern(inputs: TarpInputs): Result<TarpBuildResult> {
   if (r.patch_size > 0 && r.tieout_count > 0) pieces.push(strip(PATCH_ID, 'Tie-out patch', r.patch_size, r.patch_size, r.tieout_count, FABRIC_ID, `Patch ${fmtIn(r.patch_size)}" square — ${r.tieout_count}, one per tie-out`));
   if (r.tieout_count > 0) pieces.push(strip(LOOP_ID, 'Grosgrain tie-out loop', r.loop_length, r.loop_width, r.tieout_count, GROSGRAIN_ID, `Loop ${fmtIn(r.loop_width)} × ${fmtIn(r.loop_length)}", folded in half`));
   const hardware: HardwareItem[] = [{ id: 'seam-sealer', name: 'Seam sealer for the fabric', quantity: 1, notes: 'Silicone sealer for silnylon; ridge seam and tie-outs' }];
+  if (r.guylines && r.tieout_count > 0) {
+    hardware.push({ id: 'guyline', name: 'Guyline', quantity: r.tieout_count, notes: `${fmtIn(r.guyline_length)}" of cord each (mock-derived), ${dim(r.tieout_count * r.guyline_length)} in all` });
+    if (r.line_locks) hardware.push({ id: 'line-lock', name: 'Line-lock tensioner', quantity: r.tieout_count, notes: 'one per guyline, sized to the cord' });
+    hardware.push({ id: 'stake', name: 'Stake', quantity: r.tieout_count, notes: 'one per guyline' });
+  }
   return { ok: true, value: { pieces, steps: buildSteps(r, g), warnings: buildWarnings(inputs, r), hardware, resolved: r, tieouts: ties } };
 }

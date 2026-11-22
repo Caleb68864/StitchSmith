@@ -1,7 +1,7 @@
 import type { TarpInputs, ResolvedInputs, ValidationResult, BuildPatternError } from './types.js';
 import {
   DEFAULT_UNITS, RIDGE_LENGTH_MM, WIDTH_MM, RIDGE_SAG_MM, EAVE_SAG_MM, FABRIC_WIDTH_MM, SEAM_ALLOWANCE_MM, HEM_DEPTH_MM,
-  EAVE_TIEOUTS, PATCH_SIZE_MM, LOOP_LENGTH_MM, LOOP_WIDTH_MM, RIDGE_HEIGHT_MM, MAX_EAVE_TIEOUTS,
+  EAVE_TIEOUTS, PATCH_SIZE_MM, LOOP_LENGTH_MM, LOOP_WIDTH_MM, RIDGE_HEIGHT_MM, MAX_EAVE_TIEOUTS, GUYLINE_LENGTH_MM,
 } from './defaults.js';
 import { sweepInputs, stripNulls, unitsOf, type GuardSpec } from '../../utils/inputGuards.js';
 import { resolveHem } from '../../lib/pattern-engine/primitives/hem.js';
@@ -27,6 +27,9 @@ const GUARD_SPEC: GuardSpec = {
   loop_length: { kind: 'length' },
   loop_width: { kind: 'length' },
   ridge_height: { kind: 'length' },
+  guylines: { kind: 'bool' },
+  guyline_length: { kind: 'length' },
+  line_locks: { kind: 'bool' },
 };
 
 const IN = 25.4;
@@ -69,6 +72,9 @@ export function resolveInputs(inputs: TarpInputs): ResolvedInputs {
   const loop_length = d(inputs.loop_length, LOOP_LENGTH_MM);
   const loop_width = d(inputs.loop_width, LOOP_WIDTH_MM);
   const ridge_height = d(inputs.ridge_height, RIDGE_HEIGHT_MM);
+  const guylines = inputs.guylines !== false;
+  const guyline_length = d(inputs.guyline_length, GUYLINE_LENGTH_MM);
+  const line_locks = inputs.line_locks !== false;
 
   const panel_count = construction === 'ridge_seam' ? 2 : 1;
   const panel_finished_width = construction === 'ridge_seam' ? width / 2 : width;
@@ -81,7 +87,7 @@ export function resolveInputs(inputs: TarpInputs): ResolvedInputs {
   return {
     units, construction, cut_style, ridge_length, width, ridge_sag, eave_sag, fabric_width, seam_allowance,
     hem_depth: hem.depth, hem_depth_requested: hemReq, hem_raised: hem.raised, hem_fold, production_mode,
-    eave_tieouts, ridge_tieouts, patch_size, loop_length, loop_width, ridge_height,
+    eave_tieouts, ridge_tieouts, patch_size, loop_length, loop_width, ridge_height, guylines, guyline_length, line_locks,
     hem_allowance: allow,
     hem_mark: hem.markFromRaw,
     panel_count,
@@ -119,6 +125,7 @@ export function validateInputs(inputs: TarpInputs): ValidationResult {
   pos('loop_length', 'Loop length');
   pos('loop_width', 'Grosgrain width');
   pos('ridge_height', 'Ridgeline height');
+  if (r.guylines) pos('guyline_length', 'Cord per guyline');
   if (!Number.isFinite(r.hem_depth_requested) || r.hem_depth_requested < 0) errors.push({ field: 'hem_depth', message: 'Hem depth must be 0 or greater.' });
   if (!Number.isInteger(r.eave_tieouts) || r.eave_tieouts < 0 || r.eave_tieouts > MAX_EAVE_TIEOUTS) errors.push({ field: 'eave_tieouts', message: `Tie-outs per eave must be a whole number from 0 to ${MAX_EAVE_TIEOUTS}.` });
   if (errors.length) return { ok: false, errors };

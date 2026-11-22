@@ -62,6 +62,12 @@ export interface TarpInputs {
   loop_width?: number;
   /** Ridgeline height for the pitch check (eaves staked to the ground), display units. Placeholder 42" — mock-derived. */
   ridge_height?: number;
+  /** A guyline on every tie-out, on the BOM. Default true. */
+  guylines?: boolean;
+  /** Cord per guyline, display units. Placeholder 8' — mock-derived. */
+  guyline_length?: number;
+  /** A line-lock tensioner on each guyline (otherwise a taut-line hitch). Default true. */
+  line_locks?: boolean;
 }
 
 export interface TieOut {
@@ -95,6 +101,9 @@ export interface ResolvedInputs {
   loop_length: number;
   loop_width: number;
   ridge_height: number;
+  guylines: boolean;
+  guyline_length: number;
+  line_locks: boolean;
   // Derived
   /** Fabric beyond each finished hemmed edge (depth single, 2 × depth double). */
   hem_allowance: number;

@@ -1222,3 +1222,13 @@ baffle-chamber primitive and a fill-weight calculation.
   with that reason.
 - Not modelled: a neck drawcord or snap, pad straps, vertical side baffles,
   synthetic insulation (a batting cut instead of a fill weight).
+
+
+## 2026-11-21 — Tarp guylines and line-locks (roadmap 10a follow-up)
+
+- One guyline per tie-out (corners, eaves, ridge ends), each with a
+  line-lock (toggle; off = a taut-line hitch in the step) and a stake, on
+  the hardware BOM. `guylines` defaults on.
+- Cord per guyline is a `[mock-derived]` placeholder, 8' (a common
+  pre-cut guyline length, not a vault number), editable, named in the one
+  mock-derived note; the total cord is on the BOM.

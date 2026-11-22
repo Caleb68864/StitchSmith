@@ -212,7 +212,7 @@ describe('pattern — Convention B panel (single-fold hem, hand-checked numbers)
 describe('mock-derived placeholders', () => {
   it('every number the tarp takes is a listed placeholder', () => {
     const keys = GENERATORS.find((x) => x.name === 'tarp')!.keys;
-    const choices = ['units', 'construction', 'cut_style', 'hem_fold', 'production_mode', 'ridge_tieouts'];
+    const choices = ['units', 'construction', 'cut_style', 'hem_fold', 'production_mode', 'ridge_tieouts', 'guylines', 'line_locks'];
     expect(PLACEHOLDERS.map((p) => p.field).sort()).toEqual(keys.filter((k) => !choices.includes(k)).sort());
   });
 
@@ -221,7 +221,7 @@ describe('mock-derived placeholders', () => {
     const mock = v.warnings.filter((w) => w.id === 'mock-derived');
     expect(mock).toHaveLength(1);
     expect(mock[0].severity).toBe('info');
-    expect(mock[0].message).toMatch(/^\[mock-derived\] 12 placeholders/);
+    expect(mock[0].message).toMatch(/^\[mock-derived\] 13 placeholders/);
     for (const p of PLACEHOLDERS) expect(mock[0].message).toContain(p.label);
     // Shown as the field shows it: 5/8" is 0.625", not a rounded 0.63".
     expect(mock[0].message).toContain('Grosgrain width 0.625"');
@@ -260,7 +260,7 @@ describe('steps and BOM', () => {
     expect(v.steps.find((s) => s.id === 'tarp.cat-cut')!.body).toMatch(/ridge 2"/);
     const seen = new Set<string>();
     for (const s of v.steps) { for (const d of s.dependsOn) expect(seen.has(d), `${s.id} → ${d}`).toBe(true); seen.add(s.id); }
-    expect(v.steps.map((s) => s.id)).toEqual(['tarp.cut', 'tarp.cat-cut', 'tarp.ridge', 'tarp.ends', 'tarp.eaves', 'tarp.tieouts', 'tarp.seal', 'tarp.pitch']);
+    expect(v.steps.map((s) => s.id)).toEqual(['tarp.cut', 'tarp.cat-cut', 'tarp.ridge', 'tarp.ends', 'tarp.eaves', 'tarp.tieouts', 'tarp.guylines', 'tarp.seal', 'tarp.pitch']);
     expect(built({ ...DEF, cut_style: 'flat' }).steps.some((s) => s.id === 'tarp.cat-cut')).toBe(false);
     expect(built({ ...DEF, construction: 'single_panel', width: 56 }).steps.some((s) => s.id === 'tarp.ridge')).toBe(false);
   });
@@ -281,5 +281,38 @@ describe('steps and BOM', () => {
     expect(rows.find((r) => r.id === 'material-webbing-16')!.quantity).toBe(Math.ceil((8 * 5 * IN) / 10) * 10);
     expect(rows.some((r) => r.id === 'hw-seam-sealer')).toBe(true);
     expect(buildBom({ ...DEF, width: 120 })).toEqual([]);
+  });
+});
+
+describe('guylines and line-locks (roadmap 10a follow-up)', () => {
+  it('default: one guyline, line-lock and stake per tie-out on the BOM; 8 × 96" of cord', () => {
+    const v = built(DEF);
+    const hw = (id: string) => v.hardware.find((h) => h.id === id);
+    expect(v.resolved.tieout_count).toBe(8);
+    expect(hw('guyline')!.quantity).toBe(8);
+    expect(hw('line-lock')!.quantity).toBe(8);
+    expect(hw('stake')!.quantity).toBe(8);
+    expect(hw('guyline')!.notes).toContain(`${Math.round(8 * 96 * IN)} mm`);
+    expect(buildBom(DEF).some((r) => r.id === 'hw-line-lock' && r.quantity === 8)).toBe(true);
+    expect(v.steps.find((s) => s.id === 'tarp.guylines')!.body).toMatch(/line-lock/);
+  });
+  it('the guyline length is a flagged placeholder until entered, and follows the tie-out count', () => {
+    expect(built(DEF).warnings.find((w) => w.id === 'mock-derived')!.message).toContain('Cord per guyline');
+    const v = built({ ...DEF, guyline_length: 120, eave_tieouts: 2 });
+    expect(v.hardware.find((h) => h.id === 'guyline')!.quantity).toBe(10);
+    expect(v.warnings.find((w) => w.id === 'mock-derived')!.message).not.toContain('Cord per guyline');
+  });
+  it('line-locks off leaves the guylines with a taut-line hitch; guylines off removes all three', () => {
+    const noLocks = built({ ...DEF, line_locks: false });
+    expect(noLocks.hardware.some((h) => h.id === 'line-lock')).toBe(false);
+    expect(noLocks.steps.find((s) => s.id === 'tarp.guylines')!.body).toMatch(/taut-line/);
+    const none = built({ ...DEF, guylines: false });
+    expect(none.hardware.map((h) => h.id)).toEqual(['seam-sealer']);
+    expect(none.steps.some((s) => s.id === 'tarp.guylines')).toBe(false);
+    expect(none.warnings.find((w) => w.id === 'mock-derived')!.message).not.toContain('Cord per guyline');
+  });
+  it('a non-positive guyline length is an error on its field', () => {
+    expect(errorFields({ ...DEF, guyline_length: 0 })).toEqual(['guyline_length']);
+    expect(errorFields({ ...DEF, guylines: false, guyline_length: 0 })).toEqual([]);
   });
 });
