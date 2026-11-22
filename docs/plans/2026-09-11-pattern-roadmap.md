@@ -218,7 +218,7 @@ Every number the transcripts never state is a mock-derived input. Left: the
 front column count (count bartacks on a video frame), the butt pack and
 hydration carrier interfaces as pieces, laser-cut slotted shoulder straps.
 
-### 10. Shelter, sleep, apparel — 10a and 10b DONE 2026-11-16, 10c DONE 2026-11-21, 10d bivy DONE 2026-11-22, 10e open
+### 10. Shelter, sleep, apparel — 10a and 10b DONE 2026-11-16, 10c DONE 2026-11-21, 10d bivy DONE 2026-11-22, 10e gaiters DONE 2026-11-22 (garments with sleeves still open)
 87 notes but almost all reference material (LearnMYOG, materials), not
 reconciled builds. Circle Skirt already covers the apparel entry point. Hold
 until the tactical line is done.
@@ -498,6 +498,31 @@ puts the top and both gussets in no-see-um mesh over the same waterproof
 tub, with an info note), a J or
 curved zipper across the head, a hood/brim, stake loops at the tub corners.
 
+#### 10e. Gaiters (apparel beyond the skirt, first item) — DONE 2026-11-22 (no 3D)
+Engine: `src/lib/pattern-engine/geometry/frustum.ts` — the flat development
+of a tapered tube (annular sector; apex flips when the bottom is narrower;
+equal ends a near-rectangle). Tests: `frustum.test.ts`.
+
+Generator: `src/generators/gaiter/`, page `src/components/gaiter/`, project
+schemaVersion 19, "Apparel" category. One piece cut as a mirrored pair: calf
+circumference at the top, boot circumference at the bottom, height at the
+back, the bottom dropping at the front over the laces (a parabola, 0 at the
+back). Hook-and-loop overlap (default; overlap + hem on the overlap edge,
+hem on the underlap, loop and hook strips drawn) or a zipper (seam
+allowance on both front edges). Top elastic channel and bottom hem from the
+Hem primitive (rolled default). Instep strap anchors half-way round each
+side, a lace hook at the front. Hardware per pair on the BOM. Registered in
+every shared table.
+
+Placeholders (common starting points for a mid-height gaiter, flagged
+`[mock-derived]`, editable; not measurements): height 12", top 15", bottom
+17", front drop 1.5", overlap 1", hem 1/2", elastic channel 3/4", elastic
+90 % of the top, instep strap 9", fabric 58", zipper seam allowance 12.7 mm.
+
+**No 3D tab:** no leg or boot form in the cloth engine. Still open in 10e: a
+wind shirt, beanie or anything with sleeves, which needs a drafting engine
+(slopers, grading, armholes).
+
 **Order for the rest of item 10:** 10b gathered-end hammock and 10c top quilt (done above), then 10d bivy (done above; bug net a follow-up) (curved long zipper,
 mesh cut sheet), 10e apparel beyond the skirt (gaiters first; a garment
 drafting engine before anything with sleeves). Each builds the same way as
@@ -697,6 +722,9 @@ which (the tri-zip `seam:` path convention is the seed).
 - DONE 2026-11-22 (`src/lib/pattern-engine/geometry/chordArc.ts`) — **Arc on a
   chord**: a panel of one width sewn to a narrower base, as an arch (bivy
   end gussets; any gusseted arch).
+- DONE 2026-11-22 (`src/lib/pattern-engine/geometry/frustum.ts`) — **Tapered
+  tube development**: a cone frustum laid flat (gaiters; cuffs, tapered
+  sacks).
 - **Layer budget per seam**: emit max stack per seam and a machine-class
   requirement; annotate "sew forward only" above ~8 layers.
   `reference/technique-sewing-through-bulk.md`, `rigs/splitfront-technique-layer-budgeting.md`.

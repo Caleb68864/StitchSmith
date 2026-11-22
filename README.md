@@ -8,7 +8,7 @@ Everything runs locally in your browser. No accounts, no servers, no telemetry, 
 
 ## What it makes
 
-Nineteen generators, grouped the way the app groups them.
+Twenty generators, grouped the way the app groups them.
 
 **Pouches**
 
@@ -57,6 +57,7 @@ Nineteen generators, grouped the way the app groups them.
 
 | Generator | What it produces |
 | --- | --- |
+| Gaiters | Hiking gaiters: a tapered tube developed flat from calf to boot, hook-and-loop or zipper front, elastic top channel, a bottom hem that drops over the laces, instep strap and lace hook. Every number is a starting point until measured; no 3D check yet |
 | Circle Skirt | Quarter to double circle, waistband and closure options |
 
 ---

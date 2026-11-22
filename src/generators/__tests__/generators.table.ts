@@ -40,6 +40,8 @@ import * as quilt from '../quilt/index.js';
 import { makeDefaultQuiltProject } from '../../state/useQuiltProject.js';
 import * as bivy from '../bivy/index.js';
 import { makeDefaultBivyProject } from '../../state/useBivyProject.js';
+import * as gaiter from '../gaiter/index.js';
+import { makeDefaultGaiterProject } from '../../state/useGaiterProject.js';
 import * as triZip from '../tri-zip-backpack/index.js';
 import { makeDefaultTriZipProject } from '../../state/useTriZipProject.js';
 import * as zipPouch from '../zip-pouch/index.js';
@@ -180,6 +182,13 @@ export const GENERATORS: Gen[] = [
     defaults: () => makeDefaultBivyProject().inputs as unknown as AnyInputs,
     validate: (i) => listErrors(bivy.validateInputs(i as never)),
     build: (i) => resultPieces(bivy.buildPattern(i as never)),
+  },
+  {
+    name: 'gaiter',
+    keys: ['units', 'height', 'top_circumference', 'bottom_circumference', 'front_drop', 'closure', 'overlap', 'hem_depth', 'channel_depth', 'hem_fold', 'elastic_pct', 'instep_strap_length', 'fabric_width', 'seam_allowance'],
+    defaults: () => makeDefaultGaiterProject().inputs as unknown as AnyInputs,
+    validate: (i) => listErrors(gaiter.validateInputs(i as never)),
+    build: (i) => resultPieces(gaiter.buildPattern(i as never)),
   },
   {
     name: 'tri-zip-backpack',

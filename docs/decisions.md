@@ -1296,3 +1296,21 @@ baffle-chamber primitive and a fill-weight calculation.
 - Placeholders, common starting points, flagged and editable, no vault
   source: 84" × 26" floor, 5" tub, 40" top, 48" zipper, 58" fabric, 1/2" SA.
 - No 3D tab: no lying body form to hold the top up.
+
+
+## 2026-11-22 — Gaiters (roadmap #10e, first apparel item)
+
+- Decided by agent 2026-11-22 (owner may revisit): a mid-height hiking
+  gaiter, hook-and-loop front by default (zipper selectable), elastic top
+  channel, instep strap and lace hook.
+- The piece is the flat development of a cone frustum (calf circumference
+  at the top, boot circumference at the bottom, slant height at the back),
+  so both ends measure true when wrapped; a trapezoid would not. The
+  bottom drops at the front by a parabola in the angle (0 at the back).
+- Hook-and-loop: the overlap edge carries the overlap plus a hem, the
+  underlap a hem; zipper: seam allowance on both edges (the only place
+  `seam_allowance` is used; an info note when set on a hook-and-loop
+  gaiter).
+- Placeholders are common starting points for a mid-height gaiter, not
+  measurements; elastic 90 % of the top circumference is one of them.
+- No 3D: no leg or boot form.

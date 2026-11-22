@@ -11,7 +11,7 @@ export interface PatternEntry {
   summary?: string;
   /** Search terms beyond the title (vault names, platforms, materials). */
   tags?: string[];
-  route: 'tool-roll' | 'tri-zip' | 'roll-top' | 'mag-pouch' | 'book-cover' | 'zip-pouch' | 'circle-skirt' | 'padded-strap' | 'micro-rig' | 'sling' | 'organizer' | 'fanny-pack' | 'clamshell-pack' | 'plate-carrier' | 'lbv' | 'tarp' | 'hammock' | 'quilt' | 'bivy';
+  route: 'tool-roll' | 'tri-zip' | 'roll-top' | 'mag-pouch' | 'book-cover' | 'zip-pouch' | 'circle-skirt' | 'padded-strap' | 'micro-rig' | 'sling' | 'organizer' | 'fanny-pack' | 'clamshell-pack' | 'plate-carrier' | 'lbv' | 'tarp' | 'hammock' | 'quilt' | 'bivy' | 'gaiter';
 }
 
 export const PATTERNS: PatternEntry[] = [
@@ -194,6 +194,15 @@ registerPattern({
   route: 'bivy',
 });
 
+// Register the gaiters entry (idempotent — safe to call multiple times)
+registerPattern({
+  id: 'gaiter',
+  title: 'Gaiters',
+  description: 'Hiking gaiters: a tapered tube from calf to boot developed flat, hook-and-loop or zipper front, elastic top channel, a hem that drops over the laces, an instep strap and a lace hook. Every number is a starting point until measured.',
+  available: true,
+  route: 'gaiter',
+});
+
 // ─── Landing-page metadata ─────────────────────────────────────────────────────
 // Category, one-line summary and search tags per generator. Kept here (not in
 // the entries above) so the append-only registry stays untouched; a new
@@ -227,6 +236,7 @@ export const PATTERN_META: Record<string, { category: PatternCategory; summary: 
   'hammock': { category: 'shelter', summary: 'Gathered-end hammock: channel or whipped ends, hems and a structural ridgeline.', tags: ['hammock', 'sleep', 'shelter', 'gathered end', 'channel', 'whipping', 'ridgeline', 'hem', 'camping'] },
   'quilt': { category: 'shelter', summary: 'Tapered top quilt: baffled or sewn-through chambers, fill per chamber, footbox.', tags: ['quilt', 'top quilt', 'sleep', 'down', 'fill power', 'baffle', 'loft', 'footbox', 'camping'] },
   'bivy': { category: 'shelter', summary: 'Bathtub-floor bivy: folded tub corners, arched top, gussets, side zipper.', tags: ['bivy', 'bivvy', 'bathtub floor', 'tub', 'sleep', 'shelter', 'mesh', 'bug', 'zipper', 'camping'] },
+  'gaiter': { category: 'apparel', summary: 'Hiking gaiters: tapered tube, hook-and-loop or zipper front, elastic top, instep strap.', tags: ['gaiter', 'gaiters', 'leg', 'boot', 'hiking', 'instep strap', 'lace hook', 'elastic', 'garment'] },
   'circle-skirt': { category: 'apparel', summary: 'Quarter to double circle skirt with waistband and closure options.', tags: ['skirt', 'garment', 'waist', 'zipper', 'elastic'] },
 };
 
