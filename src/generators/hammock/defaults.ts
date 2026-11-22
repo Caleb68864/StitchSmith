@@ -23,6 +23,8 @@ export const CHANNEL_DEPTH_MM = 1.25 * IN;
 export const WHIP_TAIL_MM = 3 * IN;
 /** Placeholder 83 % structural ridgeline (a common figure, not a vault number). */
 export const RIDGELINE_PCT = 83;
+/** Placeholder 10' tree strap (a common length, not a vault number). */
+export const STRAP_LENGTH_MM = 120 * IN;
 
 /**
  * Every placeholder input with its label and value (mm for lengths, a percentage
@@ -37,4 +39,5 @@ export const PLACEHOLDERS: readonly { field: keyof HammockInputs; label: string;
   { field: 'channel_depth', label: 'Channel depth', mm: CHANNEL_DEPTH_MM, kind: 'length' },
   { field: 'whip_tail', label: 'Whip tail', mm: WHIP_TAIL_MM, kind: 'length' },
   { field: 'ridgeline_pct', label: 'Structural ridgeline', mm: RIDGELINE_PCT, kind: 'percent' },
+  { field: 'strap_length', label: 'Tree strap', mm: STRAP_LENGTH_MM, kind: 'length' },
 ];

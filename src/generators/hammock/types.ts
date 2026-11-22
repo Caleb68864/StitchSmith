@@ -52,6 +52,12 @@ export interface HammockInputs {
   seam_allowance?: number;
   /** Heaviest occupant, lb (in) or kg (mm). Optional; with `fabric_rating` it drives the load check. */
   occupant_weight?: number;
+  /** One layer (default) or two, sewn together at the side hems and ends with a pad pocket between. */
+  layers?: 1 | 2;
+  /** Suspension on the BOM: none (default) or a tree strap and a carabiner at each end. */
+  suspension?: 'none' | 'tree_straps';
+  /** Tree strap length, display units. Placeholder 10' — mock-derived. Tree straps only. */
+  strap_length?: number;
   /** The fabric maker's rated load for a hammock of this fabric, lb (in) or kg (mm). Optional. */
   fabric_rating?: number;
 }
@@ -69,6 +75,9 @@ export interface ResolvedInputs {
   hem_fold: HemFold;
   production_mode: boolean;
   ridgeline_pct: number;
+  layers: 1 | 2;
+  suspension: 'none' | 'tree_straps';
+  strap_length: number;
   seam_allowance: number;
   /** kg, or NaN when not entered. */
   occupant_kg: number;

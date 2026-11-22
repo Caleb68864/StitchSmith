@@ -115,7 +115,9 @@ const CASES: Case[] = [
   // A 10' tarp: a coarse mesh keeps the case inside the suite's time budget (the viewer picks its own).
   { name: 'tarp (ridge seam, cat cut)', spacing: 60, maxStretch: 0.02, maxSeamMean: 3, build: () => { const v = ok(buildTarp(makeDefaultTarpProject().inputs)); return tarpAssembly(v.pieces, v.resolved); } },
   { name: 'gaiters (hook-and-loop, on a leg)', spacing: 10, maxStretch: 0.05, maxSeamMean: 3, build: () => { const v = ok(buildGaiter(makeDefaultGaiterProject().inputs)); return gaiterAssembly(v.pieces, v.resolved); } },
-  { name: 'wind shirt (body on a torso, arms out)', spacing: 9, maxStretch: 0.07, maxSeamMean: 3, build: () => { const v = ok(buildShirt(makeDefaultWindShirtProject().inputs)); return windShirtAssembly(v.pieces, v.resolved); } },
+  { name: 'wind shirt (body and sleeves on a torso, arms out)', spacing: 9, maxStretch: 0.11, maxSeamMean: 3, build: () => { const v = ok(buildShirt(makeDefaultWindShirtProject().inputs)); return windShirtAssembly(v.pieces, v.resolved); } },
+  { name: 'tarp (doors both ends)', spacing: 40, maxStretch: 0.05, maxSeamMean: 3, build: () => { const v = ok(buildTarp({ ...makeDefaultTarpProject().inputs, doors: 'both_ends' })); return tarpAssembly(v.pieces, v.resolved); } },
+  { name: 'tarp (beaks both ends)', spacing: 40, maxStretch: 0.05, maxSeamMean: 3, build: () => { const v = ok(buildTarp({ ...makeDefaultTarpProject().inputs, beaks: 'both_ends' })); return tarpAssembly(v.pieces, v.resolved); } },
   { name: 'tarp (single panel over the ridgeline)', spacing: 60, maxStretch: 0.01, maxSeamMean: 3, build: () => { const v = ok(buildTarp({ ...makeDefaultTarpProject().inputs, construction: 'single_panel', width: 56, ridge_height: 24 })); return tarpAssembly(v.pieces, v.resolved); } },
 ];
 

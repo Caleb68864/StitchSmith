@@ -358,14 +358,16 @@ the ridgeline height down the middle, half the footprint along the ground,
 the panel end as the long edge — zipped up the middle (zipper = ridgeline
 height, on the BOM) and lapped over the panel end hems; door fabric added
 to the roll; errors when the eaves cannot reach the ground or the ends are
-cat-cut; not in the 3D check), ~~a beak variant~~ (DONE 2026-11-22: `beaks`
+cat-cut; in the 3D check since 2026-11-22: each half draped in the end
+plane, seamed to its panel end and to its partner up the middle), ~~a beak variant~~ (DONE 2026-11-22: `beaks`
 none / one end / both ends; a mirrored pair of right-triangle halves per
 beaked end — reach past the end × the panel end — sewn to the panel end
 and to each other along the ridge at the seam allowance, the outer edge
 hemmed; the beaked panel end loses its hem for the seam allowance; the
 ridge-end tie-out moves to the tip; `beak_length` placeholder 18",
-`[mock-derived]`; refuses doors and cat-cut ends; not drawn in the 3D
-check, which still holds the ridge end),
+`[mock-derived]`; refuses doors and cat-cut ends; in the 3D check since 2026-11-22 as the
+roof carried on past the end, seamed to the panel end and along the ridge;
+the tip is not staked down in the check),
 and moving the organizer and pleated-card hems onto the Hem primitive.
 
 **Single-panel 3D check — DONE 2026-11-16 (`fix/tarp-followups`).** The
@@ -409,6 +411,7 @@ named in one `[mock-derived]` note. **Check each against the vault:**
 | Channel depth (channel ends) | 1 1/4" |
 | Whip tail beyond the whip line (whipped ends) | 3" |
 | Structural ridgeline | 83 % of the length (109.56" at 132") |
+| Tree strap (added 2026-11-22, tree straps only) | 120" (10') |
 
 Also `[mock-derived]`: the 78–88 % ridgeline band the range warning uses.
 With the defaults the body cuts 137" × 60" (two 2.5" rolled channels, two
@@ -423,8 +426,11 @@ report.
 
 Open for the owner: confirm the safety policy (one standing load warning,
 never blocks export; decisions.md 2026-11-16) and whether to keep the 83 %
-figure. Follow-ups: 3D (above), bug-net zip or double-layer option,
-suspension hardware on the BOM, a wider body from two widths joined by a
+figure. Follow-ups: 3D (above), bug-net zip, ~~double-layer option~~ (DONE
+2026-11-22: `layers: 2`, the body cut twice and sewn as one through the
+hems and ends), ~~suspension hardware on the BOM~~ (DONE 2026-11-22:
+`suspension: 'tree_straps'` adds two tree straps, `strap_length`
+placeholder 10' flagged, and two load-rated carabiners), a wider body from two widths joined by a
 flat-felled centre seam (would give `seam_allowance` a job).
 
 #### 10c. Top quilt — DONE 2026-11-21 (`pattern/10c-quilt`, no 3D)
@@ -505,6 +511,14 @@ side zipper 48", usable fabric width 58", seam allowance 12.7 mm. With them:
 floor 95" × 37" cut, top 85" × 41", arch rise ≈ 12.6", head height ≈ 17.6".
 
 **No 3D tab:** the cloth engine has no lying body to hold the top up.
+**3D — assessed 2026-11-22, not built:** feasible but not done. Plan: a 3D
+copy of the floor cut as a cross (corner squares out, as the folded-T was
+notched) with each ear's two edges seamed, the tub walls hinged 90°; a
+sleeper block on the floor; the top above it, its long edges seamed to the
+wall tops; the gussets draped in the end planes (flat x along the end
+edge), their arcs seamed to the top's short edges in segments of equal
+length. Expect a large mesh (floor and top are each ~2.2 m long), so it
+runs coarsened in the viewer.
 Follow-ups: ~~a bug-net variant~~ (DONE 2026-11-22: `top_material: 'mesh'`
 puts the top and both gussets in no-see-um mesh over the same waterproof
 tub, with an info note), ~~a J zipper~~ (DONE 2026-11-22: `zip_style: 'j'`
@@ -587,10 +601,11 @@ garment depends on a later step:
    the measurements (chest girth as a 1.4:1 ellipse, nape to waist,
    shoulder width, neck), arms held out 45° so the side seams pass under
    them, shoulder and side seams closed. Tests: `assembly3d.test.ts`, an
-   assembly-sweep case (p99 stretch ~6 %), an e2e target. **Still open:**
-   the sleeves in 3D — a tube placement along a sloping axis (the `cone`
-   placement only hangs straight down) so a sleeve can wrap its arm and seam
-   into the armhole.
+   assembly-sweep case, an e2e target. **Sleeves in 3D — DONE 2026-11-22:**
+   the `cone` placement takes an `axis` (and `ref`), so each sleeve wraps a
+   cone along its arm (apex past the wrist, the underseam under the arm),
+   its cap seamed half by half into the front and back armholes and its
+   underseam closed; seams close to < 1 mm, p99 stretch ~10 % at the caps.
 
 **Beanie — DONE 2026-11-22 (before the engine, no 3D).** Engine:
 `src/lib/pattern-engine/geometry/gore.ts` — gores of a half-ellipsoid dome

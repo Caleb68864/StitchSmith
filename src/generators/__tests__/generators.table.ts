@@ -168,7 +168,7 @@ export const GENERATORS: Gen[] = [
   },
   {
     name: 'hammock',
-    keys: ['units', 'end_style', 'side_edge', 'length', 'width', 'fabric_width', 'side_hem_depth', 'channel_depth', 'whip_tail', 'hem_fold', 'production_mode', 'ridgeline_pct', 'seam_allowance', 'occupant_weight', 'fabric_rating'],
+    keys: ['units', 'end_style', 'side_edge', 'length', 'width', 'fabric_width', 'side_hem_depth', 'channel_depth', 'whip_tail', 'hem_fold', 'production_mode', 'ridgeline_pct', 'seam_allowance', 'occupant_weight', 'fabric_rating', 'layers', 'suspension', 'strap_length'],
     defaults: () => makeDefaultHammockProject().inputs as unknown as AnyInputs,
     validate: (i) => listErrors(hammock.validateInputs(i as never)),
     build: (i) => resultPieces(hammock.buildPattern(i as never)),

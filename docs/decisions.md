@@ -1444,3 +1444,40 @@ baffle-chamber primitive and a fill-weight calculation.
   `holdHost` (default true, every existing page unchanged); the shirt page
   passes false so the torso and arms carry it (seam gap < 1 mm in the
   viewer). Pinning discs on the pieces instead raised the stretch to 12 %.
+
+
+## 2026-11-22 — Sleeves in the wind shirt's 3D check
+
+- The `cone` placement gained `axis` and `ref` (default straight down and
+  +x: every existing cone unchanged). A sleeve is the frustum between its
+  underseams: apex where the underseams meet past the wrist, half-angle
+  from the taper, the axis from the wrist end toward the shoulder, angle 0
+  up off the arm so the underseams land underneath. The cap above the bicep
+  line wraps as the frustum's continuation and the cloth seams it into the
+  armhole; its 1/2" of cap ease shows as ~10 % p99 stretch at the caps
+  (the cloth has no easing model), so the sweep ceiling is 11 %.
+
+
+## 2026-11-22 — Tarp doors and beaks in the 3D check
+
+- Ridge-seam tarps only (a single panel's check splits the panel at the
+  ridge in its own frame; doors and beaks there stay out and the report
+  says nothing about them). Doors: each half draped down a vertical line
+  from the ridge end in the end plane, its long edge seamed to its panel's
+  end and the two centre edges to each other. Beaks: each half given its
+  panel's lean and offset into that plane past the end, seamed to the panel
+  end and to its partner along the ridge; the tip is not staked down, so
+  the beak shows as the roof carried on (staking needs a pin that moves a
+  point to the ground, which pins cannot do). At the sweep's 60 mm mesh the
+  door seams settle at 4.6 mm; at 40 mm, 1.8 mm, so those cases run at 40.
+
+
+## 2026-11-22 — Hammock double layer and suspension (roadmap 10b follow-ups)
+
+- Decided by agent 2026-11-22 (owner may revisit): `layers: 2` cuts the body
+  twice and sews the layers as one through the side hems and the ends (a
+  pad slides between through a gap left at the middle of one side);
+  `suspension: 'tree_straps'` (default none, so existing BOMs are
+  unchanged) adds two tree straps and two load-rated carabiners. The strap
+  length is a flagged placeholder (10', a common length, not a vault
+  number). The standing load warning is unchanged.
