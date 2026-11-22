@@ -851,6 +851,13 @@ which (the tri-zip `seam:` path convention is the seed).
 - **Layer budget per seam**: emit max stack per seam and a machine-class
   requirement; annotate "sew forward only" above ~8 layers.
   `reference/technique-sewing-through-bulk.md`, `rigs/splitfront-technique-layer-budgeting.md`.
+  **Assessed 2026-11-22, not built:** the forward-only rule ("~8 layers")
+  is already in the step text where the vault puts it (the pleated card's
+  divisions and pleats, the folded-T wing stack). A per-seam budget needs
+  every generator to declare each seam's layer stack (shell, hems, webbing,
+  Velcro, binding) — a seam model the engine does not have; the machine-
+  class thresholds are not in the vault either. Next step: a `SeamStack`
+  record on `SeamSpec`-like seam declarations, starting with the card.
 - DONE 2026-11-22 (`Piece.assembly`, `patternToSvgByAssembly`) — **Cut sheets grouped by assembly**:
   a piece may name its sub-assembly; the export panel offers "Cut sheets by
   assembly" (one printable sheet per kit, untagged pieces under Other) when
