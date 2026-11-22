@@ -50,7 +50,7 @@ export function WindShirtPage({ project, updateInputs, resetProject, importProje
       preview={
         <PreviewTabs
           pattern={<PatternPreview inputs={project.inputs} hasErrors={hasErrors} />}
-          assembly={pattern3d && assembly ? <FoldPreview3D pattern={pattern3d} placements={assembly.placements} seams={assembly.seams} solids={assembly.solids} gravity={assembly.gravity} initialSimulate height={560} /> : null}
+          assembly={pattern3d && assembly ? <FoldPreview3D pattern={pattern3d} placements={assembly.placements} pins={assembly.pins} seams={assembly.seams} solids={assembly.solids} gravity={assembly.gravity} holdHost={false} initialSimulate height={560} /> : null}
           unavailableReason="The 3D check needs the body pieces to build; fix the errors first."
         />
       }

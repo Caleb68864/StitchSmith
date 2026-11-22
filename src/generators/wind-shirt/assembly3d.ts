@@ -13,7 +13,7 @@
  */
 import type { Piece } from '../../lib/pattern-engine/graph/Piece.js';
 import type { PiecePlacement } from '../../lib/fold-engine/index.js';
-import { torsoForm, armForms, type SeamSpec, type Solid, type TorsoSpec, type Vec3 } from '../../lib/cloth-engine/index.js';
+import { torsoForm, armForms, type PinSpec, type SeamSpec, type Solid, type TorsoSpec, type Vec3 } from '../../lib/cloth-engine/index.js';
 import type { ResolvedInputs } from './types.js';
 import { BACK_ID, FRONT_ID } from './buildPattern.js';
 import { draftShirt, runs, type Outline } from './draft.js';
@@ -22,6 +22,8 @@ export interface WindShirtAssembly {
   pieces: Piece[];
   placements: Record<string, PiecePlacement>;
   seams: SeamSpec[];
+  /** No pins: the torso and arms carry the shirt. The page passes `holdHost={false}` so the viewer does not hold the back flat either. */
+  pins: PinSpec[];
   solids: Solid[];
   gravity: Vec3;
   torso: TorsoSpec;
@@ -68,6 +70,7 @@ export function windShirtAssembly(pieces: Piece[], r: ResolvedInputs): WindShirt
     [BACK_ID]: place(d.back, form.backZ - C),
     [FRONT_ID]: place(d.front, form.frontZ + C),
   };
+  const pins: PinSpec[] = [];
   const seams: SeamSpec[] = [];
   for (const tag of ['shoulder', 'side'] as const) {
     const rb = runs(d.back, tag), rf = runs(d.front, tag);
@@ -82,5 +85,5 @@ export function windShirtAssembly(pieces: Piece[], r: ResolvedInputs): WindShirt
     `Body on a torso of your ${fmtIn(r.measurements.chest)}" chest: the shirt is ${fmtIn(girth)}" round at the chest, ${fmtIn(girth - r.measurements.chest)}" of ease; shoulder and side seams closed.`,
     'Sleeves are not assembled in this check yet; the armholes stay open round the arms.',
   ];
-  return { pieces: [back, front], placements, seams, solids: [...form.solids, ...arms.solids], gravity: [0, -0.01, 0], torso, report };
+  return { pieces: [back, front], placements, seams, pins, solids: [...form.solids, ...arms.solids], gravity: [0, -0.01, 0], torso, report };
 }

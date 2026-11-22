@@ -254,6 +254,8 @@ numbers. Rules already encoded, with the note that justifies each:
   offset, `rx`, `rz`, drape, cone or attach); a rotation alone is enough, and
   the viewer (`viewer/layout.ts`) and the cloth harness agree on it. The
   assembly sweep checks that agreement for every case.
+- With no `pins`, the viewer holds the first panel's root region still; a
+  garment carried by body solids passes `holdHost={false}` (the wind shirt).
 - Every page shows its preview through `PreviewTabs` (Pattern / 3D
   assembly); a new generator supplies an `assembly3d.ts` and passes its
   object, placements, pins and seams to `FoldPreview3D` with

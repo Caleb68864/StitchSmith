@@ -1435,3 +1435,12 @@ baffle-chamber primitive and a fill-weight calculation.
 - Sleeves are left out of the 3D check: the fold engine's `cone` placement
   only hangs straight down, so a sleeve cannot yet wrap a sloping arm. That
   needs a tube placement along an arbitrary axis (recorded as open).
+
+- Found by the e2e target: with no pins the viewer holds the first panel's
+  root region flat (right for a bag on its back panel, wrong for a garment
+  on a body), so the shirt's back stayed flat and the seams could not
+  close in the viewer's 360 steps (91 mm gap, 30 % stretch) while the
+  harness, which holds nothing, closed them. `FoldPreview3D` now takes
+  `holdHost` (default true, every existing page unchanged); the shirt page
+  passes false so the torso and arms carry it (seam gap < 1 mm in the
+  viewer). Pinning discs on the pieces instead raised the stretch to 12 %.

@@ -65,6 +65,11 @@ export interface FoldPreview3DProps {
   gravity?: [number, number, number];
   /** Cloth-to-cloth collision (default true). Off where allowance flaps must cross to close a seam. */
   selfCollision?: boolean;
+  /**
+   * With no `pins`, the viewer holds the first panel's root region still (default true). Pass false
+   * when the solids carry the cloth — a garment on a body form — so nothing is held flat.
+   */
+  holdHost?: boolean;
   /** Fold progress 0–1 to start at. Default 1 (folded). */
   initialProgress?: number;
   /** Start with the cloth simulation running (the assembled view) instead of the rigid fold. */

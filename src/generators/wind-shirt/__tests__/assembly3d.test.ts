@@ -33,8 +33,9 @@ describe('wind shirt on a torso', () => {
     expect(asm.pieces.map((p) => p.id)).toEqual([BACK_ID, FRONT_ID]);
     expect(asm.seams.length).toBe(2 + 4);
     expectViewerMatchesHarness(asm.pieces, asm.placements);
-    const { world, bounds } = assemble(asm.pieces, asm.placements, asm.seams, null, 14, [], asm.gravity, asm.solids);
-    relax(world, 400);
+    const { world, bounds } = assemble(asm.pieces, asm.placements, asm.seams, null, 9, asm.pins, asm.gravity, asm.solids);
+    expect(asm.pins).toHaveLength(0);
+    relax(world, 360);
     expect(seamResidual(world).mean).toBeLessThan(3);
     expect(maxPenetration(world)).toBeLessThan(world.params.thickness);
     expect(stretchReport(world, 0.99).value).toBeLessThan(0.07);
