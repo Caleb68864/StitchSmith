@@ -14,6 +14,7 @@ const GUARD_SPEC: GuardSpec = {
   seam_allowance: { kind: 'number', min: 0, max: 100, label: 'Seam allowance' },
   head_gusset: { kind: 'enum', allowed: ['mesh', 'fabric'] },
   zip_side: { kind: 'enum', allowed: ['left', 'right'] },
+  top_material: { kind: 'enum', allowed: ['mesh', 'fabric'] },
 };
 
 const IN = 25.4;
@@ -47,6 +48,7 @@ export function resolveInputs(inputs: BivyInputs): ResolvedInputs {
     units, length, floor_width, tub_height, top_width, zip_length, fabric_width, seam_allowance,
     head_gusset: inputs.head_gusset === 'fabric' ? 'fabric' : 'mesh',
     zip_side: inputs.zip_side === 'right' ? 'right' : 'left',
+    top_material: inputs.top_material === 'mesh' ? 'mesh' : 'fabric',
     arch,
     head_height: tub_height + (arch ? arch.rise : NaN),
     floor_cut_length: length + 2 * tub_height + 2 * s,

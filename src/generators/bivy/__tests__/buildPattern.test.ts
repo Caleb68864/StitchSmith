@@ -108,3 +108,14 @@ describe('validation, placeholders, BOM', () => {
     for (const p of v.pieces) expect(refs.has(p.id)).toBe(true);
   });
 });
+
+describe('bug bivy (roadmap 10d follow-up: bug net)', () => {
+  it('top_material mesh puts the top and both gussets in mesh; the floor stays the waterproof tub', () => {
+    expect(piece(built(DEF).pieces, TOP_ID).materialId).toBe(TOP_FABRIC_ID);
+    const v = built({ ...DEF, top_material: 'mesh', head_gusset: 'fabric' });
+    for (const id of [TOP_ID, HEAD_GUSSET_ID, FOOT_GUSSET_ID]) expect(piece(v.pieces, id).materialId).toBe(MESH_ID);
+    expect(piece(v.pieces, FLOOR_ID).materialId).toBe('bivy-floor-fabric');
+    expect(v.warnings.some((w) => w.id === 'bug-bivy')).toBe(true);
+    expect(buildBom({ ...DEF, top_material: 'mesh' }).some((r) => r.id === 'material-bivy-top-fabric')).toBe(false);
+  });
+});

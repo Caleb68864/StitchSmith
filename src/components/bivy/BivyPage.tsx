@@ -16,7 +16,7 @@ import { PreviewTabs } from '../shared/PreviewTabs.js';
 type BivyPageProps = Pick<UseBivyProjectReturn, 'project' | 'updateInputs' | 'resetProject' | 'importProject'>;
 const FIELD_LABELS: Record<string, string> = {
   length: 'Floor length', floor_width: 'Floor width', tub_height: 'Tub height', top_width: 'Top width', zip_length: 'Side zipper',
-  fabric_width: 'Fabric width', seam_allowance: 'Seam allowance', head_gusset: 'Head gusset', zip_side: 'Zipper side',
+  fabric_width: 'Fabric width', seam_allowance: 'Seam allowance', head_gusset: 'Head gusset', zip_side: 'Zipper side', top_material: 'Top',
 };
 const IN = 25.4;
 const inch = (mm: number) => (mm / IN).toFixed(2).replace(/\.?0+$/, '');

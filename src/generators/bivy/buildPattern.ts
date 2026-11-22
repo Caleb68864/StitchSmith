@@ -88,7 +88,7 @@ function buildTop(r: ResolvedInputs): Piece {
     poly(eid, `${TOP_ID}-centre-foot`, [{ x: Lc - s, y: Wc / 2 }, { x: Lc, y: Wc / 2 }], 'notch'),
   ];
   return {
-    id: TOP_ID, name: 'Top', mirror: false, quantity: 1, materialId: TOP_FABRIC_ID, paths, seamAllowances: zeroSa(outline),
+    id: TOP_ID, name: 'Top', mirror: false, quantity: 1, materialId: r.top_material === 'mesh' ? MESH_ID : TOP_FABRIC_ID, paths, seamAllowances: zeroSa(outline),
     annotations: [
       { kind: 'grain', label: 'grain along the length', point: { x: Lc / 2, y: Wc / 2 - 60 }, angle: 0 },
       { kind: 'label', label: `Top — cut ${dim(Lc)} × ${dim(Wc)}, allowance included; zipper on the ${r.zip_side} long edge from the head`, point: { x: Lc / 2, y: Wc / 2 } },
@@ -122,7 +122,7 @@ function buildGusset(r: ResolvedInputs, id: string, name: string, materialId: st
 function buildSteps(r: ResolvedInputs): Step[] {
   const ids = [FLOOR_ID, TOP_ID, HEAD_GUSSET_ID, FOOT_GUSSET_ID];
   return [
-    { id: 'bivy.cut', title: 'Cut the pieces', body: `Floor ${dim(r.floor_cut_length)} × ${dim(r.floor_cut_width)} from the waterproof floor fabric; top ${dim(r.top_cut_length)} × ${dim(r.top_cut_width)} and the foot gusset from the top fabric; the head gusset from ${r.head_gusset === 'mesh' ? 'no-see-um mesh' : 'the top fabric'}. The ${Math.round(r.seam_allowance * 10) / 10} mm allowance is included in every piece. Sewn fabrics only.`, dependsOn: [], refsPieces: ids, group: 'Cut' },
+    { id: 'bivy.cut', title: 'Cut the pieces', body: `Floor ${dim(r.floor_cut_length)} × ${dim(r.floor_cut_width)} from the waterproof floor fabric; top ${dim(r.top_cut_length)} × ${dim(r.top_cut_width)} and the foot gusset from ${r.top_material === 'mesh' ? 'no-see-um mesh' : 'the top fabric'}; the head gusset from ${r.head_gusset === 'mesh' || r.top_material === 'mesh' ? 'no-see-um mesh' : 'the top fabric'}. The ${Math.round(r.seam_allowance * 10) / 10} mm allowance is included in every piece. Sewn fabrics only.`, dependsOn: [], refsPieces: ids, group: 'Cut' },
     { id: 'bivy.tub', title: 'Fold the tub corners', body: `At each corner of the floor, fold the corner square on its marked diagonal, outside together, stitch its two sides together from the raw edge to the inner corner and fold the ear flat against the end wall; tack it. The ${fmtIn(r.tub_height)}" sides then stand up along the folds. Nothing is cut, so the floor has no seam below the tub height; seal the four corner seams.`, dependsOn: ['bivy.cut'], refsPieces: [FLOOR_ID], group: 'Floor' },
     { id: 'bivy.gussets', title: 'Gussets to the top', body: `Right sides together, sew each gusset's arch to a short edge of the top, centres matched, easing the ${fmtIn(r.top_width)}" edge round the curve.`, dependsOn: ['bivy.cut'], refsPieces: [TOP_ID, HEAD_GUSSET_ID, FOOT_GUSSET_ID], group: 'Top' },
     { id: 'bivy.zip', title: 'Zipper in the side seam', body: `Sew one tape of a ${dim(r.zip_length)} zipper to the top's ${r.zip_side} long edge from the head corner to the zipper mark, and the other tape to the tub's matching top edge, so the zipper closes the seam there.`, dependsOn: ['bivy.gussets', 'bivy.tub'], refsPieces: [TOP_ID, FLOOR_ID], group: 'Join' },
@@ -144,7 +144,8 @@ function mockDerived(inputs: BivyInputs, r: ResolvedInputs): GeneratorWarning[] 
 function buildWarnings(inputs: BivyInputs, r: ResolvedInputs): GeneratorWarning[] {
   const w = mockDerived(inputs, r);
   w.push({ id: 'head-height', severity: 'info', field: 'top_width', message: `About ${fmtIn(r.head_height)}" of height at the head (the ${fmtIn(r.tub_height)}" tub plus a ${fmtIn(r.arch!.rise)}" arch from the ${fmtIn(r.top_width)}" top over the ${fmtIn(r.floor_width)}" floor). A wider top gives more room.` });
-  if (r.head_gusset === 'mesh') w.push({ id: 'mesh-head', severity: 'info', field: 'head_gusset', message: 'The head gusset is mesh: it breathes and keeps insects out, and it lets rain in. Pitch under a tarp.' });
+  if (r.top_material === 'mesh') w.push({ id: 'bug-bivy', severity: 'info', field: 'top_material', message: 'Bug bivy: everything above the tub is mesh. It keeps insects off and sheds no rain; use it under a tarp. The floor is still the waterproof tub.' });
+  else if (r.head_gusset === 'mesh') w.push({ id: 'mesh-head', severity: 'info', field: 'head_gusset', message: 'The head gusset is mesh: it breathes and keeps insects out, and it lets rain in. Pitch under a tarp.' });
   return w;
 }
 
@@ -155,8 +156,9 @@ export function buildPattern(inputs: BivyInputs): Result<BivyBuildResult> {
   const pieces: Piece[] = [
     buildFloor(r),
     buildTop(r),
-    buildGusset(r, HEAD_GUSSET_ID, 'Head gusset', r.head_gusset === 'mesh' ? MESH_ID : TOP_FABRIC_ID),
-    buildGusset(r, FOOT_GUSSET_ID, 'Foot gusset', TOP_FABRIC_ID),
+    // A bug bivy is mesh above the tub everywhere.
+    buildGusset(r, HEAD_GUSSET_ID, 'Head gusset', r.head_gusset === 'mesh' || r.top_material === 'mesh' ? MESH_ID : TOP_FABRIC_ID),
+    buildGusset(r, FOOT_GUSSET_ID, 'Foot gusset', r.top_material === 'mesh' ? MESH_ID : TOP_FABRIC_ID),
   ];
   const hardware: HardwareItem[] = [
     { id: 'zipper', name: 'Zipper (two-way slider recommended)', quantity: 1, notes: `${dim(r.zip_length)} in the ${r.zip_side} side seam from the head` },

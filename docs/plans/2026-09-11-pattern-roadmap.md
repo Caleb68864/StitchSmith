@@ -493,7 +493,9 @@ side zipper 48", usable fabric width 58", seam allowance 12.7 mm. With them:
 floor 95" × 37" cut, top 85" × 41", arch rise ≈ 12.6", head height ≈ 17.6".
 
 **No 3D tab:** the cloth engine has no lying body to hold the top up.
-Follow-ups: a bug-net variant (all-mesh top on the same floor), a J or
+Follow-ups: ~~a bug-net variant~~ (DONE 2026-11-22: `top_material: 'mesh'`
+puts the top and both gussets in no-see-um mesh over the same waterproof
+tub, with an info note), a J or
 curved zipper across the head, a hood/brim, stake loops at the tub corners.
 
 **Order for the rest of item 10:** 10b gathered-end hammock and 10c top quilt (done above), then 10d bivy (done above; bug net a follow-up) (curved long zipper,

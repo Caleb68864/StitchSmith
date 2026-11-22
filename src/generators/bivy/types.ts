@@ -37,6 +37,8 @@ export interface BivyInputs {
   seam_allowance?: number;
   /** Head gusset in no-see-um mesh (default) or the top fabric. */
   head_gusset?: BivyHeadGusset;
+  /** Top (and foot gusset) in the top fabric (default) or all no-see-um mesh: a bug bivy. */
+  top_material?: BivyHeadGusset;
   /** Which long side the zipper is on, lying on your back looking up. Default left. */
   zip_side?: BivyZipSide;
 }
@@ -61,6 +63,7 @@ export interface ResolvedInputs {
   seam_allowance: number;
   head_gusset: BivyHeadGusset;
   zip_side: BivyZipSide;
+  top_material: BivyHeadGusset;
   // Derived
   /** The end arch: an arc of the top width over a chord of the floor width, or null when it cannot close. */
   arch: ArchSegment | null;

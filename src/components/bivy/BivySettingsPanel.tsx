@@ -38,6 +38,9 @@ export function BivySettingsPanel({ inputs, errors, onChange }: Props) {
       <CollapsibleSection title="Top and ends" defaultOpen>
         <div className="grid grid-cols-2 gap-3">
           <NumericField id="top-width" label={`Top width laid flat (${units})`} value={inputs.top_width} error={errors['top_width']} step={step} placeholder={ph(TOP_WIDTH_MM)} mockDerived help="Wider than the floor; the difference arches over you." onChange={(v) => onChange({ top_width: v })} />
+          <SelectField<BivyHeadGusset> id="top-material" label="Top" value={inputs.top_material ?? 'fabric'} error={errors['top_material']}
+            options={[{ value: 'fabric', label: 'Top fabric' }, { value: 'mesh', label: 'All mesh (bug bivy)' }]}
+            onChange={(v) => onChange({ top_material: v })} />
           <SelectField<BivyHeadGusset> id="head-gusset" label="Head gusset" value={inputs.head_gusset ?? 'mesh'} error={errors['head_gusset']}
             options={[{ value: 'mesh', label: 'No-see-um mesh' }, { value: 'fabric', label: 'Top fabric' }]}
             onChange={(v) => onChange({ head_gusset: v })} />
