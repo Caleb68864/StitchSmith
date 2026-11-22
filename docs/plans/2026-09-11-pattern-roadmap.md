@@ -183,7 +183,10 @@ cord = 2 × chord at the target angle, 0/2/4 bottom drainage grommets with
 patches set while flat, dual-mode belt with measured settings, non-locking
 slider in the BOM, 3D hoop-and-panels check. Body sizes are starting points
 (the vault has no cut list). Follow-ups: simulate the open lid (split the 3D
-band at the zipper and let the front fall), a front PALS/loop face.
+band at the zipper and let the front fall), ~~a front PALS/loop face~~ (DONE
+2026-11-22: `front_face` pals — the PALS primitive inside the hoop seam,
+rows on the cut list cut 1" long — or loop, a Velcro field 1/4" inside the
+seam; plain by default).
 
 ### 7. Clamshell pack (medpack / tool pod) — DONE 2026-09-12
 `src/generators/clamshell-pack/`: zipper frame hoop as two strips split by

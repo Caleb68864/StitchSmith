@@ -6,6 +6,7 @@
  * drawn as a stitch path inset by the allowance. Cut dimensions are derived
  * once in `resolveInputs` so the pattern, the steps and the BOM agree.
  */
+import { buildPalsField, PALS_EDGE_MARGIN_MM } from '../../lib/pattern-engine/primitives/palsField.js';
 import type { Piece } from '../../lib/pattern-engine/graph/Piece.js';
 import type { Path } from '../../lib/pattern-engine/graph/Path.js';
 import type { Edge, EdgeId } from '../../lib/pattern-engine/graph/Edge.js';
@@ -63,6 +64,7 @@ function buildPanel(id: string, name: string, r: ResolvedInputs, who: 'lid' | 'b
   const paths: Path[] = [outline];
   if (sa > 0) paths.push(stitchRect(eid, `${id}-sew`, sa, sa, W - sa, H - sa, `Sew line ${fmtIn(sa)}" in — the hoop seam`));
   paths.push(...cordAnchors(eid, id, r, who));
+  if (who === 'lid' && r.front_face !== 'none') paths.push(...frontFace(r, eid, id).paths);
   if (who === 'body') {
     // Belt tabs baste into the side seams at mid-height: a notch each side.
     paths.push({ id: `${id}-belt-tab-marks`, closed: false, label: `Belt tab positions — ${r.belt_webbing}" webbing tabs basted into the side seams at mid-height`, edges: [seg(eid, 'notch', 0, H / 2, sa + 4, H / 2), seg(eid, 'notch', W - sa - 4, H / 2, W, H / 2)] });
@@ -74,6 +76,25 @@ function buildPanel(id: string, name: string, r: ResolvedInputs, who: 'lid' | 'b
       { kind: 'label', label: `${name} — cut ${dim(W)} × ${dim(H)} (${fmtIn(sa)}" allowance included)`, point: { x: W / 2, y: H / 2 } },
     ],
   };
+}
+
+export const PALS_ROW_ID = 'fanny-pals-row';
+export const LOOP_FIELD_ID = 'fanny-loop-field';
+
+/** The front (lid) face inside the hoop seam: a PALS field from the primitive, or a loop Velcro field the same area. */
+export function frontFace(r: ResolvedInputs, eid: () => EdgeId, id: string): { paths: Path[]; rows: number; rowLength: number; loop: { w: number; h: number } | null; warnings: string[] } {
+  const W = r.panel_cut_width, H = r.panel_cut_height, sa = r.seam_allowance;
+  const area = { x: sa, y: sa, w: W - 2 * sa, h: H - 2 * sa };
+  if (r.front_face === 'pals') {
+    const f = buildPalsField({ origin: { x: area.x, y: area.y }, width: area.w, height: area.h, idPrefix: `${id}-pals`, eid });
+    return { paths: f.paths, rows: f.webbing.quantity, rowLength: f.webbing.lengthMm, loop: null, warnings: f.warnings };
+  }
+  const m = PALS_EDGE_MARGIN_MM;
+  const w = area.w - 2 * m, h = area.h - 2 * m;
+  const p = (x: number, y: number) => ({ x, y });
+  const pts = [p(area.x + m, area.y + m), p(area.x + m + w, area.y + m), p(area.x + m + w, area.y + m + h), p(area.x + m, area.y + m + h)];
+  const path: Path = { id: `${id}-loop-field`, closed: true, label: `Loop Velcro field ${fmtIn(w)} × ${fmtIn(h)}" — sew all round before the hoop`, edges: pts.map((q, i) => ({ kind: 'straight' as const, id: eid(), role: 'stitch' as const, start: q, end: pts[(i + 1) % 4] })) };
+  return { paths: [path], rows: 0, rowLength: 0, loop: { w, h }, warnings: [] };
 }
 
 function buildZipperHalf(r: ResolvedInputs): Piece {
@@ -140,6 +161,7 @@ function buildSteps(r: ResolvedInputs): Step[] {
     steps.push({ id: 'fp.cord-anchors', title: 'Cord anchors on the lid and body interiors', body: `Bartack a 1" webbing loop at each anchor mark on the inside of the front (lid) and back (body) panels, ${fmtIn(CORD_ANCHOR_DROP_MM)}" below the top seam, left and right. Each 550 loop is ${dim(r.drawbridge_cord_length)} of cord (twice the lid-to-body distance at ${r.lid_drop_target === 'fully_open' ? 180 : r.lid_drop_target === 'closed' ? 0 : r.lid_angle_deg}°); tie it after the bag is turned.`, dependsOn: ['fp.mark'], refsPieces: [FRONT_ID, BACK_ID, CORD_TAB_ID], group: 'Flat work' });
     flat.push('fp.cord-anchors');
   }
+  if (r.front_face !== 'none') steps.push({ id: 'fp.front-face', title: r.front_face === 'pals' ? 'PALS rows on the front panel' : 'Loop field on the front panel', body: r.front_face === 'pals' ? 'Sew the 1" webbing rows at the marks on the outside of the front panel while it is flat, bartacked at every 1.5" column line in one direction; rows are cut 1" long and trimmed after sewing.' : 'Sew the loop Velcro field all round on the outside of the front panel while it is flat, clear of the hoop seam.', dependsOn: ['fp.mark'], refsPieces: [FRONT_ID, r.front_face === 'pals' ? PALS_ROW_ID : LOOP_FIELD_ID], group: 'Flat work' });
   steps.push({ id: 'fp.belt-tabs', title: 'Belt tabs onto the back panel', body: `Baste a ${r.belt_webbing}" webbing tab (folded, buckle or tri-glide captured) to each side edge of the back panel at the mid-height marks, tab pointing inward so it turns out with the seam. The tab is the load path: it must be caught by the hoop seam and bartacked, not sewn to the panel face alone.`, dependsOn: ['fp.mark'], refsPieces: [BACK_ID, BELT_TAB_ID], group: 'Flat work' });
   flat.push('fp.belt-tabs');
   steps.push({ id: 'fp.zipper', title: fold ? 'Zipper into the halves — fold the lip' : 'Zipper into the halves — tape the edge', body: fold
@@ -188,6 +210,11 @@ export function buildPattern(inputs: FannyPackInputs): Result<FannyPackBuildResu
     strip(BELT_ID, 'Belt', r.belt_cut_length, beltW, 1, beltMat, `${r.belt_webbing}" webbing ${fmtIn(r.belt_cut_length)}" — trim after fitting`),
   ];
   if (r.bottom_grommets > 0) pieces.push(strip(GROMMET_PATCH_ID, 'Grommet reinforcement patch', GROMMET_PATCH_MM, GROMMET_PATCH_MM, r.bottom_grommets, 'cordura-1000', '1000D under each grommet, sewn before the hole is burnt'));
+  if (r.front_face !== 'none') {
+    const f = frontFace(r, makeEdgeIdGen('fanny-face-probe'), FRONT_ID);
+    if (f.rows > 0) pieces.push(strip(PALS_ROW_ID, 'PALS row', f.rowLength, 1 * IN, f.rows, 'webbing-25', `1" webbing ${fmtIn(f.rowLength)}" — cut 1" long, trim after sewing`));
+    if (f.loop) pieces.push(strip(LOOP_FIELD_ID, 'Loop Velcro field', f.loop.w, f.loop.h, 1, 'velcro-loop', `Loop ${fmtIn(f.loop.w)} × ${fmtIn(f.loop.h)}" on the front panel`));
+  }
   if (r.drawbridge_limiter) pieces.push(strip(CORD_TAB_ID, 'Cord anchor loop', 2 * IN, 1 * IN, 4, 'webbing-25', '1" webbing loops, two per side (lid and body)'));
   const hardware: HardwareItem[] = [
     { id: 'zipper', name: `#8 coil zipper, ${fmtIn(r.zipper_length)}"`, quantity: 1, notes: 'Horizontal, not load-bearing: non-locking slider is fine (custom pull friendly)' },

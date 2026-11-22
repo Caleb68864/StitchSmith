@@ -49,6 +49,7 @@ export function FannyPackSettingsPanel({ inputs, errors, onChange }: Props) {
           : <div className="space-y-1"><Label htmlFor="tape-color" className="text-xs">Edge tape colour</Label><Input id="tape-color" value={inputs.edge_tape_color ?? ''} placeholder="black" onChange={e => onChange({ edge_tape_color: e.target.value || undefined })} className="h-8 text-xs" /></div>}
       </div>
       <h2 className="text-xs font-semibold">Options</h2>
+      <ChoiceField label="Front face" value={inputs.front_face ?? 'none'} options={[{ value: 'none', label: 'Plain' }, { value: 'pals', label: 'PALS rows' }, { value: 'loop', label: 'Loop Velcro field' }]} onChange={v => onChange({ front_face: v as 'none' | 'pals' | 'loop' })} />
       <Toggle label="Drawbridge cord limiter (550 loops stop the lid at the target angle)" value={inputs.drawbridge_limiter ?? false} onChange={v => onChange({ drawbridge_limiter: v })} />
       <ChoiceField label="Bottom drainage grommets" value={String(inputs.bottom_grommets ?? 0) as '0' | '2' | '4'} options={GROMMETS} onChange={v => onChange({ bottom_grommets: Number(v) as 0 | 2 | 4 })} />
       <h2 className="text-xs font-semibold">Belt (waist or sling)</h2>

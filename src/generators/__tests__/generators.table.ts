@@ -98,7 +98,7 @@ export const GENERATORS: Gen[] = [
   },
   {
     name: 'fanny-pack',
-    keys: ['units', 'width', 'height', 'depth', 'seam_allowance', 'lid_drop_target', 'lid_angle_deg', 'lid_extension', 'zipper_edge_finish', 'zipper_lip', 'drawbridge_limiter', 'bottom_grommets', 'belt_webbing', 'belt_min', 'belt_max', 'edge_tape_color'],
+    keys: ['units', 'width', 'height', 'depth', 'seam_allowance', 'lid_drop_target', 'lid_angle_deg', 'lid_extension', 'zipper_edge_finish', 'zipper_lip', 'drawbridge_limiter', 'bottom_grommets', 'belt_webbing', 'belt_min', 'belt_max', 'edge_tape_color', 'front_face'],
     defaults: () => makeDefaultFannyPackProject().inputs as unknown as AnyInputs,
     validate: (i) => listErrors(fanny.validateInputs(i as never)),
     build: (i) => resultPieces(fanny.buildPattern(i as never)),
