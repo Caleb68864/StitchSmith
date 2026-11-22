@@ -43,7 +43,7 @@ A generator using this convention MUST:
 Consequence: no SA-offset cut line is drawn, because the cut line *is* the
 outer line. That is expected under this convention, not a defect.
 
-Used by: **Zip Pouch** (see `src/generators/zip-pouch/dimensions.ts`), the **Padded Sling** (tube cut with allowance and turning ease included), the **Tactical Organizer** (hems marked at double, baked into the cut), the **Fanny Pack** (allowance and, for the fold finish, the zipper lip baked in), the **Tarp** (ridge seam allowance and hems baked into each panel; hems from the Hem primitive), the **Hammock** (side hems and end channels or whip tails baked into the one body; `seam_allowance` resolves to 0, there is no joining seam), the **Top Quilt** (perimeter and baffle allowances baked into the shell, liner and baffles; sew lines and chamber walls drawn), the **Bivy** (allowance and tub sides baked into the floor, allowance into the top and gussets), the **Gaiters** (channel, hems and the overlap or zipper allowance baked into the one piece) and the
+Used by: **Zip Pouch** (see `src/generators/zip-pouch/dimensions.ts`), the **Padded Sling** (tube cut with allowance and turning ease included), the **Tactical Organizer** (hems marked at double, baked into the cut), the **Fanny Pack** (allowance and, for the fold finish, the zipper lip baked in), the **Tarp** (ridge seam allowance and hems baked into each panel; hems from the Hem primitive), the **Hammock** (side hems and end channels or whip tails baked into the one body; `seam_allowance` resolves to 0, there is no joining seam), the **Top Quilt** (perimeter and baffle allowances baked into the shell, liner and baffles; sew lines and chamber walls drawn), the **Bivy** (allowance and tub sides baked into the floor, allowance into the top and gussets), the **Gaiters** (channel, hems and the overlap or zipper allowance baked into the one piece), the **Beanie** (side and base allowances baked into each gore and the cuff) and the
 **Mag Pouch pleated card** construction (`src/lib/pouch-engine/construction/pleatedCard.ts`,
 dimensions resolved in `src/generators/mag-pouch/resolve.ts`). The card is
 hemmed, not seam-allowanced: cut = finished + hems, hem folds are `fold`-role
@@ -179,6 +179,9 @@ numbers. Rules already encoded, with the note that justifies each:
   tapered tube laid flat has arced ends); channel and hems from the Hem
   primitive. The 3D check (`assembly3d.ts`) wraps it back onto its cone
   round a leg capsule; a narrower bottom is not wrapped.
+- Beanie (`src/generators/beanie/`): gores from `geometry/gore.ts`, never
+  hand-drawn; measurements are inputs and no size chart is encoded (none is
+  sourced). No 3D.
 - Straps that must run beside the neck on the torso form kick out from
   their panel landing to the shoulder line (`overShoulder(..., xStart)` in
   the LBV assembly); a strap drawn long in x drapes with `along: 'x'`.
@@ -256,7 +259,7 @@ numbers. Rules already encoded, with the note that justifies each:
 
 ## Engine usage
 
-All generators (Tool Roll, Tri-Zip, Roll-Top Sack, Mag Pouch, Book Cover, Zip Pouch, Circle Skirt, Padded Strap, Micro Rig, Padded Sling, Tactical Organizer, Fanny Pack, Clamshell Pack, Plate Carrier, Modular LBV, Tarp, Hammock, Top Quilt, Bivy, Gaiters) consume `src/lib/pattern-engine/` for graph types (`Point`, `Edge`, `Path`, `Piece`, `Pattern`), geometry helpers (offset, arc, bbox), and exporters (SVG, PDF, DXF, project JSON). New generators must use the engine — do not fork geometry or export code into the generator directory.
+All generators (Tool Roll, Tri-Zip, Roll-Top Sack, Mag Pouch, Book Cover, Zip Pouch, Circle Skirt, Padded Strap, Micro Rig, Padded Sling, Tactical Organizer, Fanny Pack, Clamshell Pack, Plate Carrier, Modular LBV, Tarp, Hammock, Top Quilt, Bivy, Gaiters, Beanie) consume `src/lib/pattern-engine/` for graph types (`Point`, `Edge`, `Path`, `Piece`, `Pattern`), geometry helpers (offset, arc, bbox), and exporters (SVG, PDF, DXF, project JSON). New generators must use the engine — do not fork geometry or export code into the generator directory.
 
 ## Project JSON envelope
 
@@ -273,6 +276,7 @@ All generators (Tool Roll, Tri-Zip, Roll-Top Sack, Mag Pouch, Book Cover, Zip Po
 - `schemaVersion: 8` → Micro Rig
 - `schemaVersion: 9` → Padded Sling
 - `schemaVersion: 10` → Tactical Organizer
+- `schemaVersion: 20` → Beanie
 - `schemaVersion: 19` → Gaiters
 - `schemaVersion: 18` → Bivy
 - `schemaVersion: 17` → Top Quilt

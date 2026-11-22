@@ -29,6 +29,7 @@ export const KNOWN_SCHEMA_VERSIONS: Readonly<Record<string, number>> = Object.fr
   'quilt': 17,
   'bivy': 18,
   'gaiter': 19,
+  'beanie': 20,
 });
 
 /** Generator id → the name the user sees on the landing page and the page header. */
@@ -53,6 +54,7 @@ export const GENERATOR_TITLES: Readonly<Record<string, string>> = Object.freeze(
   'quilt': 'Top Quilt',
   'bivy': 'Bivy',
   'gaiter': 'Gaiters',
+  'beanie': 'Beanie',
 });
 
 /** The user-facing name for a generator id; unknown ids come back quoted so the message still reads. */

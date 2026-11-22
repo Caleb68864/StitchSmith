@@ -571,8 +571,15 @@ garment depends on a later step:
 5. **3D**: the torso form exists; sleeves need an arm form (a capsule per
    arm) before the shirt gets an assembly.
 
-A beanie does not need this engine (gores of a dome; `chordArc`-style
-geometry) and could come first if wanted.
+**Beanie — DONE 2026-11-22 (before the engine, no 3D).** Engine:
+`src/lib/pattern-engine/geometry/gore.ts` — gores of a half-ellipsoid dome
+(width at each height = ring circumference / N, length = the meridian's
+arc). Generator `src/generators/beanie/`, page `src/components/beanie/`,
+schemaVersion 20, Apparel: N gores from head circumference + ease and a
+crown height, a folded cuff band or a single-fold hem (Hem primitive),
+Convention B. Measurements are inputs; placeholders (head 22", ease −1",
+crown 7", 6 gores, cuff 2.5", hem 1/2", SA 9.5 mm) are flagged starting
+points, not a size chart. No 3D: no head form.
 
 **Order for the rest of item 10:** 10b gathered-end hammock and 10c top quilt (done above), then 10d bivy (done above; bug net a follow-up) (curved long zipper,
 mesh cut sheet), 10e apparel beyond the skirt (gaiters first; a garment
@@ -776,6 +783,8 @@ which (the tri-zip `seam:` path convention is the seed).
 - DONE 2026-11-22 (`src/lib/pattern-engine/geometry/frustum.ts`) — **Tapered
   tube development**: a cone frustum laid flat (gaiters; cuffs, tapered
   sacks).
+- DONE 2026-11-22 (`src/lib/pattern-engine/geometry/gore.ts`) — **Dome gores**: N
+  panels of a half-ellipsoid crown (beanie; hood tops, caps).
 - **Layer budget per seam**: emit max stack per seam and a machine-class
   requirement; annotate "sew forward only" above ~8 layers.
   `reference/technique-sewing-through-bulk.md`, `rigs/splitfront-technique-layer-budgeting.md`.

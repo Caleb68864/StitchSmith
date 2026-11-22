@@ -45,6 +45,8 @@ import { BivySettingsPanel } from '../../bivy/BivySettingsPanel.js';
 import { makeDefaultBivyProject } from '../../../state/useBivyProject.js';
 import { GaiterSettingsPanel } from '../../gaiter/GaiterSettingsPanel.js';
 import { makeDefaultGaiterProject } from '../../../state/useGaiterProject.js';
+import { BeanieSettingsPanel } from '../../beanie/BeanieSettingsPanel.js';
+import { makeDefaultBeanieProject } from '../../../state/useBeanieProject.js';
 import { makeDefaultLbvProject } from '../../../state/useLbvProject.js';
 
 const noop = vi.fn();
@@ -69,6 +71,7 @@ const PANELS: { name: string; element: () => ReactElement }[] = [
   { name: 'Top Quilt', element: () => <QuiltSettingsPanel inputs={makeDefaultQuiltProject().inputs} errors={{}} onChange={noop} /> },
   { name: 'Bivy', element: () => <BivySettingsPanel inputs={makeDefaultBivyProject().inputs} errors={{}} onChange={noop} /> },
   { name: 'Gaiters', element: () => <GaiterSettingsPanel inputs={makeDefaultGaiterProject().inputs} errors={{}} onChange={noop} /> },
+  { name: 'Beanie', element: () => <BeanieSettingsPanel inputs={makeDefaultBeanieProject().inputs} errors={{}} onChange={noop} /> },
 ];
 
 function hasAccessibleName(el: HTMLElement): boolean {

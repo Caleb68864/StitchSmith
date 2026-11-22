@@ -1361,3 +1361,16 @@ baffle-chamber primitive and a fill-weight calculation.
   lines. Fill is computed on the narrower layer's width, as on the top quilt.
 - Shock cord lengths are not given (they depend on the hammock); the
   hardware note says so.
+
+
+## 2026-11-22 — Beanie (roadmap 10e, before the drafting engine)
+
+- Decided by agent 2026-11-22 (owner may revisit): the crown is a half
+  ellipsoid of revolution (base circumference = head + ease, height = the
+  crown height) cut into N equal gores, developed by the classic gore
+  approximation (width at each height = ring / N, length along the
+  meridian). A folded cuff band (default) or a single-fold hem.
+- Measurements are user inputs; the placeholders are flagged starting
+  points, never a size chart (no chart is sourced). Negative ease gets an
+  info note (stretch fabrics only).
+- No 3D: the cloth engine has no head form.
