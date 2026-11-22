@@ -1403,3 +1403,44 @@ baffle-chamber primitive and a fill-weight calculation.
   girths, the arm length from the cap top to the wrist, both underseams the
   same straight line. The cap is symmetric while the bodice halves share
   one armhole.
+
+
+## 2026-11-22 — Wind shirt (roadmap 10f step 4)
+
+- Decided by agent 2026-11-22 (owner may revisit): a pullover with a
+  quarter zip (a bound neck that fits cannot pass over the head), set-in
+  sleeves, a single-fold body hem and rolled elastic cuff channels; straight
+  body by default (the side seam drops straight from the eased chest),
+  shaped selectable.
+- Convention B, not A: the drafted finished outlines are offset per edge
+  (0 on the bound neckline, the hem and cuff allowances on those edges, the
+  seam allowance elsewhere), so the cut line is the outer line and every
+  edge carries an explicit 0.
+- The default project leaves every measurement empty and drafts from an
+  example body (one person, flagged in the mock-derived note), not a size
+  chart. Ease, shoulder drop (1.75"), cap ease (1/2"), hem, cuff, elastic
+  (85 % of the wrist), zipper (10") and binding (1.5") are flagged starting
+  points.
+
+
+## 2026-11-22 — Arm forms and the wind shirt's 3D check (roadmap 10f step 5)
+
+- `armForms` (cloth engine): one capsule per arm from the end of the
+  torso's shoulder capsule, the bicep radius, the arm length, angled out.
+- The shirt check builds its torso from the measurements (chest girth as an
+  ellipse 1.4 wide to 1 deep, by Ramanujan's perimeter; nape to waist;
+  shoulder width; neck radius). Decided by agent 2026-11-22: arms out 45°.
+  At 25° the side seams were pulled through the arms (2.5 mm penetration,
+  9 % stretch); at 45° they pass under them (0 mm, ~6 %).
+- Sleeves are left out of the 3D check: the fold engine's `cone` placement
+  only hangs straight down, so a sleeve cannot yet wrap a sloping arm. That
+  needs a tube placement along an arbitrary axis (recorded as open).
+
+- Found by the e2e target: with no pins the viewer holds the first panel's
+  root region flat (right for a bag on its back panel, wrong for a garment
+  on a body), so the shirt's back stayed flat and the seams could not
+  close in the viewer's 360 steps (91 mm gap, 30 % stretch) while the
+  harness, which holds nothing, closed them. `FoldPreview3D` now takes
+  `holdHost` (default true, every existing page unchanged); the shirt page
+  passes false so the torso and arms carry it (seam gap < 1 mm in the
+  viewer). Pinning discs on the pieces instead raised the stretch to 12 %.

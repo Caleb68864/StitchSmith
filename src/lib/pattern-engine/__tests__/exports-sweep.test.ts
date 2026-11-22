@@ -27,6 +27,7 @@ import { makeDefaultQuiltProject } from '../../../state/useQuiltProject.js';
 import { makeDefaultBivyProject } from '../../../state/useBivyProject.js';
 import { makeDefaultGaiterProject } from '../../../state/useGaiterProject.js';
 import { makeDefaultBeanieProject } from '../../../state/useBeanieProject.js';
+import { makeDefaultWindShirtProject } from '../../../state/useWindShirtProject.js';
 import { makeDefaultFannyPackProject } from '../../../state/useFannyPackProject.js';
 import { makeDefaultClamshellPackProject } from '../../../state/useClamshellPackProject.js';
 import { makeDefaultPlateCarrierProject } from '../../../state/usePlateCarrierProject.js';
@@ -48,6 +49,7 @@ import { buildPattern as buildQuilt } from '../../../generators/quilt/index.js';
 import { buildPattern as buildBivy } from '../../../generators/bivy/index.js';
 import { buildPattern as buildGaiter } from '../../../generators/gaiter/index.js';
 import { buildPattern as buildBeanie } from '../../../generators/beanie/index.js';
+import { buildPattern as buildShirt } from '../../../generators/wind-shirt/index.js';
 import { buildPattern as buildFanny } from '../../../generators/fanny-pack/index.js';
 import { buildPattern as buildClam } from '../../../generators/clamshell-pack/index.js';
 import { buildPattern as buildPlate } from '../../../generators/plate-carrier/index.js';
@@ -119,6 +121,8 @@ const CASES: Case[] = [
   { name: 'gaiters (zipper, narrow bottom, single fold, mm)', convention: 'B', build: () => pieces('gaiter', buildGaiter({ units: 'mm', closure: 'zipper', hem_fold: 'single', top_circumference: 420, bottom_circumference: 400, height: 380 })) },
   { name: 'beanie (cuff, 6 gores)', convention: 'B', build: () => pieces('beanie', buildBeanie(makeDefaultBeanieProject().inputs)) },
   { name: 'beanie (hem, 5 gores, mm)', convention: 'B', build: () => pieces('beanie', buildBeanie({ units: 'mm', finish: 'hem', gores: 5, head_circumference: 570, ease: 10, crown_height: 200 })) },
+  { name: 'wind shirt (straight)', convention: 'B', build: () => pieces('wind-shirt', buildShirt(makeDefaultWindShirtProject().inputs)) },
+  { name: 'wind shirt (shaped, mm)', convention: 'B', build: () => pieces('wind-shirt', buildShirt({ units: 'mm', body: 'shaped', chest: 960, waist: 820, hip: 980 })) },
 ];
 
 describe('export sweep — every generator through every exporter', () => {
@@ -153,6 +157,8 @@ describe('export sweep — every generator through every exporter', () => {
       expect(csv.split('\n').length).toBeGreaterThan(2);
       const pdf = await exportPatternToPdf(pattern);
       expect(pdf.size).toBeGreaterThan(500);
-    });
+      // Every exporter on a 20-plus-generator sweep: 5 s timed out twice on a loaded machine
+      // (2026-11-21, 2026-11-22) though the case runs in ~1 s alone.
+    }, 30_000);
   }
 });

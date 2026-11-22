@@ -24,6 +24,7 @@ import * as quilt from '../quilt/index.js';
 import * as bivy from '../bivy/index.js';
 import * as gaiter from '../gaiter/index.js';
 import * as beanie from '../beanie/index.js';
+import * as windShirt from '../wind-shirt/index.js';
 import * as zipPouch from '../zip-pouch/index.js';
 
 type Resolver = (i: AnyInputs) => Record<string, unknown>;
@@ -46,6 +47,7 @@ const RESOLVERS: Record<string, Resolver> = {
   bivy: (i) => bivy.resolveInputs(i as never) as never,
   gaiter: (i) => gaiter.resolveInputs(i as never) as never,
   beanie: (i) => beanie.resolveInputs(i as never) as never,
+  'wind-shirt': (i) => windShirt.resolveInputs(i as never) as never,
   'zip-pouch': (i) => zipPouch.resolveInputs(i as never) as never,
 };
 
@@ -88,7 +90,7 @@ describe('validation messages read as English, not as field keys', () => {
     const mods: Record<string, { validateInputs: (i: never) => unknown }> = {
       'book-cover': bookCover, 'circle-skirt': circleSkirt, 'clamshell-pack': clamshell, 'fanny-pack': fanny,
       lbv, 'micro-rig': microRig, organizer, 'padded-strap': paddedStrap, 'plate-carrier': plateCarrier,
-      'roll-top-sack': rollTop, sling, tarp, hammock, quilt, bivy, gaiter, beanie, 'zip-pouch': zipPouch,
+      'roll-top-sack': rollTop, sling, tarp, hammock, quilt, bivy, gaiter, beanie, 'wind-shirt': windShirt, 'zip-pouch': zipPouch,
     } as never;
     const mod = mods[name];
     return mod ? mod.validateInputs(inputs as never) : { ok: true };

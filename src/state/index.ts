@@ -22,6 +22,7 @@ import { makeDefaultQuiltProject, _resetQuiltStorage, useQuiltProject, STORAGE_K
 import { makeDefaultBivyProject, _resetBivyStorage, useBivyProject, STORAGE_KEY as BivyKey } from './useBivyProject.js';
 import { makeDefaultGaiterProject, _resetGaiterStorage, useGaiterProject, STORAGE_KEY as GaiterKey } from './useGaiterProject.js';
 import { makeDefaultBeanieProject, _resetBeanieStorage, useBeanieProject, STORAGE_KEY as BeanieKey } from './useBeanieProject.js';
+import { makeDefaultWindShirtProject, _resetWindShirtStorage, useWindShirtProject, STORAGE_KEY as WindShirtKey } from './useWindShirtProject.js';
 import { makeDefaultTriZipProject, _resetTriZipStorage, useTriZipProject, STORAGE_KEY as TriZipKey } from './useTriZipProject.js';
 import { makeDefaultZipPouchProject, _resetZipPouchStorage, useZipPouchProject, STORAGE_KEY as ZipPouchKey } from './useZipPouchProject.js';
 import { STORAGE_KEY as toolRollKey } from '../storage/localStorage.js';
@@ -75,6 +76,7 @@ export const PROJECT_HOOKS: readonly ProjectHookEntry[] = [
   { generatorId: 'bivy', schemaVersion: 18, storageKey: BivyKey, makeDefault: makeDefaultBivyProject as unknown as () => ProjectEnvelope, reset: _resetBivyStorage, useHook: useBivyProject as unknown as () => ProjectHookApi, generatorDir: 'bivy' },
   { generatorId: 'gaiter', schemaVersion: 19, storageKey: GaiterKey, makeDefault: makeDefaultGaiterProject as unknown as () => ProjectEnvelope, reset: _resetGaiterStorage, useHook: useGaiterProject as unknown as () => ProjectHookApi, generatorDir: 'gaiter' },
   { generatorId: 'beanie', schemaVersion: 20, storageKey: BeanieKey, makeDefault: makeDefaultBeanieProject as unknown as () => ProjectEnvelope, reset: _resetBeanieStorage, useHook: useBeanieProject as unknown as () => ProjectHookApi, generatorDir: 'beanie' },
+  { generatorId: 'wind-shirt', schemaVersion: 21, storageKey: WindShirtKey, makeDefault: makeDefaultWindShirtProject as unknown as () => ProjectEnvelope, reset: _resetWindShirtStorage, useHook: useWindShirtProject as unknown as () => ProjectHookApi, generatorDir: 'wind-shirt' },
   { generatorId: 'tri-zip-backpack', schemaVersion: 2, storageKey: TriZipKey, makeDefault: makeDefaultTriZipProject as unknown as () => ProjectEnvelope, reset: _resetTriZipStorage, useHook: useTriZipProject as unknown as () => ProjectHookApi, generatorDir: 'tri-zip-backpack' },
   { generatorId: 'zip-pouch', schemaVersion: 5, storageKey: ZipPouchKey, makeDefault: makeDefaultZipPouchProject as unknown as () => ProjectEnvelope, reset: _resetZipPouchStorage, useHook: useZipPouchProject as unknown as () => ProjectHookApi, generatorDir: 'zip-pouch' },
 ];

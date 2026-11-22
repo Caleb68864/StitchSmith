@@ -30,6 +30,7 @@ import { QuiltPage } from '../quilt/QuiltPage.js';
 import { BivyPage } from '../bivy/BivyPage.js';
 import { GaiterPage } from '../gaiter/GaiterPage.js';
 import { BeaniePage } from '../beanie/BeaniePage.js';
+import { WindShirtPage } from '../wind-shirt/WindShirtPage.js';
 import { MagPouchPage } from '../mag-pouch/MagPouchPage.js';
 import { MicroRigPage } from '../micro-rig/MicroRigPage.js';
 import { OrganizerPage } from '../organizer/OrganizerPage.js';
@@ -56,6 +57,7 @@ const PAGES: Record<string, { Page: ComponentType<Record<string, unknown>>; subt
   'bivy': { Page: BivyPage as never, subtitle: /Bivy Generator/i },
   'gaiter': { Page: GaiterPage as never, subtitle: /Gaiters Generator/i },
   'beanie': { Page: BeaniePage as never, subtitle: /Beanie Generator/i },
+  'wind-shirt': { Page: WindShirtPage as never, subtitle: /Wind Shirt Generator/i },
   'mag-pouch': { Page: MagPouchPage as never, subtitle: /Mag Pouch Generator/i },
   'micro-rig': { Page: MicroRigPage as never, subtitle: /Micro Rig Generator/i },
   'organizer': { Page: OrganizerPage as never, subtitle: /Tactical Organizer Generator/i },

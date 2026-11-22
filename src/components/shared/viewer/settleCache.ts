@@ -41,6 +41,8 @@ export interface SolveKeyParts {
   gravity: readonly [number, number, number];
   spacing: number;
   selfCollision: boolean;
+  /** Whether the host panel is held (no pins given); absent means held. */
+  holdHost?: boolean;
   /** Fold angles in play, so moving a slider re-solves. */
   angles: number[];
   progress: number;
@@ -57,6 +59,7 @@ export function solveKey(p: SolveKeyParts): string {
   let h = 0x811c9dc5;
   h = mixFloat(h, p.spacing);
   h = mixFloat(h, p.selfCollision ? 1 : 0);
+  h = mixFloat(h, p.holdHost === false ? 0 : 1);
   h = mixFloat(h, p.progress);
   for (const g of p.gravity) h = mixFloat(h, g);
   for (const a of p.angles) h = mixFloat(h, a);

@@ -102,3 +102,40 @@ export function shoulderPath(spec: TorsoSpec, side: 'left' | 'right', backStartY
   pts.push([x, oy, frontZ]);
   return pts;
 }
+
+export interface ArmSpec {
+  /** Arm radius at the top, mm (bicep / 2π). */
+  radius: number;
+  /** Shoulder point to wrist, mm. */
+  length: number;
+  /** How far the arms hang out from the sides, degrees from straight down. */
+  abductionDeg: number;
+}
+
+export interface ArmForms {
+  solids: Solid[];
+  /** Shoulder joint (capsule top) and wrist end of each arm. */
+  left: { shoulder: Vec3; wrist: Vec3 };
+  right: { shoulder: Vec3; wrist: Vec3 };
+}
+
+/**
+ * Arms for a sleeve check: one capsule per side, hung from the end of the
+ * torso's shoulder capsule and angled out by `abductionDeg`, so a sleeve set
+ * into an armhole has an arm to wrap round. Same frame as `torsoForm`.
+ */
+export function armForms(spec: TorsoSpec, arm: ArmSpec, origin: Vec3 = [0, 0, 0]): ArmForms {
+  const form = torsoForm(spec, origin);
+  const [ox, , oz] = origin;
+  const a = (arm.abductionDeg * Math.PI) / 180;
+  const half = spec.shoulderWidth / 2;
+  const side = (s: 1 | -1) => {
+    // The arm's axis starts at the shoulder point, a radius in from the shoulder's outer edge.
+    const shoulder: Vec3 = [ox + s * (half - arm.radius * 0.5), form.chestTop, oz];
+    const wrist: Vec3 = [shoulder[0] + s * arm.length * Math.sin(a), shoulder[1] - arm.length * Math.cos(a), oz];
+    return { shoulder, wrist };
+  };
+  const left = side(-1), right = side(1);
+  const cap = (e: { shoulder: Vec3; wrist: Vec3 }): Solid => ({ kind: 'capsule', a: e.shoulder, b: e.wrist, radius: arm.radius });
+  return { solids: [cap(left), cap(right)], left, right };
+}

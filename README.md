@@ -8,7 +8,7 @@ Everything runs locally in your browser. No accounts, no servers, no telemetry, 
 
 ## What it makes
 
-Twenty-one generators, grouped the way the app groups them.
+Twenty-two generators, grouped the way the app groups them.
 
 **Pouches**
 
@@ -57,6 +57,7 @@ Twenty-one generators, grouped the way the app groups them.
 
 | Generator | What it produces |
 | --- | --- |
+| Wind Shirt | A pullover with set-in sleeves drafted from your measurements (bodice and sleeve blocks, the sleeve cap solved against the armhole), quarter zip, bound neck, elastic cuffs. Measurements are your inputs; the defaults are an example body, not a size chart |
 | Beanie | A crown of gores developed from a dome (head circumference + ease, crown height) with a folded cuff or a hem. Measurements are your inputs; the defaults are placeholders; no 3D check yet |
 | Gaiters | Hiking gaiters: a tapered tube developed flat from calf to boot, hook-and-loop or zipper front, elastic top channel, a bottom hem that drops over the laces, instep strap and lace hook. Every number is a starting point until measured; no 3D check yet |
 | Circle Skirt | Quarter to double circle, waistband and closure options |

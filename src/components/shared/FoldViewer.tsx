@@ -112,7 +112,7 @@ const NO_PINS: NonNullable<FoldPreview3DProps['pins']> = [];
 
 const NO_SOLIDS: Solid[] = [];
 
-export function FoldViewer({ pattern, object, placements = NO_PLACEMENTS, seams: seamsProp = NO_SEAMS, pins = NO_PINS, solids: extraSolids = NO_SOLIDS, gravity: gravityProp, selfCollision = true, initialProgress = 1, initialSimulate = false, height = 360, caption }: FoldPreview3DProps) {
+export function FoldViewer({ pattern, object, placements = NO_PLACEMENTS, seams: seamsProp = NO_SEAMS, pins = NO_PINS, solids: extraSolids = NO_SOLIDS, gravity: gravityProp, selfCollision = true, holdHost = true, initialProgress = 1, initialSimulate = false, height = 360, caption }: FoldPreview3DProps) {
   const mountRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<{ scene: THREE.Scene; group: THREE.Group; renderer: THREE.WebGLRenderer; camera: THREE.PerspectiveCamera; controls: OrbitControls } | null>(null);
   const [progress, setProgress] = useState(initialProgress);
@@ -338,7 +338,7 @@ export function FoldViewer({ pattern, object, placements = NO_PLACEMENTS, seams:
           // Pin the host panel's interior; its fold-line vertices stay free so the hinges can flex.
           // With `pin: 'footprint'` only the area behind the object is held, leaving the rest of
           // the host free to wrap round to the seams.
-          pinned: (mi, _v, f) => pinnedByList(valid[mi].entry.model.pieceId, f) || (pins.length === 0 && valid[mi].entry.model.pieceId === hostId
+          pinned: (mi, _v, f) => pinnedByList(valid[mi].entry.model.pieceId, f) || (holdHost && pins.length === 0 && valid[mi].entry.model.pieceId === hostId
             && !placementMap(valid[mi].entry.placement)
             && regionAt(valid[mi].entry.model, f) === valid[mi].entry.model.root
             && !onAnyFold(valid[mi].entry.model, f, 1.5)
@@ -381,7 +381,7 @@ export function FoldViewer({ pattern, object, placements = NO_PLACEMENTS, seams:
           : 'ring' in p
             ? [2, p.ring.cx, p.ring.cy, p.ring.r0, p.ring.r1]
             : [1, p.point.x, p.point.y, p.radius]));
-        const key = solveKey({ meshes: valid.map((v) => v.mesh), seams, solids, pins: pinKey, gravity, spacing, selfCollision, angles: valid.flatMap(({ entry }) => anglesOf(entry)), progress });
+        const key = solveKey({ meshes: valid.map((v) => v.mesh), seams, solids, pins: pinKey, gravity, spacing, selfCollision, holdHost, angles: valid.flatMap(({ entry }) => anglesOf(entry)), progress });
         const cached = getSolve(key, world.pos.length);
         if (cached) {
           world.pos.set(cached.pos);
@@ -501,7 +501,7 @@ export function FoldViewer({ pattern, object, placements = NO_PLACEMENTS, seams:
       setSceneError(err instanceof Error ? err.message : String(err));
     }
     return () => { if (clothRef.current) { cancelAnimationFrame(clothRef.current.raf); clothRef.current = null; } };
-  }, [entries, progress, showObject, showFlat, angleOverrides, object, first, simulate, seamsProp, pins, extraSolids, gravityProp, selfCollision, pattern]);
+  }, [entries, progress, showObject, showFlat, angleOverrides, object, first, simulate, seamsProp, pins, extraSolids, gravityProp, selfCollision, holdHost, pattern]);
 
   // "Reset view" re-frames only: rebuilding would discard a solve in progress.
   useEffect(() => {
