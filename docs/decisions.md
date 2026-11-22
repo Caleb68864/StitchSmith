@@ -1314,3 +1314,19 @@ baffle-chamber primitive and a fill-weight calculation.
 - Placeholders are common starting points for a mid-height gaiter, not
   measurements; elastic 90 % of the top circumference is one of them.
 - No 3D: no leg or boot form.
+
+
+## 2026-11-22 — Tarp beaks (roadmap 10a follow-up)
+
+- Decided by agent 2026-11-22 (owner may revisit): a beak is a separate
+  mirrored pair of right-triangle halves per beaked end (`beaks`: none by
+  default, one end or both). Each half: the panel end (width / 2) and the
+  reach past it along the ridge line (`beak_length`, placeholder 18",
+  flagged), the third edge hemmed. The halves sew to each other along the
+  ridge line and to the panel end, both at the seam allowance, so a single
+  panel with beaks now takes a seam allowance too.
+- The beaked panel end loses its end hem (the seam finishes it) and the
+  ridge-end tie-out moves to the beak tip (patch straddling the beak's
+  ridge seam). One beak goes on the x = 0 end.
+- Beaks refuse doors (both close the ends) and cat-cut ends. The 3D check
+  leaves the beaks out but still holds the ridge ends.

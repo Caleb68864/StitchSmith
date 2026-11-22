@@ -317,6 +317,7 @@ against the vault:**
 | Ridgeline height (pitch check only) | 42" |
 | Cord per guyline (added 2026-11-21) | 96" (8') |
 | End cat-cut depth (added 2026-11-21, ends cut only) | 1" |
+| Beak reach past the end (added 2026-11-22, beaks only) | 18" |
 
 Choices with no number are not mock-derived: two-panel ridge seam (default)
 vs single panel, cat cut (default) vs straight edges, a rolled hem (default
@@ -357,7 +358,14 @@ the ridgeline height down the middle, half the footprint along the ground,
 the panel end as the long edge — zipped up the middle (zipper = ridgeline
 height, on the BOM) and lapped over the panel end hems; door fabric added
 to the roll; errors when the eaves cannot reach the ground or the ends are
-cat-cut; not in the 3D check), a beak variant (still open),
+cat-cut; not in the 3D check), ~~a beak variant~~ (DONE 2026-11-22: `beaks`
+none / one end / both ends; a mirrored pair of right-triangle halves per
+beaked end — reach past the end × the panel end — sewn to the panel end
+and to each other along the ridge at the seam allowance, the outer edge
+hemmed; the beaked panel end loses its hem for the seam allowance; the
+ridge-end tie-out moves to the tip; `beak_length` placeholder 18",
+`[mock-derived]`; refuses doors and cat-cut ends; not drawn in the 3D
+check, which still holds the ridge end),
 and moving the organizer and pleated-card hems onto the Hem primitive.
 
 **Single-panel 3D check — DONE 2026-11-16 (`fix/tarp-followups`).** The

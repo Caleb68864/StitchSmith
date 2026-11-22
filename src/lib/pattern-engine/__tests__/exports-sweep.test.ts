@@ -101,6 +101,7 @@ const CASES: Case[] = [
   { name: 'plate carrier', convention: 'A', build: () => pieces('plate', buildPlate(plate)) },
   { name: 'modular lbv', convention: 'A', build: () => pieces('lbv', buildLbv(lbv)) },
   { name: 'tarp (ridge seam, cat cut)', convention: 'B', build: () => pieces('tarp', buildTarp(tarp)) },
+  { name: 'tarp (beaks both ends, single panel)', convention: 'B', build: () => pieces('tarp', buildTarp({ units: 'in', construction: 'single_panel', width: 56, beaks: 'both_ends' })) },
   { name: 'tarp (doors both ends, pull-outs)', convention: 'B', build: () => pieces('tarp', buildTarp({ units: 'in', doors: 'both_ends', pullouts: true })) },
   { name: 'tarp (cat-cut ends, single panel)', convention: 'B', build: () => pieces('tarp', buildTarp({ units: 'in', construction: 'single_panel', width: 56, cut_ends: true })) },
   { name: 'tarp (single panel, straight, rolled hems, production)', convention: 'B', build: () => pieces('tarp', buildTarp({ units: 'in', construction: 'single_panel', cut_style: 'flat', width: 56, hem_fold: 'double', production_mode: true, eave_tieouts: 2, ridge_tieouts: false })) },

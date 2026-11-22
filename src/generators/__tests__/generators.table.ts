@@ -157,7 +157,7 @@ export const GENERATORS: Gen[] = [
   },
   {
     name: 'tarp',
-    keys: ['units', 'construction', 'cut_style', 'ridge_length', 'width', 'ridge_sag', 'eave_sag', 'fabric_width', 'seam_allowance', 'hem_depth', 'hem_fold', 'production_mode', 'eave_tieouts', 'ridge_tieouts', 'patch_size', 'loop_length', 'loop_width', 'ridge_height', 'guylines', 'guyline_length', 'line_locks', 'cut_ends', 'end_sag', 'pullouts', 'doors'],
+    keys: ['units', 'construction', 'cut_style', 'ridge_length', 'width', 'ridge_sag', 'eave_sag', 'fabric_width', 'seam_allowance', 'hem_depth', 'hem_fold', 'production_mode', 'eave_tieouts', 'ridge_tieouts', 'patch_size', 'loop_length', 'loop_width', 'ridge_height', 'guylines', 'guyline_length', 'line_locks', 'cut_ends', 'end_sag', 'pullouts', 'doors', 'beaks', 'beak_length'],
     defaults: () => makeDefaultTarpProject().inputs as unknown as AnyInputs,
     validate: (i) => listErrors(tarp.validateInputs(i as never)),
     build: (i) => resultPieces(tarp.buildPattern(i as never)),

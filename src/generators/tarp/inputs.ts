@@ -1,7 +1,7 @@
 import type { TarpInputs, ResolvedInputs, ValidationResult, BuildPatternError } from './types.js';
 import {
   DEFAULT_UNITS, RIDGE_LENGTH_MM, WIDTH_MM, RIDGE_SAG_MM, EAVE_SAG_MM, FABRIC_WIDTH_MM, SEAM_ALLOWANCE_MM, HEM_DEPTH_MM,
-  EAVE_TIEOUTS, PATCH_SIZE_MM, LOOP_LENGTH_MM, LOOP_WIDTH_MM, RIDGE_HEIGHT_MM, MAX_EAVE_TIEOUTS, GUYLINE_LENGTH_MM, END_SAG_MM,
+  EAVE_TIEOUTS, PATCH_SIZE_MM, LOOP_LENGTH_MM, LOOP_WIDTH_MM, RIDGE_HEIGHT_MM, MAX_EAVE_TIEOUTS, GUYLINE_LENGTH_MM, END_SAG_MM, BEAK_LENGTH_MM,
 } from './defaults.js';
 import { sweepInputs, stripNulls, unitsOf, type GuardSpec } from '../../utils/inputGuards.js';
 import { resolveHem } from '../../lib/pattern-engine/primitives/hem.js';
@@ -33,6 +33,8 @@ const GUARD_SPEC: GuardSpec = {
   cut_ends: { kind: 'bool' },
   pullouts: { kind: 'bool' },
   doors: { kind: 'enum', allowed: ['none', 'one_end', 'both_ends'] },
+  beaks: { kind: 'enum', allowed: ['none', 'one_end', 'both_ends'] },
+  beak_length: { kind: 'length' },
   end_sag: { kind: 'length' },
 };
 
@@ -63,7 +65,10 @@ export function resolveInputs(inputs: TarpInputs): ResolvedInputs {
   const ridge_sag = catCut && construction === 'ridge_seam' ? d(inputs.ridge_sag, RIDGE_SAG_MM) : 0;
   const eave_sag = catCut ? d(inputs.eave_sag, EAVE_SAG_MM) : 0;
   const fabric_width = d(inputs.fabric_width, FABRIC_WIDTH_MM);
-  const seam_allowance = construction === 'ridge_seam' ? (fin(inputs.seam_allowance) ? inputs.seam_allowance : SEAM_ALLOWANCE_MM) : 0;
+  const beaks = inputs.beaks === 'one_end' || inputs.beaks === 'both_ends' ? inputs.beaks : 'none';
+  const beak_ends: [boolean, boolean] = [beaks !== 'none', beaks === 'both_ends'];
+  // The ridge seam and every beak seam take the seam allowance; a single panel without beaks has no seam.
+  const seam_allowance = construction === 'ridge_seam' || beaks !== 'none' ? (fin(inputs.seam_allowance) ? inputs.seam_allowance : SEAM_ALLOWANCE_MM) : 0;
   // Rolled by default: silnylon frays, and a rolled hem encloses the raw edge (decisions.md 2026-11-16).
   const hem_fold = inputs.hem_fold === 'single' ? 'single' : 'double';
   const production_mode = inputs.production_mode === true;
@@ -87,7 +92,12 @@ export function resolveInputs(inputs: TarpInputs): ResolvedInputs {
   const panel_finished_width = construction === 'ridge_seam' ? width / 2 : width;
   const panel_mid_width = panel_finished_width - ridge_sag - (construction === 'ridge_seam' ? 1 : 2) * eave_sag;
   const allow = hem.allowance;
-  const panel_cut_length = ridge_length + 2 * allow;
+  const end_allowance: [number, number] = [beak_ends[0] ? seam_allowance : allow, beak_ends[1] ? seam_allowance : allow];
+  const panel_cut_length = ridge_length + end_allowance[0] + end_allowance[1];
+  const beak_length = beaks !== 'none' ? d(inputs.beak_length, BEAK_LENGTH_MM) : 0;
+  const beakBox = beaks !== 'none' ? beakCutBox(beak_length, width / 2, seam_allowance, allow) : { w: 0, h: 0 };
+  // Beak halves per end: two (a ridge seam's two panels, or a single panel's two sides). Laid with their reach along the roll.
+  const beak_fabric_length = (beak_ends[0] ? 1 : 0) + (beak_ends[1] ? 1 : 0) > 0 ? ((beak_ends[0] ? 1 : 0) + (beak_ends[1] ? 1 : 0)) * (2 * beakBox.w <= fabric_width ? 1 : 2) * beakBox.h : 0;
   const panel_cut_width = construction === 'ridge_seam' ? seam_allowance + panel_finished_width + allow : panel_finished_width + 2 * allow;
   const half = width / 2;
   const reaches = half > ridge_height;
@@ -112,7 +122,8 @@ export function resolveInputs(inputs: TarpInputs): ResolvedInputs {
     panel_mid_width,
     panel_cut_length,
     panel_cut_width,
-    fabric_length: panel_count * panel_cut_length + door_fabric_length,
+    fabric_length: panel_count * panel_cut_length + door_fabric_length + beak_fabric_length,
+    beaks, beak_length, beak_ends, end_allowance, beak_fabric_length,
     doors, door_ends, door_height, door_base, door_fabric_length,
     ridge_curve_length: arcLength(ridge_length, ridge_sag),
     eave_curve_length: arcLength(ridge_length, eave_sag),
@@ -142,6 +153,29 @@ export function doorCut(base: number, height: number, allow: number): { finished
 export function doorCutBox(base: number, height: number, allow: number): { w: number; h: number } {
   if (!(base > 0 && height > 0)) return { w: 0, h: 0 };
   const { cut } = doorCut(base, height, allow);
+  const xs = cut.map((p) => p.x), ys = cut.map((p) => p.y);
+  return { w: Math.max(...xs) - Math.min(...xs), h: Math.max(...ys) - Math.min(...ys) };
+}
+
+/**
+ * A beak half's finished right triangle: the ridge corner R at (0, 0), the
+ * eave corner E at (0, end) down the panel end, the tip T at (-reach, 0) out
+ * along the ridge line. R–E sews to the panel end and T–R to the other half
+ * (both at the seam allowance); T–E is hemmed. Cut = each edge offset out.
+ */
+export function beakCut(reach: number, end: number, sa: number, hemAllow: number): { finished: { x: number; y: number }[]; cut: { x: number; y: number }[] } {
+  const T = { x: -reach, y: 0 }, R = { x: 0, y: 0 }, E = { x: 0, y: end };
+  const L = Math.hypot(reach, end);
+  // Lines: ridge y = -sa; panel end x = +sa; outer edge T–E moved out (toward -x, +y) by hemAllow.
+  const n = { x: -end / L, y: reach / L };
+  const c = n.x * T.x + n.y * T.y + hemAllow; // n·p = c on the offset outer line
+  const atY = (y: number) => ({ x: (c - n.y * y) / n.x, y });
+  const atX = (x: number) => ({ x, y: (c - n.x * x) / n.y });
+  return { finished: [T, R, E], cut: [atY(-sa), { x: sa, y: -sa }, atX(sa)] };
+}
+export function beakCutBox(reach: number, end: number, sa: number, hemAllow: number): { w: number; h: number } {
+  if (!(reach > 0 && end > 0)) return { w: 0, h: 0 };
+  const { cut } = beakCut(reach, end, sa, hemAllow);
   const xs = cut.map((p) => p.x), ys = cut.map((p) => p.y);
   return { w: Math.max(...xs) - Math.min(...xs), h: Math.max(...ys) - Math.min(...ys) };
 }
@@ -184,6 +218,12 @@ export function validateInputs(inputs: TarpInputs): ValidationResult {
     });
   }
   if (r.end_sag > MAX_SAG_RATIO * r.end_span) errors.push({ field: 'end_sag', message: `A ${inch(r.end_sag)} end cut on a ${inch(r.end_span)} end is deeper than a quarter of the span; that is no longer a cat cut.` });
+  if (r.beaks !== 'none') {
+    if (!(r.beak_length > 0)) errors.push({ field: 'beak_length', message: 'Beak length must be a positive number.' });
+    else if (r.end_sag > 0) errors.push({ field: 'beaks', message: 'Beaks are sewn along a straight end. Turn the end cat cut off, or the beaks off.' });
+    else if (r.door_ends > 0) errors.push({ field: 'beaks', message: 'Beaks and doors both close the ends. Choose one.' });
+    else if (beakCutBox(r.beak_length, r.width / 2, r.seam_allowance, r.hem_allowance).w > r.fabric_width) errors.push({ field: 'beak_length', message: `A beak half needs ${inch(beakCutBox(r.beak_length, r.width / 2, r.seam_allowance, r.hem_allowance).w)} of fabric across and the fabric is ${inch(r.fabric_width)}.` });
+  }
   if (r.door_ends > 0) {
     if (r.footprint_width <= 0) errors.push({ field: 'doors', message: `Doors close a pitched end down to the ground, and a ${inch(r.ridge_height)} ridgeline is too high for the ${inch(r.width / 2)} panels to reach it. Lower the ridgeline or widen the tarp.` });
     else if (r.end_sag > 0) errors.push({ field: 'doors', message: 'Doors are sewn along a straight end. Turn the end cat cut off, or the doors off.' });
