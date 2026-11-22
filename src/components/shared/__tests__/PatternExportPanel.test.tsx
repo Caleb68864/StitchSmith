@@ -79,6 +79,20 @@ describe('PatternExportPanel', () => {
     expect((html.match(/<svg/g) ?? []).length).toBe(2);
   });
 
+  it('cut sheets by assembly: offered only when the adapter says so, one section per assembly with the rest under Other', () => {
+    const { unmount } = render(<PatternExportPanel adapter={adapter()} />);
+    expect(screen.queryByRole('button', { name: /Cut sheets by assembly/i })).toBeNull();
+    unmount();
+    const pieces = [{ ...rect('front', 200, 150, 'cordura-500'), assembly: 'Front' }, { ...rect('strap', 300, 25, 'webbing-25'), assembly: 'Straps' }, rect('loose', 50, 50, 'cordura-500')];
+    render(<PatternExportPanel adapter={adapter({ groupByAssembly: true, buildPattern: () => ({ id: 't', name: 'Proj', pieces }) })} />);
+    fireEvent.click(screen.getByRole('button', { name: /Cut sheets by assembly/i }));
+    const [filename, html] = download.mock.calls[0];
+    expect(filename).toBe('Proj-cut-sheets-by-assembly.html');
+    expect(html.indexOf('<h2>Front</h2>')).toBeLessThan(html.indexOf('<h2>Straps</h2>'));
+    expect(html.indexOf('<h2>Straps</h2>')).toBeLessThan(html.indexOf('<h2>Other</h2>'));
+    expect((html.match(/<svg/g) ?? []).length).toBe(3);
+  });
+
   it('cut list shows the engine tables (fabric, strips, hardware) and the generator BOM; CSV downloads', () => {
     render(<PatternExportPanel adapter={adapter()} />);
     fireEvent.click(screen.getByRole('button', { name: /^Cut List$/i }));

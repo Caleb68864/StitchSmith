@@ -105,3 +105,30 @@ describe('buildPattern', () => {
     expect(bom.find((r) => r.id === `piece-${BOTTOM_ID}`)!.notes).toMatch(/after the hoop/);
   });
 });
+
+describe('drainage grommets and hydration port (roadmap 7 follow-ups)', () => {
+  const b = (i: ClamshellPackInputs) => { const v = buildPattern(i); if (!v.ok) throw new Error(JSON.stringify(v.errors)); return v.value; };
+  it('grommets on the bottom centre line, each over a 1.5" patch, set flat, on the hardware; none by default', () => {
+    expect(b(SOE).hardware.some((h) => h.id === 'grommet')).toBe(false);
+    const v = b({ ...SOE, bottom_grommets: 2 });
+    const bottom = v.pieces.find((p) => p.id === BOTTOM_ID)!;
+    const patches = bottom.paths.filter((p) => p.id.includes('-grommet-patch-'));
+    expect(patches).toHaveLength(2);
+    const e = patches[0].edges[0];
+    expect(e.end.x - e.start.x).toBeCloseTo(1.5 * IN, 6);
+    expect(v.hardware.find((h) => h.id === 'grommet')!.quantity).toBe(2);
+    expect(v.pieces.find((p) => p.id === 'clamshell-grommet-patch')!.quantity).toBe(2);
+    const order = v.steps.map((s) => s.id);
+    expect(order).toContain('cs.grommets');
+    expect(v.steps.find((s) => s.id === 'cs.grommets')!.body).toMatch(/750°F/);
+  });
+  it('a hydration port: a slot and patch on the lid strip top centre, the slot length flagged', () => {
+    const v = b({ ...SOE, hydration_port: true });
+    const lid = v.pieces.find((p) => p.id === LID_STRIP_ID)!;
+    const slot = lid.paths.find((p) => p.id.endsWith('-port-slot'))!.edges[0];
+    expect(slot.end.x - slot.start.x).toBeCloseTo(1.5 * IN, 6);
+    expect(lid.paths.some((p) => p.id.endsWith('-port-patch'))).toBe(true);
+    expect(v.warnings.some((w) => w.id === 'port-length')).toBe(true);
+    expect(v.pieces.find((p) => p.id === GUSSET_ID)!.paths.some((p) => p.id.endsWith('-port-slot'))).toBe(false);
+  });
+});

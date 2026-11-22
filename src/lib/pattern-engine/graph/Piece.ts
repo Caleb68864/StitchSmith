@@ -17,6 +17,8 @@ export interface Piece {
   quantity: number;
   paths: Path[];
   materialId?: string;
+  /** The sub-assembly the piece goes into (front, straps…), for cut sheets grouped by assembly. Optional. */
+  assembly?: string;
   annotations?: PieceAnnotation[];
   /** Per-edge seam allowance in mm, keyed by Edge.id. Missing entries mean 0 mm. */
   seamAllowances?: Record<EdgeId, number>;

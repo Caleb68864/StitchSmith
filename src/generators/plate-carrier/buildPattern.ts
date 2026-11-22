@@ -23,6 +23,8 @@ export const BACK_POCKET_ID = 'pc-back-pocket-wall';
 export const POCKET_FLAP_ID = 'pc-pocket-flap';
 export const BACK_COMFORT_ID = 'pc-back-comfort';
 export const BACK_FOAM_ID = 'pc-back-foam';
+export const PAD_HOOK_ID = 'pc-back-pad-hook';
+export const PAD_LOOP_ID = 'pc-back-pad-loop';
 export const LOOP_FIELD_ID = 'pc-loop-field';
 export const SHOULDER_PAD_ID = 'pc-shoulder-pad';
 export const SHOULDER_WEBBING_ID = 'pc-shoulder-webbing';
@@ -145,13 +147,26 @@ function comfortPieces(r: ResolvedInputs): Piece[] {
   const out: Piece[] = [];
   const eid = makeEdgeIdGen(BACK_COMFORT_ID);
   const outline = polygon(eid, `${BACK_COMFORT_ID}-outline`, shrink(r.panel_outline));
-  out.push({ id: BACK_COMFORT_ID, name: 'Back comfort layer (spacer mesh)', mirror: false, quantity: 1, materialId: 'spacer-mesh', paths: [outline], seamAllowances: saRecord(outline, 0), annotations: [{ kind: 'label', label: 'Spacer mesh, inset 1/4" so the binding closes round shell + mesh', point: { x: r.panel_width / 2, y: r.panel_height / 2 } }] });
+  out.push({ id: BACK_COMFORT_ID, name: 'Back comfort layer (spacer mesh)', mirror: false, quantity: 1, materialId: 'spacer-mesh', paths: [outline], seamAllowances: saRecord(outline, 0), annotations: [{ kind: 'label', label: r.back_pad_removable ? 'Spacer mesh, inset 1/4" — a removable pad, bound on its own' : 'Spacer mesh, inset 1/4" so the binding closes round shell + mesh', point: { x: r.panel_width / 2, y: r.panel_height / 2 } }] });
+  if (r.back_pad_removable) {
+    // A pad that comes out: two hook strips across its back, top and bottom, the pad width less 1" each side,
+    // into two loop strips on the inside of the back shell.
+    const len = r.panel_width - 2 * IN;
+    out.push(padStrip(PAD_HOOK_ID, 'Back pad hook strip', len, 'velcro-hook', 'Hook 1" wide across the back of the pad, top and bottom, sewn before the pad is bound'));
+    out.push(padStrip(PAD_LOOP_ID, 'Back pad loop strip', len, 'velcro-loop', 'Loop 1" wide on the inside of the back shell, facing the hook strips, sewn before the shell is bound'));
+  }
   if (r.back_comfort === 'foam_mesh') {
     const eid2 = makeEdgeIdGen(BACK_FOAM_ID);
     const o2 = polygon(eid2, `${BACK_FOAM_ID}-outline`, shrink(shrink(r.panel_outline)));
     out.push({ id: BACK_FOAM_ID, name: `Back pad foam (${Math.round(r.comfort_foam_thickness)} mm closed-cell)`, mirror: false, quantity: 1, materialId: 'foam-closed-cell', paths: [o2], seamAllowances: saRecord(o2, 0), annotations: [{ kind: 'label', label: 'Foam — separate cut sheet (different blade); inset 1/2" so no foam sits under the binding', point: { x: r.panel_width / 2, y: r.panel_height / 2 } }] });
   }
   return out;
+}
+
+function padStrip(id: string, name: string, len: number, materialId: string, label: string): Piece {
+  const eid = makeEdgeIdGen(id);
+  const outline = polygon(eid, `${id}-outline`, rectPts(0, 0, len, 1 * IN));
+  return { id, name, mirror: false, quantity: 2, materialId, paths: [outline], seamAllowances: saRecord(outline, 0), annotations: [{ kind: 'label', label, point: { x: len / 2, y: 0.5 * IN } }] };
 }
 
 function loopFieldPiece(r: ResolvedInputs): Piece | null {
@@ -296,5 +311,19 @@ export function buildPattern(inputs: PlateCarrierInputs): Result<PlateCarrierBui
   if (r.cummerbund_style !== 'none') hardware.push({ id: 'velcro-cummerbund', name: 'Hook + loop, cummerbund ends and sleeves', quantity: 4, notes: `${fmtIn(r.cummerbund_overlap)}" × ${fmtIn(r.cummerbund_width - 0.5 * IN)}" pairs` });
   if (r.qr_buckle !== 'none') hardware.push({ id: 'qr-buckle', name: { roc: 'ROC buckle 40 mm', tubes: 'FirstSpear Tubes', g_hook: 'ITW G-hook' }[r.qr_buckle], quantity: 2, notes: r.qr_buckle === 'g_hook' ? 'No quick release; slides under tension.' : 'Quick release at the front of the cummerbund.' });
   hardware.push({ id: 'velcro-flap', name: 'Hook + loop, pocket flaps', quantity: 2 });
+  if (r.back_pad_removable) {
+    const perim = r.panel_outline.reduce((s, p, i, a) => { const n = a[(i + 1) % a.length]; return s + Math.hypot(n.x - p.x, n.y - p.y); }, 0);
+    hardware.push({ id: 'binding-pad', name: `${fmtIn(r.binding_width)}" binding tape for the removable pad`, quantity: Math.ceil(perim / IN), notes: 'Inches: the pad is bound on its own so it comes out to wash.' });
+    mainSteps.push({ id: 'pc.back-pad', title: 'Removable back pad', body: 'Sew the two loop strips to the inside of the back shell, top and bottom, before the shell is bound. Sew the hook strips across the back of the pad in the same places, then bind the pad all round on its own: it presses onto the shell and peels off to wash.', dependsOn: [mainSteps[0].id], refsPieces: [BACK_COMFORT_ID, PAD_HOOK_ID, PAD_LOOP_ID], group: 'Back pad' });
+  }
+  // Sub-assemblies for the cut sheets grouped by assembly: each kit cut and bagged together.
+  const assemblyOf = (id: string): string => {
+    if (id.startsWith('pc-front') || id === LOOP_FIELD_ID || id === POCKET_FLAP_ID) return 'Front';
+    if (id.startsWith('pc-back')) return 'Back';
+    if (id.startsWith('pc-shoulder')) return 'Shoulders';
+    if (id.startsWith('pc-cummerbund') || id === SIDE_PLATE_POCKET_ID) return 'Cummerbund';
+    return 'Other';
+  };
+  for (const p of pieces) p.assembly = assemblyOf(p.id);
   return { ok: true, value: { pieces, steps: [...mainSteps, ...steps], warnings: [...buildWarnings(r, pals), ...warnings], hardware, resolved: r } };
 }

@@ -196,7 +196,12 @@ and bottom through the shared `buildPalsField` primitive, bowed handle,
 depth-scaled compression straps, removable-strap tabs and stow pocket,
 interior loop walls, pocket-grid footprints, 3D hoop assembly round the
 block. Follow-ups: padded straps through the strap engine terminating in the
-same male-buckle spec; drainage grommet / seam-slot port; hydration port.
+same male-buckle spec; ~~drainage grommet~~ (DONE 2026-11-22: `bottom_grommets`
+0–2 on the bottom centre line, each over a 1.5" patch, set flat and
+pre-burnt per the vault grommet rule, with a warning under 1/2" from the
+seam; a seam-slot port is still open); ~~hydration port~~ (DONE 2026-11-22: a
+slot and patch at the lid strip's top centre, the slot length a flagged
+placeholder).
 
 ### 8. Plate carrier — DONE 2026-09-12
 `src/generators/plate-carrier/`: plate presets and cuts (SAPI / shooter /
@@ -206,7 +211,10 @@ elastic or skeletal cummerbund with side plate pockets and QR buckle choice,
 bound or turned edges, bartack map, 3D fit on the medium torso with strap and
 cummerbund span verdicts. The vault is reference-grade here: four inputs carry
 mock-derived warnings. Follow-ups: SAPI XS–XL nomenclature as presets,
-QR-buckle mount drawings, a removable back pad piece with its Velcro, and the
+QR-buckle mount drawings, ~~a removable back pad piece with its Velcro~~
+(DONE 2026-11-22: `back_pad_removable` binds the comfort pad on its own,
+two 1" hook strips across its back into two loop strips inside the back
+shell, the pad width less 1" each side; the pad binding on the hardware), and the
 loop field's edge-under-binding variant.
 
 ### 9. Modular LBV — DONE 2026-09-12
@@ -843,11 +851,26 @@ which (the tri-zip `seam:` path convention is the seed).
 - **Layer budget per seam**: emit max stack per seam and a machine-class
   requirement; annotate "sew forward only" above ~8 layers.
   `reference/technique-sewing-through-bulk.md`, `rigs/splitfront-technique-layer-budgeting.md`.
-- **Cut sheets grouped by assembly** plus a material × width × length summary
-  that maps onto SOE's drawer lengths {3, 3.5, 6.5, 8, 10}.
-  `reference/soe-production-principles.md`.
-- **Stitch-shrinkage compensation**: pucker per taped edge 0.25", Velcro
-  over-cut 2", trim-after-sew tags everywhere Velcro or long webbing runs.
+  **Assessed 2026-11-22, not built:** the forward-only rule ("~8 layers")
+  is already in the step text where the vault puts it (the pleated card's
+  divisions and pleats, the folded-T wing stack). A per-seam budget needs
+  every generator to declare each seam's layer stack (shell, hems, webbing,
+  Velcro, binding) — a seam model the engine does not have; the machine-
+  class thresholds are not in the vault either. Next step: a `SeamStack`
+  record on `SeamSpec`-like seam declarations, starting with the card.
+- DONE 2026-11-22 (`Piece.assembly`, `patternToSvgByAssembly`) — **Cut sheets grouped by assembly**:
+  a piece may name its sub-assembly; the export panel offers "Cut sheets by
+  assembly" (one printable sheet per kit, untagged pieces under Other) when
+  the adapter sets `groupByAssembly`. The plate carrier tags Front, Back,
+  Shoulders and Cummerbund; other generators can opt in. The material ×
+  width × length summary on SOE's drawer lengths was already in the cut
+  list (2026-09-12). `reference/soe-production-principles.md`.
+- DONE 2026-11-22 (`exports/cutList.ts`, `shrinkageFor`) — **Stitch-shrinkage compensation**:
+  every strip-stock line in the cut list (table and CSV) carries the rule —
+  Velcro cut 2" long and trimmed after sewing; webbing trimmed after sewing
+  on a run longer than the 10" drawer; binding and tape the 1/4" pucker per
+  taped edge. Generators keep their own over-cuts; the tag says what to do.
+  `reference/technique-stitch-shrinkage.md`.
   `reference/technique-stitch-shrinkage.md`.
 - DONE 2026-09-12 (`maxRowWidth`, default 1400 mm) — **Exporter layout**: pieces currently lay out in one row; a multi-cell card
   with twelve strips is very wide. Row-wrap by a page width.

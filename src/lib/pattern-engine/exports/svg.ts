@@ -232,6 +232,8 @@ export interface SvgOptions {
   showAnnotations?: boolean;
   /** Only pieces with this materialId (a per-material cut sheet: foam and mesh take a different blade). */
   materialFilter?: string;
+  /** Only pieces of this assembly (`Piece.assembly`, 'Other' for pieces without one). */
+  assemblyFilter?: string;
 }
 
 /**
@@ -247,7 +249,8 @@ export function patternToSvg(pattern: Pattern, options: SvgOptions = {}): string
   const showAnnotations = options.showAnnotations ?? true;
   const maxRowWidth = options.maxRowWidth ?? 1400;
 
-  const pieces = options.materialFilter === undefined ? pattern.pieces : pattern.pieces.filter((p) => (p.materialId ?? 'unspecified') === options.materialFilter);
+  const byMat = options.materialFilter === undefined ? pattern.pieces : pattern.pieces.filter((p) => (p.materialId ?? 'unspecified') === options.materialFilter);
+  const pieces = options.assemblyFilter === undefined ? byMat : byMat.filter((p) => (p.assembly ?? OTHER_ASSEMBLY) === options.assemblyFilter);
   if (pieces.length === 0) {
     return `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"></svg>`;
   }
@@ -311,6 +314,24 @@ export function patternMaterials(pattern: Pattern): string[] {
   const seen: string[] = [];
   for (const p of pattern.pieces) { const m = p.materialId ?? 'unspecified'; if (!seen.includes(m)) seen.push(m); }
   return seen;
+}
+
+/** The sheet name for pieces that carry no `assembly`. */
+export const OTHER_ASSEMBLY = 'Other';
+
+/** Assemblies in first-seen order ('Other' last), or [] when no piece carries one. */
+export function patternAssemblies(pattern: Pattern): string[] {
+  if (!pattern.pieces.some((p) => p.assembly)) return [];
+  const seen: string[] = [];
+  for (const p of pattern.pieces) { const a = p.assembly ?? OTHER_ASSEMBLY; if (!seen.includes(a)) seen.push(a); }
+  return [...seen.filter((a) => a !== OTHER_ASSEMBLY), ...(seen.includes(OTHER_ASSEMBLY) ? [OTHER_ASSEMBLY] : [])];
+}
+
+/** One SVG per assembly — cut sheets grouped by what the pieces go into (reference/soe-production-principles.md). */
+export function patternToSvgByAssembly(pattern: Pattern, options: SvgOptions = {}): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const a of patternAssemblies(pattern)) out[a] = patternToSvg(pattern, { ...options, assemblyFilter: a });
+  return out;
 }
 
 /** One SVG per material — separate cut sheets for fabric, foam, mesh, webbing. */

@@ -1517,3 +1517,25 @@ baffle-chamber primitive and a fill-weight calculation.
   stitched twice (it takes load). The seam allowance (placeholder 1/2")
   now has a job, but only with a centre seam or the net; otherwise it stays
   0 with its info note.
+
+
+## 2026-11-22 — Stitch-shrinkage tags on the cut list (engine)
+
+- `shrinkageFor` (exports/cutList.ts) tags each strip-stock entry with the
+  vault's stitch-shrinkage rule (reference/technique-stitch-shrinkage.md):
+  Velcro cut 2" long and trimmed after sewing; webbing trimmed after sewing
+  on a "long run", read as longer than the longest pre-cut drawer length
+  (10"), which is cut to length anyway (decided by agent 2026-11-22; the
+  vault does not give a length); binding and tape get the 1/4" pucker per
+  taped edge. The over-cut is not added to lengths: generators that over-cut
+  already do (PALS rows, loop strips), and adding it again would double it.
+
+
+## 2026-11-22 — Cut sheets grouped by assembly (engine)
+
+- `Piece.assembly` (optional) names the sub-assembly a piece goes into;
+  `patternToSvgByAssembly` renders one sheet per assembly in first-seen
+  order with untagged pieces last under "Other". The export panel shows the
+  button only when the adapter sets `groupByAssembly`, so generators opt in
+  once their pieces are tagged; the plate carrier is the first (Front, Back,
+  Shoulders, Cummerbund).

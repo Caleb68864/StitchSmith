@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Download, Printer, FileCode, List, BookOpen, Layers } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { ExportAdapter } from './exportAdapter.js';
-import { patternToSvg, patternToSvgByMaterial } from '../../../lib/pattern-engine/exports/svg.js';
+import { patternToSvg, patternToSvgByMaterial, patternToSvgByAssembly } from '../../../lib/pattern-engine/exports/svg.js';
 import { exportCutList, exportCutListCsv, type ExportCutList } from '../../../lib/pattern-engine/exports/cutList.js';
 import { loadPdfExporter, loadDxfExporter, loadTiledHtmlExporter } from '../../../lib/pattern-engine/exports/lazy.js';
 import { renderHtml } from '../../../lib/pattern-engine/instructions/compile.js';
@@ -38,6 +38,7 @@ export function PatternExportPanel({ adapter, showLabels: showLabelsProp }: Prop
   const [tiledLoading, setTiledLoading] = useState(false);
   const showLabels = showLabelsProp ?? labelsState;
   const disabled = adapter.hasErrors;
+  const hasAssemblies = adapter.groupByAssembly === true;
   const name = adapter.projectName;
 
   function pattern() {
@@ -68,6 +69,19 @@ export function PatternExportPanel({ adapter, showLabels: showLabelsProp }: Prop
       `<style>body{font-family:sans-serif;margin:16px}h1{font-size:18px}h2{font-size:14px;margin:0 0 8px}.sheet{page-break-after:always;margin-bottom:24px}svg{max-width:100%;height:auto;border:1px solid #ddd}</style>` +
       `</head><body><h1>${escapeHtml(name)} — cut sheets by material</h1><p>One sheet per material at 1 mm = 1 unit; print each at 100 % or send the matching SVG to the cutter.</p>${sections}</body></html>`;
     downloadTextFile(`${name}-cut-sheets.html`, html, 'text/html');
+  }
+
+  function handleAssemblySheets() {
+    const p = pattern();
+    if (!p) return;
+    const sheets = patternToSvgByAssembly(p, svgOptions());
+    const sections = Object.entries(sheets)
+      .map(([assembly, svg]) => `<section class="sheet"><h2>${escapeHtml(assembly)}</h2>${svg}</section>`)
+      .join('\n');
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${escapeHtml(name)} — cut sheets by assembly</title>` +
+      `<style>body{font-family:sans-serif;margin:16px}h1{font-size:18px}h2{font-size:14px;margin:0 0 8px}.sheet{page-break-after:always;margin-bottom:24px}svg{max-width:100%;height:auto;border:1px solid #ddd}</style>` +
+      `</head><body><h1>${escapeHtml(name)} — cut sheets by assembly</h1><p>One sheet per sub-assembly, so each kit is cut and bagged together; print at 100 %.</p>${sections}</body></html>`;
+    downloadTextFile(`${name}-cut-sheets-by-assembly.html`, html, 'text/html');
   }
 
   async function handleTiledHtml() {
@@ -166,6 +180,12 @@ export function PatternExportPanel({ adapter, showLabels: showLabelsProp }: Prop
           <Layers className="h-3 w-3 mr-2" />
           Cut sheets by material
         </Button>
+        {hasAssemblies && (
+          <Button variant="outline" size="sm" className={btn} disabled={disabled} onClick={handleAssemblySheets} title="One printable page with a sheet per sub-assembly (front, back, straps…).">
+            <Layers className="h-3 w-3 mr-2" />
+            Cut sheets by assembly
+          </Button>
+        )}
         <Button variant="outline" size="sm" className={btn} disabled={disabled || tiledLoading} onClick={handleTiledHtml} title="Open tiled layout for home printing.">
           <Printer className="h-3 w-3 mr-2" />
           {tiledLoading ? 'Loading…' : 'Tiled printable HTML'}

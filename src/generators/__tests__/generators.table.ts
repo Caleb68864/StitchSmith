@@ -91,7 +91,7 @@ export const GENERATORS: Gen[] = [
   },
   {
     name: 'clamshell-pack',
-    keys: ['units', 'pocket_grid', 'width', 'height', 'depth', 'lid_depth', 'equal_split', 'zipper_lip', 'zipper_underwrap', 'hoop_overcut', 'seam_allowance', 'fold_in', 'zipper_clearance', 'pals_style', 'pals_rows_side', 'pals_rows_face', 'pals_rows_bottom', 'pals_cols_side', 'edge_offset', 'handle', 'handle_bow', 'handle_fold_under', 'compression_straps_per_side', 'compression_extra', 'interior_loop', 'loop_strip_width', 'loop_gap', 'strap_provision', 'strap_tab_spacing'],
+    keys: ['units', 'pocket_grid', 'width', 'height', 'depth', 'lid_depth', 'equal_split', 'zipper_lip', 'zipper_underwrap', 'hoop_overcut', 'seam_allowance', 'fold_in', 'zipper_clearance', 'pals_style', 'pals_rows_side', 'pals_rows_face', 'pals_rows_bottom', 'pals_cols_side', 'edge_offset', 'handle', 'handle_bow', 'handle_fold_under', 'compression_straps_per_side', 'compression_extra', 'interior_loop', 'loop_strip_width', 'loop_gap', 'strap_provision', 'strap_tab_spacing', 'bottom_grommets', 'hydration_port', 'port_length'],
     defaults: () => makeDefaultClamshellPackProject().inputs as unknown as AnyInputs,
     validate: (i) => listErrors(clamshell.validateInputs(i as never)),
     build: (i) => resultPieces(clamshell.buildPattern(i as never)),
@@ -140,7 +140,7 @@ export const GENERATORS: Gen[] = [
   },
   {
     name: 'plate-carrier',
-    keys: ['units', 'plate_preset', 'plate_width', 'plate_height', 'plate_cut', 'top_clip_length', 'top_clip_angle', 'pocket_ease', 'shell_oversize', 'shell_material', 'edge_finish', 'binding_width', 'seam_allowance', 'back_comfort', 'comfort_foam_thickness', 'pocket_opening', 'pocket_flap_length', 'front_field', 'loop_field_width', 'loop_field_height', 'loop_field_y_offset', 'back_field', 'shoulder_style', 'strap_width', 'pad_length', 'pad_foam_thickness', 'shoulder_strap_length', 'strap_adjust_range', 'cummerbund_style', 'cummerbund_width', 'torso_circumference', 'cummerbund_overlap', 'side_plate', 'qr_buckle', 'torso_length'],
+    keys: ['units', 'plate_preset', 'plate_width', 'plate_height', 'plate_cut', 'top_clip_length', 'top_clip_angle', 'pocket_ease', 'shell_oversize', 'shell_material', 'edge_finish', 'binding_width', 'seam_allowance', 'back_comfort', 'comfort_foam_thickness', 'pocket_opening', 'pocket_flap_length', 'front_field', 'loop_field_width', 'loop_field_height', 'loop_field_y_offset', 'back_field', 'shoulder_style', 'strap_width', 'pad_length', 'pad_foam_thickness', 'shoulder_strap_length', 'strap_adjust_range', 'cummerbund_style', 'cummerbund_width', 'torso_circumference', 'cummerbund_overlap', 'side_plate', 'qr_buckle', 'torso_length', 'back_pad_removable'],
     defaults: () => makeDefaultPlateCarrierProject().inputs as unknown as AnyInputs,
     validate: (i) => listErrors(plateCarrier.validateInputs(i as never)),
     build: (i) => resultPieces(plateCarrier.buildPattern(i as never)),

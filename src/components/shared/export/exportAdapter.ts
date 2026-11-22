@@ -34,6 +34,8 @@ export interface ExportAdapter {
   buildPattern: () => Pattern | null;
   /** Seam allowance (mm) the exporters draw for pieces without per-edge allowances. */
   defaultSeamAllowance: number;
+  /** The pattern tags its pieces with `assembly`: offer cut sheets grouped by assembly. */
+  groupByAssembly?: boolean;
   /** Assembly steps for the Instructions download; omit to hide the button. */
   steps?: () => Step[] | null;
   /** Hardware for the engine cut list (the Tri-Zip's zipper/buckle list). */

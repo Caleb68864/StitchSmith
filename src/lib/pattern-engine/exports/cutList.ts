@@ -24,6 +24,13 @@ export interface HardwareBomEntry {
 export interface StripCutEntry {
   materialId: string;
   widthMm: number;
+  /**
+   * Stitch shrinkage (reference/technique-stitch-shrinkage.md): Velcro and long
+   * webbing runs draw in under the stitching, so they are cut long and trimmed
+   * after sewing; a taped edge puckers about 1/4". The note says what to do.
+   */
+  trimAfterSew: boolean;
+  shrinkageNote: string | null;
   /** Each distinct cut length (mm) with its count and the drawer length that serves it. */
   cuts: { lengthMm: number; quantity: number; drawerIn: number | null; pieces: string[] }[];
   totalLengthMm: number;
@@ -34,6 +41,25 @@ export interface ExportCutList {
   byHardware: HardwareBomEntry[];
   /** Strip stock by material × width; empty when nothing is strip-like. */
   strips: StripCutEntry[];
+}
+
+/** Velcro over-cut before sewing, mm (reference/technique-stitch-shrinkage.md): 2". */
+export const VELCRO_OVERCUT_MM = 2 * 25.4;
+/** Pucker per taped edge, mm (the same note): 1/4". */
+export const TAPE_PUCKER_MM = 0.25 * 25.4;
+
+/**
+ * The stitch-shrinkage rule for a strip material. Velcro always trims after
+ * sewing (cut 2" long); webbing does on a long run — one longer than the
+ * longest pre-cut drawer length (10"), which is cut to length anyway; binding
+ * and edge tape pucker 1/4" per taped edge.
+ */
+export function shrinkageFor(materialId: string, longestCutMm: number): { trimAfterSew: boolean; note: string | null } {
+  const m = materialId.toLowerCase();
+  if (m.startsWith('velcro')) return { trimAfterSew: true, note: 'cut 2" long and trim after sewing: Velcro shrinks under the stitch' };
+  if (m.startsWith('webbing') && longestCutMm > DRAWER_LENGTHS_IN[DRAWER_LENGTHS_IN.length - 1] * 25.4) return { trimAfterSew: true, note: 'long run: cut long and trim after sewing' };
+  if (m.includes('binding') || m.includes('tape')) return { trimAfterSew: false, note: 'allow about 1/4" of pucker per taped edge' };
+  return { trimAfterSew: false, note: null };
 }
 
 /** SOE's pre-cut drawer lengths, inches. */
@@ -63,14 +89,17 @@ export function stripSummary(pattern: Pattern): StripCutEntry[] {
     const lengthMm = Math.round(Math.max(bbox.width, bbox.height) * 10) / 10;
     const materialId = piece.materialId ?? 'unspecified';
     const key = `${materialId}|${widthMm}`;
-    const entry = groups.get(key) ?? { materialId, widthMm, cuts: [], totalLengthMm: 0 };
+    const entry = groups.get(key) ?? { materialId, widthMm, cuts: [], totalLengthMm: 0, trimAfterSew: false, shrinkageNote: null };
     const cut = entry.cuts.find((c) => Math.abs(c.lengthMm - lengthMm) < 0.05);
     if (cut) { cut.quantity += piece.quantity; cut.pieces.push(piece.id); }
     else entry.cuts.push({ lengthMm, quantity: piece.quantity, drawerIn: drawerLengthFor(lengthMm), pieces: [piece.id] });
     entry.totalLengthMm += lengthMm * piece.quantity;
     groups.set(key, entry);
   }
-  return [...groups.values()].map((e) => ({ ...e, cuts: e.cuts.sort((a, b) => a.lengthMm - b.lengthMm) })).sort((a, b) => a.materialId.localeCompare(b.materialId) || a.widthMm - b.widthMm);
+  return [...groups.values()].map((e) => {
+    const sh = shrinkageFor(e.materialId, Math.max(...e.cuts.map((c) => c.lengthMm)));
+    return { ...e, trimAfterSew: sh.trimAfterSew, shrinkageNote: sh.note, cuts: e.cuts.sort((a, b) => a.lengthMm - b.lengthMm) };
+  }).sort((a, b) => a.materialId.localeCompare(b.materialId) || a.widthMm - b.widthMm);
 }
 
 export interface CutListOptions {
@@ -148,10 +177,10 @@ export function exportCutListCsv(
   }
   if (cutList.strips.length > 0) {
     lines.push('');
-    lines.push('Strip Material,Width (mm),Length (mm),Quantity,Drawer (in),Pieces');
+    lines.push('Strip Material,Width (mm),Length (mm),Quantity,Drawer (in),Pieces,Shrinkage');
     for (const strip of cutList.strips) {
       for (const cut of strip.cuts) {
-        lines.push([strip.materialId, strip.widthMm, cut.lengthMm, cut.quantity, cut.drawerIn ?? 'cut to length', cut.pieces.join('; ')].map(csvField).join(','));
+        lines.push([strip.materialId, strip.widthMm, cut.lengthMm, cut.quantity, cut.drawerIn ?? 'cut to length', cut.pieces.join('; '), strip.shrinkageNote ?? ''].map(csvField).join(','));
       }
     }
   }
