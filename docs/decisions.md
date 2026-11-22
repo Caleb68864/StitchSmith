@@ -1374,3 +1374,20 @@ baffle-chamber primitive and a fill-weight calculation.
   points, never a size chart (no chart is sourced). Negative ease gets an
   info note (stretch fabrics only).
 - No 3D: the cloth engine has no head form.
+
+
+## 2026-11-22 — Drafting engine steps 1 and 2 (roadmap 10f)
+
+- Measurement set: eleven measurements, all required inputs (no size
+  chart; ASTM D5585 / ISO 8559 are not in the repo). Girths carry their own
+  ease; scye depth (nape to armpit level) is measured, so no drafting-system
+  formula is used for the armhole depth.
+- Bodice block, decided by agent 2026-11-22 (owner may revisit): geometric
+  choices, not a named drafting system. Back and front each a quarter of
+  the eased chest, waist and hip (side seam under the arm); neck point at
+  the neck radius; back neck a quarter ellipse 1/4 of the radius deep, front
+  depth solved so the neckline measures half the eased neck; shoulder drop
+  a required option the garment supplies (flagged); the same armhole cubic
+  and side seam on both halves, so every seam pair matches by construction.
+  A real block gives the front more width and a deeper front armhole; that
+  refinement waits for a sourced system or fitting.

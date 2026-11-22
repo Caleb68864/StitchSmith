@@ -558,7 +558,9 @@ garment depends on a later step:
    user inputs with ease per measurement. No size table: a standard size
    chart (ASTM D5585, ISO 8559) is not in the repo, so presets wait until
    one is sourced. Tests: validation, unit conversion.
-2. **Bodice block** (`drafting/bodice.ts`): front and back from the
+2. DONE 2026-11-22 — **Bodice block** (`drafting/bodice.ts`; tests `bodice.test.ts`;
+   the front neck depth is solved so the neckline measures half the eased
+   neck; the shoulder drop is a required option, flagged by the garment): front and back from the
    measurements — chest/4 + ease per quarter, shoulder slope, neckline
    (quarter ellipse) and armhole (Bézier through the armhole depth and the
    shoulder and side points). Tests: front + back widths = chest/2 + ease,
