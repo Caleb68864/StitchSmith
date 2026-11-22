@@ -1529,3 +1529,13 @@ baffle-chamber primitive and a fill-weight calculation.
   vault does not give a length); binding and tape get the 1/4" pucker per
   taped edge. The over-cut is not added to lengths: generators that over-cut
   already do (PALS rows, loop strips), and adding it again would double it.
+
+
+## 2026-11-22 — Cut sheets grouped by assembly (engine)
+
+- `Piece.assembly` (optional) names the sub-assembly a piece goes into;
+  `patternToSvgByAssembly` renders one sheet per assembly in first-seen
+  order with untagged pieces last under "Other". The export panel shows the
+  button only when the adapter sets `groupByAssembly`, so generators opt in
+  once their pieces are tagged; the plate carrier is the first (Front, Back,
+  Shoulders, Cummerbund).

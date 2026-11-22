@@ -123,3 +123,14 @@ describe('removable back pad (roadmap 8 follow-up)', () => {
     expect(b({ ...DEF, back_comfort: 'none', back_pad_removable: true }).pieces.some((p) => p.id === 'pc-back-pad-hook')).toBe(false);
   });
 });
+
+describe('cut sheets by assembly (engine)', () => {
+  it('every plate carrier piece carries its sub-assembly: front, back, shoulders, cummerbund', () => {
+    const v = buildPattern(DEF);
+    if (!v.ok) throw new Error('build');
+    for (const p of v.value.pieces) expect(['Front', 'Back', 'Shoulders', 'Cummerbund', 'Other']).toContain(p.assembly);
+    expect(v.value.pieces.find((p) => p.id === FRONT_SHELL_ID)!.assembly).toBe('Front');
+    expect(v.value.pieces.find((p) => p.id === BACK_SHELL_ID)!.assembly).toBe('Back');
+    expect(v.value.pieces.some((p) => p.assembly === 'Cummerbund')).toBe(true);
+  });
+});

@@ -316,5 +316,14 @@ export function buildPattern(inputs: PlateCarrierInputs): Result<PlateCarrierBui
     hardware.push({ id: 'binding-pad', name: `${fmtIn(r.binding_width)}" binding tape for the removable pad`, quantity: Math.ceil(perim / IN), notes: 'Inches: the pad is bound on its own so it comes out to wash.' });
     mainSteps.push({ id: 'pc.back-pad', title: 'Removable back pad', body: 'Sew the two loop strips to the inside of the back shell, top and bottom, before the shell is bound. Sew the hook strips across the back of the pad in the same places, then bind the pad all round on its own: it presses onto the shell and peels off to wash.', dependsOn: [mainSteps[0].id], refsPieces: [BACK_COMFORT_ID, PAD_HOOK_ID, PAD_LOOP_ID], group: 'Back pad' });
   }
+  // Sub-assemblies for the cut sheets grouped by assembly: each kit cut and bagged together.
+  const assemblyOf = (id: string): string => {
+    if (id.startsWith('pc-front') || id === LOOP_FIELD_ID || id === POCKET_FLAP_ID) return 'Front';
+    if (id.startsWith('pc-back')) return 'Back';
+    if (id.startsWith('pc-shoulder')) return 'Shoulders';
+    if (id.startsWith('pc-cummerbund') || id === SIDE_PLATE_POCKET_ID) return 'Cummerbund';
+    return 'Other';
+  };
+  for (const p of pieces) p.assembly = assemblyOf(p.id);
   return { ok: true, value: { pieces, steps: [...mainSteps, ...steps], warnings: [...buildWarnings(r, pals), ...warnings], hardware, resolved: r } };
 }

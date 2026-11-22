@@ -17,6 +17,7 @@ export function ExportPanel({ inputs, project, hasErrors }: Props) {
     projectName: project.projectName,
     hasErrors,
     defaultSeamAllowance: 0,
+    groupByAssembly: true,
     buildPattern: () => { const r = build(); return r ? { id: 'plate-carrier', name: project.projectName, pieces: r.pieces } : null; },
     steps: () => build()?.steps ?? null,
     bom: () => buildBom(inputs),

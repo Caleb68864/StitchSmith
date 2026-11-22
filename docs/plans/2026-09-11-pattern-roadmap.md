@@ -851,9 +851,13 @@ which (the tri-zip `seam:` path convention is the seed).
 - **Layer budget per seam**: emit max stack per seam and a machine-class
   requirement; annotate "sew forward only" above ~8 layers.
   `reference/technique-sewing-through-bulk.md`, `rigs/splitfront-technique-layer-budgeting.md`.
-- **Cut sheets grouped by assembly** plus a material × width × length summary
-  that maps onto SOE's drawer lengths {3, 3.5, 6.5, 8, 10}.
-  `reference/soe-production-principles.md`.
+- DONE 2026-11-22 (`Piece.assembly`, `patternToSvgByAssembly`) — **Cut sheets grouped by assembly**:
+  a piece may name its sub-assembly; the export panel offers "Cut sheets by
+  assembly" (one printable sheet per kit, untagged pieces under Other) when
+  the adapter sets `groupByAssembly`. The plate carrier tags Front, Back,
+  Shoulders and Cummerbund; other generators can opt in. The material ×
+  width × length summary on SOE's drawer lengths was already in the cut
+  list (2026-09-12). `reference/soe-production-principles.md`.
 - DONE 2026-11-22 (`exports/cutList.ts`, `shrinkageFor`) — **Stitch-shrinkage compensation**:
   every strip-stock line in the cut list (table and CSV) carries the rule —
   Velcro cut 2" long and trimmed after sewing; webbing trimmed after sewing
