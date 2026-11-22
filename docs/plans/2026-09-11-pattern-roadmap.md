@@ -492,7 +492,10 @@ two thirds down each side seam and lists two straps about the pad width,
 `pad_width` placeholder 20"),
 ~~vertical side baffles~~ (DONE 2026-11-22: `side_baffles`, baffled only — a
 mesh strip the finished side long and the loft tall down each edge, the
-cross baffles' ends caught under it, more mesh on the BOM), joining fabric widths for a wider quilt, synthetic
+cross baffles' ends caught under it, more mesh on the BOM), ~~joining fabric widths for a wider quilt~~ (DONE
+2026-11-22: `join_widths` cuts each layer as a mirrored pair of halves,
+every line clipped to the half, a flat-felled centre seam; the fabric
+check then uses the half), synthetic
 batting instead of a fill weight.
 
 #### 10d. Bathtub-floor bivy — DONE 2026-11-22 (`pattern/10-doors-bivy-apparel`, no 3D)

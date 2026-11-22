@@ -16,7 +16,7 @@ export function buildBom(inputs: QuiltInputs): BomRow[] {
     const bb = bboxFromPieceWithSa(p, 0);
     rows.push({ id: `piece-${p.id}`, description: p.name, quantity: p.quantity, unit: `pc — ${Math.round(bb.width)} × ${Math.round(bb.height)} mm`, notes: `${p.materialId}; mock-derived size` });
   }
-  const per = Math.ceil(r.cut_length / 10) * 10;
+  const per = Math.ceil(r.fabric_length / 2 / 10) * 10;
   rows.push({ id: `material-${SHELL_FABRIC_ID}`, description: `shell fabric (sewn, downproof), ${Math.round(r.fabric_width)} mm usable width`, quantity: per, unit: 'mm', notes: 'one length off the roll, grain along the quilt' });
   rows.push({ id: `material-${LINER_FABRIC_ID}`, description: `liner fabric (sewn, downproof), ${Math.round(r.fabric_width)} mm usable width`, quantity: per, unit: 'mm', notes: 'one length off the roll, grain along the quilt' });
   const baffles = pieces.filter((p) => p.materialId === MESH_ID && p.id !== SIDE_BAFFLE_ID);

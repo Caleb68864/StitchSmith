@@ -281,3 +281,28 @@ describe('side baffles (roadmap 10c follow-up: vertical baffles)', () => {
     expect(built({ ...ST, side_baffles: true }).pieces.some((p) => p.id === SIDE_BAFFLE_ID)).toBe(false);
   });
 });
+
+describe('joined widths (roadmap 10c follow-up)', () => {
+  const WIDE: QuiltInputs = { ...DEF, shoulder_width: 64, foot_width: 48 };
+  it('a quilt wider than the fabric is an error until joined; joined, each layer is a mirrored pair of halves with a centre seam', () => {
+    expect(errorFields(WIDE)).toEqual(['shoulder_width']);
+    const J = { ...WIDE, join_widths: true };
+    expect(errorFields(J)).toEqual([]);
+    const r = resolveInputs(J);
+    const v = built(J);
+    const shell = piece(v.pieces, SHELL_ID);
+    expect(shell.mirror).toBe(true);
+    expect(shell.paths.some((p) => p.id === `${SHELL_ID}-centre-seam`)).toBe(true);
+    const bb = bboxFromPiece(shell);
+    expect(bb.width).toBeCloseTo(r.piece_cut_width, 0);
+    expect(bb.width).toBeLessThan(58 * IN);
+    // The centre seam runs the finished length.
+    const cs = shell.paths.find((p) => p.id === `${SHELL_ID}-centre-seam`)!.edges[0];
+    expect(Math.abs(cs.end.y - cs.start.y)).toBeCloseTo(78 * IN, 6);
+    // Every baffle line is clipped to the half: none reaches left of the centre seam.
+    for (const p of shell.paths.filter((x) => x.id.startsWith(`${SHELL_ID}-wall-`))) for (const e of p.edges) expect(Math.min(e.start.x, e.end.x)).toBeGreaterThanOrEqual(cs.start.x - 1e-6);
+    expect(Object.values(shell.seamAllowances!).every((x) => x === 0)).toBe(true);
+    // Two halves no longer fit side by side on 58", so each layer takes two lengths.
+    expect(r.fabric_length).toBeCloseTo(4 * r.cut_length, 6);
+  });
+});

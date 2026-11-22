@@ -39,6 +39,8 @@ export interface QuiltInputs {
   pad_straps?: boolean;
   /** Sleeping pad width, display units. Placeholder 20" — mock-derived. */
   pad_width?: number;
+  /** Cut each layer as two halves joined down the centre (for a quilt wider than the fabric). Default false. */
+  join_widths?: boolean;
   /** Baffled only: a mesh side baffle down each long edge, so the loft runs to the edge (default false). */
   side_baffles?: boolean;
   /** Baffled chambers (default) or sewn through both layers. */
@@ -83,6 +85,9 @@ export interface ResolvedInputs {
   pad_straps: boolean;
   pad_width: number;
   side_baffles: boolean;
+  join_widths: boolean;
+  /** The widest piece of shell or liner fabric across the roll (a half when joined). */
+  piece_cut_width: number;
   /** Rolled channel at each end (0 for none): an underquilt's suspension, or a top quilt's neck drawcord at the head. */
   head_channel: number;
   foot_channel: number;

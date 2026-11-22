@@ -19,6 +19,7 @@ const GUARD_SPEC: GuardSpec = {
   neck_channel: { kind: 'length' },
   pad_straps: { kind: 'bool' },
   side_baffles: { kind: 'bool' },
+  join_widths: { kind: 'bool' },
   pad_width: { kind: 'length' },
   length: { kind: 'length' },
   shoulder_width: { kind: 'length' },
@@ -106,7 +107,10 @@ export function resolveInputs(inputs: QuiltInputs): ResolvedInputs {
     liner_cut_width: liner ? liner.cutWidth : NaN,
     shell_cut_width: shell ? shell.cutWidth : NaN,
     cut_length,
-    fabric_length: 2 * cut_length,
+    join_widths: inputs.join_widths === true,
+    piece_cut_width: inputs.join_widths === true ? Math.max(liner?.cutWidth ?? NaN, shell?.cutWidth ?? NaN) / 2 + seam_allowance : Math.max(liner?.cutWidth ?? NaN, shell?.cutWidth ?? NaN),
+    // Each layer: one length off the roll, or two halves side by side when they fit (end to end when not).
+    fabric_length: 2 * cut_length * (inputs.join_widths === true && 2 * (Math.max(liner?.cutWidth ?? 0, shell?.cutWidth ?? 0) / 2 + seam_allowance) > fabric_width ? 2 : 1),
   };
 }
 
@@ -135,10 +139,12 @@ export function validateInputs(inputs: QuiltInputs): ValidationResult {
   if (r.pad_straps && !(r.pad_width > 0)) return { ok: false, errors: [{ field: 'pad_width', message: 'Pad width must be a positive number.' }] };
   if (r.kind === 'top_quilt' && r.footbox_length >= r.length) errors.push({ field: 'footbox_length', message: `A ${inch(r.footbox_length)} footbox is as long as the ${inch(r.length)} quilt.` });
   if (r.baffle_spacing > r.length) errors.push({ field: 'baffle_spacing', message: `Chamber spacing ${inch(r.baffle_spacing)} is longer than the ${inch(r.length)} quilt.` });
-  const widest = Math.max(r.shell_cut_width, r.liner_cut_width);
-  if (widest > r.fabric_width + 1e-6) {
+  const widest = r.piece_cut_width;
+  if (widest > r.fabric_width + 1e-6 && r.join_widths) {
+    errors.push({ field: 'shoulder_width', message: `Even joined down the centre, each half needs ${inch(widest)} across and the fabric is ${inch(r.fabric_width)}.` });
+  } else if (widest > r.fabric_width + 1e-6) {
     const which = r.shell_differential > 0 ? `the ${r.wider_layer} needs ${inch(widest)} across (the ${r.shell_differential} % differential and the seam allowance included)` : `each panel needs ${inch(widest)} across (the seam allowance included)`;
-    errors.push({ field: 'shoulder_width', message: `At the shoulders ${which} and the fabric is ${inch(r.fabric_width)}. Narrow the quilt, lower the differential or use wider fabric.` });
+    errors.push({ field: 'shoulder_width', message: `At the shoulders ${which} and the fabric is ${inch(r.fabric_width)}. Narrow the quilt, lower the differential, use wider fabric or join two widths down the centre.` });
   }
   return errors.length ? { ok: false, errors } : { ok: true };
 }

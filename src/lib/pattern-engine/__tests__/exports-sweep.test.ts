@@ -111,6 +111,7 @@ const CASES: Case[] = [
   { name: 'tarp (single panel, straight, rolled hems, production)', convention: 'B', build: () => pieces('tarp', buildTarp({ units: 'in', construction: 'single_panel', cut_style: 'flat', width: 56, hem_fold: 'double', production_mode: true, eave_tieouts: 2, ridge_tieouts: false })) },
   { name: 'hammock (channel ends, hemmed sides)', convention: 'B', build: () => pieces('hammock', buildHammock(makeDefaultHammockProject().inputs)) },
   { name: 'hammock (whipped ends, selvedge, single fold, production)', convention: 'B', build: () => pieces('hammock', buildHammock({ units: 'in', end_style: 'whipping', side_edge: 'selvedge', width: 60, hem_fold: 'single', production_mode: true })) },
+  { name: 'top quilt (wide, joined widths, neck, pad straps, side baffles)', convention: 'B', build: () => pieces('quilt', buildQuilt({ units: 'in', shoulder_width: 64, foot_width: 48, join_widths: true, neck: 'drawcord', pad_straps: true, side_baffles: true })) },
   { name: 'underquilt (baffled, end channels)', convention: 'B', build: () => pieces('quilt', buildQuilt({ units: 'in', kind: 'underquilt' })) },
   { name: 'top quilt (baffled, sewn footbox)', convention: 'B', build: () => pieces('quilt', buildQuilt(makeDefaultQuiltProject().inputs)) },
   { name: 'top quilt (sewn through, zip footbox, mm)', convention: 'B', build: () => pieces('quilt', buildQuilt({ units: 'mm', construction: 'sewn_through', footbox: 'zip', length: 1900, shoulder_width: 1300, foot_width: 950, seam_allowance: 10 })) },

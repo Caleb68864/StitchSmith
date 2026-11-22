@@ -17,6 +17,7 @@ import { makeEdgeIdGen } from '../../lib/pattern-engine/graph/Edge.js';
 import type { Step } from '../../lib/pattern-engine/instructions/Step.js';
 import type { ChamberLayout } from '../../lib/pattern-engine/primitives/chambers.js';
 import { resolveHem, hemLines } from '../../lib/pattern-engine/primitives/hem.js';
+import { offsetPolygonPerEdge } from '../../lib/pattern-engine/geometry/offset.js';
 import type { QuiltInputs, QuiltBuildResult, ResolvedInputs, GeneratorWarning, BuildPatternError, HardwareItem } from './types.js';
 import { resolveInputs, validateInputs } from './inputs.js';
 import { PLACEHOLDERS } from './defaults.js';
@@ -133,6 +134,45 @@ function buildPanel(r: ResolvedInputs, g: QuiltGeometry, which: 'liner' | 'shell
     for (const c of g.chambers.chambers) annotations.push({ kind: 'label', label: `Ch ${c.index}: ${grams(c.fillG)}`, point: { x: o.cx, y: o.yAt((c.y0 + c.y1) / 2) - 20 } });
   }
   return { id, name: which === 'liner' ? 'Liner' : 'Shell', mirror: false, quantity: 1, materialId: which === 'liner' ? LINER_FABRIC_ID : SHELL_FABRIC_ID, paths, seamAllowances: zeroSa(outline), annotations };
+}
+
+/**
+ * A panel cut as the right half of itself with a centre seam (for a quilt wider than the
+ * fabric): every path clipped to the right of the centre line, the cut outline the finished
+ * half offset by its allowances (seam allowance on the new centre edge), a centre sew line.
+ */
+function halfPanel(r: ResolvedInputs, full: Piece, o: PanelOutline, end: [number, number]): Piece {
+  const cx = o.cx, sa = r.seam_allowance;
+  const [, hr, fr] = o.finished;
+  const fin: Point[] = [{ x: cx, y: hr.y }, hr, fr, { x: cx, y: fr.y }];
+  const dist = [end[0], sa, end[1], sa];
+  const area = (p: Point[]) => p.reduce((s, q, i) => { const n = p[(i + 1) % p.length]; return s + q.x * n.y - n.x * q.y; }, 0) / 2;
+  let off = offsetPolygonPerEdge(fin, dist);
+  if (!off.ok || Math.abs(area(off.value)) < Math.abs(area(fin))) off = offsetPolygonPerEdge(fin, dist.map((d) => -d));
+  if (!off.ok) throw new Error(off.error);
+  const shiftX = -Math.min(...off.value.map((p) => p.x));
+  const mv = (p: Point): Point => ({ x: p.x + shiftX, y: p.y });
+  const eid = makeEdgeIdGen(`${full.id}-half`);
+  const outline = closed(eid, `${full.id}-outline`, off.value.map(mv), 'cut');
+  const clip = (e: Edge): Edge | null => {
+    if (e.kind !== 'straight') return e;
+    const a = e.start, b = e.end;
+    if (a.x >= cx - 1e-9 && b.x >= cx - 1e-9) return { ...e, id: eid(), start: mv(a), end: mv(b) };
+    if (a.x < cx && b.x < cx) return null;
+    const t = (cx - a.x) / (b.x - a.x), m = { x: cx, y: a.y + t * (b.y - a.y) };
+    return a.x < cx ? { ...e, id: eid(), start: mv(m), end: mv(b) } : { ...e, id: eid(), start: mv(a), end: mv(m) };
+  };
+  const paths: Path[] = [outline];
+  for (const p of full.paths) {
+    if (p.id === `${full.id}-outline` || p.id.includes('-centre-')) continue;
+    const edges = p.edges.map(clip).filter((x): x is Edge => x !== null && Math.hypot(x.end.x - x.start.x, x.end.y - x.start.y) > 1e-6);
+    if (edges.length) paths.push({ ...p, closed: false, edges });
+  }
+  paths.push(line(eid, `${full.id}-centre-seam`, mv(fin[0]), mv(fin[3]), 'stitch', `Centre seam — join the two halves, ${fmtIn(sa)}" in, flat-felled`));
+  return {
+    ...full, name: `${full.name} half (cut a mirrored pair)`, mirror: true, quantity: 1, paths, seamAllowances: zeroSa(outline),
+    annotations: (full.annotations ?? []).filter((a) => !a.point || a.point.x >= cx - 1).map((a) => (a.point ? { ...a, point: mv({ x: Math.max(a.point.x, cx + 40), y: a.point.y }) } : a)),
+  };
 }
 
 /** One baffle per chamber wall: shell edge (top) to the shell's width, liner edge (bottom) to the liner's, both ends into the side seam. */
@@ -257,7 +297,9 @@ export function buildPattern(inputs: QuiltInputs): Result<QuiltBuildResult> {
   if (!validation.ok) return { ok: false, errors: validation.errors };
   const r = resolveInputs(inputs);
   const g = quiltGeometry(r);
-  const pieces: Piece[] = [buildPanel(r, g, 'shell'), buildPanel(r, g, 'liner')];
+  const ends: [number, number] = [r.head_allowance, r.foot_allowance];
+  const panel = (w: 'shell' | 'liner') => { const p = buildPanel(r, g, w); return r.join_widths ? halfPanel(r, p, w === 'shell' ? g.shell : g.liner, ends) : p; };
+  const pieces: Piece[] = [panel('shell'), panel('liner')];
   if (r.construction === 'baffled') pieces.push(...buildBaffles(r, g));
   if (r.side_baffles) pieces.push(buildSideBaffle(r, g));
   const hardware: HardwareItem[] = [

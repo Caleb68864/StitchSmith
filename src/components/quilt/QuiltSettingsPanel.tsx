@@ -82,6 +82,7 @@ export function QuiltSettingsPanel({ inputs, errors, onChange }: Props) {
             <NumericField id="pad-width" label={`Pad width (${units})`} value={inputs.pad_width} error={errors['pad_width']} step={step} placeholder={ph(PAD_WIDTH_MM)} mockDerived onChange={(v) => onChange({ pad_width: v })} />
           )}
         </div>
+        <Toggle id="join-widths" label="Join two fabric widths down the centre (a wide quilt)" value={inputs.join_widths ?? false} onChange={(v) => onChange({ join_widths: v })} />
         {construction === 'baffled' && <Toggle id="side-baffles" label="Side baffles (loft runs to the edge)" value={inputs.side_baffles ?? false} onChange={(v) => onChange({ side_baffles: v })} />}
         <Toggle id="pad-straps" label="Pad straps (loops in the side seams)" value={inputs.pad_straps ?? false} onChange={(v) => onChange({ pad_straps: v })} />
       </CollapsibleSection>
