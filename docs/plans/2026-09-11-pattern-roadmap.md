@@ -536,7 +536,14 @@ Placeholders (common starting points for a mid-height gaiter, flagged
 17", front drop 1.5", overlap 1", hem 1/2", elastic channel 3/4", elastic
 90 % of the top, instep strap 9", fabric 58", zipper seam allowance 12.7 mm.
 
-**No 3D tab:** no leg or boot form in the cloth engine. Still open in 10e: a
+**3D check — DONE 2026-11-22:** `src/generators/gaiter/assembly3d.ts` wraps
+the piece back onto its cone (the `cone` placement, as the circle skirt)
+round a leg capsule a little inside the top circumference, closes the front
+(hook strip over loop strip, or the zipper edges) with a seam, and holds the
+top where the elastic grips. Tests: `gaiter/__tests__/assembly3d.test.ts`,
+an assembly-sweep case, an e2e target `gaiters`. A bottom narrower than the
+top is not wrapped (the cone hangs from its apex, so it would be upside
+down); the tab says why. Still open in 10e: a
 wind shirt, beanie or anything with sleeves, which needs a drafting engine
 (slopers, grading, armholes).
 
