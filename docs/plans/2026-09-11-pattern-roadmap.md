@@ -346,7 +346,11 @@ still draws straight ends, a slight over-size there), ~~guyline and
 line-lock hardware~~ (DONE 2026-11-21: a guyline, line-lock and stake per
 tie-out on the BOM, `guylines` / `line_locks` toggles, cord per guyline a
 `[mock-derived]` placeholder, a Guylines step; tests in
-`tarp/__tests__/buildPattern.test.ts`), ridge pull-outs mid-panel, a doorway or beak variant,
+`tarp/__tests__/buildPattern.test.ts`), ~~ridge pull-outs mid-panel~~ (DONE 2026-11-21:
+`pullouts` toggle, off by default; one patch-and-loop pull-out at mid-span
+in the middle of each panel, or each half of a single panel, counted as
+tie-outs so the patches, loops and guylines follow; not pinned in the 3D
+check, since a pull-out is guyed out, not fixed), a doorway or beak variant,
 and moving the organizer and pleated-card hems onto the Hem primitive.
 
 **Single-panel 3D check — DONE 2026-11-16 (`fix/tarp-followups`).** The

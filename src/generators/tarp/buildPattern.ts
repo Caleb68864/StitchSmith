@@ -152,6 +152,13 @@ export function tieOuts(r: ResolvedInputs, g: PanelGeometry): TieOut[] {
   };
   eaveSet('bottom', 'eave');
   if (r.construction === 'single_panel') eaveSet('top', 'eave2');
+  if (r.pullouts) {
+    // Mid-span, midway across the panel (each half of a single panel), patch centred on it.
+    const x = xa + r.ridge_length / 2;
+    const at = (y: number, id: string) => out.push({ id, kind: 'pullout', at: { x, y }, patch: { x0: x - p / 2, x1: x + p / 2, y0: y - p / 2, y1: y + p / 2 } });
+    if (r.construction === 'ridge_seam') at((g.top(x) + g.bottom(x)) / 2, 'pullout');
+    else { at((g.top(x) + g.ridgeY!) / 2, 'pullout-0'); at((g.ridgeY! + g.bottom(x)) / 2, 'pullout-1'); }
+  }
   if (r.ridge_tieouts) {
     if (r.construction === 'ridge_seam') {
       // The patch straddles the felled seam: half of it on each panel.
@@ -292,7 +299,7 @@ function buildSteps(r: ResolvedInputs, g: PanelGeometry): Step[] {
     { id: 'tarp.eaves', title: two ? 'Hem the eaves' : 'Hem both eaves', body: `Along each eave, ${hemWord}, then stitch.${r.eave_sag > 0 ? ' The eave is curved: ease the hem round it rather than pulling it straight.' : ''}`, dependsOn: ['tarp.ends'], refsPieces: [PANEL_ID], group: 'Hems' },
   );
   if (r.tieout_count > 0) {
-    steps.push({ id: 'tarp.tieouts', title: 'Tie-outs: patch, loop, box-X', body: `${r.tieout_count} tie-outs: four corners${r.eave_tieouts > 0 ? `, ${r.eave_tieouts} along each eave` : ''}${r.ridge_tieouts ? ', and both ridge ends' : ''}. At each one fold a ${fmtIn(r.loop_length)}" length of ${fmtIn(r.loop_width)}" grosgrain in half, set its ends under a ${fmtIn(r.patch_size)}" patch on the inside face at the marked square${r.ridge_tieouts && two ? ' (the ridge patches straddle the felled seam)' : ''}, and box-X through patch, loop and panel.`, dependsOn: ['tarp.eaves'], refsPieces: [PANEL_ID, PATCH_ID, LOOP_ID], group: 'Tie-outs' });
+    steps.push({ id: 'tarp.tieouts', title: 'Tie-outs: patch, loop, box-X', body: `${r.tieout_count} tie-outs: four corners${r.eave_tieouts > 0 ? `, ${r.eave_tieouts} along each eave` : ''}${r.ridge_tieouts ? ', and both ridge ends' : ''}${r.pullouts ? `, and a pull-out in the middle of each ${two ? 'panel' : 'side'}` : ''}. At each one fold a ${fmtIn(r.loop_length)}" length of ${fmtIn(r.loop_width)}" grosgrain in half, set its ends under a ${fmtIn(r.patch_size)}" patch on the inside face at the marked square${r.ridge_tieouts && two ? ' (the ridge patches straddle the felled seam)' : ''}, and box-X through patch, loop and panel.${r.pullouts ? ' A pull-out is away from any edge: put its patch on the inside face, sew the loop flat on the outside face over it so it lies along the panel, and box-X through all of them. It lifts the panel off a sleeper; it holds no structure.' : ''}`, dependsOn: ['tarp.eaves'], refsPieces: [PANEL_ID, PATCH_ID, LOOP_ID], group: 'Tie-outs' });
   }
   if (r.guylines && r.tieout_count > 0) {
     steps.push({ id: 'tarp.guylines', title: 'Guylines', body: `Cut ${r.tieout_count} guylines of ${fmtIn(r.guyline_length)}" (${dim(r.tieout_count * r.guyline_length)} of cord in all) and melt or whip the ends. Tie one to each loop with a bowline${r.line_locks ? ' and thread the free end through a line-lock, so it tensions at the stake' : '; tension each at the stake with a taut-line hitch'}. The ridge-end lines carry the pitch: guy them out along the ridgeline.`, dependsOn: ['tarp.tieouts'], refsPieces: [LOOP_ID], group: 'Tie-outs' });

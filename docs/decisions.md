@@ -1247,3 +1247,15 @@ baffle-chamber primitive and a fill-weight calculation.
   mirrored about each span end inside the eave hem and the ridge
   allowance, as the other cuts are mirrored inside the end hems.
 - The 3D assembly still builds straight-ended panels.
+
+
+## 2026-11-21 — Tarp pull-outs mid-panel (roadmap 10a follow-up)
+
+- Decided by agent 2026-11-21 (owner may revisit): `pullouts` toggle, off
+  by default. One pull-out per side at mid-span, centred between the
+  ridge and the eave (a single panel: centred in each half either side of
+  the ridge line). It reuses the tie-out patch and loop sizes, so it adds
+  no new number; it counts as a tie-out for patches, loops and guylines.
+- Patch on the inside face, loop flat on the outside, box-X through all;
+  the step says it lifts the panel and holds no structure. The 3D check
+  does not pin pull-outs (they are guyed out, not fixed).

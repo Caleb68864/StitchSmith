@@ -31,6 +31,7 @@ const GUARD_SPEC: GuardSpec = {
   guyline_length: { kind: 'length' },
   line_locks: { kind: 'bool' },
   cut_ends: { kind: 'bool' },
+  pullouts: { kind: 'bool' },
   end_sag: { kind: 'length' },
 };
 
@@ -75,6 +76,7 @@ export function resolveInputs(inputs: TarpInputs): ResolvedInputs {
   const loop_width = d(inputs.loop_width, LOOP_WIDTH_MM);
   const ridge_height = d(inputs.ridge_height, RIDGE_HEIGHT_MM);
   const guylines = inputs.guylines !== false;
+  const pullouts = inputs.pullouts === true;
   const guyline_length = d(inputs.guyline_length, GUYLINE_LENGTH_MM);
   const line_locks = inputs.line_locks !== false;
   const end_sag = catCut && inputs.cut_ends === true ? d(inputs.end_sag, END_SAG_MM) : 0;
@@ -90,7 +92,7 @@ export function resolveInputs(inputs: TarpInputs): ResolvedInputs {
   return {
     units, construction, cut_style, ridge_length, width, ridge_sag, eave_sag, fabric_width, seam_allowance,
     hem_depth: hem.depth, hem_depth_requested: hemReq, hem_raised: hem.raised, hem_fold, production_mode,
-    eave_tieouts, ridge_tieouts, patch_size, loop_length, loop_width, ridge_height, guylines, guyline_length, line_locks, end_sag,
+    eave_tieouts, ridge_tieouts, patch_size, loop_length, loop_width, ridge_height, guylines, guyline_length, line_locks, end_sag, pullouts,
     // Each panel's end runs ridge to eave; a single panel's end is cut as two halves either side of the ridge line.
     end_span: width / 2,
     hem_allowance: allow,
@@ -103,7 +105,7 @@ export function resolveInputs(inputs: TarpInputs): ResolvedInputs {
     fabric_length: panel_count * panel_cut_length,
     ridge_curve_length: arcLength(ridge_length, ridge_sag),
     eave_curve_length: arcLength(ridge_length, eave_sag),
-    tieout_count: 4 + 2 * Math.max(0, Math.round(eave_tieouts)) + (ridge_tieouts ? 2 : 0),
+    tieout_count: 4 + 2 * Math.max(0, Math.round(eave_tieouts)) + (ridge_tieouts ? 2 : 0) + (pullouts ? 2 : 0),
     pitch_deg: reaches && half > 0 ? (Math.asin(Math.max(0, ridge_height) / half) * 180) / Math.PI : 90,
     footprint_width: reaches ? 2 * Math.sqrt(half * half - Math.max(0, ridge_height) ** 2) : 0,
     eave_clearance: reaches ? 0 : ridge_height - half,
@@ -150,6 +152,8 @@ export function validateInputs(inputs: TarpInputs): ValidationResult {
   if (r.end_sag > MAX_SAG_RATIO * r.end_span) errors.push({ field: 'end_sag', message: `A ${inch(r.end_sag)} end cut on a ${inch(r.end_span)} end is deeper than a quarter of the span; that is no longer a cat cut.` });
   const tieGap = r.ridge_length / (r.eave_tieouts + 1);
   if (r.patch_size > 0 && r.patch_size >= tieGap - 1e-6) errors.push({ field: 'patch_size', message: `${inch(r.patch_size)} patches overlap: the eave tie-outs are only ${inch(tieGap)} apart. Use smaller patches or fewer tie-outs.` });
+  // A pull-out patch sits mid-panel: on a single panel each half (eave to ridge line) must hold it with room either side.
+  if (r.pullouts && r.patch_size > 0 && (r.construction === 'single_panel' ? r.panel_mid_width / 2 : r.panel_mid_width) <= 2 * r.patch_size) errors.push({ field: 'pullouts', message: `There is not room for a ${inch(r.patch_size)} pull-out patch in the middle of the panel at mid-span. Use smaller patches or shallower cat cuts.` });
   // The panel must keep room for a patch below the ridge and above the eave at mid-span.
   if (r.panel_mid_width <= Math.max(r.patch_size, 1)) errors.push({ field: 'eave_sag', message: `The cat cuts leave only ${inch(Math.max(0, r.panel_mid_width))} of panel at mid-span. Reduce the ridge or eave cut.` });
   return errors.length ? { ok: false, errors } : { ok: true };

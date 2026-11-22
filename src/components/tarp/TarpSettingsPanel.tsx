@@ -81,6 +81,7 @@ export function TarpSettingsPanel({ inputs, errors, onChange }: Props) {
           <NumericField id="loop-width" label={`Grosgrain width (${units})`} value={inputs.loop_width} error={errors['loop_width']} step={step} placeholder={ph(LOOP_WIDTH_MM)} mockDerived onChange={(v) => onChange({ loop_width: v })} />
         </div>
         <Toggle label="Tie-outs at both ridge ends" value={inputs.ridge_tieouts ?? true} onChange={(v) => onChange({ ridge_tieouts: v })} />
+        <Toggle id="pullouts" label="Pull-outs mid-panel (lifters)" value={inputs.pullouts ?? false} onChange={(v) => onChange({ pullouts: v })} />
         <Toggle label="Guylines on the BOM (one per tie-out)" value={inputs.guylines ?? true} onChange={(v) => onChange({ guylines: v })} />
         {(inputs.guylines ?? true) && (
           <div className="grid grid-cols-2 gap-3">
