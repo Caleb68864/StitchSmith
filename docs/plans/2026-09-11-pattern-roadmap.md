@@ -530,7 +530,9 @@ as the folded ears), held flat on the ground; a sleeper block inside; the
 top placed over the rim, its long edges seamed to the side rims; the head
 and foot gussets draped in the end planes, bases seamed to the end rims and
 arches to the top's short edges. Seams close to < 1 mm, p99 stretch ~3 %.
-The side-zip bivy only (a J-zip top is two pieces; not assembled yet).
+The J-zip bivy too since 2026-11-22: the head section and the body top
+placed either side of the J line, joined across by the zipper (shown
+closed), both seamed to the rims.
 Tests: `bivy/__tests__/assembly3d.test.ts`, an assembly-sweep case, an e2e
 target.
 Follow-ups: ~~a bug-net variant~~ (DONE 2026-11-22: `top_material: 'mesh'`

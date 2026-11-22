@@ -31,8 +31,19 @@ describe('bivy in 3D', () => {
     expect(top.hi[1]).toBeGreaterThan(5 * IN + 0.5 * v.resolved.arch!.rise);
     expect(asm.report[0]).toMatch(/arches/);
   });
-  it('a J-zip top is not assembled', () => {
+  it('a J-zip bivy: the head section and the body top joined across by the zipper, both on the rims', () => {
     const v = built({ ...DEF, zip_style: 'j' });
-    expect(bivyAssembly(v.pieces, v.resolved)).toBeNull();
+    const asm = bivyAssembly(v.pieces, v.resolved)!;
+    expect(asm).not.toBeNull();
+    expect(asm.pieces.map((p) => p.id)).toContain('bivy-top-head');
+    expect(asm.seams.filter((s) => (s.label ?? '').startsWith('J zipper'))).toHaveLength(12);
+    expectViewerMatchesHarness(asm.pieces, asm.placements);
+    const { world, bounds } = assemble(asm.pieces, asm.placements, asm.seams, null, 30, asm.pins, asm.gravity, asm.solids);
+    relax(world, 300);
+    expect(seamResidual(world).mean).toBeLessThan(3);
+    expect(stretchReport(world, 0.99).value).toBeLessThan(0.05);
+    // The head section sits at the head, the body top behind it.
+    expect(bounds('bivy-top-head').hi[0]).toBeLessThan(bounds(TOP_ID).hi[0]);
+    expect(asm.report[1]).toMatch(/J zipper/);
   });
 });

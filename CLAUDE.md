@@ -174,7 +174,7 @@ numbers. Rules already encoded, with the note that justifies each:
   (base = floor width, arc = top width), so their seams match by
   construction. The 3D check cuts the floor's 3D copy as a cross with
   seamed corners (a corner square cannot hinge two ways), a sleeper block
-  inside; side-zip bivy only.
+  inside; a J-zip top's two pieces join across at the J.
 - Gaiters (roadmap 10e, `src/generators/gaiter/`): no vault numbers;
   placeholders are common starting points, flagged. The piece is the
   frustum development from `geometry/frustum.ts` (never a trapezoid: a
