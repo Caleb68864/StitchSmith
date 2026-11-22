@@ -1403,3 +1403,21 @@ baffle-chamber primitive and a fill-weight calculation.
   girths, the arm length from the cap top to the wrist, both underseams the
   same straight line. The cap is symmetric while the bodice halves share
   one armhole.
+
+
+## 2026-11-22 — Wind shirt (roadmap 10f step 4)
+
+- Decided by agent 2026-11-22 (owner may revisit): a pullover with a
+  quarter zip (a bound neck that fits cannot pass over the head), set-in
+  sleeves, a single-fold body hem and rolled elastic cuff channels; straight
+  body by default (the side seam drops straight from the eased chest),
+  shaped selectable.
+- Convention B, not A: the drafted finished outlines are offset per edge
+  (0 on the bound neckline, the hem and cuff allowances on those edges, the
+  seam allowance elsewhere), so the cut line is the outer line and every
+  edge carries an explicit 0.
+- The default project leaves every measurement empty and drafts from an
+  example body (one person, flagged in the mock-derived note), not a size
+  chart. Ease, shoulder drop (1.75"), cap ease (1/2"), hem, cuff, elastic
+  (85 % of the wrist), zipper (10") and binding (1.5") are flagged starting
+  points.

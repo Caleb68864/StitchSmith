@@ -571,7 +571,15 @@ garment depends on a later step:
    bicep and wrist widths, sleeve length. Tests: the cap matches the
    armhole within a millimetre; front and back cap halves match their
    armholes.
-4. **First garment on it: a wind shirt** (pullover, set-in sleeve, hood
+4. DONE 2026-11-22 — **First garment on it: a wind shirt** (`src/generators/wind-shirt/`,
+   page `src/components/wind-shirt/`, schemaVersion 21, Apparel; built
+   Convention B like the shelter line rather than A, because the drafted
+   outlines are offset per edge (0 on the bound neck, the hem and cuff
+   allowances elsewhere); back and front whole, two sleeves, a neck binding,
+   a quarter zip, elastic cuffs; straight or shaped body; tests pin every
+   seam pair — shoulders, sides, armhole to cap (less the cap ease, within
+   1 mm), underarm seams, neckline to binding — in three variants;
+   measurements empty by default and drafted from a flagged example body), (pullover, set-in sleeve, hood
    optional later), Convention A. Tests: every seam pair matches in length.
 5. **3D**: the torso form exists; sleeves need an arm form (a capsule per
    arm) before the shirt gets an assembly.

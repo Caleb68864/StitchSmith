@@ -23,6 +23,7 @@ import { useQuiltProject } from '../state/useQuiltProject.js';
 import { useBivyProject } from '../state/useBivyProject.js';
 import { useGaiterProject } from '../state/useGaiterProject.js';
 import { useBeanieProject } from '../state/useBeanieProject.js';
+import { useWindShirtProject } from '../state/useWindShirtProject.js';
 import { usePlateCarrierProject } from '../state/usePlateCarrierProject.js';
 import { useClamshellPackProject } from '../state/useClamshellPackProject.js';
 import { useFannyPackProject } from '../state/useFannyPackProject.js';
@@ -93,6 +94,9 @@ const GaiterPage = lazy(() =>
 const BeaniePage = lazy(() =>
   import('../components/beanie/BeaniePage.js').then(m => ({ default: m.BeaniePage }))
 );
+const WindShirtPage = lazy(() =>
+  import('../components/wind-shirt/WindShirtPage.js').then(m => ({ default: m.WindShirtPage }))
+);
 const FannyPackPage = lazy(() =>
   import('../components/fanny-pack/FannyPackPage.js').then(m => ({ default: m.FannyPackPage }))
 );
@@ -120,6 +124,7 @@ const HEADER_SUBTITLES: Partial<Record<View, string>> = {
   'bivy': 'Bivy Generator',
   'gaiter': 'Gaiters Generator',
   'beanie': 'Beanie Generator',
+  'wind-shirt': 'Wind Shirt Generator',
 };
 
 const VIEW_TITLES: Record<View, string> = {
@@ -145,6 +150,7 @@ const VIEW_TITLES: Record<View, string> = {
   'bivy': 'StitchSmith — Bivy',
   'gaiter': 'StitchSmith — Gaiters',
   'beanie': 'StitchSmith — Beanie',
+  'wind-shirt': 'StitchSmith — Wind Shirt',
 };
 
 type View = 'landing' | PatternEntry['route'];
@@ -190,6 +196,7 @@ export function App() {
   const bivyState = useBivyProject();
   const gaiterState = useGaiterProject();
   const beanieState = useBeanieProject();
+  const windShirtState = useWindShirtProject();
 
   useEffect(() => {
     document.title = VIEW_TITLES[view] ?? 'StitchSmith';
@@ -419,6 +426,14 @@ export function App() {
             updateInputs={beanieState.updateInputs}
             resetProject={beanieState.resetProject}
             importProject={beanieState.importProject}
+          />
+        )}
+        {view === 'wind-shirt' && (
+          <WindShirtPage
+            project={windShirtState.project}
+            updateInputs={windShirtState.updateInputs}
+            resetProject={windShirtState.resetProject}
+            importProject={windShirtState.importProject}
           />
         )}
         {view === 'lbv' && (

@@ -44,6 +44,8 @@ import * as gaiter from '../gaiter/index.js';
 import { makeDefaultGaiterProject } from '../../state/useGaiterProject.js';
 import * as beanie from '../beanie/index.js';
 import { makeDefaultBeanieProject } from '../../state/useBeanieProject.js';
+import * as windShirt from '../wind-shirt/index.js';
+import { makeDefaultWindShirtProject } from '../../state/useWindShirtProject.js';
 import * as triZip from '../tri-zip-backpack/index.js';
 import { makeDefaultTriZipProject } from '../../state/useTriZipProject.js';
 import * as zipPouch from '../zip-pouch/index.js';
@@ -198,6 +200,13 @@ export const GENERATORS: Gen[] = [
     defaults: () => makeDefaultBeanieProject().inputs as unknown as AnyInputs,
     validate: (i) => listErrors(beanie.validateInputs(i as never)),
     build: (i) => resultPieces(beanie.buildPattern(i as never)),
+  },
+  {
+    name: 'wind-shirt',
+    keys: ['units', 'body', 'chest', 'waist', 'hip', 'neck', 'bicep', 'wrist', 'nape_to_waist', 'scye_depth', 'waist_to_hip', 'shoulder_width', 'arm_length', 'ease_chest', 'ease_waist', 'ease_hip', 'ease_neck', 'ease_bicep', 'ease_wrist', 'shoulder_drop', 'cap_ease', 'hem_depth', 'cuff_channel', 'elastic_pct', 'zip_length', 'binding_width', 'fabric_width', 'seam_allowance'],
+    defaults: () => makeDefaultWindShirtProject().inputs as unknown as AnyInputs,
+    validate: (i) => listErrors(windShirt.validateInputs(i as never)),
+    build: (i) => resultPieces(windShirt.buildPattern(i as never)),
   },
   {
     name: 'tri-zip-backpack',

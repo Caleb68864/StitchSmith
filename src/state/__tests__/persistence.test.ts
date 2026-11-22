@@ -28,13 +28,14 @@ import { validateInputs as vQuilt } from '../../generators/quilt/index.js';
 import { validateInputs as vBivy } from '../../generators/bivy/index.js';
 import { validateInputs as vGaiter } from '../../generators/gaiter/index.js';
 import { validateInputs as vBeanie } from '../../generators/beanie/index.js';
+import { validateInputs as vWindShirt } from '../../generators/wind-shirt/index.js';
 import { validateInputs as vTriZip } from '../../generators/tri-zip-backpack/index.js';
 import { validateInputs as vZipPouch } from '../../generators/zip-pouch/index.js';
 
 const VALIDATORS: Record<string, (i: never) => { ok: boolean }> = {
   'book-cover': vBookCover, 'circle-skirt': vCircleSkirt, 'clamshell-pack': vClamshell, 'fanny-pack': vFanny, 'lbv': vLbv,
   'mag-pouch': vMagPouch, 'micro-rig': vMicroRig, 'organizer': vOrganizer, 'padded-strap': vPaddedStrap, 'plate-carrier': vPlateCarrier,
-  'roll-top-sack': vRollTop, 'sling': vSling, 'tarp': vTarp, 'hammock': vHammock, 'quilt': vQuilt, 'bivy': vBivy, 'gaiter': vGaiter, 'beanie': vBeanie, 'tri-zip-backpack': vTriZip, 'zip-pouch': vZipPouch,
+  'roll-top-sack': vRollTop, 'sling': vSling, 'tarp': vTarp, 'hammock': vHammock, 'quilt': vQuilt, 'bivy': vBivy, 'gaiter': vGaiter, 'beanie': vBeanie, 'wind-shirt': vWindShirt, 'tri-zip-backpack': vTriZip, 'zip-pouch': vZipPouch,
 };
 
 beforeEach(() => {
