@@ -1,5 +1,5 @@
 import type { BivyInputs, ResolvedInputs, ValidationResult, BuildPatternError, ArchSegment } from './types.js';
-import { DEFAULT_UNITS, LENGTH_MM, FLOOR_WIDTH_MM, TUB_HEIGHT_MM, TOP_WIDTH_MM, ZIP_LENGTH_MM, FABRIC_WIDTH_MM, SEAM_ALLOWANCE_MM } from './defaults.js';
+import { DEFAULT_UNITS, LENGTH_MM, FLOOR_WIDTH_MM, TUB_HEIGHT_MM, TOP_WIDTH_MM, ZIP_LENGTH_MM, FABRIC_WIDTH_MM, SEAM_ALLOWANCE_MM, J_FROM_HEAD_MM, BRIM_FROM_HEAD_MM, BRIM_CHANNEL_MM } from './defaults.js';
 import { sweepInputs, stripNulls, unitsOf, type GuardSpec } from '../../utils/inputGuards.js';
 import { chordArc } from '../../lib/pattern-engine/geometry/chordArc.js';
 
@@ -15,6 +15,11 @@ const GUARD_SPEC: GuardSpec = {
   head_gusset: { kind: 'enum', allowed: ['mesh', 'fabric'] },
   zip_side: { kind: 'enum', allowed: ['left', 'right'] },
   top_material: { kind: 'enum', allowed: ['mesh', 'fabric'] },
+  zip_style: { kind: 'enum', allowed: ['side', 'j'] },
+  j_from_head: { kind: 'length' },
+  brim: { kind: 'bool' },
+  brim_from_head: { kind: 'length' },
+  brim_channel: { kind: 'length' },
 };
 
 const IN = 25.4;
@@ -44,16 +49,24 @@ export function resolveInputs(inputs: BivyInputs): ResolvedInputs {
   const arch = a.ok ? { radius: a.value.radius, theta: a.value.theta, rise: a.value.rise } : null;
   const s = seam_allowance;
   const g = arch ? gussetCut(arch, s) : { w: NaN, h: NaN };
+  const zip_style = inputs.zip_style === 'j' ? 'j' : 'side';
+  const j_from_head = zip_style === 'j' ? d(inputs.j_from_head, J_FROM_HEAD_MM) : 0;
   return {
     units, length, floor_width, tub_height, top_width, zip_length, fabric_width, seam_allowance,
     head_gusset: inputs.head_gusset === 'fabric' ? 'fabric' : 'mesh',
     zip_side: inputs.zip_side === 'right' ? 'right' : 'left',
     top_material: inputs.top_material === 'mesh' ? 'mesh' : 'fabric',
+    zip_style, j_from_head,
+    brim: inputs.brim === true,
+    brim_from_head: d(inputs.brim_from_head, BRIM_FROM_HEAD_MM),
+    brim_channel: d(inputs.brim_channel, BRIM_CHANNEL_MM),
+    zipper_length: zip_length + (zip_style === 'j' ? top_width : 0),
+    top_head_cut_length: zip_style === 'j' ? j_from_head + 2 * s : 0,
     arch,
     head_height: tub_height + (arch ? arch.rise : NaN),
     floor_cut_length: length + 2 * tub_height + 2 * s,
     floor_cut_width: floor_width + 2 * tub_height + 2 * s,
-    top_cut_length: length + 2 * s,
+    top_cut_length: length - j_from_head + 2 * s,
     top_cut_width: top_width + 2 * s,
     gusset_cut_width: g.w,
     gusset_cut_height: g.h,
@@ -78,6 +91,15 @@ export function validateInputs(inputs: BivyInputs): ValidationResult {
   if (errors.length) return { ok: false, errors };
   if (r.top_width <= r.floor_width) errors.push({ field: 'top_width', message: `The top (${inch(r.top_width)}) must be wider than the ${inch(r.floor_width)} floor: the difference is the room above you.` });
   else if (!r.arch) errors.push({ field: 'top_width', message: `A ${inch(r.top_width)} top over a ${inch(r.floor_width)} floor is more than a half-circle; the end gussets cannot close it. Narrow the top or widen the floor.` });
+  if (r.zip_style === 'j') {
+    if (!(r.j_from_head > 0)) errors.push({ field: 'j_from_head', message: 'J zipper from the head must be a positive number.' });
+    else if (r.j_from_head + r.zip_length > r.length) errors.push({ field: 'zip_length', message: `A J at ${inch(r.j_from_head)} from the head plus ${inch(r.zip_length)} down the side runs past the ${inch(r.length)} foot.` });
+  }
+  if (r.brim) {
+    if (!(r.brim_channel > 0)) errors.push({ field: 'brim_channel', message: 'Brim channel must be a positive number.' });
+    if (!(r.brim_from_head >= 0)) errors.push({ field: 'brim_from_head', message: 'Brim from the head must be 0 or greater.' });
+    else if (r.brim_from_head + r.brim_channel > (r.zip_style === 'j' ? r.j_from_head : r.length)) errors.push({ field: 'brim_from_head', message: `The brim channel does not fit ${r.zip_style === 'j' ? 'above the J zipper' : 'on the top'}.` });
+  }
   if (r.zip_length > r.length) errors.push({ field: 'zip_length', message: `A ${inch(r.zip_length)} zipper is longer than the ${inch(r.length)} side it runs along.` });
   if (r.floor_cut_width > r.fabric_width + 1e-6) errors.push({ field: 'floor_width', message: `The floor needs ${inch(r.floor_cut_width)} across (the width, both tub sides and the allowance) and the fabric is ${inch(r.fabric_width)}.` });
   if (r.top_cut_width > r.fabric_width + 1e-6) errors.push({ field: 'top_width', message: `The top needs ${inch(r.top_cut_width)} across and the fabric is ${inch(r.fabric_width)}.` });

@@ -18,6 +18,7 @@ import type { Step } from '../../lib/pattern-engine/instructions/Step.js';
 
 export type BivyHeadGusset = 'mesh' | 'fabric';
 export type BivyZipSide = 'left' | 'right';
+export type BivyZipStyle = 'side' | 'j';
 
 export interface BivyInputs {
   units?: 'mm' | 'in';
@@ -39,6 +40,16 @@ export interface BivyInputs {
   head_gusset?: BivyHeadGusset;
   /** Top (and foot gusset) in the top fabric (default) or all no-see-um mesh: a bug bivy. */
   top_material?: BivyHeadGusset;
+  /** Side zipper from the head (default) or a J: across the top, then down the side. */
+  zip_style?: BivyZipStyle;
+  /** Where the J crosses the top, from the head, display units. Placeholder 30" — mock-derived. J only. */
+  j_from_head?: number;
+  /** A brim channel across the head of the top for a wire or short pole that holds it off the face. Default false. */
+  brim?: boolean;
+  /** Brim channel distance from the head edge, display units. Placeholder 6" — mock-derived. */
+  brim_from_head?: number;
+  /** Brim channel width, display units. Placeholder 1" — mock-derived. */
+  brim_channel?: number;
   /** Which long side the zipper is on, lying on your back looking up. Default left. */
   zip_side?: BivyZipSide;
 }
@@ -64,7 +75,16 @@ export interface ResolvedInputs {
   head_gusset: BivyHeadGusset;
   zip_side: BivyZipSide;
   top_material: BivyHeadGusset;
+  zip_style: BivyZipStyle;
+  j_from_head: number;
+  brim: boolean;
+  brim_from_head: number;
+  brim_channel: number;
   // Derived
+  /** Zipper length: the side run, plus the top width across for a J. */
+  zipper_length: number;
+  /** J only: the head section of the top, cut length. */
+  top_head_cut_length: number;
   /** The end arch: an arc of the top width over a chord of the floor width, or null when it cannot close. */
   arch: ArchSegment | null;
   /** Inside height at the middle of the head end: tub height + arch rise. */

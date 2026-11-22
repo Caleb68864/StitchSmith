@@ -71,28 +71,78 @@ function buildFloor(r: ResolvedInputs): Piece {
   };
 }
 
+export const TOP_HEAD_ID = 'bivy-top-head';
+export const BRIM_ID = 'bivy-brim-channel';
+
+/**
+ * The top, or with a J zipper its body below the J. Frame: x from the head (or the J
+ * line) toward the foot, y = 0 the left long edge lying on your back.
+ */
 function buildTop(r: ResolvedInputs): Piece {
   const eid = makeEdgeIdGen(TOP_ID);
   const s = r.seam_allowance;
   const Lc = r.top_cut_length, Wc = r.top_cut_width;
+  const j = r.zip_style === 'j';
   const outline = poly(eid, `${TOP_ID}-outline`, rect(0, 0, Lc, Wc), 'cut', true);
-  // Zip side: y = 0 is the left long edge lying on your back (head at x = 0).
   const zy = r.zip_side === 'left' ? 0 : Wc;
   const zx = s + r.zip_length;
   const inward = r.zip_side === 'left' ? 1 : -1;
   const paths: Path[] = [
     outline,
-    poly(eid, `${TOP_ID}-sew`, rect(s, s, Lc - s, Wc - s), 'stitch', true, `Sew line ${fmtIn(s)}" in: long edges to the tub, short edges to the gussets`),
-    poly(eid, `${TOP_ID}-zip-end`, [{ x: zx, y: zy }, { x: zx, y: zy + inward * Math.max(s, 6) }], 'notch', false, `Zipper end — ${fmtIn(r.zip_length)}" from the head corner`),
+    poly(eid, `${TOP_ID}-sew`, rect(s, s, Lc - s, Wc - s), 'stitch', true, j ? `Sew line ${fmtIn(s)}" in: long edges to the tub, the head edge to the J zipper, the foot edge to the gusset` : `Sew line ${fmtIn(s)}" in: long edges to the tub, short edges to the gussets`),
+    poly(eid, `${TOP_ID}-zip-end`, [{ x: zx, y: zy }, { x: zx, y: zy + inward * Math.max(s, 6) }], 'notch', false, `Zipper end — ${fmtIn(r.zip_length)}" from the ${j ? 'J' : 'head'} corner`),
     poly(eid, `${TOP_ID}-centre-head`, [{ x: 0, y: Wc / 2 }, { x: s, y: Wc / 2 }], 'notch', false, 'Centre'),
     poly(eid, `${TOP_ID}-centre-foot`, [{ x: Lc - s, y: Wc / 2 }, { x: Lc, y: Wc / 2 }], 'notch'),
   ];
+  if (r.brim && !j) paths.push(...brimLines(r, eid, TOP_ID));
   return {
-    id: TOP_ID, name: 'Top', mirror: false, quantity: 1, materialId: r.top_material === 'mesh' ? MESH_ID : TOP_FABRIC_ID, paths, seamAllowances: zeroSa(outline),
+    id: TOP_ID, name: j ? 'Top (below the J)' : 'Top', mirror: false, quantity: 1, materialId: r.top_material === 'mesh' ? MESH_ID : TOP_FABRIC_ID, paths, seamAllowances: zeroSa(outline),
     annotations: [
       { kind: 'grain', label: 'grain along the length', point: { x: Lc / 2, y: Wc / 2 - 60 }, angle: 0 },
-      { kind: 'label', label: `Top — cut ${dim(Lc)} × ${dim(Wc)}, allowance included; zipper on the ${r.zip_side} long edge from the head`, point: { x: Lc / 2, y: Wc / 2 } },
+      { kind: 'label', label: `${j ? 'Top below the J' : 'Top'} — cut ${dim(Lc)} × ${dim(Wc)}, allowance included; zipper on the ${r.zip_side} long edge from the ${j ? 'J' : 'head'}`, point: { x: Lc / 2, y: Wc / 2 } },
     ],
+  };
+}
+
+/** The brim channel's two stitch lines across the top, at the brim distance from the head edge. */
+function brimLines(r: ResolvedInputs, eid: () => EdgeId, id: string): Path[] {
+  const s = r.seam_allowance, Wc = r.top_cut_width;
+  const x0 = s + r.brim_from_head, x1 = x0 + r.brim_channel;
+  return [
+    poly(eid, `${id}-brim-0`, [{ x: x0, y: s }, { x: x0, y: Wc - s }], 'stitch', false, `Brim channel — sew the channel strip on the inside between these lines, ends open at the side seams`),
+    poly(eid, `${id}-brim-1`, [{ x: x1, y: s }, { x: x1, y: Wc - s }], 'stitch'),
+  ];
+}
+
+/** J zipper: the head section of the top, from the head gusset to the J line. */
+function buildTopHead(r: ResolvedInputs): Piece {
+  const eid = makeEdgeIdGen(TOP_HEAD_ID);
+  const s = r.seam_allowance;
+  const Lc = r.top_head_cut_length, Wc = r.top_cut_width;
+  const outline = poly(eid, `${TOP_HEAD_ID}-outline`, rect(0, 0, Lc, Wc), 'cut', true);
+  const paths: Path[] = [
+    outline,
+    poly(eid, `${TOP_HEAD_ID}-sew`, rect(s, s, Lc - s, Wc - s), 'stitch', true, `Sew line ${fmtIn(s)}" in: head edge to the gusset, long edges to the tub, the foot edge to the J zipper`),
+    poly(eid, `${TOP_HEAD_ID}-centre`, [{ x: 0, y: Wc / 2 }, { x: s, y: Wc / 2 }], 'notch', false, 'Centre'),
+  ];
+  if (r.brim) paths.push(...brimLines(r, eid, TOP_HEAD_ID));
+  return {
+    id: TOP_HEAD_ID, name: 'Top head (above the J)', mirror: false, quantity: 1, materialId: r.top_material === 'mesh' ? MESH_ID : TOP_FABRIC_ID, paths, seamAllowances: zeroSa(outline),
+    annotations: [{ kind: 'label', label: `Top head — cut ${dim(Lc)} × ${dim(Wc)}; the J zipper crosses at its foot edge`, point: { x: Lc / 2, y: Wc / 2 } }],
+  };
+}
+
+/** The brim channel strip: the top's width (ends into the side seams) by the channel plus both turned edges. */
+function buildBrim(r: ResolvedInputs): Piece {
+  const eid = makeEdgeIdGen(BRIM_ID);
+  const s = r.seam_allowance;
+  const w = r.top_cut_width, h = r.brim_channel + 2 * s;
+  const outline = poly(eid, `${BRIM_ID}-outline`, rect(0, 0, w, h), 'cut', true);
+  return {
+    id: BRIM_ID, name: 'Brim channel strip', mirror: false, quantity: 1, materialId: TOP_FABRIC_ID,
+    paths: [outline, poly(eid, `${BRIM_ID}-turn-0`, [{ x: 0, y: s }, { x: w, y: s }], 'fold', false, 'Hem — turn under (180°)'), poly(eid, `${BRIM_ID}-turn-1`, [{ x: 0, y: h - s }, { x: w, y: h - s }], 'fold', false, 'Hem — turn under (180°)')],
+    seamAllowances: zeroSa(outline),
+    annotations: [{ kind: 'label', label: `Brim channel — ${fmtIn(r.brim_channel)}" finished, edges turned under ${fmtIn(s)}"`, point: { x: w / 2, y: h / 2 } }],
   };
 }
 
@@ -120,12 +170,15 @@ function buildGusset(r: ResolvedInputs, id: string, name: string, materialId: st
 }
 
 function buildSteps(r: ResolvedInputs): Step[] {
-  const ids = [FLOOR_ID, TOP_ID, HEAD_GUSSET_ID, FOOT_GUSSET_ID];
+  const ids = [FLOOR_ID, ...(r.zip_style === 'j' ? [TOP_HEAD_ID] : []), TOP_ID, HEAD_GUSSET_ID, FOOT_GUSSET_ID, ...(r.brim ? [BRIM_ID] : [])];
   return [
     { id: 'bivy.cut', title: 'Cut the pieces', body: `Floor ${dim(r.floor_cut_length)} × ${dim(r.floor_cut_width)} from the waterproof floor fabric; top ${dim(r.top_cut_length)} × ${dim(r.top_cut_width)} and the foot gusset from ${r.top_material === 'mesh' ? 'no-see-um mesh' : 'the top fabric'}; the head gusset from ${r.head_gusset === 'mesh' || r.top_material === 'mesh' ? 'no-see-um mesh' : 'the top fabric'}. The ${Math.round(r.seam_allowance * 10) / 10} mm allowance is included in every piece. Sewn fabrics only.`, dependsOn: [], refsPieces: ids, group: 'Cut' },
     { id: 'bivy.tub', title: 'Fold the tub corners', body: `At each corner of the floor, fold the corner square on its marked diagonal, outside together, stitch its two sides together from the raw edge to the inner corner and fold the ear flat against the end wall; tack it. The ${fmtIn(r.tub_height)}" sides then stand up along the folds. Nothing is cut, so the floor has no seam below the tub height; seal the four corner seams.`, dependsOn: ['bivy.cut'], refsPieces: [FLOOR_ID], group: 'Floor' },
+    ...(r.brim ? [{ id: 'bivy.brim', title: 'Brim channel', body: `Turn both long edges of the strip under and sew it to the inside of the top between the brim lines, ${fmtIn(r.brim_from_head)}" from the head edge, ends open at the side seams. A wire or a short pole about ${fmtIn(r.top_width)}" long slides in after assembly and holds the fabric off the face.`, dependsOn: ['bivy.cut'], refsPieces: [r.zip_style === 'j' ? TOP_HEAD_ID : TOP_ID, BRIM_ID], group: 'Top' }] : []),
     { id: 'bivy.gussets', title: 'Gussets to the top', body: `Right sides together, sew each gusset's arch to a short edge of the top, centres matched, easing the ${fmtIn(r.top_width)}" edge round the curve.`, dependsOn: ['bivy.cut'], refsPieces: [TOP_ID, HEAD_GUSSET_ID, FOOT_GUSSET_ID], group: 'Top' },
-    { id: 'bivy.zip', title: 'Zipper in the side seam', body: `Sew one tape of a ${dim(r.zip_length)} zipper to the top's ${r.zip_side} long edge from the head corner to the zipper mark, and the other tape to the tub's matching top edge, so the zipper closes the seam there.`, dependsOn: ['bivy.gussets', 'bivy.tub'], refsPieces: [TOP_ID, FLOOR_ID], group: 'Join' },
+    r.zip_style === 'j'
+      ? { id: 'bivy.zip', title: 'J zipper', body: `Sew a ${dim(r.zipper_length)} zipper in a J: one tape across the head section's foot edge and the other across the body's head edge (${fmtIn(r.top_width)}" across, from the far side seam), then round the ${r.zip_side} corner and on along the body's ${r.zip_side} long edge to the zipper mark, its other tape there to the tub's top edge. Ease the tape round the corner with a few clips into its allowance.`, dependsOn: ['bivy.gussets', 'bivy.tub'], refsPieces: [TOP_HEAD_ID, TOP_ID, FLOOR_ID], group: 'Join' }
+      : { id: 'bivy.zip', title: 'Zipper in the side seam', body: `Sew one tape of a ${dim(r.zip_length)} zipper to the top's ${r.zip_side} long edge from the head corner to the zipper mark, and the other tape to the tub's matching top edge, so the zipper closes the seam there.`, dependsOn: ['bivy.gussets', 'bivy.tub'], refsPieces: [TOP_ID, FLOOR_ID], group: 'Join' },
     { id: 'bivy.join', title: 'Top to the tub', body: `Right sides together, sew the rest of the top's long edges and both gusset bases to the tub's top edge on the drawn line, ${fmtIn(r.seam_allowance)}" in, corners matched; finish the allowance (bind or overlock). Turn it right side out.`, dependsOn: ['bivy.zip'], refsPieces: ids, group: 'Join' },
     { id: 'bivy.test', title: 'Lie in it before you trust it', body: `Inside height at the head is about ${fmtIn(r.head_height)}" (the ${fmtIn(r.tub_height)}" tub plus the ${fmtIn(r.arch!.rise)}" arch), less once you are in it. Check the length with your bag inside; every number in this pattern is a placeholder until checked.`, dependsOn: ['bivy.join'], refsPieces: ids, group: 'Finish' },
   ];
@@ -133,7 +186,8 @@ function buildSteps(r: ResolvedInputs): Step[] {
 
 function mockDerived(inputs: BivyInputs, r: ResolvedInputs): GeneratorWarning[] {
   const unit = r.units === 'in' ? (mm: number) => `${(mm / IN).toFixed(3).replace(/\.?0+$/, '')}"` : (mm: number) => `${Math.round(mm * 10) / 10} mm`;
-  const open = PLACEHOLDERS.filter((p) => inputs[p.field] === undefined || inputs[p.field] === null);
+  const applies = (f: keyof BivyInputs) => (f === 'j_from_head' ? r.zip_style === 'j' : f === 'brim_from_head' || f === 'brim_channel' ? r.brim : true);
+  const open = PLACEHOLDERS.filter((p) => applies(p.field) && (inputs[p.field] === undefined || inputs[p.field] === null));
   if (open.length === 0) return [];
   return [{
     id: 'mock-derived', severity: 'info', field: open[0].field,
@@ -155,13 +209,16 @@ export function buildPattern(inputs: BivyInputs): Result<BivyBuildResult> {
   const r = resolveInputs(inputs);
   const pieces: Piece[] = [
     buildFloor(r),
+    ...(r.zip_style === 'j' ? [buildTopHead(r)] : []),
     buildTop(r),
+    ...(r.brim ? [buildBrim(r)] : []),
     // A bug bivy is mesh above the tub everywhere.
     buildGusset(r, HEAD_GUSSET_ID, 'Head gusset', r.head_gusset === 'mesh' || r.top_material === 'mesh' ? MESH_ID : TOP_FABRIC_ID),
     buildGusset(r, FOOT_GUSSET_ID, 'Foot gusset', r.top_material === 'mesh' ? MESH_ID : TOP_FABRIC_ID),
   ];
   const hardware: HardwareItem[] = [
-    { id: 'zipper', name: 'Zipper (two-way slider recommended)', quantity: 1, notes: `${dim(r.zip_length)} in the ${r.zip_side} side seam from the head` },
+    { id: 'zipper', name: 'Zipper (two-way slider recommended)', quantity: 1, notes: r.zip_style === 'j' ? `${dim(r.zipper_length)}: across the top at the J, then down the ${r.zip_side} side` : `${dim(r.zip_length)} in the ${r.zip_side} side seam from the head` },
+    ...(r.brim ? [{ id: 'brim-wire', name: 'Brim wire or short pole', quantity: 1, notes: `about ${dim(r.top_width)}, cut to hold the top off the face` }] : []),
     { id: 'seam-sealer', name: 'Seam sealer for the floor fabric', quantity: 1, notes: 'the four folded corner seams' },
   ];
   return { ok: true, value: { pieces, steps: buildSteps(r), warnings: buildWarnings(inputs, r), hardware, resolved: r } };

@@ -503,8 +503,13 @@ floor 95" × 37" cut, top 85" × 41", arch rise ≈ 12.6", head height ≈ 17.6"
 **No 3D tab:** the cloth engine has no lying body to hold the top up.
 Follow-ups: ~~a bug-net variant~~ (DONE 2026-11-22: `top_material: 'mesh'`
 puts the top and both gussets in no-see-um mesh over the same waterproof
-tub, with an info note), a J or
-curved zipper across the head, a hood/brim, stake loops at the tub corners.
+tub, with an info note), ~~a J zipper~~ (DONE 2026-11-22: `zip_style: 'j'`
+splits the top at `j_from_head` (placeholder 30") into a head section and a
+body; the zipper runs across the top there and down the zip side, length =
+top width + side run), ~~a hood/brim~~ (DONE 2026-11-22 as a brim: `brim`
+adds a channel strip across the head of the top for a wire or short pole,
+`brim_from_head` 6" and `brim_channel` 1" placeholders; a shaped hood stays
+open), stake loops at the tub corners.
 
 #### 10e. Gaiters (apparel beyond the skirt, first item) — DONE 2026-11-22 (no 3D)
 Engine: `src/lib/pattern-engine/geometry/frustum.ts` — the flat development

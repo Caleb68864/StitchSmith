@@ -1330,3 +1330,17 @@ baffle-chamber primitive and a fill-weight calculation.
   ridge seam). One beak goes on the x = 0 end.
 - Beaks refuse doors (both close the ends) and cat-cut ends. The 3D check
   leaves the beaks out but still holds the ridge ends.
+
+
+## 2026-11-22 — Bivy J zipper and brim (roadmap 10d follow-ups)
+
+- Decided by agent 2026-11-22 (owner may revisit): the J zipper crosses
+  the whole top at `j_from_head` (placeholder 30", about chest height,
+  flagged) and turns down the zip side; the top is cut as a head section
+  and a body joined by the zipper, the side run measured from the J line.
+  The corner is eased by clipping the tape allowance (step text). Side
+  zipper stays the default.
+- "Hood" is built as a brim: a channel strip across the inside of the top
+  near the head (`brim_from_head` 6", `brim_channel` 1", flagged), ends
+  open at the side seams, for a wire or short pole about the top width
+  long. A shaped hood is still open.

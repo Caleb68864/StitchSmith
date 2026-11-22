@@ -178,7 +178,7 @@ export const GENERATORS: Gen[] = [
   },
   {
     name: 'bivy',
-    keys: ['units', 'length', 'floor_width', 'tub_height', 'top_width', 'zip_length', 'fabric_width', 'seam_allowance', 'head_gusset', 'zip_side', 'top_material'],
+    keys: ['units', 'length', 'floor_width', 'tub_height', 'top_width', 'zip_length', 'fabric_width', 'seam_allowance', 'head_gusset', 'zip_side', 'top_material', 'zip_style', 'j_from_head', 'brim', 'brim_from_head', 'brim_channel'],
     defaults: () => makeDefaultBivyProject().inputs as unknown as AnyInputs,
     validate: (i) => listErrors(bivy.validateInputs(i as never)),
     build: (i) => resultPieces(bivy.buildPattern(i as never)),
