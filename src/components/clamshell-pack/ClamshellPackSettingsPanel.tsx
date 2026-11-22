@@ -90,6 +90,11 @@ export function ClamshellPackSettingsPanel({ inputs, errors, onChange }: Props) 
         onChange={v => onChange({ bottom_grommets: Number(v) })} />
       <Toggle id="hydration-port" label="Hydration port in the lid" value={inputs.hydration_port ?? false} onChange={v => onChange({ hydration_port: v })} />
       {(inputs.hydration_port ?? false) && (
+        <SelectField<'patch' | 'seam'> id="port-style" label="Port" value={inputs.port_style ?? 'patch'} error={errors['port_style']}
+          options={[{ value: 'patch', label: 'Slot through a patch' }, { value: 'seam', label: 'Gap left in the lid seam' }]}
+          onChange={v => onChange({ port_style: v })} />
+      )}
+      {(inputs.hydration_port ?? false) && (
         <NumericField id="port-length" label={`Port slot (${units})`} value={inputs.port_length} error={errors['port_length']} step={step} placeholder={ph('1.5', '38')} mockDerived onChange={v => onChange({ port_length: v })} />
       )}
       <Toggle label="Loop Velcro walls inside (for mesh pocket modules)" value={inputs.interior_loop ?? true} onChange={v => onChange({ interior_loop: v })} />

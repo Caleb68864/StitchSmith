@@ -132,3 +132,16 @@ describe('drainage grommets and hydration port (roadmap 7 follow-ups)', () => {
     expect(v.pieces.find((p) => p.id === GUSSET_ID)!.paths.some((p) => p.id.endsWith('-port-slot'))).toBe(false);
   });
 });
+
+describe('in-seam port (roadmap 7 follow-up)', () => {
+  it('a gap marked in the lid strip seam, bar-tacked, no slot and no patch', () => {
+    const v = buildPattern({ ...SOE, hydration_port: true, port_style: 'seam' });
+    if (!v.ok) throw new Error('build');
+    const lid = v.value.pieces.find((p) => p.id === LID_STRIP_ID)!;
+    const a = lid.paths.find((p) => p.id.endsWith('-port-seam-0'))!.edges[0], b = lid.paths.find((p) => p.id.endsWith('-port-seam-1'))!.edges[0];
+    expect(b.start.x - a.start.x).toBeCloseTo(1.5 * IN, 6);
+    expect(lid.paths.some((p) => p.id.endsWith('-port-slot'))).toBe(false);
+    expect(v.value.pieces.some((p) => p.id === 'clamshell-port-patch')).toBe(false);
+    expect(v.value.steps.find((s) => s.id === 'cs.port')!.title).toBe('In-seam hydration port');
+  });
+});

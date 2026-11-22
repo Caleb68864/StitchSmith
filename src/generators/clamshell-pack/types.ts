@@ -81,6 +81,8 @@ export interface ClamshellPackInputs {
   bottom_grommets?: number;
   /** A hydration port slot in the top of the lid strip. Default false. */
   hydration_port?: boolean;
+  /** A slot cut through a patch (default) or a span of the lid-to-back seam left open. */
+  port_style?: 'patch' | 'seam';
   /** Port slot length, display units. Placeholder 1.5" — mock-derived. */
   port_length?: number;
   /** Loop strip width, display units. Default 2". */
@@ -121,6 +123,7 @@ export interface ResolvedInputs {
   interior_loop: boolean;
   bottom_grommets: number;
   hydration_port: boolean;
+  port_style: 'patch' | 'seam';
   port_length: number;
   loop_strip_width: number;
   loop_gap: number;
