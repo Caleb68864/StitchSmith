@@ -551,7 +551,9 @@ wind shirt, beanie or anything with sleeves, which needs a drafting engine
 Small, separately testable steps; each lands with its own tests and no
 garment depends on a later step:
 
-1. **Measurement set** (`pattern-engine/drafting/measurements.ts`): chest,
+1. DONE 2026-11-22 — **Measurement set** (`pattern-engine/drafting/measurements.ts`;
+   tests `measurements.test.ts`; scye depth added as a measured length so
+   no drafting-system formula is needed for it): chest,
    waist, hip, back length, shoulder, neck, arm length, bicep, wrist, as
    user inputs with ease per measurement. No size table: a standard size
    chart (ASTM D5585, ISO 8559) is not in the repo, so presets wait until
