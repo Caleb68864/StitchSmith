@@ -47,6 +47,7 @@ export type {
 export {
   pleatedCardGeometry,
   pleatedCardWarnings,
+  pleatedCardStacks,
   MIN_PUCKER_PER_SIDE_MM,
   PC_STEP_CUT,
   PC_STEP_HEM_BACK,
@@ -59,7 +60,7 @@ export {
   PC_STEP_BOTTOM,
   PC_STEP_LID,
 } from './construction/pleatedCard.js';
-export type { PleatedCardGeometry } from './construction/pleatedCard.js';
+export type { PleatedCardGeometry, CardExtraLayers } from './construction/pleatedCard.js';
 export type { RetentionStyle, RetentionSpec, RetentionResult } from './components/retention.js';
 export { buildRetention } from './components/retention.js';
 export type { CradleSpec, CradleResult } from './components/cradle.js';

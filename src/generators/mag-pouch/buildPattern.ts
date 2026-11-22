@@ -15,6 +15,9 @@ import type { Piece } from '../../lib/pattern-engine/graph/Piece.js';
 import type { Step } from '../../lib/pattern-engine/instructions/Step.js';
 import { buildPouch } from '../../lib/pouch-engine/index.js';
 import { buildAttachment, palsRowCount } from '../../lib/pouch-engine/components/attachment.js';
+import { pleatedCardStacks } from '../../lib/pouch-engine/construction/pleatedCard.js';
+import { layerBudget, layerBudgetMessage, type StackLayer } from '../../lib/pattern-engine/seams/stack.js';
+import { toCardParams } from './toPouchSpec.js';
 import { buildDrainage } from '../../lib/pouch-engine/components/drainage.js';
 import { buildRetention } from '../../lib/pouch-engine/components/retention.js';
 import { buildCradles } from '../../lib/pouch-engine/components/cradle.js';
@@ -153,12 +156,32 @@ export function resolvedWarnings(r: ResolvedMagPouch): string[] {
     w.push('.308 magazines are heavy: SOE ships cradles, not pleats, on .308 rigs. A pleat also costs 1"–1.5" of ride height.');
   }
 
+  if (r.construction === 'pleated_card') {
+    // Only when a seam is over the forward-only threshold: under it there is nothing to act on.
+    const b = layerBudget(cardStacks(r));
+    if (b.forwardOnly.length > 0) w.push(layerBudgetMessage(b)!);
+  }
+
   if (r.construction === 'folded_t' && r.cellDepthIn > r.cellSpanIn / 2) {
     // The engine also warns; this one names the fix.
     w.push('Cell depth exceeds half the cell span — the folded-T centre seam may not lie flat. Consider the pleated card.');
   }
 
   return w;
+}
+
+/**
+ * The card's seam stacks with this build's components: the interior loop on
+ * both cell walls, the PALS back row and mount strap under a PALS mount, the
+ * face PALS bars across the divisions.
+ */
+export function cardStacks(r: ResolvedMagPouch) {
+  const atDivision: StackLayer[] = [];
+  const atBottom: StackLayer[] = [];
+  if (r.interiorLoop) { atDivision.push({ what: 'interior loop (both walls)', count: 2 }); atBottom.push({ what: 'interior loop ends', count: 2 }); }
+  if (r.isPalsMount) atDivision.push({ what: 'PALS back row', count: 1 }, { what: 'mount strap', count: 1 });
+  if (r.facePals) atDivision.push({ what: 'face PALS bar', count: 1 });
+  return pleatedCardStacks(toCardParams(r), { atDivision, atBottom });
 }
 
 // ─── Main entry point ─────────────────────────────────────────────────────────

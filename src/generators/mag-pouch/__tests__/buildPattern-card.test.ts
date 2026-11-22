@@ -221,3 +221,17 @@ describe('folded-T — grid-aware single pouch', () => {
     expect(validateInputs({ ...base, construction: 'pleated_card', cell_count: 2.5 }).ok).toBe(false);
   });
 });
+
+describe('layer budget on the card (seam-stack model)', () => {
+  it('the SOE 4-pack: about 8 at each division with the loop, PALS row, mount strap and face bar; over 8 at the pleat warns forward only', () => {
+    const v = buildPattern(fourPack({ bottom_style: 'pleat' }));
+    const w = (v as { warnings: string[] }).warnings.find((x) => x.startsWith('Layer budget'));
+    expect(w).toBeTruthy();
+    expect(w).toMatch(/each cell division 8/);
+    expect(w).toMatch(/Over 8 at each pleat: sew forward only/);
+  });
+  it('the folded-T has no card stacks', () => {
+    const v = buildPattern(fourPack({ construction: 'folded_t', cell_count: 1 }));
+    expect((v as { warnings: string[] }).warnings.some((x) => x.startsWith('Layer budget'))).toBe(false);
+  });
+});
