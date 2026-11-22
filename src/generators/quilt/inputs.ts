@@ -18,6 +18,7 @@ const GUARD_SPEC: GuardSpec = {
   neck: { kind: 'enum', allowed: ['none', 'drawcord'] },
   neck_channel: { kind: 'length' },
   pad_straps: { kind: 'bool' },
+  side_baffles: { kind: 'bool' },
   pad_width: { kind: 'length' },
   length: { kind: 'length' },
   shoulder_width: { kind: 'length' },
@@ -96,7 +97,7 @@ export function resolveInputs(inputs: QuiltInputs): ResolvedInputs {
   const cut_length = length + head_allowance + foot_allowance;
   return {
     units, kind, construction, footbox, end_channel, end_allowance: endA, wider_layer,
-    neck, pad_straps: inputs.pad_straps === true, pad_width: d(inputs.pad_width, PAD_WIDTH_MM),
+    neck, pad_straps: inputs.pad_straps === true, side_baffles: construction === 'baffled' && inputs.side_baffles === true, pad_width: d(inputs.pad_width, PAD_WIDTH_MM),
     head_channel, foot_channel, head_allowance, foot_allowance, length, shoulder_width, foot_width, footbox_length, fabric_width,
     loft, baffle_spacing, shell_differential, fill_power, overstuff, seam_allowance,
     chambers,

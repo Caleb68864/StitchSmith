@@ -26,6 +26,7 @@ export type Result<T> = { ok: true; value: T } | { ok: false; errors: BuildPatte
 export const LINER_ID = 'quilt-liner';
 export const SHELL_ID = 'quilt-shell';
 export const BAFFLE_PREFIX = 'quilt-baffle-';
+export const SIDE_BAFFLE_ID = 'quilt-side-baffle';
 export const SHELL_FABRIC_ID = 'quilt-shell-fabric';
 export const LINER_FABRIC_ID = 'quilt-liner-fabric';
 export const MESH_ID = 'quilt-baffle-mesh';
@@ -159,6 +160,24 @@ function buildBaffles(r: ResolvedInputs, g: QuiltGeometry): Piece[] {
   });
 }
 
+/** Side baffle: the finished side length (liner, head to foot between the end lines) by the loft, both edges seam-allowanced. */
+function buildSideBaffle(r: ResolvedInputs, g: QuiltGeometry): Piece {
+  const eid = makeEdgeIdGen(SIDE_BAFFLE_ID);
+  const sa = r.seam_allowance;
+  const side = Math.hypot(g.liner.halfWidthAt(r.length) - g.liner.halfWidthAt(0), r.length);
+  const w = side + 2 * sa, h = r.loft + 2 * sa;
+  const outline = closed(eid, `${SIDE_BAFFLE_ID}-outline`, [{ x: 0, y: 0 }, { x: w, y: 0 }, { x: w, y: h }, { x: 0, y: h }], 'cut');
+  return {
+    id: SIDE_BAFFLE_ID, name: 'Side baffle (cut 2)', mirror: false, quantity: 2, materialId: MESH_ID, seamAllowances: zeroSa(outline),
+    paths: [
+      outline,
+      line(eid, `${SIDE_BAFFLE_ID}-shell-stitch`, { x: sa, y: sa }, { x: w - sa, y: sa }, 'stitch', `Shell edge — to the shell's side, ${fmtIn(sa)}" in`),
+      line(eid, `${SIDE_BAFFLE_ID}-liner-stitch`, { x: sa, y: h - sa }, { x: w - sa, y: h - sa }, 'stitch', "Liner edge — to the liner's side"),
+    ],
+    annotations: [{ kind: 'label', label: `Side baffle — ${fmtIn(side)}" long, ${fmtIn(r.loft)}" tall finished`, point: { x: w / 2, y: h / 2 } }],
+  };
+}
+
 function buildSteps(r: ResolvedInputs, g: QuiltGeometry): Step[] {
   const baffled = r.construction === 'baffled';
   const ch = g.chambers;
@@ -172,6 +191,7 @@ function buildSteps(r: ResolvedInputs, g: QuiltGeometry): Step[] {
   if (baffled) {
     steps.push(
       { id: 'quilt.baffles-liner', title: 'Baffles to the liner', body: `Sew each baffle's liner (short) edge to its line on the liner, ${fmtIn(r.seam_allowance)}" in, centre to centre, head to foot. Leave the baffle ends loose: they go into the side seam.`, dependsOn: ['quilt.mark'], refsPieces: [LINER_ID, ...baffleIds], group: 'Baffles' },
+      ...(r.side_baffles ? [{ id: 'quilt.side-baffles', title: 'Side baffles', body: `Sew a side baffle's liner edge down each long side of the liner on the side sew line, ${fmtIn(r.seam_allowance)}" in, the cross baffles' ends caught under it; its shell edge goes to the shell's side in the perimeter step, so the ${fmtIn(r.loft)}" loft runs out to the edge instead of pinching to nothing.`, dependsOn: ['quilt.baffles-liner'], refsPieces: [LINER_ID, SIDE_BAFFLE_ID], group: 'Baffles' }] : []),
       { id: 'quilt.baffles-shell', title: 'Baffles to the shell', body: `Lay the shell over the liner, centres matched, and sew each baffle's shell (long) edge to its line on the shell, working from the head.${r.shell_differential > 0 ? ` The shell is ${r.shell_differential} % wider, so it stands proud of the liner between the baffles: that is the differential.` : ''}`, dependsOn: ['quilt.baffles-liner'], refsPieces: [SHELL_ID, ...baffleIds], group: 'Baffles' },
     );
   } else {
@@ -239,6 +259,7 @@ export function buildPattern(inputs: QuiltInputs): Result<QuiltBuildResult> {
   const g = quiltGeometry(r);
   const pieces: Piece[] = [buildPanel(r, g, 'shell'), buildPanel(r, g, 'liner')];
   if (r.construction === 'baffled') pieces.push(...buildBaffles(r, g));
+  if (r.side_baffles) pieces.push(buildSideBaffle(r, g));
   const hardware: HardwareItem[] = [
     { id: 'fill', name: 'Down fill', quantity: 1, notes: `${grams(r.total_fill_g)} (${ounces(r.total_fill_g)}) at ${r.fill_power} fill power, ${r.overstuff} % overstuff; estimate, mock-derived` },
   ];

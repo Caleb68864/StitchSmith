@@ -490,7 +490,9 @@ the channel lines, no footbox; shock cord and cord locks on the hardware), ~~a n
 lock and neck snap on the hardware; `pad_straps` marks loops a third and
 two thirds down each side seam and lists two straps about the pad width,
 `pad_width` placeholder 20"),
-vertical side baffles, joining fabric widths for a wider quilt, synthetic
+~~vertical side baffles~~ (DONE 2026-11-22: `side_baffles`, baffled only — a
+mesh strip the finished side long and the loft tall down each edge, the
+cross baffles' ends caught under it, more mesh on the BOM), joining fabric widths for a wider quilt, synthetic
 batting instead of a fill weight.
 
 #### 10d. Bathtub-floor bivy — DONE 2026-11-22 (`pattern/10-doors-bivy-apparel`, no 3D)

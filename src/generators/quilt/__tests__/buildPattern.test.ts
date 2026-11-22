@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest';
-import { buildPattern, buildBom, validateInputs, resolveInputs, quiltGeometry, LINER_ID, SHELL_ID, BAFFLE_PREFIX, MESH_ID, PLACEHOLDERS } from '../index.js';
+import { buildPattern, buildBom, validateInputs, resolveInputs, quiltGeometry, LINER_ID, SHELL_ID, BAFFLE_PREFIX, SIDE_BAFFLE_ID, MESH_ID, PLACEHOLDERS } from '../index.js';
 import type { QuiltInputs } from '../types.js';
 import { makeDefaultQuiltProject } from '../../../state/useQuiltProject.js';
 import { bboxFromPiece } from '../../../lib/pattern-engine/geometry/bbox.js';
@@ -264,5 +264,20 @@ describe('neck drawcord and pad straps (roadmap 10c follow-ups)', () => {
     expect(v.hardware.find((h) => h.id === 'pad-loop')!.quantity).toBe(4);
     expect(v.warnings.find((w) => w.id === 'mock-derived')!.message).toContain('Pad width');
     expect(errorFields({ ...DEF, pad_straps: true, pad_width: 0 })).toEqual(['pad_width']);
+  });
+});
+
+describe('side baffles (roadmap 10c follow-up: vertical baffles)', () => {
+  it('two mesh strips the finished side long and the loft tall, a step, more mesh; sewn-through has none', () => {
+    const v = built({ ...DEF, side_baffles: true });
+    const sb = piece(v.pieces, SIDE_BAFFLE_ID);
+    expect(sb.quantity).toBe(2);
+    const bb = bboxFromPiece(sb);
+    expect(bb.height).toBeCloseTo(2 * IN + 2 * 12.7, 6);
+    expect(bb.width).toBeCloseTo(Math.hypot(7 * IN, 78 * IN) + 2 * 12.7, 3);
+    expect(v.steps.some((s) => s.id === 'quilt.side-baffles')).toBe(true);
+    const mesh = (i: QuiltInputs) => buildBom(i).find((x) => x.id === `material-${MESH_ID}`)!.quantity;
+    expect(mesh({ ...DEF, side_baffles: true })).toBeGreaterThan(mesh(DEF) + 78 * IN);
+    expect(built({ ...ST, side_baffles: true }).pieces.some((p) => p.id === SIDE_BAFFLE_ID)).toBe(false);
   });
 });
