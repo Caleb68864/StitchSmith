@@ -158,7 +158,7 @@ describe('placeholders — every one flagged until entered', () => {
     for (const p of PLACEHOLDERS) expect(DEF[p.field]).toBeUndefined();
     const w = built(DEF).warnings.filter((x) => x.id === 'mock-derived');
     expect(w).toHaveLength(1);
-    for (const p of PLACEHOLDERS.filter((x) => x.field !== 'end_channel')) expect(w[0].message).toContain(p.label);
+    for (const p of PLACEHOLDERS.filter((x) => !['end_channel', 'neck_channel', 'pad_width'].includes(x.field))) expect(w[0].message).toContain(p.label);
     expect(w[0].message).not.toContain('End channel');
   });
   it('entering every placeholder clears the note; sewn-through does not ask for the differential', () => {
@@ -234,5 +234,35 @@ describe('underquilt mode (roadmap 10c follow-up)', () => {
     expect(r.end_allowance).toBeCloseTo(12.7, 9);
     expect(r.cut_length).toBeCloseTo(79 * IN, 6);
     expect(r.chambers!.chambers[0].y0).toBe(0);
+  });
+});
+
+describe('neck drawcord and pad straps (roadmap 10c follow-ups)', () => {
+  it('a neck drawcord rolls the head into a channel: the head takes 2 × 3/4", the chambers start below it, a cord, a lock and a snap', () => {
+    const N: QuiltInputs = { ...DEF, neck: 'drawcord' };
+    const r = resolveInputs(N);
+    expect(r.head_channel).toBeCloseTo(0.75 * IN, 9);
+    expect(r.head_allowance).toBeCloseTo(1.5 * IN, 9);
+    expect(r.foot_allowance).toBeCloseTo(12.7, 9);
+    expect(r.cut_length).toBeCloseTo(78 * IN + 1.5 * IN + 12.7, 6);
+    expect(r.chambers!.chambers[0].y0).toBeCloseTo(0.75 * IN, 6);
+    const v = built(N);
+    const shell = piece(v.pieces, SHELL_ID);
+    expect(shell.paths.some((p) => p.id === `${SHELL_ID}-channel-head`)).toBe(true);
+    expect(shell.paths.find((p) => p.id === `${SHELL_ID}-sew`)!.closed).toBe(false);
+    for (const id of ['neck-cord', 'neck-cord-lock', 'neck-snap']) expect(v.hardware.some((h) => h.id === id)).toBe(true);
+    expect(v.steps.some((s) => s.id === 'quilt.neck')).toBe(true);
+    expect(v.warnings.find((w) => w.id === 'mock-derived')!.message).toContain('Neck channel');
+    // The default is unchanged.
+    expect(resolveInputs(DEF).head_allowance).toBeCloseTo(12.7, 9);
+  });
+  it('pad straps: loop marks a third and two thirds down each side, two straps and four loops', () => {
+    const v = built({ ...DEF, pad_straps: true });
+    const liner = piece(v.pieces, LINER_ID);
+    expect(liner.paths.filter((p) => p.id.startsWith(`${LINER_ID}-pad-loop-`))).toHaveLength(4);
+    expect(v.hardware.find((h) => h.id === 'pad-strap')!.quantity).toBe(2);
+    expect(v.hardware.find((h) => h.id === 'pad-loop')!.quantity).toBe(4);
+    expect(v.warnings.find((w) => w.id === 'mock-derived')!.message).toContain('Pad width');
+    expect(errorFields({ ...DEF, pad_straps: true, pad_width: 0 })).toEqual(['pad_width']);
   });
 });

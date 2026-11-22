@@ -33,6 +33,10 @@ export const OVERSTUFF_PCT = 10;
 export const SEAM_ALLOWANCE_MM = 12.7;
 /** Placeholder 3/4" underquilt end channel (shock cord suspension). */
 export const END_CHANNEL_MM = 0.75 * IN;
+/** Placeholder 3/4" neck drawcord channel. */
+export const NECK_CHANNEL_MM = 0.75 * IN;
+/** Placeholder 20" sleeping pad width (a common pad width, not a vault number). */
+export const PAD_WIDTH_MM = 20 * IN;
 
 /**
  * Every placeholder input with its label and value (mm for lengths, a percent,
@@ -53,4 +57,6 @@ export const PLACEHOLDERS: readonly { field: keyof QuiltInputs; label: string; m
   { field: 'overstuff', label: 'Overstuff', mm: OVERSTUFF_PCT, kind: 'percent' },
   { field: 'seam_allowance', label: 'Seam allowance', mm: SEAM_ALLOWANCE_MM, kind: 'sa' },
   { field: 'end_channel', label: 'End channel', mm: END_CHANNEL_MM, kind: 'length' },
+  { field: 'neck_channel', label: 'Neck channel', mm: NECK_CHANNEL_MM, kind: 'length' },
+  { field: 'pad_width', label: 'Pad width', mm: PAD_WIDTH_MM, kind: 'length' },
 ];

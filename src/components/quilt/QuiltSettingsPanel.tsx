@@ -1,12 +1,12 @@
-import { NumericField, SelectField, UnitToggle, CollapsibleSection, VaultOpenNote } from '../shared/fields/index.js';
+import { NumericField, SelectField, Toggle, UnitToggle, CollapsibleSection, VaultOpenNote } from '../shared/fields/index.js';
 import type { QuiltInputs, QuiltConstruction, QuiltFootbox, QuiltKind } from '../../generators/quilt/types.js';
 import {
   LENGTH_MM, SHOULDER_WIDTH_MM, FOOT_WIDTH_MM, FOOTBOX_LENGTH_MM, FABRIC_WIDTH_MM, LOFT_MM, BAFFLE_SPACING_MM,
-  SHELL_DIFFERENTIAL_PCT, FILL_POWER, OVERSTUFF_PCT, SEAM_ALLOWANCE_MM, END_CHANNEL_MM,
+  SHELL_DIFFERENTIAL_PCT, FILL_POWER, OVERSTUFF_PCT, SEAM_ALLOWANCE_MM, END_CHANNEL_MM, NECK_CHANNEL_MM, PAD_WIDTH_MM,
 } from '../../generators/quilt/defaults.js';
 import { convertLengthValues, type UnitSystem } from '../../utils/units.js';
 
-const DISPLAY_UNIT_FIELDS = ['length', 'shoulder_width', 'foot_width', 'footbox_length', 'fabric_width', 'loft', 'baffle_spacing', 'end_channel'] as const;
+const DISPLAY_UNIT_FIELDS = ['length', 'shoulder_width', 'foot_width', 'footbox_length', 'fabric_width', 'loft', 'baffle_spacing', 'end_channel', 'neck_channel', 'pad_width'] as const;
 
 interface Props { inputs: QuiltInputs; errors: Record<string, string>; onChange: (changes: Partial<QuiltInputs>) => void }
 
@@ -66,6 +66,23 @@ export function QuiltSettingsPanel({ inputs, errors, onChange }: Props) {
           <NumericField id="fill-power" label="Fill power (in³/oz)" value={inputs.fill_power} error={errors['fill_power']} step={25} placeholder={String(FILL_POWER)} mockDerived onChange={(v) => onChange({ fill_power: v })} />
           <NumericField id="overstuff" label="Overstuff (%)" value={inputs.overstuff} error={errors['overstuff']} step={1} placeholder={String(OVERSTUFF_PCT)} mockDerived onChange={(v) => onChange({ overstuff: v })} />
         </div>
+      </CollapsibleSection>
+
+      <CollapsibleSection title="Neck and pad" defaultOpen={false}>
+        <div className="grid grid-cols-2 gap-3">
+          {!uq && (
+            <SelectField<'none' | 'drawcord'> id="neck" label="Neck" value={inputs.neck ?? 'none'} error={errors['neck']}
+              options={[{ value: 'none', label: 'Plain head edge' }, { value: 'drawcord', label: 'Drawcord channel and snap' }]}
+              onChange={(v) => onChange({ neck: v })} />
+          )}
+          {!uq && (inputs.neck ?? 'none') === 'drawcord' && (
+            <NumericField id="neck-channel" label={`Neck channel (${units})`} value={inputs.neck_channel} error={errors['neck_channel']} step={step} placeholder={ph(NECK_CHANNEL_MM)} mockDerived onChange={(v) => onChange({ neck_channel: v })} />
+          )}
+          {(inputs.pad_straps ?? false) && (
+            <NumericField id="pad-width" label={`Pad width (${units})`} value={inputs.pad_width} error={errors['pad_width']} step={step} placeholder={ph(PAD_WIDTH_MM)} mockDerived onChange={(v) => onChange({ pad_width: v })} />
+          )}
+        </div>
+        <Toggle id="pad-straps" label="Pad straps (loops in the side seams)" value={inputs.pad_straps ?? false} onChange={(v) => onChange({ pad_straps: v })} />
       </CollapsibleSection>
 
       {!uq && <CollapsibleSection title="Footbox" defaultOpen>

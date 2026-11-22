@@ -17,7 +17,7 @@ type QuiltPageProps = Pick<UseQuiltProjectReturn, 'project' | 'updateInputs' | '
 const FIELD_LABELS: Record<string, string> = {
   construction: 'Chambers', footbox: 'Footbox', length: 'Length', shoulder_width: 'Shoulder width', foot_width: 'Foot width',
   footbox_length: 'Footbox length', fabric_width: 'Fabric width', loft: 'Loft', baffle_spacing: 'Chamber spacing',
-  shell_differential: 'Shell differential', fill_power: 'Fill power', overstuff: 'Overstuff', seam_allowance: 'Seam allowance', kind: 'Quilt', end_channel: 'End channel',
+  shell_differential: 'Shell differential', fill_power: 'Fill power', overstuff: 'Overstuff', seam_allowance: 'Seam allowance', kind: 'Quilt', end_channel: 'End channel', neck: 'Neck', neck_channel: 'Neck channel', pad_straps: 'Pad straps', pad_width: 'Pad width',
 };
 const IN = 25.4;
 const inch = (mm: number) => (mm / IN).toFixed(2).replace(/\.?0+$/, '');

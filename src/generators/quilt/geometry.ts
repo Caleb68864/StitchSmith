@@ -32,14 +32,14 @@ export interface PanelOutline {
  * @param sa seam allowance beyond the finished sides (and the ends, unless `endAllow` says otherwise)
  * @param endAllow fabric beyond the finished head and foot (an underquilt's end channel), default `sa`
  */
-export function panelOutline(length: number, headWidth: number, footWidth: number, sa: number, endAllow = sa): PanelOutline {
+export function panelOutline(length: number, headWidth: number, footWidth: number, sa: number, endAllow = sa, footAllow = endAllow): PanelOutline {
   const a = headWidth / 2, b = footWidth / 2, L = length;
   const halfWidthAt = (y: number) => a + ((b - a) * y) / L;
   // Right side runs (a, 0) → (b, L); its outward normal points to +x.
   const len = Math.hypot(b - a, L);
   const nx = L / len, ny = (a - b) / len;
   const offsetX = (y: number) => a + sa * nx + ((b - a) * (y - sa * ny)) / L;
-  const xHead = offsetX(-endAllow), xFoot = offsetX(L + endAllow);
+  const xHead = offsetX(-endAllow), xFoot = offsetX(L + footAllow);
   const cutHalf = Math.max(xHead, xFoot);
   const cx = cutHalf;
   const yAt = (y: number) => y + endAllow;
@@ -47,7 +47,7 @@ export function panelOutline(length: number, headWidth: number, footWidth: numbe
     { x: cx - a, y: yAt(0) }, { x: cx + a, y: yAt(0) }, { x: cx + b, y: yAt(L) }, { x: cx - b, y: yAt(L) },
   ];
   const cut: Point[] = [
-    { x: cx - xHead, y: 0 }, { x: cx + xHead, y: 0 }, { x: cx + xFoot, y: L + 2 * endAllow }, { x: cx - xFoot, y: L + 2 * endAllow },
+    { x: cx - xHead, y: 0 }, { x: cx + xHead, y: 0 }, { x: cx + xFoot, y: L + endAllow + footAllow }, { x: cx - xFoot, y: L + endAllow + footAllow },
   ];
-  return { finished, cut, cutWidth: 2 * cutHalf, cutLength: L + 2 * endAllow, cx, halfWidthAt, yAt };
+  return { finished, cut, cutWidth: 2 * cutHalf, cutLength: L + endAllow + footAllow, cx, halfWidthAt, yAt };
 }

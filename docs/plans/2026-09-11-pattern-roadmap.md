@@ -484,7 +484,12 @@ mode~~ (DONE 2026-11-22: `kind: 'underquilt'` — a rectangle the shoulder
 width across, the differential on the liner (the layer toward the
 hammock), both ends rolled together into a shock-cord channel
 (`end_channel` placeholder 3/4", Hem primitive) with the chambers between
-the channel lines, no footbox; shock cord and cord locks on the hardware), a neck drawcord/snap and pad straps,
+the channel lines, no footbox; shock cord and cord locks on the hardware), ~~a neck drawcord/snap and pad straps~~ (DONE 2026-11-22:
+`neck: 'drawcord'` rolls the head, both layers, into a channel (placeholder
+3/4", Hem primitive) with the chambers starting below it, a drawcord, cord
+lock and neck snap on the hardware; `pad_straps` marks loops a third and
+two thirds down each side seam and lists two straps about the pad width,
+`pad_width` placeholder 20"),
 vertical side baffles, joining fabric widths for a wider quilt, synthetic
 batting instead of a fill weight.
 
