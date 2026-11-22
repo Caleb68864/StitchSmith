@@ -64,13 +64,14 @@ describe('parseProjectJson — schema versions and names (H5)', () => {
     expect(() => parseProjectJson(JSON.stringify({ ...base, projectName: '' }), 'zip-pouch')).toThrow(/projectName/);
   });
   it('the version table covers every generator in CLAUDE.md', () => {
-    expect(Object.keys(KNOWN_SCHEMA_VERSIONS)).toHaveLength(20);
+    expect(Object.keys(KNOWN_SCHEMA_VERSIONS)).toHaveLength(21);
     expect(KNOWN_SCHEMA_VERSIONS['lbv']).toBe(14);
     expect(KNOWN_SCHEMA_VERSIONS['tarp']).toBe(15);
     expect(KNOWN_SCHEMA_VERSIONS['hammock']).toBe(16);
     expect(KNOWN_SCHEMA_VERSIONS['quilt']).toBe(17);
     expect(KNOWN_SCHEMA_VERSIONS['bivy']).toBe(18);
     expect(KNOWN_SCHEMA_VERSIONS['gaiter']).toBe(19);
+    expect(KNOWN_SCHEMA_VERSIONS['beanie']).toBe(20);
   });
 });
 

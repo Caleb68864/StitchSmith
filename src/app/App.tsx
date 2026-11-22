@@ -22,6 +22,7 @@ import { useHammockProject } from '../state/useHammockProject.js';
 import { useQuiltProject } from '../state/useQuiltProject.js';
 import { useBivyProject } from '../state/useBivyProject.js';
 import { useGaiterProject } from '../state/useGaiterProject.js';
+import { useBeanieProject } from '../state/useBeanieProject.js';
 import { usePlateCarrierProject } from '../state/usePlateCarrierProject.js';
 import { useClamshellPackProject } from '../state/useClamshellPackProject.js';
 import { useFannyPackProject } from '../state/useFannyPackProject.js';
@@ -89,6 +90,9 @@ const BivyPage = lazy(() =>
 const GaiterPage = lazy(() =>
   import('../components/gaiter/GaiterPage.js').then(m => ({ default: m.GaiterPage }))
 );
+const BeaniePage = lazy(() =>
+  import('../components/beanie/BeaniePage.js').then(m => ({ default: m.BeaniePage }))
+);
 const FannyPackPage = lazy(() =>
   import('../components/fanny-pack/FannyPackPage.js').then(m => ({ default: m.FannyPackPage }))
 );
@@ -115,6 +119,7 @@ const HEADER_SUBTITLES: Partial<Record<View, string>> = {
   'quilt': 'Top Quilt Generator',
   'bivy': 'Bivy Generator',
   'gaiter': 'Gaiters Generator',
+  'beanie': 'Beanie Generator',
 };
 
 const VIEW_TITLES: Record<View, string> = {
@@ -139,6 +144,7 @@ const VIEW_TITLES: Record<View, string> = {
   'quilt': 'StitchSmith — Top Quilt',
   'bivy': 'StitchSmith — Bivy',
   'gaiter': 'StitchSmith — Gaiters',
+  'beanie': 'StitchSmith — Beanie',
 };
 
 type View = 'landing' | PatternEntry['route'];
@@ -183,6 +189,7 @@ export function App() {
   const quiltState = useQuiltProject();
   const bivyState = useBivyProject();
   const gaiterState = useGaiterProject();
+  const beanieState = useBeanieProject();
 
   useEffect(() => {
     document.title = VIEW_TITLES[view] ?? 'StitchSmith';
@@ -404,6 +411,14 @@ export function App() {
             updateInputs={gaiterState.updateInputs}
             resetProject={gaiterState.resetProject}
             importProject={gaiterState.importProject}
+          />
+        )}
+        {view === 'beanie' && (
+          <BeaniePage
+            project={beanieState.project}
+            updateInputs={beanieState.updateInputs}
+            resetProject={beanieState.resetProject}
+            importProject={beanieState.importProject}
           />
         )}
         {view === 'lbv' && (

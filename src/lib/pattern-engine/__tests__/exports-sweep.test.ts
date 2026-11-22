@@ -26,6 +26,7 @@ import { makeDefaultHammockProject } from '../../../state/useHammockProject.js';
 import { makeDefaultQuiltProject } from '../../../state/useQuiltProject.js';
 import { makeDefaultBivyProject } from '../../../state/useBivyProject.js';
 import { makeDefaultGaiterProject } from '../../../state/useGaiterProject.js';
+import { makeDefaultBeanieProject } from '../../../state/useBeanieProject.js';
 import { makeDefaultFannyPackProject } from '../../../state/useFannyPackProject.js';
 import { makeDefaultClamshellPackProject } from '../../../state/useClamshellPackProject.js';
 import { makeDefaultPlateCarrierProject } from '../../../state/usePlateCarrierProject.js';
@@ -46,6 +47,7 @@ import { buildPattern as buildHammock } from '../../../generators/hammock/index.
 import { buildPattern as buildQuilt } from '../../../generators/quilt/index.js';
 import { buildPattern as buildBivy } from '../../../generators/bivy/index.js';
 import { buildPattern as buildGaiter } from '../../../generators/gaiter/index.js';
+import { buildPattern as buildBeanie } from '../../../generators/beanie/index.js';
 import { buildPattern as buildFanny } from '../../../generators/fanny-pack/index.js';
 import { buildPattern as buildClam } from '../../../generators/clamshell-pack/index.js';
 import { buildPattern as buildPlate } from '../../../generators/plate-carrier/index.js';
@@ -115,6 +117,8 @@ const CASES: Case[] = [
   { name: 'bivy (fabric head, right zip, mm)', convention: 'B', build: () => pieces('bivy', buildBivy({ units: 'mm', head_gusset: 'fabric', zip_side: 'right', length: 2100, floor_width: 650, tub_height: 120, top_width: 950 })) },
   { name: 'gaiters (hook-and-loop)', convention: 'B', build: () => pieces('gaiter', buildGaiter(makeDefaultGaiterProject().inputs)) },
   { name: 'gaiters (zipper, narrow bottom, single fold, mm)', convention: 'B', build: () => pieces('gaiter', buildGaiter({ units: 'mm', closure: 'zipper', hem_fold: 'single', top_circumference: 420, bottom_circumference: 400, height: 380 })) },
+  { name: 'beanie (cuff, 6 gores)', convention: 'B', build: () => pieces('beanie', buildBeanie(makeDefaultBeanieProject().inputs)) },
+  { name: 'beanie (hem, 5 gores, mm)', convention: 'B', build: () => pieces('beanie', buildBeanie({ units: 'mm', finish: 'hem', gores: 5, head_circumference: 570, ease: 10, crown_height: 200 })) },
 ];
 
 describe('export sweep — every generator through every exporter', () => {

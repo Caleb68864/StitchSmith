@@ -11,7 +11,7 @@ export interface PatternEntry {
   summary?: string;
   /** Search terms beyond the title (vault names, platforms, materials). */
   tags?: string[];
-  route: 'tool-roll' | 'tri-zip' | 'roll-top' | 'mag-pouch' | 'book-cover' | 'zip-pouch' | 'circle-skirt' | 'padded-strap' | 'micro-rig' | 'sling' | 'organizer' | 'fanny-pack' | 'clamshell-pack' | 'plate-carrier' | 'lbv' | 'tarp' | 'hammock' | 'quilt' | 'bivy' | 'gaiter';
+  route: 'tool-roll' | 'tri-zip' | 'roll-top' | 'mag-pouch' | 'book-cover' | 'zip-pouch' | 'circle-skirt' | 'padded-strap' | 'micro-rig' | 'sling' | 'organizer' | 'fanny-pack' | 'clamshell-pack' | 'plate-carrier' | 'lbv' | 'tarp' | 'hammock' | 'quilt' | 'bivy' | 'gaiter' | 'beanie';
 }
 
 export const PATTERNS: PatternEntry[] = [
@@ -203,6 +203,15 @@ registerPattern({
   route: 'gaiter',
 });
 
+// Register the beanie entry (idempotent — safe to call multiple times)
+registerPattern({
+  id: 'beanie',
+  title: 'Beanie',
+  description: 'Beanie: a crown of gores developed from a dome (head circumference + ease, crown height), with a folded cuff band or a hemmed edge. Measurements are your inputs; the defaults are placeholders.',
+  available: true,
+  route: 'beanie',
+});
+
 // ─── Landing-page metadata ─────────────────────────────────────────────────────
 // Category, one-line summary and search tags per generator. Kept here (not in
 // the entries above) so the append-only registry stays untouched; a new
@@ -237,6 +246,7 @@ export const PATTERN_META: Record<string, { category: PatternCategory; summary: 
   'quilt': { category: 'shelter', summary: 'Tapered top quilt: baffled or sewn-through chambers, fill per chamber, footbox.', tags: ['quilt', 'top quilt', 'sleep', 'down', 'fill power', 'baffle', 'loft', 'footbox', 'camping'] },
   'bivy': { category: 'shelter', summary: 'Bathtub-floor bivy: folded tub corners, arched top, gussets, side zipper.', tags: ['bivy', 'bivvy', 'bathtub floor', 'tub', 'sleep', 'shelter', 'mesh', 'bug', 'zipper', 'camping'] },
   'gaiter': { category: 'apparel', summary: 'Hiking gaiters: tapered tube, hook-and-loop or zipper front, elastic top, instep strap.', tags: ['gaiter', 'gaiters', 'leg', 'boot', 'hiking', 'instep strap', 'lace hook', 'elastic', 'garment'] },
+  'beanie': { category: 'apparel', summary: 'Beanie: gored crown from your head measurement, cuff or hem.', tags: ['beanie', 'hat', 'cap', 'toque', 'gore', 'fleece', 'head', 'garment'] },
   'circle-skirt': { category: 'apparel', summary: 'Quarter to double circle skirt with waistband and closure options.', tags: ['skirt', 'garment', 'waist', 'zipper', 'elastic'] },
 };
 

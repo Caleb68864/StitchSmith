@@ -551,17 +551,22 @@ wind shirt, beanie or anything with sleeves, which needs a drafting engine
 Small, separately testable steps; each lands with its own tests and no
 garment depends on a later step:
 
-1. **Measurement set** (`pattern-engine/drafting/measurements.ts`): chest,
+1. DONE 2026-11-22 — **Measurement set** (`pattern-engine/drafting/measurements.ts`;
+   tests `measurements.test.ts`; scye depth added as a measured length so
+   no drafting-system formula is needed for it): chest,
    waist, hip, back length, shoulder, neck, arm length, bicep, wrist, as
    user inputs with ease per measurement. No size table: a standard size
    chart (ASTM D5585, ISO 8559) is not in the repo, so presets wait until
    one is sourced. Tests: validation, unit conversion.
-2. **Bodice block** (`drafting/bodice.ts`): front and back from the
+2. DONE 2026-11-22 — **Bodice block** (`drafting/bodice.ts`; tests `bodice.test.ts`;
+   the front neck depth is solved so the neckline measures half the eased
+   neck; the shoulder drop is a required option, flagged by the garment): front and back from the
    measurements — chest/4 + ease per quarter, shoulder slope, neckline
    (quarter ellipse) and armhole (Bézier through the armhole depth and the
    shoulder and side points). Tests: front + back widths = chest/2 + ease,
    seam lengths match (shoulder to shoulder, side to side), curves smooth.
-3. **Sleeve block** (`drafting/sleeve.ts`): cap height solved so the cap
+3. DONE 2026-11-22 — **Sleeve block** (`drafting/sleeve.ts`; tests `sleeve.test.ts`;
+   S-curve cap halves solved by bisection, cap ease optional, default 0): cap height solved so the cap
    curve length = armhole length + cap ease (bisection, like `chordArc`),
    bicep and wrist widths, sleeve length. Tests: the cap matches the
    armhole within a millimetre; front and back cap halves match their
@@ -571,8 +576,15 @@ garment depends on a later step:
 5. **3D**: the torso form exists; sleeves need an arm form (a capsule per
    arm) before the shirt gets an assembly.
 
-A beanie does not need this engine (gores of a dome; `chordArc`-style
-geometry) and could come first if wanted.
+**Beanie — DONE 2026-11-22 (before the engine, no 3D).** Engine:
+`src/lib/pattern-engine/geometry/gore.ts` — gores of a half-ellipsoid dome
+(width at each height = ring circumference / N, length = the meridian's
+arc). Generator `src/generators/beanie/`, page `src/components/beanie/`,
+schemaVersion 20, Apparel: N gores from head circumference + ease and a
+crown height, a folded cuff band or a single-fold hem (Hem primitive),
+Convention B. Measurements are inputs; placeholders (head 22", ease −1",
+crown 7", 6 gores, cuff 2.5", hem 1/2", SA 9.5 mm) are flagged starting
+points, not a size chart. No 3D: no head form.
 
 **Order for the rest of item 10:** 10b gathered-end hammock and 10c top quilt (done above), then 10d bivy (done above; bug net a follow-up) (curved long zipper,
 mesh cut sheet), 10e apparel beyond the skirt (gaiters first; a garment
@@ -776,6 +788,8 @@ which (the tri-zip `seam:` path convention is the seed).
 - DONE 2026-11-22 (`src/lib/pattern-engine/geometry/frustum.ts`) — **Tapered
   tube development**: a cone frustum laid flat (gaiters; cuffs, tapered
   sacks).
+- DONE 2026-11-22 (`src/lib/pattern-engine/geometry/gore.ts`) — **Dome gores**: N
+  panels of a half-ellipsoid crown (beanie; hood tops, caps).
 - **Layer budget per seam**: emit max stack per seam and a machine-class
   requirement; annotate "sew forward only" above ~8 layers.
   `reference/technique-sewing-through-bulk.md`, `rigs/splitfront-technique-layer-budgeting.md`.

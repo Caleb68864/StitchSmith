@@ -23,6 +23,7 @@ import { HammockPage } from '../hammock/HammockPage.js';
 import { QuiltPage } from '../quilt/QuiltPage.js';
 import { BivyPage } from '../bivy/BivyPage.js';
 import { GaiterPage } from '../gaiter/GaiterPage.js';
+import { BeaniePage } from '../beanie/BeaniePage.js';
 import { MagPouchPage } from '../mag-pouch/MagPouchPage.js';
 import { MicroRigPage } from '../micro-rig/MicroRigPage.js';
 import { OrganizerPage } from '../organizer/OrganizerPage.js';
@@ -46,6 +47,7 @@ const PAGES: Record<string, ComponentType<Record<string, unknown>>> = {
   'quilt': QuiltPage as never,
   'bivy': BivyPage as never,
   'gaiter': GaiterPage as never,
+  'beanie': BeaniePage as never,
   'mag-pouch': MagPouchPage as never,
   'micro-rig': MicroRigPage as never,
   'organizer': OrganizerPage as never,
@@ -80,7 +82,7 @@ function Host({ Page, initial, breakInputs }: { Page: ComponentType<Record<strin
  * Projects whose defaults hold no numbers (the tarp leaves every placeholder
  * empty so the page lists it as mock-derived) name the field to break instead.
  */
-const BREAK_KEY: Record<string, string> = { tarp: 'ridge_length', hammock: 'length', quilt: 'length', bivy: 'length', gaiter: 'height' };
+const BREAK_KEY: Record<string, string> = { tarp: 'ridge_length', hammock: 'length', quilt: 'length', bivy: 'length', gaiter: 'height', beanie: 'head_circumference' };
 
 /** First numeric input in the defaults — set to NaN it must fail every generator's validation. */
 function firstNumericKey(inputs: Record<string, unknown>, generatorId?: string): string {

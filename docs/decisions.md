@@ -1361,3 +1361,45 @@ baffle-chamber primitive and a fill-weight calculation.
   lines. Fill is computed on the narrower layer's width, as on the top quilt.
 - Shock cord lengths are not given (they depend on the hammock); the
   hardware note says so.
+
+
+## 2026-11-22 — Beanie (roadmap 10e, before the drafting engine)
+
+- Decided by agent 2026-11-22 (owner may revisit): the crown is a half
+  ellipsoid of revolution (base circumference = head + ease, height = the
+  crown height) cut into N equal gores, developed by the classic gore
+  approximation (width at each height = ring / N, length along the
+  meridian). A folded cuff band (default) or a single-fold hem.
+- Measurements are user inputs; the placeholders are flagged starting
+  points, never a size chart (no chart is sourced). Negative ease gets an
+  info note (stretch fabrics only).
+- No 3D: the cloth engine has no head form.
+
+
+## 2026-11-22 — Drafting engine steps 1 and 2 (roadmap 10f)
+
+- Measurement set: eleven measurements, all required inputs (no size
+  chart; ASTM D5585 / ISO 8559 are not in the repo). Girths carry their own
+  ease; scye depth (nape to armpit level) is measured, so no drafting-system
+  formula is used for the armhole depth.
+- Bodice block, decided by agent 2026-11-22 (owner may revisit): geometric
+  choices, not a named drafting system. Back and front each a quarter of
+  the eased chest, waist and hip (side seam under the arm); neck point at
+  the neck radius; back neck a quarter ellipse 1/4 of the radius deep, front
+  depth solved so the neckline measures half the eased neck; shoulder drop
+  a required option the garment supplies (flagged); the same armhole cubic
+  and side seam on both halves, so every seam pair matches by construction.
+  A real block gives the front more width and a deeper front armhole; that
+  refinement waits for a sourced system or fitting.
+
+
+## 2026-11-22 — Drafting engine step 3: the sleeve (roadmap 10f)
+
+- Decided by agent 2026-11-22 (owner may revisit): a one-piece set-in
+  sleeve. Each cap half is a cubic S-curve leaving the cap top level and
+  arriving at the underarm level; the cap height is solved by bisection so
+  each half measures its armhole plus half the cap ease (default 0, a
+  shirt cap; a fitted sleeve wants some). Bicep and wrist at their eased
+  girths, the arm length from the cap top to the wrist, both underseams the
+  same straight line. The cap is symmetric while the bodice halves share
+  one armhole.

@@ -42,6 +42,8 @@ import * as bivy from '../bivy/index.js';
 import { makeDefaultBivyProject } from '../../state/useBivyProject.js';
 import * as gaiter from '../gaiter/index.js';
 import { makeDefaultGaiterProject } from '../../state/useGaiterProject.js';
+import * as beanie from '../beanie/index.js';
+import { makeDefaultBeanieProject } from '../../state/useBeanieProject.js';
 import * as triZip from '../tri-zip-backpack/index.js';
 import { makeDefaultTriZipProject } from '../../state/useTriZipProject.js';
 import * as zipPouch from '../zip-pouch/index.js';
@@ -189,6 +191,13 @@ export const GENERATORS: Gen[] = [
     defaults: () => makeDefaultGaiterProject().inputs as unknown as AnyInputs,
     validate: (i) => listErrors(gaiter.validateInputs(i as never)),
     build: (i) => resultPieces(gaiter.buildPattern(i as never)),
+  },
+  {
+    name: 'beanie',
+    keys: ['units', 'head_circumference', 'ease', 'crown_height', 'gores', 'finish', 'cuff_height', 'hem_depth', 'seam_allowance'],
+    defaults: () => makeDefaultBeanieProject().inputs as unknown as AnyInputs,
+    validate: (i) => listErrors(beanie.validateInputs(i as never)),
+    build: (i) => resultPieces(beanie.buildPattern(i as never)),
   },
   {
     name: 'tri-zip-backpack',
