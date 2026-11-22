@@ -868,7 +868,9 @@ which (the tri-zip `seam:` path convention is the seed).
   thresholds are encoded); `pleatedCardStacks` derives the card's stacks
   from its construction plus the generator's components (loop, PALS row,
   mount strap, face bar), and the Mag Pouch warns with the counts when a
-  seam is over 8 (the SOE 4-pack: 8 at each division, 10 at a pleat).
+  seam is over 8 (the SOE 4-pack: 8 at each division; since 2026-11-22 the
+  mount strap's folded tab and the AK face hem count at the bottom, so a
+  pleat is 12, 14 with the AK hem: the vault's 12–14).
   Other generators: declare their stacks the same way.
 - DONE 2026-11-22 (`Piece.assembly`, `patternToSvgByAssembly`) — **Cut sheets grouped by assembly**:
   a piece may name its sub-assembly; the export panel offers "Cut sheets by

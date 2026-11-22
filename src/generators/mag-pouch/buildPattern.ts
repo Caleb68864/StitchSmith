@@ -179,7 +179,11 @@ export function cardStacks(r: ResolvedMagPouch) {
   const atDivision: StackLayer[] = [];
   const atBottom: StackLayer[] = [];
   if (r.interiorLoop) { atDivision.push({ what: 'interior loop (both walls)', count: 2 }); atBottom.push({ what: 'interior loop ends', count: 2 }); }
-  if (r.isPalsMount) atDivision.push({ what: 'PALS back row', count: 1 }, { what: 'mount strap', count: 1 });
+  if (r.isPalsMount) {
+    atDivision.push({ what: 'PALS back row', count: 1 }, { what: 'mount strap', count: 1 });
+    // The mount strap's tuck/snap tab folds back on itself at the bottom: two thicknesses of webbing.
+    atBottom.push({ what: 'mount strap end (tab folded back)', count: 2 });
+  }
   if (r.facePals) atDivision.push({ what: 'face PALS bar', count: 1 });
   return pleatedCardStacks(toCardParams(r), { atDivision, atBottom });
 }

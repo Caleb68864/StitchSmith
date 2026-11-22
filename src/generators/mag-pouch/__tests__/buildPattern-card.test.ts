@@ -102,8 +102,10 @@ describe('pleated card — SOE 4-pack single rifle mag card', () => {
     expect(renderHtml(result.steps).ok).toBe(true);
   });
 
-  it('a well-proportioned card raises no warnings and renders to SVG', () => {
-    expect(result.warnings).toEqual([]);
+  it('a well-proportioned card raises no warnings beyond the layer budget and renders to SVG', () => {
+    // The bottom, where the mount strap tabs fold under, is over 8: the budget note is the only one.
+    expect(result.warnings.filter((w) => !w.startsWith('Layer budget'))).toEqual([]);
+    expect(result.warnings.find((w) => w.startsWith('Layer budget'))).toMatch(/Over 8 at the bottom/);
     expect(patternToSvg(result.pattern, { defaultSeamAllowance: 0 })).toContain('<svg');
   });
 });
@@ -229,6 +231,10 @@ describe('layer budget on the card (seam-stack model)', () => {
     expect(w).toBeTruthy();
     expect(w).toMatch(/each cell division 8/);
     expect(w).toMatch(/Over 8 at each pleat: sew forward only/);
+    // The vault's 12–14 where webbing and hems stack: 12 with raw face edges, 14 with the AK face hem.
+    expect(w).toMatch(/each pleat 12/);
+    const ak = (buildPattern(fourPack({ bottom_style: 'pleat', ak_face_hem: true })) as { warnings: string[] }).warnings.find((x) => x.startsWith('Layer budget'));
+    expect(ak).toMatch(/each pleat 14/);
   });
   it('the folded-T has no card stacks', () => {
     const v = buildPattern(fourPack({ construction: 'folded_t', cell_count: 1 }));

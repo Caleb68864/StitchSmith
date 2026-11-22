@@ -406,7 +406,7 @@ export function pleatedCardStacks(c: PleatedCardParams, extras: CardExtraLayers 
   if (c.cellCount > 1) stacks.push({ seam: 'each cell division', layers: [face, back, ...(extras.atDivision ?? [])] });
   stacks.push({ seam: 'the outer sides', layers: [{ what: 'face with its end hem', count: c.faceEndHem > 0 ? 4 : 2 }, { what: 'back with its side hem', count: c.backHem > 0 ? 2 : 1 }] });
   const bottom: StackLayer[] =
-    c.bottomStyle === 'pleat' ? [{ what: 'face folded into a flat pleat', count: 6 }]
+    c.bottomStyle === 'pleat' ? [{ what: 'face folded into a flat pleat', count: 6 }, ...(c.faceBottomHem > 0 ? [{ what: 'face bottom hem', count: 2 }] : [])]
       : c.bottomStyle === 'cradle' ? [face, { what: 'cradle strip (doubled)', count: 2 }]
         : [face, ...(c.faceBottomHem > 0 ? [{ what: 'face bottom hem', count: 2 }] : [])];
   if (c.bottomStyle !== 'open') bottom.push({ what: 'back with its bottom hem', count: c.backHem > 0 ? 2 : 1 });
