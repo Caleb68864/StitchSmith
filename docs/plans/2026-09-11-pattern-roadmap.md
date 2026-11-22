@@ -473,8 +473,12 @@ baffles 3" tall cut, liner ≈ 55" × 79", shell ≈ 56.7" × 79", fill ≈ 269 
 (9.5 oz).
 
 **No 3D tab (recorded):** the cloth engine has no loft or fill model (the
-chambers would lie flat) and no lying body form. Follow-ups: an underquilt
-mode (on the same chamber primitive), a neck drawcord/snap and pad straps,
+chambers would lie flat) and no lying body form. Follow-ups: ~~an underquilt
+mode~~ (DONE 2026-11-22: `kind: 'underquilt'` — a rectangle the shoulder
+width across, the differential on the liner (the layer toward the
+hammock), both ends rolled together into a shock-cord channel
+(`end_channel` placeholder 3/4", Hem primitive) with the chambers between
+the channel lines, no footbox; shock cord and cord locks on the hardware), a neck drawcord/snap and pad straps,
 vertical side baffles, joining fabric widths for a wider quilt, synthetic
 batting instead of a fill weight.
 

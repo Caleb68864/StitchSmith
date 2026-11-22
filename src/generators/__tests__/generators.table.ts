@@ -171,7 +171,7 @@ export const GENERATORS: Gen[] = [
   },
   {
     name: 'quilt',
-    keys: ['units', 'construction', 'footbox', 'length', 'shoulder_width', 'foot_width', 'footbox_length', 'fabric_width', 'loft', 'baffle_spacing', 'shell_differential', 'fill_power', 'overstuff', 'seam_allowance'],
+    keys: ['units', 'construction', 'footbox', 'length', 'shoulder_width', 'foot_width', 'footbox_length', 'fabric_width', 'loft', 'baffle_spacing', 'shell_differential', 'fill_power', 'overstuff', 'seam_allowance', 'kind', 'end_channel'],
     defaults: () => makeDefaultQuiltProject().inputs as unknown as AnyInputs,
     validate: (i) => listErrors(quilt.validateInputs(i as never)),
     build: (i) => resultPieces(quilt.buildPattern(i as never)),

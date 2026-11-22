@@ -1344,3 +1344,20 @@ baffle-chamber primitive and a fill-weight calculation.
   near the head (`brim_from_head` 6", `brim_channel` 1", flagged), ends
   open at the side seams, for a wire or short pole about the top width
   long. A shaped hood is still open.
+
+
+## 2026-11-22 — Underquilt mode (roadmap 10c follow-up)
+
+- Decided by agent 2026-11-22 (owner may revisit): `kind: 'underquilt'` on
+  the quilt generator, not a new generator. It is a rectangle (the foot
+  width follows the shoulder width; an info note if one is entered), no
+  footbox.
+- The differential goes on the liner, the inner layer toward the hammock,
+  so the outer shell is the smaller, tensioned layer. This is the agent's
+  reading of common practice, not a sourced rule; the owner may reverse it.
+- Each end: shell and liner rolled together into a channel for shock-cord
+  suspension (`end_channel` placeholder 3/4", rolled, flagged), stitched
+  through both layers; the chambers fill the length between the channel
+  lines. Fill is computed on the narrower layer's width, as on the top quilt.
+- Shock cord lengths are not given (they depend on the hammock); the
+  hardware note says so.
