@@ -166,8 +166,11 @@ step one.
 `stacked_cells` pocket set on the micro rig: rear cell = depth + ease, front
 mark = rear + wrap, stack depth, coverage-driven pouch height, cradle depth
 stop with grommets, bungee over the top, split vs plain pulls, weight
-warning. The .308 test case reproduces the vault table. Left: the tear-off
-med pouch piece and a second magazine in the 3D view.
+warning. The .308 test case reproduces the vault table. ~~Left: the tear-off
+med pouch piece~~ DONE 2026-11-22 (`med_pouch`: a two-layer platform with a
+loop face weaving the med zone's PALS, a boxed body with a hook back, Velcro
+lid and pull handle; 3" wide, height/depth mock-derived inputs, tagged as
+its own assembly). Left: a second magazine in the 3D view.
 
 ### 5. Tactical organizer / pen-and-notebook organizer — DONE 2026-09-12
 `src/generators/organizer/`: folded body with hems marked at double, split

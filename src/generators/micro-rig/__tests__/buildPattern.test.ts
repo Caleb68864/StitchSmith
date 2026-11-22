@@ -212,3 +212,29 @@ describe('stacked cells (.308 test case from the vault)', () => {
     expect(asm.seams.filter((s) => /front pouch/.test(s.label ?? '')).length).toBe(3);
   });
 });
+
+describe('tear-off med pouch (roadmap 2/4 follow-up)', () => {
+  const stacked: MicroRigInputs = { pocket_set: 'stacked_cells', panel_width_preset: 'stacked_10_5' };
+  it('platform on the med zone PALS, boxed body with a hook back and a pull handle, all 3" wide', () => {
+    const res = buildPattern({ ...stacked, med_pouch: true });
+    if (!res.ok) throw new Error(JSON.stringify(res.errors));
+    const ids = res.value.pieces.map((p) => p.id);
+    for (const id of ['med-platform', 'med-platform-loop', 'med-mount-strap', 'med-body-back', 'med-body-front', 'med-body-gusset', 'med-body-lid', 'med-body-hook', 'med-pull-handle']) expect(ids).toContain(id);
+    const back = res.value.pieces.find((p) => p.id === 'med-body-back')!;
+    const xs = back.paths[0].edges.map((e) => e.end.x), ys = back.paths[0].edges.map((e) => e.end.y);
+    expect(Math.max(...xs)).toBeCloseTo(3 * IN, 6);
+    expect(Math.max(...ys)).toBeCloseTo(6 * IN, 6);
+    const gusset = res.value.pieces.find((p) => p.id === 'med-body-gusset')!;
+    expect(Math.max(...gusset.paths[0].edges.map((e) => e.end.x))).toBeCloseTo(15 * IN, 6);
+    expect(res.value.pieces.find((p) => p.id === 'med-mount-strap')!.quantity).toBe(2);
+    expect(res.value.steps.map((s) => s.id)).toEqual(expect.arrayContaining(['med.platform', 'med.body']));
+    expect(res.value.warnings.some((w) => w.id === 'mock-derived-med-pouch')).toBe(true);
+    expect(res.value.pieces.filter((p) => p.id.startsWith('med-')).every((p) => p.assembly === 'Med pouch')).toBe(true);
+  });
+  it('off by default and without the med zone', () => {
+    const a = buildPattern(stacked), b = buildPattern({ ...stacked, med_zone: false, med_pouch: true });
+    if (!a.ok || !b.ok) throw new Error('build');
+    expect(a.value.pieces.some((p) => p.id.startsWith('med-'))).toBe(false);
+    expect(b.value.pieces.some((p) => p.id.startsWith('med-'))).toBe(false);
+  });
+});

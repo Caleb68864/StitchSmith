@@ -53,6 +53,12 @@ export interface MicroRigInputs {
   cradle_drop?: number;
   /** Reserve a 3" med-pouch zone with face PALS outboard of the cells (the Stacked Micro trades the utility pocket for it). Default true. */
   med_zone?: boolean;
+  /** Stacked set: build the tear-off med pouch for the med zone (platform on the zone's PALS, body on hook-and-loop). Default false. */
+  med_pouch?: boolean;
+  /** Tear-off med pouch body height, display units. Mock-derived default 6". */
+  med_pouch_height?: number;
+  /** Tear-off med pouch body depth, display units. Mock-derived default 2". */
+  med_pouch_depth?: number;
   /** Bungee pull tab length, display units. Default 3 1/2". */
   pull_tab_length?: number;
   /** PALS columns on each end of the panel (0–2). Default 1. */
@@ -124,6 +130,9 @@ export interface ResolvedInputs {
   cradle_drop: number;
   med_zone: boolean;
   med_zone_width: number;
+  med_pouch: boolean;
+  med_pouch_height: number;
+  med_pouch_depth: number;
   pull_tab_length: number;
   /** Rear cell (flat on the panel): mag depth + ease. Consumes panel width. */
   rear_cell_width: number;

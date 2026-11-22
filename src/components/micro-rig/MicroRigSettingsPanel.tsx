@@ -4,7 +4,7 @@ import type { MicroRigInputs, PanelWidthPreset, PocketSet, Suspension } from '..
 import { MAGAZINE_IDS, getMagazine, PLATFORM_LABELS } from '../../generators/mag-pouch/magazines.js';
 import { convertLengthValues, type UnitSystem } from '../../utils/units.js';
 
-const DISPLAY_UNIT_FIELDS = ['panel_width', 'panel_height', 'cell_span', 'face_per_cell', 'cell_height', 'gap_width', 'buckle_setback', 'edge_margin', 'stack_ease', 'wrap_allowance', 'cradle_width', 'cradle_drop', 'pull_tab_length'] as const;
+const DISPLAY_UNIT_FIELDS = ['panel_width', 'panel_height', 'cell_span', 'face_per_cell', 'cell_height', 'gap_width', 'buckle_setback', 'edge_margin', 'stack_ease', 'wrap_allowance', 'cradle_width', 'cradle_drop', 'pull_tab_length', 'med_pouch_height', 'med_pouch_depth'] as const;
 
 interface Props {
   inputs: MicroRigInputs;
@@ -89,6 +89,13 @@ export function MicroRigSettingsPanel({ inputs, errors, onChange }: Props) {
             <NumericField id="pull-tab" label={`Pull tab length (${units})`} value={inputs.pull_tab_length} error={errors['pull_tab_length']} step={step} placeholder={units === 'in' ? '3.5' : '89'} onChange={v => onChange({ pull_tab_length: v })} />
           </div>
           <Toggle label='Med-pouch zone with face PALS (3")' value={inputs.med_zone ?? true} onChange={v => onChange({ med_zone: v })} />
+          {(inputs.med_zone ?? true) && <Toggle label="Tear-off med pouch for the zone" value={inputs.med_pouch ?? false} onChange={v => onChange({ med_pouch: v })} />}
+          {(inputs.med_zone ?? true) && (inputs.med_pouch ?? false) && (
+            <div className="grid grid-cols-2 gap-3">
+              <NumericField id="med-pouch-height" label={`Med pouch height (${units})`} value={inputs.med_pouch_height} error={errors['med_pouch_height']} step={step} placeholder={units === 'in' ? '6' : '152'} mockDerived onChange={v => onChange({ med_pouch_height: v })} />
+              <NumericField id="med-pouch-depth" label={`Med pouch depth (${units})`} value={inputs.med_pouch_depth} error={errors['med_pouch_depth']} step={step} placeholder={units === 'in' ? '2' : '51'} mockDerived onChange={v => onChange({ med_pouch_depth: v })} />
+            </div>
+          )}
         </>
       )}
 

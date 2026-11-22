@@ -119,7 +119,7 @@ export const GENERATORS: Gen[] = [
   },
   {
     name: 'micro-rig',
-    keys: ['units', 'panel_width_preset', 'panel_width', 'panel_height', 'pocket_set', 'magazine_preset_id', 'cell_count', 'cell_span', 'face_per_cell', 'cell_height', 'utility_pocket', 'cells_deep', 'stack_ease', 'wrap_allowance', 'coverage', 'cradle_width', 'cradle_drop', 'med_zone', 'pull_tab_length', 'side_pals_columns', 'bottom_loop_count', 'split_front', 'gap_width', 'buckle_setback', 'suspension', 'dangler_field', 'seam_allowance', 'edge_margin'],
+    keys: ['units', 'panel_width_preset', 'panel_width', 'panel_height', 'pocket_set', 'magazine_preset_id', 'cell_count', 'cell_span', 'face_per_cell', 'cell_height', 'utility_pocket', 'cells_deep', 'stack_ease', 'wrap_allowance', 'coverage', 'cradle_width', 'cradle_drop', 'med_zone', 'med_pouch', 'med_pouch_height', 'med_pouch_depth', 'pull_tab_length', 'side_pals_columns', 'bottom_loop_count', 'split_front', 'gap_width', 'buckle_setback', 'suspension', 'dangler_field', 'seam_allowance', 'edge_margin'],
     defaults: () => makeDefaultMicroRigProject().inputs as unknown as AnyInputs,
     validate: (i) => listErrors(microRig.validateInputs(i as never)),
     build: (i) => resultPieces(microRig.buildPattern(i as never)),

@@ -1562,3 +1562,11 @@ baffle-chamber primitive and a fill-weight calculation.
   the LBV's mock default, flagged mock-derived. No outboard-lock option here
   (the LBV page has it, tied to its chest circumference maths). Decided by
   agent 2026-11-22 (owner may revisit).
+
+## 2026-11-22 — Micro rig: tear-off med pouch
+
+- No vault numbers for the pouch (the vault only fixes the 3" med zone with
+  face PALS). Built as common practice: platform weaves the zone's PALS and
+  stays on the rig, the body rides on hook-and-loop with a pull handle.
+  6" x 2" body is a mock-derived default, editable and flagged. Decided by
+  agent 2026-11-22 (owner may revisit).

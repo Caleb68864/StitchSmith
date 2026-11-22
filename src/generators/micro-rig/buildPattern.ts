@@ -268,6 +268,61 @@ function buildUtilityPocket(r: ResolvedInputs): Piece[] {
   ];
 }
 
+/**
+ * The tear-off med pouch for the Stacked Micro's med zone: a platform that
+ * weaves onto the zone's face PALS with a loop field on its face, and a boxed
+ * body with a hook field on its back and a pull handle at the top, so one pull
+ * rips the body off the rig and the platform stays. No vault numbers: height
+ * and depth are mock-derived inputs; width is the 3" zone.
+ */
+function buildMedPouch(r: ResolvedInputs): Piece[] {
+  if (!r.med_pouch) return [];
+  const sa = r.seam_allowance;
+  const W = r.med_zone_width, H = r.med_pouch_height, D = r.med_pouch_depth;
+  const cols = Math.max(1, Math.floor(W / PALS_COLUMN_PITCH_MM));
+  const rows = 3;
+  const mountLen = rows * PALS_ROW_PITCH_MM + 2 * IN;
+  const pEid = makeEdgeIdGen('med-platform');
+  const platform = rect(pEid, 'med-platform-outline', W, H);
+  const gEid = makeEdgeIdGen('med-body-gusset');
+  const gLen = 2 * H + W;
+  const gusset = rect(gEid, 'med-body-gusset-outline', gLen, D);
+  const lidH = D + 1.5 * IN;
+  const panel = (id: string, name: string, q: number, label: string): Piece => {
+    const eid = makeEdgeIdGen(id);
+    const o = rect(eid, `${id}-outline`, W, H);
+    return { id, name, mirror: false, quantity: q, materialId: 'cordura-500', paths: [o], seamAllowances: saRecord(o, sa), annotations: [{ kind: 'label', label }] };
+  };
+  const lEid = makeEdgeIdGen('med-body-lid');
+  const lid = rect(lEid, 'med-body-lid-outline', W, lidH);
+  return [
+    {
+      id: 'med-platform', name: 'Med pouch platform', mirror: false, quantity: 2, materialId: 'cordura-500',
+      paths: [platform, { id: 'med-platform-mount', closed: false, label: `${cols} mount strap${cols === 1 ? '' : 's'} sew across the top, between the layers`, edges: [seg(pEid, 'notch', 0, 0.5 * IN, W, 0.5 * IN)] }],
+      seamAllowances: saRecord(platform, sa),
+      annotations: [{ kind: 'label', label: `Platform — 2 layers, ${fmtIn(W)} × ${fmtIn(H)}" finished; loop field on the outer face, stays on the rig` }],
+    },
+    strip('med-platform-loop', 'Platform loop field', W - 0.5 * IN, H - 0.5 * IN, 1, 'velcro-loop', 'Loop on the platform face — the body rips off it'),
+    strip('med-mount-strap', 'Platform mount strap', mountLen, 1 * IN, cols, 'webbing-25', `Weaves the med zone's ${rows} face PALS rows and snaps or tucks at the bottom`),
+    panel('med-body-back', 'Med pouch back', 1, `Body back — ${fmtIn(W)} × ${fmtIn(H)}" finished; hook field on the outside`),
+    panel('med-body-front', 'Med pouch front', 1, `Body front — ${fmtIn(W)} × ${fmtIn(H)}" finished`),
+    {
+      id: 'med-body-gusset', name: 'Med pouch gusset', mirror: false, quantity: 1, materialId: 'cordura-500',
+      paths: [gusset, ...[H, H + W].map((x, i) => ({ id: `med-body-gusset-corner-${i}`, closed: false, label: 'Corner — turn here (90°)', edges: [seg(gEid, 'fold', x, 0, x, D)] }))],
+      seamAllowances: saRecord(gusset, sa),
+      annotations: [{ kind: 'label', label: `Gusset — ${fmtIn(gLen)} × ${fmtIn(D)}" finished, round three sides` }],
+    },
+    {
+      id: 'med-body-lid', name: 'Med pouch lid', mirror: false, quantity: 1, materialId: 'cordura-500',
+      paths: [lid, { id: 'med-body-lid-velcro', closed: false, label: '1" hook strip on the lid end — loop on the body front', edges: [seg(lEid, 'stitch', 0.25 * IN, lidH - 1.25 * IN, W - 0.25 * IN, lidH - 1.25 * IN)] }],
+      seamAllowances: saRecord(lid, sa),
+      annotations: [{ kind: 'label', label: `Lid — ${fmtIn(W)} × ${fmtIn(lidH)}"` }],
+    },
+    strip('med-body-hook', 'Body hook field', W - 0.5 * IN, H - 0.5 * IN, 1, 'velcro-hook', 'Hook on the body back — mates the platform loop'),
+    strip('med-pull-handle', 'Tear-off pull handle', 5 * IN, 1 * IN, 1, 'webbing-25', 'Folded into a loop and caught in the lid seam at the top; one pull rips the body off'),
+  ];
+}
+
 function buildStrips(r: ResolvedInputs): Piece[] {
   const q = r.split_front ? 2 : 1;
   const out: Piece[] = [];
@@ -312,6 +367,7 @@ function buildHardware(r: ResolvedInputs): HardwareItem[] {
     hw.push({ id: 'cradle-grommet', name: '#4 grommet in the cradle webbing', quantity: r.grommet_count * q, notes: 'One per magazine; holes pre-burned for position, then pressed. The cradle is the bungee anchor plate.' });
     hw.push({ id: 'velcro-dot', name: '1" adhesive hook dot (on the magazine)', quantity: r.cell_count * r.cells_deep * q, notes: 'One inch is enough; a 2" patch makes the mag nearly impossible to draw.' });
   }
+  if (r.med_pouch) hw.push({ id: 'med-snap', name: 'Snap set (mount strap ends)', quantity: Math.max(1, Math.floor(r.med_zone_width / PALS_COLUMN_PITCH_MM)), notes: 'Closes each platform mount strap below the last PALS row' });
   if (r.suspension === 'h_harness') hw.push({ id: 'h-harness', name: 'Slim padded H-harness', quantity: 1, notes: 'Build it on the Padded Strap page (H-harness mode); it clips into the four buckles and is the prerequisite for a hydration carrier' });
   return hw.filter((h) => h.quantity > 0);
 }
@@ -339,6 +395,12 @@ function buildSteps(r: ResolvedInputs): Step[] {
   }
   if (r.side_pals_columns > 0) {
     steps.push({ id: 'rig.pals', title: 'Side PALS and bottom loops', body: `Sew ${r.side_pals_rows} rows of 1" webbing at each end at the marks (2" pitch, ${r.side_pals_columns} column${r.side_pals_columns === 1 ? '' : 's'}), bar-tack the column, trim the ends flush. Sew the elastic loops along the bottom edge at 1 1/2" pitch either side of the grommet position.`, dependsOn: ['rig.interior'], refsPieces: [PANEL_FRONT_ID, 'side-pals-row'], group: 'Front' });
+  }
+  if (r.med_pouch) {
+    steps.push(
+      { id: 'med.platform', title: 'Tear-off med pouch: the platform', body: `Sew the loop field to the outer platform layer, lay the mount strap${Math.floor(r.med_zone_width / PALS_COLUMN_PITCH_MM) === 1 ? '' : 's'} across the top between the layers and edge-bind the platform. The straps weave the med zone's face PALS on the rig and snap below the last row; the platform stays on the rig.`, dependsOn: ['rig.cut'], refsPieces: ['med-platform', 'med-platform-loop', 'med-mount-strap'], group: 'Med pouch' },
+      { id: 'med.body', title: 'Tear-off med pouch: the body', body: `Sew the hook field to the outside of the body back. Join the gusset round three sides of the front and back (corners turned at the marks), sew the lid to the back's top edge with the pull handle folded into a loop and caught in that seam, and sew the 1" loop strip on the front to meet the lid's hook. Press the body onto the platform: the handle rips it off in one pull. ${fmtIn(r.med_pouch_height)}" × ${fmtIn(r.med_pouch_depth)}" is a starting point — size it to your kit.`, dependsOn: ['med.platform'], refsPieces: ['med-body-back', 'med-body-front', 'med-body-gusset', 'med-body-lid', 'med-body-hook', 'med-pull-handle'], group: 'Med pouch' },
+    );
   }
   steps.push(
     { id: 'rig.hardware', title: 'Buckle anchors, placard loop, pull tabs', body: `On the FRONT layer only, sew the two shoulder-buckle anchors ${fmtIn(r.buckle_edge_offset)}" from each edge (${fmtIn(r.buckle_spacing)}" apart), each over its backer, and the placard loop at top centre 1" down. Keep the closure Velcro clear of the anchor stitching. Sew the pull tabs on the opening edge.`, dependsOn: ['rig.interior'], refsPieces: [PANEL_FRONT_ID, 'shoulder-buckle-anchor', 'shoulder-buckle-backer', 'placard-loop', 'pull-tab'], group: 'Panel' },
@@ -379,6 +441,7 @@ function buildWarnings(inputs: MicroRigInputs, r: ResolvedInputs, engine: string
   if (inputs.panel_height === undefined) {
     w.push({ id: 'mock-derived-height', severity: 'info', field: 'panel_height', message: '[mock-derived] Panel height defaults to the 7" nominal; the site lists PALS variants at 6.5". Expect ±0.5" between variants.' });
   }
+  if (r.med_pouch && (inputs.med_pouch_height === undefined || inputs.med_pouch_depth === undefined)) w.push({ id: 'mock-derived-med-pouch', severity: 'info', field: inputs.med_pouch_height === undefined ? 'med_pouch_height' : 'med_pouch_depth', message: `[mock-derived] The tear-off med pouch is ${fmtIn(r.med_pouch_height)}" tall × ${fmtIn(r.med_pouch_depth)}" deep by default — the vault gives no numbers for it. Lay out your kit and enter its size.` });
   w.push({ id: 'pals-top-drop', severity: 'info', message: '[mock-derived] Side PALS top bar is placed 1 1/2" down (the video garbles 1 1/2" vs 2 1/2").' });
   w.push({ id: 'admin-only', severity: 'info', message: 'The internal pocket is admin-only: rifle mags stick out the top and the front waist buckle blocks extraction beyond about two.' });
   return w;
@@ -389,8 +452,8 @@ export function buildPattern(inputs: MicroRigInputs): Result<MicroRigBuildResult
   if (!validation.ok) return { ok: false, errors: validation.errors };
   const r = resolveInputs(inputs);
   const face = buildFacePieces(r);
-  const pieces: Piece[] = [buildPanelFront(r), buildPanelBack(r), ...face.pieces, ...buildStackedPieces(r), ...buildUtilityPocket(r), ...buildStrips(r)];
-  assignAssemblies(pieces, [[/^panel-|^face$|stack-/, 'Panel and cells'], [/^utility-|closure-|interior-loop|pull-tab/, 'Utility pocket'], [/shoulder|waist|placard/, 'Suspension'], [/pals|elastic|dangler/, 'Exterior']]);
+  const pieces: Piece[] = [buildPanelFront(r), buildPanelBack(r), ...face.pieces, ...buildStackedPieces(r), ...buildUtilityPocket(r), ...buildMedPouch(r), ...buildStrips(r)];
+  assignAssemblies(pieces, [[/^med-/, 'Med pouch'], [/^panel-|^face$|stack-/, 'Panel and cells'], [/^utility-|closure-|interior-loop|pull-tab/, 'Utility pocket'], [/shoulder|waist|placard/, 'Suspension'], [/pals|elastic|dangler/, 'Exterior']]);
   return {
     ok: true,
     value: { pieces, steps: buildSteps(r), warnings: buildWarnings(inputs, r, face.warnings), hardware: buildHardware(r), resolved: r },
