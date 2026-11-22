@@ -212,7 +212,7 @@ describe('pattern — Convention B panel (single-fold hem, hand-checked numbers)
 describe('mock-derived placeholders', () => {
   it('every number the tarp takes is a listed placeholder', () => {
     const keys = GENERATORS.find((x) => x.name === 'tarp')!.keys;
-    const choices = ['units', 'construction', 'cut_style', 'hem_fold', 'production_mode', 'ridge_tieouts'];
+    const choices = ['units', 'construction', 'cut_style', 'hem_fold', 'production_mode', 'ridge_tieouts', 'guylines', 'line_locks', 'cut_ends', 'pullouts'];
     expect(PLACEHOLDERS.map((p) => p.field).sort()).toEqual(keys.filter((k) => !choices.includes(k)).sort());
   });
 
@@ -221,8 +221,9 @@ describe('mock-derived placeholders', () => {
     const mock = v.warnings.filter((w) => w.id === 'mock-derived');
     expect(mock).toHaveLength(1);
     expect(mock[0].severity).toBe('info');
-    expect(mock[0].message).toMatch(/^\[mock-derived\] 12 placeholders/);
-    for (const p of PLACEHOLDERS) expect(mock[0].message).toContain(p.label);
+    expect(mock[0].message).toMatch(/^\[mock-derived\] 13 placeholders/);
+    // The end cut is off by default, so its depth is not in use (asserted in the cat-cut ends block).
+    for (const p of PLACEHOLDERS.filter((x) => x.field !== 'end_sag')) expect(mock[0].message).toContain(p.label);
     // Shown as the field shows it: 5/8" is 0.625", not a rounded 0.63".
     expect(mock[0].message).toContain('Grosgrain width 0.625"');
     expect(mock[0].message).toContain('Ridge length 120"');
@@ -260,7 +261,7 @@ describe('steps and BOM', () => {
     expect(v.steps.find((s) => s.id === 'tarp.cat-cut')!.body).toMatch(/ridge 2"/);
     const seen = new Set<string>();
     for (const s of v.steps) { for (const d of s.dependsOn) expect(seen.has(d), `${s.id} → ${d}`).toBe(true); seen.add(s.id); }
-    expect(v.steps.map((s) => s.id)).toEqual(['tarp.cut', 'tarp.cat-cut', 'tarp.ridge', 'tarp.ends', 'tarp.eaves', 'tarp.tieouts', 'tarp.seal', 'tarp.pitch']);
+    expect(v.steps.map((s) => s.id)).toEqual(['tarp.cut', 'tarp.cat-cut', 'tarp.ridge', 'tarp.ends', 'tarp.eaves', 'tarp.tieouts', 'tarp.guylines', 'tarp.seal', 'tarp.pitch']);
     expect(built({ ...DEF, cut_style: 'flat' }).steps.some((s) => s.id === 'tarp.cat-cut')).toBe(false);
     expect(built({ ...DEF, construction: 'single_panel', width: 56 }).steps.some((s) => s.id === 'tarp.ridge')).toBe(false);
   });
@@ -281,5 +282,122 @@ describe('steps and BOM', () => {
     expect(rows.find((r) => r.id === 'material-webbing-16')!.quantity).toBe(Math.ceil((8 * 5 * IN) / 10) * 10);
     expect(rows.some((r) => r.id === 'hw-seam-sealer')).toBe(true);
     expect(buildBom({ ...DEF, width: 120 })).toEqual([]);
+  });
+});
+
+describe('guylines and line-locks (roadmap 10a follow-up)', () => {
+  it('default: one guyline, line-lock and stake per tie-out on the BOM; 8 × 96" of cord', () => {
+    const v = built(DEF);
+    const hw = (id: string) => v.hardware.find((h) => h.id === id);
+    expect(v.resolved.tieout_count).toBe(8);
+    expect(hw('guyline')!.quantity).toBe(8);
+    expect(hw('line-lock')!.quantity).toBe(8);
+    expect(hw('stake')!.quantity).toBe(8);
+    expect(hw('guyline')!.notes).toContain(`${Math.round(8 * 96 * IN)} mm`);
+    expect(buildBom(DEF).some((r) => r.id === 'hw-line-lock' && r.quantity === 8)).toBe(true);
+    expect(v.steps.find((s) => s.id === 'tarp.guylines')!.body).toMatch(/line-lock/);
+  });
+  it('the guyline length is a flagged placeholder until entered, and follows the tie-out count', () => {
+    expect(built(DEF).warnings.find((w) => w.id === 'mock-derived')!.message).toContain('Cord per guyline');
+    const v = built({ ...DEF, guyline_length: 120, eave_tieouts: 2 });
+    expect(v.hardware.find((h) => h.id === 'guyline')!.quantity).toBe(10);
+    expect(v.warnings.find((w) => w.id === 'mock-derived')!.message).not.toContain('Cord per guyline');
+  });
+  it('line-locks off leaves the guylines with a taut-line hitch; guylines off removes all three', () => {
+    const noLocks = built({ ...DEF, line_locks: false });
+    expect(noLocks.hardware.some((h) => h.id === 'line-lock')).toBe(false);
+    expect(noLocks.steps.find((s) => s.id === 'tarp.guylines')!.body).toMatch(/taut-line/);
+    const none = built({ ...DEF, guylines: false });
+    expect(none.hardware.map((h) => h.id)).toEqual(['seam-sealer']);
+    expect(none.steps.some((s) => s.id === 'tarp.guylines')).toBe(false);
+    expect(none.warnings.find((w) => w.id === 'mock-derived')!.message).not.toContain('Cord per guyline');
+  });
+  it('a non-positive guyline length is an error on its field', () => {
+    expect(errorFields({ ...DEF, guyline_length: 0 })).toEqual(['guyline_length']);
+    expect(errorFields({ ...DEF, guylines: false, guyline_length: 0 })).toEqual([]);
+  });
+});
+
+describe('cat-cut ends (roadmap 10a follow-up)', () => {
+  const ENDS: TarpInputs = { ...DEF, cut_ends: true };
+  const outlineOf = (i: TarpInputs) => panelOf(built(i).pieces).paths.find((p) => p.id === `${PANEL_ID}-outline`)!;
+  const xsAt = (i: TarpInputs, y: number, tol = 1) => outlineOf(i).edges.map((e) => e.start).filter((p) => Math.abs(p.y - y) < tol).map((p) => p.x);
+
+  it('off by default: the ends stay straight and nothing new is flagged', () => {
+    const r = resolveInputs(DEF);
+    expect(r.end_sag).toBe(0);
+    expect(built(DEF).warnings.find((w) => w.id === 'mock-derived')!.message).not.toContain('End cat-cut');
+  });
+
+  it('on: each panel end goes the 1" placeholder in at the middle of its 48" ridge-to-eave span, and comes back to the corners', () => {
+    const r = resolveInputs(ENDS);
+    expect(r.end_sag).toBeCloseTo(1 * IN, 6);
+    expect(r.end_span).toBeCloseTo(48 * IN, 6);
+    const g = panelGeometry(r);
+    const mid = r.seam_allowance + 24 * IN;
+    expect(g.endIn(mid)).toBeCloseTo(1 * IN, 6);
+    expect(g.endIn(r.seam_allowance)).toBeCloseTo(0, 6);
+    expect(g.endIn(r.seam_allowance + 48 * IN)).toBeCloseTo(0, 6);
+    // Mirrored inside the eave hem and the ridge allowance.
+    expect(g.endIn(r.seam_allowance - 5)).toBeCloseTo(g.endIn(r.seam_allowance + 5), 9);
+    // The raw end is 1" inside the straight end at mid-span, at both ends of the panel.
+    const xs = xsAt(ENDS, mid);
+    expect(Math.min(...xs)).toBeCloseTo(1 * IN, 3);
+    expect(Math.max(...xs)).toBeCloseTo(g.cutLength - 1 * IN, 3);
+    // The end crease follows it.
+    const crease = panelOf(built(ENDS).pieces).paths.find((p) => p.id.startsWith(`${PANEL_ID}-end-0-hem-fold`) && p.label?.includes('finished crease'))!;
+    const nearMid = crease.edges.map((e) => e.start).reduce((a, b) => (Math.abs(b.y - mid) < Math.abs(a.y - mid) ? b : a));
+    expect(nearMid.x - g.endX[0]).toBeCloseTo(g.endIn(nearMid.y), 6);
+  });
+
+  it('single panel: two curves per end, meeting at the ridge line', () => {
+    const i: TarpInputs = { ...ENDS, construction: 'single_panel', width: 56 };
+    const r = resolveInputs(i);
+    const g = panelGeometry(r);
+    expect(g.endIn(g.ridgeY!)).toBeCloseTo(0, 6);
+    expect(g.endIn(g.ridgeY! - 14 * IN)).toBeCloseTo(1 * IN, 6);
+    expect(g.endIn(g.ridgeY! + 14 * IN)).toBeCloseTo(1 * IN, 6);
+    expect(built(i).steps.find((s) => s.id === 'tarp.cat-cut')!.body).toMatch(/two curves per end/);
+  });
+
+  it('the end depth is a flagged placeholder; straight edges ignore it; too deep is an error', () => {
+    expect(built(ENDS).warnings.find((w) => w.id === 'mock-derived')!.message).toContain('End cat-cut depth');
+    expect(built(ENDS).steps.find((s) => s.id === 'tarp.cat-cut')!.body).toMatch(/Each end is cut too/);
+    expect(resolveInputs({ ...ENDS, cut_style: 'flat' }).end_sag).toBe(0);
+    expect(errorFields({ ...ENDS, end_sag: 13 })).toEqual(['end_sag']);
+    expect(errorFields({ ...ENDS, end_sag: 2 })).toEqual([]);
+  });
+});
+
+describe('ridge pull-outs mid-panel (roadmap 10a follow-up)', () => {
+  const PO: TarpInputs = { ...DEF, pullouts: true };
+  it('off by default; on adds one pull-out per side at mid-span, centred between the ridge and the eave', () => {
+    expect(built(DEF).tieouts.some((t) => t.kind === 'pullout')).toBe(false);
+    const v = built(PO);
+    const r = v.resolved;
+    const g = panelGeometry(r);
+    const po = v.tieouts.filter((t) => t.kind === 'pullout');
+    expect(po).toHaveLength(1);
+    const x = g.endX[0] + r.ridge_length / 2;
+    expect(po[0].at.x).toBeCloseTo(x, 6);
+    expect(po[0].at.y).toBeCloseTo((g.top(x) + g.bottom(x)) / 2, 6);
+    expect(po[0].patch.x1 - po[0].patch.x0).toBeCloseTo(r.patch_size, 6);
+    // Two panels, one each: two more patches, loops and guylines than the default.
+    expect(r.tieout_count).toBe(resolveInputs(DEF).tieout_count + 2);
+    expect(v.pieces.find((p) => p.id === PATCH_ID)!.quantity).toBe(10);
+    expect(v.hardware.find((h) => h.id === 'guyline')!.quantity).toBe(10);
+    expect(panelOf(v.pieces).paths.some((p) => p.id === `${PANEL_ID}-patch-pullout`)).toBe(true);
+    expect(v.steps.find((s) => s.id === 'tarp.tieouts')!.body).toMatch(/pull-out in the middle of each panel/);
+  });
+  it('single panel: one in each half, either side of the ridge line', () => {
+    const v = built({ ...PO, construction: 'single_panel', width: 56 });
+    const g = panelGeometry(v.resolved);
+    const ys = v.tieouts.filter((t) => t.kind === 'pullout').map((t) => t.at.y).sort((a, b) => a - b);
+    expect(ys).toHaveLength(2);
+    expect(ys[0]).toBeLessThan(g.ridgeY!);
+    expect(ys[1]).toBeGreaterThan(g.ridgeY!);
+  });
+  it('no room for the patch is an error on pullouts', () => {
+    expect(errorFields({ ...PO, patch_size: 22 })).toContain('pullouts');
   });
 });

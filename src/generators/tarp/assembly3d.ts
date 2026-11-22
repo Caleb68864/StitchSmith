@@ -99,7 +99,8 @@ function halfPanel(g: PanelGeometry): Piece {
 
 function singlePanelAssembly(r: ResolvedInputs): TarpAssembly {
   const g = panelGeometry(r);
-  const ties = tieOuts(r, g);
+  // Pull-outs are guyed out, not fixed: the check does not pin them.
+  const ties = tieOuts(r, g).filter((t) => t.kind !== 'pullout');
   const pitchDeg = Math.min(r.pitch_deg, MAX_PITCH_DEG);
   const lean = 90 - pitchDeg;
   const yR = g.ridgeY!;
@@ -136,7 +137,7 @@ export function tarpAssembly(pieces: Piece[], r: ResolvedInputs): TarpAssembly |
   if (!panel) return null;
   if (r.construction === 'single_panel') return singlePanelAssembly(r);
   const g = panelGeometry(r);
-  const ties = tieOuts(r, g);
+  const ties = tieOuts(r, g).filter((t) => t.kind !== 'pullout');
   const pitchDeg = Math.min(r.pitch_deg, MAX_PITCH_DEG);
   const a: Piece = { ...panel, quantity: 1, name: 'Panel' };
   const b = mirrorPieceX(a, PANEL_B_ID, 'Panel (second)');

@@ -1222,3 +1222,40 @@ baffle-chamber primitive and a fill-weight calculation.
   with that reason.
 - Not modelled: a neck drawcord or snap, pad straps, vertical side baffles,
   synthetic insulation (a batting cut instead of a fill weight).
+
+
+## 2026-11-21 — Tarp guylines and line-locks (roadmap 10a follow-up)
+
+- One guyline per tie-out (corners, eaves, ridge ends), each with a
+  line-lock (toggle; off = a taut-line hitch in the step) and a stake, on
+  the hardware BOM. `guylines` defaults on.
+- Cord per guyline is a `[mock-derived]` placeholder, 8' (a common
+  pre-cut guyline length, not a vault number), editable, named in the one
+  mock-derived note; the total cord is on the BOM.
+
+
+## 2026-11-21 — Tarp cat-cut ends (roadmap 10a follow-up)
+
+- Decided by agent 2026-11-21 (owner may revisit): `cut_ends` is a toggle,
+  off by default, so saved projects and the default keep straight ends.
+- Each end is cut per ridge-to-eave edge (span = width / 2): the end is
+  tensioned between the ridge-end and corner tie-outs, so the curve runs
+  between them. A single panel's end is two curves meeting at the ridge
+  line, where the ridge-end tie-out sits.
+- `end_sag` placeholder 1" (`[mock-derived]`, editable, no vault source),
+  capped at a quarter of the span like the other cuts. The curve is
+  mirrored about each span end inside the eave hem and the ridge
+  allowance, as the other cuts are mirrored inside the end hems.
+- The 3D assembly still builds straight-ended panels.
+
+
+## 2026-11-21 — Tarp pull-outs mid-panel (roadmap 10a follow-up)
+
+- Decided by agent 2026-11-21 (owner may revisit): `pullouts` toggle, off
+  by default. One pull-out per side at mid-span, centred between the
+  ridge and the eave (a single panel: centred in each half either side of
+  the ridge line). It reuses the tie-out patch and loop sizes, so it adds
+  no new number; it counts as a tie-out for patches, loops and guylines.
+- Patch on the inside face, loop flat on the outside, box-X through all;
+  the step says it lifts the panel and holds no structure. The 3D check
+  does not pin pull-outs (they are guyed out, not fixed).
