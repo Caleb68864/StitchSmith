@@ -547,6 +547,33 @@ down); the tab says why. Still open in 10e: a
 wind shirt, beanie or anything with sleeves, which needs a drafting engine
 (slopers, grading, armholes).
 
+#### 10f. Drafting engine for sleeved garments — PLANNED 2026-11-22 (not started)
+Small, separately testable steps; each lands with its own tests and no
+garment depends on a later step:
+
+1. **Measurement set** (`pattern-engine/drafting/measurements.ts`): chest,
+   waist, hip, back length, shoulder, neck, arm length, bicep, wrist, as
+   user inputs with ease per measurement. No size table: a standard size
+   chart (ASTM D5585, ISO 8559) is not in the repo, so presets wait until
+   one is sourced. Tests: validation, unit conversion.
+2. **Bodice block** (`drafting/bodice.ts`): front and back from the
+   measurements — chest/4 + ease per quarter, shoulder slope, neckline
+   (quarter ellipse) and armhole (Bézier through the armhole depth and the
+   shoulder and side points). Tests: front + back widths = chest/2 + ease,
+   seam lengths match (shoulder to shoulder, side to side), curves smooth.
+3. **Sleeve block** (`drafting/sleeve.ts`): cap height solved so the cap
+   curve length = armhole length + cap ease (bisection, like `chordArc`),
+   bicep and wrist widths, sleeve length. Tests: the cap matches the
+   armhole within a millimetre; front and back cap halves match their
+   armholes.
+4. **First garment on it: a wind shirt** (pullover, set-in sleeve, hood
+   optional later), Convention A. Tests: every seam pair matches in length.
+5. **3D**: the torso form exists; sleeves need an arm form (a capsule per
+   arm) before the shirt gets an assembly.
+
+A beanie does not need this engine (gores of a dome; `chordArc`-style
+geometry) and could come first if wanted.
+
 **Order for the rest of item 10:** 10b gathered-end hammock and 10c top quilt (done above), then 10d bivy (done above; bug net a follow-up) (curved long zipper,
 mesh cut sheet), 10e apparel beyond the skirt (gaiters first; a garment
 drafting engine before anything with sleeves). Each builds the same way as
