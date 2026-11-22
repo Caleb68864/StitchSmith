@@ -35,6 +35,20 @@ export const H_CROSS_STRAP_HEIGHT_MM = 150;
 export const H_PAD_SPREAD_MM = 150;
 export const H_DROP_LEG_MM = 300;
 
+/**
+ * LBV shoulder set (rigs/lbvmod-harness-geometry.md, same numbers as the LBV
+ * generator): 1.5" verticals cut 24" with 1" fold-over tabs for 12" of drop,
+ * tension locks on centre. Pad length/width are never stated (mock-derived).
+ */
+export const LBV_VERTICAL_WIDTH_MM = 1.5 * IN;
+export const LBV_VERTICAL_STRAP_MM = 24 * IN;
+export const LBV_TAB_FOLDOVER_MM = 1 * IN;
+export const LBV_DROP_ADJUST_MM = 12 * IN;
+export const LBV_PAD_LENGTH_MM = 10 * IN;
+export const LBV_PAD_WIDTH_MM = 2.5 * IN;
+/** Webbing the tacked ends leave each side of the pad before the verticals take over. */
+export const LBV_PAD_WEBBING_END_MM = 150;
+
 export const DEFAULT_SEAM_ALLOWANCE_MM = 10;
 /** PALS row pitch and webbing (plate-carriers/pals-sewn-webbing.md). */
 export const PALS_ROW_PITCH_MM = 2 * IN;

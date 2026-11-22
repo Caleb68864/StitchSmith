@@ -23,11 +23,13 @@ export const PAD_PIECE_ID = 'strap-pad';
 export const CROSS_STRAP_PIECE_ID = 'h-cross-strap';
 export const PALS_ROW_PIECE_ID = 'h-pals-row';
 export const CHANNEL_BAR_PIECE_ID = 'h-channel-bar';
+export const VERTICAL_PIECE_ID = 'lbv-vertical-strap';
 /** Gap between the cross strap and the first hydration channel bar, and between bars. */
 export const CHANNEL_GAP_MM = 12.7;
 
 const IN = 25.4;
 const fmt = (mm: number) => String(Math.round(mm));
+const fmtIn = (mm: number) => String(Math.round((mm / IN) * 100) / 100);
 
 function seg(eid: () => EdgeId, role: Edge['role'], sx: number, sy: number, ex: number, ey: number): Edge {
   return { kind: 'straight', id: eid(), role, start: { x: sx, y: sy }, end: { x: ex, y: ey } };
@@ -68,6 +70,7 @@ export function buildPattern(inputs: PaddedStrapInputs): Result<PaddedStrapBuild
   if (!validation.ok) return { ok: false, errors: validation.errors };
   const r = resolveInputs(inputs);
   const h = r.mode === 'h_harness';
+  const lbv = r.mode === 'lbv_set';
 
   const strap = buildPaddedStrap({
     padLength_mm: r.pad_length,
@@ -79,14 +82,14 @@ export function buildPattern(inputs: PaddedStrapInputs): Result<PaddedStrapBuild
     webbingWidth_mm: r.webbing_width,
     tailLength_mm: r.tail_length,
     // H-harness: the webbing runs out the top of the pad to the rear corner buckle — same drop as the front leg.
-    topAnchorLength_mm: h ? r.drop_leg_length : undefined,
+    topAnchorLength_mm: h ? r.drop_leg_length : lbv ? r.tail_length : undefined,
     seamAllowance_mm: r.seam_allowance,
     quantity: 2,
     hardware: r.hardware,
     idPrefix: 'strap.',
     pieceId: PAD_PIECE_ID,
-    name: h ? 'H-harness pad' : 'Shoulder strap',
-    gussetDepth_mm: h ? undefined : r.gusset_depth,
+    name: h ? 'H-harness pad' : lbv ? 'LBV shoulder pad' : 'Shoulder strap',
+    gussetDepth_mm: r.mode === 'pack_pair' ? r.gusset_depth : undefined,
   });
 
   const pieces: Piece[] = [...strap.pieces];
@@ -97,6 +100,8 @@ export function buildPattern(inputs: PaddedStrapInputs): Result<PaddedStrapBuild
   if (!h && r.tail_derived) {
     warnings.push({ id: 'tail-derived', severity: 'info', field: 'tail_length', message: `Tail webbing ${fmt(r.tail_length)} mm = torso ${fmt(r.torso_length)} − pad ${fmt(r.pad_length)} + gusset ${fmt(r.gusset_depth)} + 200 adjustment. Mock it on the loaded bag before cutting.` });
   }
+
+  if (lbv) addLbvSet(r, pieces, steps, hardware, warnings, inputs);
 
   if (h) {
     const pad = pieces.find((p) => p.id === PAD_PIECE_ID);
@@ -126,6 +131,42 @@ export function buildPattern(inputs: PaddedStrapInputs): Result<PaddedStrapBuild
     ok: true,
     value: { pieces, steps, warnings, hardware, derived: { ...strap.derived, resolved: r } },
   };
+}
+
+/**
+ * The LBV shoulder set: a tension lock box-sewn on centre of each pad, four
+ * verticals with fold-over tabs that route from the panels through the locks.
+ */
+function addLbvSet(r: ResolvedInputs, pieces: Piece[], steps: Step[], hardware: StrapHardwareItem[], warnings: GeneratorWarning[], inputs: PaddedStrapInputs): void {
+  const wIn = webbingSizeLabel(r.webbing_width);
+  const pad = pieces.find((p) => p.id === PAD_PIECE_ID);
+  if (pad) {
+    const eid = makeEdgeIdGen(`${pad.id}-lbv`);
+    const x0 = r.pad_width / 2 - r.webbing_width / 2, x1 = r.pad_width / 2 + r.webbing_width / 2;
+    const y0 = r.pad_length / 2 - 0.5 * IN, y1 = r.pad_length / 2 + 0.5 * IN;
+    pad.paths.push({ id: `${pad.id}-tension-lock`, closed: true, label: 'Tension lock tab sewn ON CENTRE — the verticals route through it', edges: [seg(eid, 'stitch', x0, y0, x1, y0), seg(eid, 'stitch', x1, y0, x1, y1), seg(eid, 'stitch', x1, y1, x0, y1), seg(eid, 'stitch', x0, y1, x0, y0)] });
+  }
+  const eid = makeEdgeIdGen(VERTICAL_PIECE_ID);
+  const outline = rect(eid, `${VERTICAL_PIECE_ID}-outline`, r.webbing_width, r.vertical_strap_len);
+  const t = r.tab_foldover;
+  pieces.push({
+    id: VERTICAL_PIECE_ID, name: 'Vertical strap', mirror: false, quantity: 4, materialId: `webbing-${Math.round(r.webbing_width)}`,
+    paths: [outline,
+      { id: `${VERTICAL_PIECE_ID}-tab-a`, closed: false, label: `Fold-over tab ${fmtIn(t)}"`, edges: [seg(eid, 'fold', 0, t, r.webbing_width, t)] },
+      { id: `${VERTICAL_PIECE_ID}-tab-b`, closed: false, label: `Pull tab ${fmtIn(t)}"`, edges: [seg(eid, 'fold', 0, r.vertical_strap_len - t, r.webbing_width, r.vertical_strap_len - t)] }],
+    seamAllowances: zeroSa(outline),
+    annotations: [{ kind: 'label', label: `Vertical — 4 × ${fmtIn(r.vertical_strap_len)}" of ${wIn} webbing: ${fmtIn(t)}" anchor tab + ${fmtIn(r.usable_adjustment)}" usable + ${fmtIn(t)}" pull tab` }],
+  });
+  steps.push(
+    { id: 'lbv.locks', title: 'Sew the tension locks on centre', body: `Loop a short tab of ${wIn} webbing through each ${wIn} tension lock and box-X it on centre of the pad, one per vertical (two per pad). Dry-fit the vertical webbing through the lock first: printed or stiff webbing may not pass.`, dependsOn: ['strap.assemble'], refsPieces: [PAD_PIECE_ID], group: 'LBV set' },
+    { id: 'lbv.verticals', title: 'Fit the verticals', body: `Fold ${fmtIn(t)}" over at one end of each ${fmtIn(r.vertical_strap_len)}" vertical and box-X it to the panel at its mark; feed the other end up through the pad's tension lock and fold a ${fmtIn(t)}" pull tab so it cannot run out. That leaves ${fmtIn(r.usable_adjustment)}" to fund ${fmtIn(r.drop_adjust)}" of drop.`, dependsOn: ['lbv.locks'], refsPieces: [VERTICAL_PIECE_ID, PAD_PIECE_ID], group: 'LBV set' },
+  );
+  hardware.push({ id: 'tension-lock', name: `${wIn} tension lock`, quantity: 4, notes: 'On centre of each pad, one per vertical. Dry-fit printed webbing before sewing the tabs: it may not pass.' });
+  warnings.push({ id: 'lbv-adjustment', severity: 'info', field: 'vertical_strap_len', message: `Verticals: ${fmtIn(r.vertical_strap_len)}" − 2 × ${fmtIn(t)}" tabs = ${fmtIn(r.usable_adjustment)}" usable for ${fmtIn(r.drop_adjust)}" of drop.` });
+  if (r.usable_adjustment < r.drop_adjust + 4 * IN) warnings.push({ id: 'lbv-drop-short', severity: 'warning', field: 'vertical_strap_len', message: `${fmtIn(r.usable_adjustment)}" of usable vertical cannot fund ${fmtIn(r.drop_adjust)}" of drop plus the reach to the tension lock.` });
+  for (const [field, what] of [['pad_length', 'Pad length'], ['pad_width', 'Pad width']] as const) {
+    if (inputs[field] === undefined) warnings.push({ id: `mock-derived-${field}`, severity: 'info', field, message: `[mock-derived] ${what} of the LBV pad is never stated in the vault — the default matches the LBV generator; measure your own and enter it.` });
+  }
 }
 
 /** Mark the cross-strap crossing, the hydration channels and the PALS rows on the pad shell. */

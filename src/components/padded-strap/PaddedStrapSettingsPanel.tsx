@@ -3,7 +3,7 @@ import type { PaddedStrapInputs, StrapMode, StrapCurve, PadArchitecture, EdgeFin
 import { convertLengthValues, type UnitSystem } from '../../utils/units.js';
 
 // Fields entered in the display unit; foam, webbing, allowance, adjustment and slot pitch are always mm.
-const DISPLAY_UNIT_FIELDS = ['pad_length', 'pad_width', 'torso_length', 'gusset_depth', 'tail_length', 'cross_strap_height', 'pad_spread', 'drop_leg_length'] as const;
+const DISPLAY_UNIT_FIELDS = ['pad_length', 'pad_width', 'torso_length', 'gusset_depth', 'tail_length', 'cross_strap_height', 'pad_spread', 'drop_leg_length', 'vertical_strap_len', 'drop_adjust'] as const;
 
 interface Props {
   inputs: PaddedStrapInputs;
@@ -16,6 +16,7 @@ interface Props {
 const MODES: { value: StrapMode; label: string }[] = [
   { value: 'pack_pair', label: 'Pack strap pair' },
   { value: 'h_harness', label: 'H-harness (chest rig)' },
+  { value: 'lbv_set', label: 'LBV shoulder set' },
 ];
 const CURVES: { value: StrapCurve; label: string }[] = [
   { value: 'straight', label: 'Straight' },
@@ -49,6 +50,7 @@ export function PaddedStrapSettingsPanel({ inputs, errors, onChange }: Props) {
   const units = inputs.units ?? 'in';
   const mode = inputs.mode ?? 'pack_pair';
   const h = mode === 'h_harness';
+  const lbv = mode === 'lbv_set';
   const step = units === 'in' ? 0.125 : 1;
 
   function handleUnitsChange(next: UnitSystem) {
@@ -73,7 +75,15 @@ export function PaddedStrapSettingsPanel({ inputs, errors, onChange }: Props) {
       <ChoiceField label="Edge finish" value={inputs.edge_finish ?? 'bound'} options={FINISHES} onChange={v => onChange({ edge_finish: v })} />
       <ChoiceField label="Hardware" value={inputs.hardware ?? (h ? 'side_release' : 'ladderlock')} options={HARDWARE} onChange={v => onChange({ hardware: v })} />
 
-      {!h ? (
+      {lbv ? (
+        <>
+          <h2 className="text-xs font-semibold">Verticals</h2>
+          <div className="grid grid-cols-2 gap-3">
+            <NumericField id="vertical-strap-len" label={`Vertical strap cut (${units})`} value={inputs.vertical_strap_len} error={errors['vertical_strap_len']} step={step} placeholder={units === 'in' ? '24' : '610'} onChange={v => onChange({ vertical_strap_len: v })} />
+            <NumericField id="drop-adjust" label={`Drop to fund (${units})`} value={inputs.drop_adjust} error={errors['drop_adjust']} step={step} placeholder={units === 'in' ? '12' : '305'} onChange={v => onChange({ drop_adjust: v })} />
+          </div>
+        </>
+      ) : !h ? (
         <>
           <h2 className="text-xs font-semibold">Tail (derived from torso and gusset)</h2>
           <div className="grid grid-cols-2 gap-3">

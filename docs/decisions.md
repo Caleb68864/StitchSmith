@@ -1554,3 +1554,11 @@ baffle-chamber primitive and a fill-weight calculation.
   and 10 at a pleat (the vault says 12–14 there: webbing and bar ends the
   model does not count yet; the vault text in the steps stays as written).
 - The Mag Pouch warns only when a seam is over 8, with every seam's count.
+
+## 2026-11-22 — Padded strap: LBV shoulder set mode
+
+- Third mode `lbv_set` uses the LBV generator's vault numbers (24" verticals,
+  1" tabs, 12" drop, 1.5" tension locks on centre). The pad's 10" x 2.5" is
+  the LBV's mock default, flagged mock-derived. No outboard-lock option here
+  (the LBV page has it, tied to its chest circumference maths). Decided by
+  agent 2026-11-22 (owner may revisit).

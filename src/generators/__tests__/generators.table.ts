@@ -133,7 +133,7 @@ export const GENERATORS: Gen[] = [
   },
   {
     name: 'padded-strap',
-    keys: ['units', 'mode', 'pad_length', 'pad_width', 'foam_thickness', 'curve', 'architecture', 'edge_finish', 'webbing_width', 'hardware', 'seam_allowance', 'torso_length', 'gusset_depth', 'tail_length', 'cross_strap_height', 'pad_spread', 'chest_adjust_range', 'slot_pitch', 'drop_leg_length', 'hydration_channels', 'front_pals_rows', 'routing_side'],
+    keys: ['units', 'mode', 'pad_length', 'pad_width', 'foam_thickness', 'curve', 'architecture', 'edge_finish', 'webbing_width', 'hardware', 'seam_allowance', 'torso_length', 'gusset_depth', 'tail_length', 'cross_strap_height', 'pad_spread', 'chest_adjust_range', 'slot_pitch', 'drop_leg_length', 'hydration_channels', 'front_pals_rows', 'routing_side', 'vertical_strap_len', 'drop_adjust'],
     defaults: () => makeDefaultPaddedStrapProject().inputs as unknown as AnyInputs,
     validate: (i) => listErrors(paddedStrap.validateInputs(i as never)),
     build: (i) => resultPieces(paddedStrap.buildPattern(i as never)),

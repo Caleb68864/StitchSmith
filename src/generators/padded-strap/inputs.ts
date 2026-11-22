@@ -4,13 +4,14 @@ import {
   PACK_PAD_LENGTH_MM, PACK_PAD_WIDTH_MM, PACK_FOAM_MM, PACK_WEBBING_MM, PACK_TORSO_MM, PACK_GUSSET_MM, TAIL_ADJUST_RANGE_MM, TAIL_MIN_MM,
   H_WEBBING_MM, H_CHEST_ADJUST_MM, H_SLOT_PITCH_MM, H_HYDRATION_CHANNELS, H_FRONT_PALS_ROWS,
   H_PAD_LENGTH_MM, H_PAD_WIDTH_MM, H_FOAM_MM, H_CROSS_STRAP_HEIGHT_MM, H_PAD_SPREAD_MM, H_DROP_LEG_MM,
+  LBV_VERTICAL_WIDTH_MM, LBV_VERTICAL_STRAP_MM, LBV_TAB_FOLDOVER_MM, LBV_DROP_ADJUST_MM, LBV_PAD_LENGTH_MM, LBV_PAD_WIDTH_MM, LBV_PAD_WEBBING_END_MM,
 } from './defaults.js';
 import { sweepInputs, stripNulls, unitsOf, type GuardSpec } from '../../utils/inputGuards.js';
 
 /** Type/range guard run before the generator's own rules (hardening pass H1). */
 const GUARD_SPEC: GuardSpec = {
   units: { kind: 'enum', allowed: ['mm', 'in'] },
-  mode: { kind: 'enum', allowed: ['pack_pair', 'h_harness'] },
+  mode: { kind: 'enum', allowed: ['pack_pair', 'h_harness', 'lbv_set'] },
   pad_length: { kind: 'length' },
   pad_width: { kind: 'length' },
   foam_thickness: { kind: 'length', max: 5000 },
@@ -31,6 +32,8 @@ const GUARD_SPEC: GuardSpec = {
   hydration_channels: { kind: 'count', max: 4 },
   front_pals_rows: { kind: 'count', max: 12 },
   routing_side: { kind: 'enum', allowed: ['left', 'right', 'both', 'none'] },
+  vertical_strap_len: { kind: 'length' },
+  drop_adjust: { kind: 'length' },
 };
 
 const IN = 25.4;
@@ -54,32 +57,36 @@ export function resolveInputs(inputs: PaddedStrapInputs): ResolvedInputs {
   const units = inputs.units ?? DEFAULT_UNITS;
   const mode = inputs.mode ?? DEFAULT_MODE;
   const h = mode === 'h_harness';
+  const lbv = mode === 'lbv_set';
   const d = (v: number | undefined, fallbackMm: number) => (v === undefined || v === null || Number.isNaN(v) ? fallbackMm : toMm(v, units));
 
-  const pad_length = d(inputs.pad_length, h ? H_PAD_LENGTH_MM : PACK_PAD_LENGTH_MM);
-  const pad_width = d(inputs.pad_width, h ? H_PAD_WIDTH_MM : PACK_PAD_WIDTH_MM);
+  const pad_length = d(inputs.pad_length, lbv ? LBV_PAD_LENGTH_MM : h ? H_PAD_LENGTH_MM : PACK_PAD_LENGTH_MM);
+  const pad_width = d(inputs.pad_width, lbv ? LBV_PAD_WIDTH_MM : h ? H_PAD_WIDTH_MM : PACK_PAD_WIDTH_MM);
+  const vertical_strap_len = d(inputs.vertical_strap_len, LBV_VERTICAL_STRAP_MM);
+  const drop_adjust = d(inputs.drop_adjust, LBV_DROP_ADJUST_MM);
   const torso_length = d(inputs.torso_length, PACK_TORSO_MM);
   const gusset_depth = d(inputs.gusset_depth, PACK_GUSSET_MM);
   const drop_leg_length = d(inputs.drop_leg_length, H_DROP_LEG_MM);
   const tailOverride = inputs.tail_length !== undefined && inputs.tail_length !== null && !Number.isNaN(inputs.tail_length);
   const tail_length = h
     ? drop_leg_length
+    : lbv ? LBV_PAD_WEBBING_END_MM
     : tailOverride ? toMm(inputs.tail_length!, units) : deriveTailLength(torso_length, pad_length, gusset_depth);
 
   const cross_strap_height = d(inputs.cross_strap_height, H_CROSS_STRAP_HEIGHT_MM);
   const pad_spread = d(inputs.pad_spread, H_PAD_SPREAD_MM);
   const chest_adjust_range = inputs.chest_adjust_range ?? H_CHEST_ADJUST_MM;
   const slot_pitch = inputs.slot_pitch ?? H_SLOT_PITCH_MM;
-  const webbing_width = inputs.webbing_width ?? (h ? H_WEBBING_MM : PACK_WEBBING_MM);
+  const webbing_width = inputs.webbing_width ?? (lbv ? LBV_VERTICAL_WIDTH_MM : h ? H_WEBBING_MM : PACK_WEBBING_MM);
 
   return {
     units,
     mode,
     pad_length,
     pad_width,
-    foam_thickness: inputs.foam_thickness ?? (h ? H_FOAM_MM : PACK_FOAM_MM),
-    curve: inputs.curve ?? (h ? 'straight' : 'j_curve'),
-    architecture: inputs.architecture ?? (h ? 'webbing_through_quilted' : 'foam_sandwich_mesh'),
+    foam_thickness: inputs.foam_thickness ?? (h || lbv ? H_FOAM_MM : PACK_FOAM_MM),
+    curve: inputs.curve ?? (h || lbv ? 'straight' : 'j_curve'),
+    architecture: inputs.architecture ?? (lbv ? 'webbing_tacked_ends' : h ? 'webbing_through_quilted' : 'foam_sandwich_mesh'),
     edge_finish: inputs.edge_finish ?? 'bound',
     webbing_width,
     hardware: inputs.hardware ?? (h ? 'side_release' : 'ladderlock'),
@@ -87,7 +94,7 @@ export function resolveInputs(inputs: PaddedStrapInputs): ResolvedInputs {
     torso_length,
     gusset_depth,
     tail_length,
-    tail_derived: !h && !tailOverride,
+    tail_derived: mode === 'pack_pair' && !tailOverride,
     cross_strap_height,
     pad_spread,
     chest_adjust_range,
@@ -99,6 +106,10 @@ export function resolveInputs(inputs: PaddedStrapInputs): ResolvedInputs {
     // Sewn to each pad across its full width, then the spread, then the slotted adjustment.
     cross_strap_length: 2 * pad_width + pad_spread + chest_adjust_range,
     slot_count: slot_pitch > 0 ? Math.floor(chest_adjust_range / slot_pitch) + 1 : 0,
+    vertical_strap_len,
+    tab_foldover: LBV_TAB_FOLDOVER_MM,
+    drop_adjust,
+    usable_adjustment: vertical_strap_len - 2 * LBV_TAB_FOLDOVER_MM,
   };
 }
 
@@ -125,6 +136,10 @@ export function validateInputs(inputs: PaddedStrapInputs): ValidationResult {
     pos('torso_length', 'Torso length');
     nonNeg('gusset_depth', 'Gusset depth');
     pos('tail_length', 'Tail length');
+  } else if (r.mode === 'lbv_set') {
+    pos('vertical_strap_len', 'Vertical strap length');
+    nonNeg('drop_adjust', 'Drop');
+    if (r.usable_adjustment <= 0) errors.push({ field: 'vertical_strap_len', message: 'Vertical strap length must be longer than its two 1" fold-over tabs' });
   } else {
     pos('cross_strap_height', 'Cross strap height');
     nonNeg('pad_spread', 'Pad spread');

@@ -139,8 +139,12 @@ and the H-harness (1.5" webbing full length to four side-release corners,
 slotted cross strap with 8" adjustment, hydration channel bars sewn ends only,
 routing PALS). Open vault numbers are inputs with mock-derived warnings.
 Follow-ups: a torso block for the 3D preview so the J-curve and the H
-crossing can be checked; the LBV shoulder set variant (24" verticals, 12"
-drop, tension locks centred) as a third mode.
+crossing can be checked; ~~the LBV shoulder set variant (24" verticals, 12"
+drop, tension locks centred) as a third mode~~ DONE 2026-11-22: `mode:
+'lbv_set'` — pads with a tension lock box-sewn on centre, four 24" 1.5"
+verticals with 1" fold-over tabs (22" usable for 12" of drop, short-strap
+warning), tension locks in the hardware; pad length/width mock-derived as on
+the LBV.
 
 ### 2. Micro rig / chest rig platform — DONE 2026-09-11
 `src/generators/micro-rig/`: the panel-as-pocket chassis (10.5"–19" wide,
