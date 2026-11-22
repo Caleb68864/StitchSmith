@@ -47,7 +47,8 @@ export function EngineCutListTable({ cutList }: Props) {
                 <th className="text-right py-1 pr-2">Width (mm)</th>
                 <th className="text-right py-1 pr-2">Length (mm)</th>
                 <th className="text-right py-1 pr-2">Qty</th>
-                <th className="text-left py-1">Drawer</th>
+                <th className="text-left py-1 pr-2">Drawer</th>
+                <th className="text-left py-1">Shrinkage</th>
               </tr>
             </thead>
             <tbody>
@@ -58,7 +59,8 @@ export function EngineCutListTable({ cutList }: Props) {
                     <td className="py-1 pr-2 text-right tabular-nums">{strip.widthMm.toFixed(1)}</td>
                     <td className="py-1 pr-2 text-right tabular-nums">{cut.lengthMm.toFixed(1)}</td>
                     <td className="py-1 pr-2 text-right tabular-nums">{cut.quantity}</td>
-                    <td className="py-1 text-muted-foreground">{cut.drawerIn === null ? 'cut to length' : `${cut.drawerIn}" pre-cut`}</td>
+                    <td className="py-1 pr-2 text-muted-foreground">{cut.drawerIn === null ? 'cut to length' : `${cut.drawerIn}" pre-cut`}</td>
+                    <td className="py-1 text-muted-foreground">{i === 0 ? (strip.shrinkageNote ?? '') : ''}</td>
                   </tr>
                 )),
               )}

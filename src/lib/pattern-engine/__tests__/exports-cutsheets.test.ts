@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest';
 import { patternToSvg, patternToSvgByMaterial, patternMaterials } from '../exports/svg.js';
-import { exportCutList, exportCutListCsv, stripSummary, drawerLengthFor } from '../exports/cutList.js';
+import { exportCutList, exportCutListCsv, stripSummary, drawerLengthFor, shrinkageFor } from '../exports/cutList.js';
 import type { Piece } from '../graph/Piece.js';
 import type { Pattern } from '../graph/Pattern.js';
 
@@ -42,7 +42,22 @@ describe('strip stock summary', () => {
     const cl = exportCutList(pattern, [], []);
     expect(cl.strips).toHaveLength(2);
     const csv = exportCutListCsv(cl, []);
-    expect(csv).toContain('Strip Material,Width (mm),Length (mm),Quantity,Drawer (in),Pieces');
+    expect(csv).toContain('Strip Material,Width (mm),Length (mm),Quantity,Drawer (in),Pieces,Shrinkage');
     expect(csv).toContain('cut to length');
+  });
+});
+
+describe('stitch-shrinkage tags (reference/technique-stitch-shrinkage.md)', () => {
+  it('Velcro always trims after sewing; webbing on a run longer than the 10" drawer; tape gets the 1/4" pucker note', () => {
+    const strips = stripSummary(pattern);
+    const hook = strips.find((s) => s.materialId === 'velcro-hook')!, web = strips.find((s) => s.materialId === 'webbing-25')!;
+    expect(hook.trimAfterSew).toBe(true);
+    expect(hook.shrinkageNote).toMatch(/2" long/);
+    // The 12" webbing cut is a long run.
+    expect(web.trimAfterSew).toBe(true);
+    expect(shrinkageFor('webbing-25', 8 * 25.4).trimAfterSew).toBe(false);
+    expect(shrinkageFor('binding-tape-19', 300).note).toMatch(/1\/4"/);
+    expect(shrinkageFor('cordura-500', 300)).toEqual({ trimAfterSew: false, note: null });
+    expect(exportCutListCsv(exportCutList(pattern, [], []), [])).toContain('trim after sewing');
   });
 });

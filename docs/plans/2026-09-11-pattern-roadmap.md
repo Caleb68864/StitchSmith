@@ -854,8 +854,12 @@ which (the tri-zip `seam:` path convention is the seed).
 - **Cut sheets grouped by assembly** plus a material × width × length summary
   that maps onto SOE's drawer lengths {3, 3.5, 6.5, 8, 10}.
   `reference/soe-production-principles.md`.
-- **Stitch-shrinkage compensation**: pucker per taped edge 0.25", Velcro
-  over-cut 2", trim-after-sew tags everywhere Velcro or long webbing runs.
+- DONE 2026-11-22 (`exports/cutList.ts`, `shrinkageFor`) — **Stitch-shrinkage compensation**:
+  every strip-stock line in the cut list (table and CSV) carries the rule —
+  Velcro cut 2" long and trimmed after sewing; webbing trimmed after sewing
+  on a run longer than the 10" drawer; binding and tape the 1/4" pucker per
+  taped edge. Generators keep their own over-cuts; the tag says what to do.
+  `reference/technique-stitch-shrinkage.md`.
   `reference/technique-stitch-shrinkage.md`.
 - DONE 2026-09-12 (`maxRowWidth`, default 1400 mm) — **Exporter layout**: pieces currently lay out in one row; a multi-cell card
   with twelve strips is very wide. Row-wrap by a page width.
