@@ -157,6 +157,8 @@ describe('export sweep — every generator through every exporter', () => {
       expect(csv.split('\n').length).toBeGreaterThan(2);
       const pdf = await exportPatternToPdf(pattern);
       expect(pdf.size).toBeGreaterThan(500);
-    });
+      // Every exporter on a 20-plus-generator sweep: 5 s timed out twice on a loaded machine
+      // (2026-11-21, 2026-11-22) though the case runs in ~1 s alone.
+    }, 30_000);
   }
 });
