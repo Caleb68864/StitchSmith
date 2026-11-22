@@ -109,3 +109,17 @@ describe('buildPattern', () => {
     expect(bom.some((r) => r.id === 'hw-binding')).toBe(true);
   });
 });
+
+describe('removable back pad (roadmap 8 follow-up)', () => {
+  const b = (i: PlateCarrierInputs) => { const v = buildPattern(i); if (!v.ok) throw new Error(JSON.stringify(v.errors)); return v.value; };
+  it('hook strips on the pad, loop strips in the back shell, the pad bound on its own; off by default and with no pad', () => {
+    expect(b(DEF).pieces.some((p) => p.id === 'pc-back-pad-hook')).toBe(false);
+    const v = b({ ...DEF, back_pad_removable: true });
+    const hook = v.pieces.find((p) => p.id === 'pc-back-pad-hook')!, loop = v.pieces.find((p) => p.id === 'pc-back-pad-loop')!;
+    expect(hook.quantity).toBe(2);
+    expect(loop.materialId).toBe('velcro-loop');
+    expect(v.hardware.some((h) => h.id === 'binding-pad')).toBe(true);
+    expect(v.steps.some((s) => s.id === 'pc.back-pad')).toBe(true);
+    expect(b({ ...DEF, back_comfort: 'none', back_pad_removable: true }).pieces.some((p) => p.id === 'pc-back-pad-hook')).toBe(false);
+  });
+});

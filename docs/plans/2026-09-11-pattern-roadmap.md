@@ -211,7 +211,10 @@ elastic or skeletal cummerbund with side plate pockets and QR buckle choice,
 bound or turned edges, bartack map, 3D fit on the medium torso with strap and
 cummerbund span verdicts. The vault is reference-grade here: four inputs carry
 mock-derived warnings. Follow-ups: SAPI XS–XL nomenclature as presets,
-QR-buckle mount drawings, a removable back pad piece with its Velcro, and the
+QR-buckle mount drawings, ~~a removable back pad piece with its Velcro~~
+(DONE 2026-11-22: `back_pad_removable` binds the comfort pad on its own,
+two 1" hook strips across its back into two loop strips inside the back
+shell, the pad width less 1" each side; the pad binding on the hardware), and the
 loop field's edge-under-binding variant.
 
 ### 9. Modular LBV — DONE 2026-09-12

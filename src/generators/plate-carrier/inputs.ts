@@ -23,6 +23,7 @@ const GUARD_SPEC: GuardSpec = {
   binding_width: { kind: 'length' },
   seam_allowance: { kind: 'length' },
   back_comfort: { kind: 'enum', allowed: ['mesh', 'foam_mesh', 'none'] },
+  back_pad_removable: { kind: 'bool' },
   comfort_foam_thickness: { kind: 'length' },
   pocket_opening: { kind: 'enum', allowed: ['top', 'bottom'] },
   pocket_flap_length: { kind: 'length' },
@@ -129,6 +130,7 @@ export function resolveInputs(inputs: PlateCarrierInputs): ResolvedInputs {
     binding_width: d(inputs.binding_width, BINDING_WIDTH_MM),
     seam_allowance,
     back_comfort: inputs.back_comfort ?? 'mesh',
+    back_pad_removable: (inputs.back_comfort ?? 'mesh') !== 'none' && inputs.back_pad_removable === true,
     // Foam thickness is millimetres whatever the display unit, as it is on the
     // sling and the LBV, and as the panel's "(mm)" label already promises. Running
     // it through d() meant a 6 typed into a box labelled mm resolved to 152.4 mm.

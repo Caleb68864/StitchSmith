@@ -1,4 +1,4 @@
-import { NumericField, ChoiceField, UnitToggle , CollapsibleSection } from '../shared/fields/index.js';
+import { NumericField, ChoiceField, Toggle, UnitToggle , CollapsibleSection } from '../shared/fields/index.js';
 import type { PlateCarrierInputs, PlatePreset, PlateCut, FrontField, BackField, CummerbundStyle, SidePlate, QrBuckle, ShoulderStyle, EdgeFinish, ShellMaterial, BackComfort, PocketOpening } from '../../generators/plate-carrier/types.js';
 import { convertLengthValues, type UnitSystem } from '../../utils/units.js';
 
@@ -69,6 +69,7 @@ export function PlateCarrierSettingsPanel({ inputs, errors, onChange }: Props) {
       </div>
       <ChoiceField label="Pocket opening" value={inputs.pocket_opening ?? 'top'} options={OPENING} onChange={v => onChange({ pocket_opening: v })} />
       <ChoiceField label="Back comfort layer" value={inputs.back_comfort ?? 'mesh'} options={COMFORT} onChange={v => onChange({ back_comfort: v })} />
+      {(inputs.back_comfort ?? 'mesh') !== 'none' && <Toggle id="back-pad-removable" label="Removable back pad (hook and loop, bound on its own)" value={inputs.back_pad_removable ?? false} onChange={v => onChange({ back_pad_removable: v })} />}
       </CollapsibleSection>
 
       <CollapsibleSection

@@ -55,6 +55,8 @@ export interface PlateCarrierInputs {
   /** Seam allowance for turned edges (and pocket-wall seams), display units. Default 3/8". Required by CLAUDE.md even when bound. */
   seam_allowance?: number;
   back_comfort?: BackComfort;
+  /** The back comfort pad bound on its own and held by hook and loop, so it comes out to wash. Default false (caught in the shell binding). */
+  back_pad_removable?: boolean;
   /** Comfort foam thickness, mm-equivalent in display units. Default 6 mm. */
   comfort_foam_thickness?: number;
   pocket_opening?: PocketOpening;
@@ -105,6 +107,7 @@ export interface ResolvedInputs {
   binding_width: number;
   seam_allowance: number;
   back_comfort: BackComfort;
+  back_pad_removable: boolean;
   comfort_foam_thickness: number;
   pocket_opening: PocketOpening;
   pocket_flap_length: number;
