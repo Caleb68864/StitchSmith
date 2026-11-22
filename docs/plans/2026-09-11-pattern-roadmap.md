@@ -358,14 +358,16 @@ the ridgeline height down the middle, half the footprint along the ground,
 the panel end as the long edge — zipped up the middle (zipper = ridgeline
 height, on the BOM) and lapped over the panel end hems; door fabric added
 to the roll; errors when the eaves cannot reach the ground or the ends are
-cat-cut; not in the 3D check), ~~a beak variant~~ (DONE 2026-11-22: `beaks`
+cat-cut; in the 3D check since 2026-11-22: each half draped in the end
+plane, seamed to its panel end and to its partner up the middle), ~~a beak variant~~ (DONE 2026-11-22: `beaks`
 none / one end / both ends; a mirrored pair of right-triangle halves per
 beaked end — reach past the end × the panel end — sewn to the panel end
 and to each other along the ridge at the seam allowance, the outer edge
 hemmed; the beaked panel end loses its hem for the seam allowance; the
 ridge-end tie-out moves to the tip; `beak_length` placeholder 18",
-`[mock-derived]`; refuses doors and cat-cut ends; not drawn in the 3D
-check, which still holds the ridge end),
+`[mock-derived]`; refuses doors and cat-cut ends; in the 3D check since 2026-11-22 as the
+roof carried on past the end, seamed to the panel end and along the ridge;
+the tip is not staked down in the check),
 and moving the organizer and pleated-card hems onto the Hem primitive.
 
 **Single-panel 3D check — DONE 2026-11-16 (`fix/tarp-followups`).** The

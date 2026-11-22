@@ -1456,3 +1456,17 @@ baffle-chamber primitive and a fill-weight calculation.
   line wraps as the frustum's continuation and the cloth seams it into the
   armhole; its 1/2" of cap ease shows as ~10 % p99 stretch at the caps
   (the cloth has no easing model), so the sweep ceiling is 11 %.
+
+
+## 2026-11-22 — Tarp doors and beaks in the 3D check
+
+- Ridge-seam tarps only (a single panel's check splits the panel at the
+  ridge in its own frame; doors and beaks there stay out and the report
+  says nothing about them). Doors: each half draped down a vertical line
+  from the ridge end in the end plane, its long edge seamed to its panel's
+  end and the two centre edges to each other. Beaks: each half given its
+  panel's lean and offset into that plane past the end, seamed to the panel
+  end and to its partner along the ridge; the tip is not staked down, so
+  the beak shows as the roof carried on (staking needs a pin that moves a
+  point to the ground, which pins cannot do). At the sweep's 60 mm mesh the
+  door seams settle at 4.6 mm; at 40 mm, 1.8 mm, so those cases run at 40.

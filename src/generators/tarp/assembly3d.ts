@@ -13,10 +13,11 @@ import type { Path } from '../../lib/pattern-engine/graph/Path.js';
 import type { Point } from '../../lib/pattern-engine/graph/Point.js';
 import { makeEdgeIdGen, type Edge } from '../../lib/pattern-engine/graph/Edge.js';
 import { hemLines } from '../../lib/pattern-engine/primitives/hem.js';
-import { mirrorPieceX, type PiecePlacement } from '../../lib/fold-engine/index.js';
+import { mirrorPieceX, applyTransform, rotationAboutLine, type PiecePlacement } from '../../lib/fold-engine/index.js';
+import { doorCut, beakCut } from './inputs.js';
 import type { SeamSpec, PinSpec, Vec3 } from '../../lib/cloth-engine/index.js';
 import type { ResolvedInputs, TieOut } from './types.js';
-import { PANEL_ID, FABRIC_ID, panelGeometry, tieOuts, type PanelGeometry } from './buildPattern.js';
+import { PANEL_ID, FABRIC_ID, DOOR_ID, BEAK_ID, panelGeometry, tieOuts, type PanelGeometry } from './buildPattern.js';
 
 export const PANEL_B_ID = 'tarp-panel-b';
 /** Steepest pitch the check will draw; a ridge above the eaves would otherwise stand both panels on top of each other. */
@@ -162,5 +163,78 @@ export function tarpAssembly(pieces: Piece[], r: ResolvedInputs): TarpAssembly |
   }
   const report = pitchReport(r, pitchDeg);
   report.push('Held at every tie-out and at both ridge ends; the ridge between them hangs from the seam alone, as it does on a sagging ridgeline.');
-  return { pieces: [a, b], placements, seams, pins, gravity: [0, -0.01, 0], pitchDeg, report };
+  const extra = endPieces(pieces, r, g, lean);
+  seams.push(...extra.seams);
+  Object.assign(placements, extra.placements);
+  if (extra.report) report.push(extra.report);
+  return { pieces: [a, b, ...extra.pieces], placements, seams, pins, gravity: [0, -0.01, 0], pitchDeg, report };
+}
+
+const DEG = Math.PI / 180;
+
+/**
+ * Doors and beaks on a ridge-seam tarp. Panel A leans to −z (rx = +lean), panel B to +z.
+ *
+ * Doors stand in the end plane: each half draped down a vertical line from the ridge end
+ * (flat y down the centre edge, flat x out along ∓z), its long edge seamed to its panel's
+ * end and the two centre edges (the zipper) to each other.
+ *
+ * Beaks lie in their panel's plane, past the end: each half is rotated like its panel and
+ * offset so its panel edge meets the panel's end line; seamed to the panel end and the two
+ * halves to each other along the ridge. The tip is not staked down in the check, so a beak
+ * shows as the roof carried on past the end.
+ */
+function endPieces(pieces: Piece[], r: ResolvedInputs, g: PanelGeometry, lean: number): { pieces: Piece[]; placements: Record<string, PiecePlacement>; seams: SeamSpec[]; report: string | null } {
+  const out: Piece[] = [], placements: Record<string, PiecePlacement> = {}, seams: SeamSpec[] = [];
+  const s = r.seam_allowance, H = r.panel_finished_width;
+  const ends: [0 | 1, number][] = [[0, g.endX[0]], [1, g.endX[1]]];
+  const sides: [string, 1 | -1][] = [[PANEL_ID, 1], [PANEL_B_ID, -1]];
+  // Flat panel point → 3D for a panel leaning by `sign · lean` (the same rotation the placement applies).
+  const world = (sign: 1 | -1, p: Point): Vec3 => applyTransform(rotationAboutLine([0, 0, 0], [1, 0, 0], sign * lean * DEG), [p.x, -p.y, 0]);
+  const door = pieces.find((p) => p.id === DOOR_ID);
+  if (door && r.door_ends > 0) {
+    const { finished, cut } = doorCut(r.door_base, r.door_height, r.hem_allowance);
+    const dx = -Math.min(...cut.map((p) => p.x)), dy = -Math.min(...cut.map((p) => p.y));
+    const [F0, F1, F2] = finished.map((p) => ({ x: p.x + dx, y: p.y + dy }));
+    ends.filter(([i]) => (r.door_ends === 2 ? true : i === 0)).forEach(([i, x]) => {
+      const ridge = world(1, { x, y: s });
+      const ids: string[] = [];
+      for (const [panelId, sign] of sides) {
+        const id = `${DOOR_ID}-${i}-${panelId === PANEL_ID ? 'a' : 'b'}`;
+        ids.push(id);
+        out.push({ ...door, id, name: `Door half (end ${i + 1}, ${panelId === PANEL_ID ? 'first' : 'second'} panel)`, quantity: 1, mirror: false });
+        placements[id] = { keep: true, drape: { path: [[x, ridge[1] + F0.y, 0], [x, ridge[1] + F0.y - 2 * (r.door_height + 200), 0]], across: [0, 0, -sign], x0: F0.x } };
+        // Long edge (apex → ground outer) to the panel's end line (ridge → eave).
+        seams.push({ label: `${id} ↔ panel end`, a: { pieceId: id, from: F0, to: F2 }, b: { pieceId: panelId, from: { x, y: s }, to: { x, y: s + H } } });
+      }
+      seams.push({ label: `door ${i + 1} zipper`, a: { pieceId: ids[0], from: F0, to: F1 }, b: { pieceId: ids[1], from: F0, to: F1 } });
+    });
+  }
+  const beak = pieces.find((p) => p.id === BEAK_ID);
+  if (beak && r.beaks !== 'none') {
+    const end = r.width / 2;
+    const { finished, cut } = beakCut(r.beak_length, end, s, r.hem_allowance);
+    const dx = -Math.min(...cut.map((p) => p.x)), dy = -Math.min(...cut.map((p) => p.y));
+    const [T, R, E] = finished.map((p) => ({ x: p.x + dx, y: p.y + dy }));
+    ends.filter(([i]) => r.beak_ends[i]).forEach(([i, x]) => {
+      const ids: string[] = [];
+      const axis = (Math.min(...cut.map((p) => p.x + dx)) + Math.max(...cut.map((p) => p.x + dx))) / 2;
+      const mx = (p: Point): Point => (i === 0 ? p : { x: 2 * axis - p.x, y: p.y });
+      for (const [panelId, sign] of sides) {
+        const id = `${BEAK_ID}-${i}-${panelId === PANEL_ID ? 'a' : 'b'}`;
+        ids.push(id);
+        // The far end's beak points the other way: the drawing mirrored.
+        const piece = i === 0 ? { ...beak, id, quantity: 1, mirror: false } : mirrorPieceX(beak, id);
+        const [rr, e] = [mx(R), mx(E)];
+        out.push({ ...piece, name: `Beak half (end ${i + 1}, ${panelId === PANEL_ID ? 'first' : 'second'} panel)` });
+        // Offset so the beak's R lands on the panel's ridge end, in the panel's leaning plane.
+        const off = world(sign, { x: x - rr.x, y: s - rr.y });
+        placements[id] = { keep: true, rx: sign * lean, dx: off[0], dy: -off[1], dz: off[2] };
+        seams.push({ label: `${id} ↔ panel end`, a: { pieceId: id, from: rr, to: e }, b: { pieceId: panelId, from: { x, y: s }, to: { x, y: s + H } } });
+      }
+      seams.push({ label: `beak ${i + 1} ridge`, a: { pieceId: ids[0], from: mx(T), to: mx(R) }, b: { pieceId: ids[1], from: mx(T), to: mx(R) } });
+    });
+  }
+  const parts = [r.door_ends > 0 ? `${r.door_ends === 2 ? 'both ends closed by doors' : 'one end closed by a door'}` : null, r.beaks !== 'none' ? `${r.beaks === 'both_ends' ? 'beaks on both ends' : 'a beak on one end'} (carried on as the roof; the tip is not staked down in this check)` : null].filter(Boolean);
+  return { pieces: out, placements, seams, report: parts.length ? `Ends: ${parts.join('; ')}.` : null };
 }

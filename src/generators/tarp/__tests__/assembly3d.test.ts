@@ -97,3 +97,39 @@ describe('tarp pitched on a ridgeline', () => {
     expect(asm.report.join(' ')).toMatch(/one panel folded over the ridgeline/i);
   });
 });
+
+describe('tarp ends in 3D: doors and beaks (ridge-seam tarp)', () => {
+  it('doors stand in the end planes, each half seamed to its panel end and to its partner up the middle', () => {
+    const v = built({ ...DEF, doors: 'both_ends' });
+    const asm = tarpAssembly(v.pieces, v.resolved)!;
+    const doorIds = asm.pieces.map((p) => p.id).filter((id) => id.startsWith('tarp-door-'));
+    expect(doorIds).toHaveLength(4);
+    expect(asm.seams.filter((s) => /door \d zipper/.test(s.label ?? ''))).toHaveLength(2);
+    expectViewerMatchesHarness(asm.pieces, asm.placements);
+    const { world, bounds } = assemble(asm.pieces, asm.placements, asm.seams, null, 40, asm.pins, asm.gravity);
+    relax(world, 300);
+    expect(seamResidual(world).mean).toBeLessThan(3);
+    expect(maxPenetration(world)).toBeLessThan(world.params.thickness);
+    expect(stretchReport(world, 0.99).value).toBeLessThan(0.05);
+    // A door half reaches from the ridge down to about the ground, half the footprint out.
+    const d = bounds('tarp-door-0-a');
+    expect(-d.lo[1]).toBeGreaterThan(42 * IN - 60);
+    expect(d.hi[2] - d.lo[2]).toBeGreaterThan(v.resolved.footprint_width / 2 - 60);
+    expect(asm.report.join(' ')).toMatch(/both ends closed by doors/);
+  });
+  it('beaks carry the roof on past the ends, seamed to the panel ends and to each other along the ridge', () => {
+    const v = built({ ...DEF, beaks: 'both_ends' });
+    const asm = tarpAssembly(v.pieces, v.resolved)!;
+    expect(asm.pieces.filter((p) => p.id.startsWith('tarp-beak-'))).toHaveLength(4);
+    expectViewerMatchesHarness(asm.pieces, asm.placements);
+    const { world, bounds } = assemble(asm.pieces, asm.placements, asm.seams, null, 40, asm.pins, asm.gravity);
+    relax(world, 300);
+    expect(seamResidual(world).mean).toBeLessThan(3);
+    expect(stretchReport(world, 0.99).value).toBeLessThan(0.05);
+    const panel = bounds(PANEL_ID), b0 = bounds('tarp-beak-0-a'), b1 = bounds('tarp-beak-1-a');
+    // Past the x = 0 end and past the far end, by about the beak reach.
+    expect(b0.lo[0]).toBeLessThan(panel.lo[0] - 18 * IN + 60);
+    expect(b1.hi[0]).toBeGreaterThan(panel.hi[0] + 18 * IN - 60);
+    expect(asm.report.join(' ')).toMatch(/beaks on both ends/);
+  });
+});
