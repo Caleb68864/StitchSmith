@@ -1174,3 +1174,51 @@ fabrics only, rolled hems by default.
   "gather to a point" pin (or a seam from an edge to a point) in the cloth
   engine first.
 - Suspension (straps, whoopie slings) is out of scope; the steps say so.
+
+
+## 2026-11-21 — Top quilt (roadmap #10c, branch `pattern/10c-quilt`)
+
+**Context.** Third item-10 pattern, next in the owner's a → e order, under
+the same owner decisions: no vault (placeholders flagged `[mock-derived]`),
+sewn fabrics only. The roadmap named two engine pieces it needed: a
+baffle-chamber primitive and a fill-weight calculation.
+
+**Decisions.**
+- `src/lib/pattern-engine/primitives/chambers.ts`: `layoutChambers` places
+  the chamber walls at an even pitch no longer than the requested spacing and
+  gives each chamber its volume (Simpson's rule over the width, exact for a
+  straight taper) and fill; `fillGrams` = volume (in³) × (1 + overstuff) /
+  fill power (US in³/oz) × 28.35 g. Volume models: baffled = a box of the
+  loft height; sewn-through = a parabolic lens, 2/3 of the box. Both are
+  stated as estimates in the warnings and steps. An underquilt can reuse it.
+- `src/generators/quilt/` (schemaVersion 17, generatorId `quilt`, storage
+  `stitchsmith.quilt.project`), "Shelter and sleep" category. A top quilt
+  only; the underquilt (differential cut the other way, suspension) is a
+  follow-up.
+- Chambers run across the quilt (horizontal baffles), the common top-quilt
+  layout. Fill is computed on the liner's width: the shell's differential
+  bows over it and adds no floor area.
+- Shell differential is across the width only (a percentage of the width at
+  every station), so each baffle is a trapezoid: shell edge to the shell's
+  width, liner edge to the liner's, both + 2 allowances so the ends go into
+  the side seam. The head and foot ease the shell's extra width in. A
+  sewn-through quilt joins the layers at every line, so it forces the
+  differential to 0 (an info note if one was entered).
+- Convention B: shell, liner and every baffle at cut size, explicit 0 on
+  every cut edge; the perimeter sew line and every chamber wall drawn as
+  `stitch` lines; the cut outline is the finished taper offset by the seam
+  allowance, mitred. `seam_allowance` is a real input here (perimeter and
+  both baffle edges) and a placeholder (1/2").
+- Fill per chamber is written inside each chamber on the liner and listed in
+  the fill step, for weighing out; the BOM carries the total in grams.
+- Fabric-width check: the wider of the shell and liner cuts against the
+  fabric, an error on `shoulder_width`. One panel per layer; joining widths
+  for a wider quilt is a follow-up.
+- Footbox: sewn (fold in half, sew the foot end and the sides up to the
+  footbox marks) or zipped (zipper = half the foot width + the footbox
+  length, on the BOM).
+- **No 3D tab.** The cloth engine has no loft or fill model (the chambers
+  would lie flat) and no lying body form; the page shows the disabled tab
+  with that reason.
+- Not modelled: a neck drawcord or snap, pad straps, vertical side baffles,
+  synthetic insulation (a batting cut instead of a fill weight).

@@ -165,6 +165,7 @@ describe('App integration', () => {
     { open: /Open Fanny Pack/i, subtitle: /Fanny Pack Generator/i },
     { open: /Open Tarp/i, subtitle: /Tarp Generator/i },
     { open: /Open Hammock/i, subtitle: /Hammock Generator/i },
+    { open: /Open Top Quilt/i, subtitle: /Top Quilt Generator/i },
   ] as const;
 
   for (const { open, subtitle } of SMOKE_TARGETS) {
@@ -322,6 +323,7 @@ describe('landing search', () => {
     ['armor', /Open Plate Carrier/i],
     ['ridgeline', /Open Tarp/i],
     ['whipping', /Open Hammock/i],
+    ['fill power', /Open Top Quilt/i],
   ];
   for (const [term, expected] of CASES) {
     it(`finds the right generator for "${term}"`, () => {
@@ -334,6 +336,6 @@ describe('landing search', () => {
   it('announces how many generators match', () => {
     render(<App />);
     fireEvent.change(screen.getByLabelText(/Find a generator/i), { target: { value: 'zipper' } });
-    expect(screen.getByRole('status').textContent).toMatch(/of 17 generators match zipper/);
+    expect(screen.getByRole('status').textContent).toMatch(/of 18 generators match zipper/);
   });
 });

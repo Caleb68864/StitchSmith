@@ -26,6 +26,7 @@ export const KNOWN_SCHEMA_VERSIONS: Readonly<Record<string, number>> = Object.fr
   'lbv': 14,
   'tarp': 15,
   'hammock': 16,
+  'quilt': 17,
 });
 
 /** Generator id → the name the user sees on the landing page and the page header. */
@@ -47,6 +48,7 @@ export const GENERATOR_TITLES: Readonly<Record<string, string>> = Object.freeze(
   'lbv': 'Modular LBV',
   'tarp': 'Tarp',
   'hammock': 'Hammock',
+  'quilt': 'Top Quilt',
 });
 
 /** The user-facing name for a generator id; unknown ids come back quoted so the message still reads. */

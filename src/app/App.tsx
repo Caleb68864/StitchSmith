@@ -19,6 +19,7 @@ import { useOrganizerProject } from '../state/useOrganizerProject.js';
 import { useLbvProject } from '../state/useLbvProject.js';
 import { useTarpProject } from '../state/useTarpProject.js';
 import { useHammockProject } from '../state/useHammockProject.js';
+import { useQuiltProject } from '../state/useQuiltProject.js';
 import { usePlateCarrierProject } from '../state/usePlateCarrierProject.js';
 import { useClamshellPackProject } from '../state/useClamshellPackProject.js';
 import { useFannyPackProject } from '../state/useFannyPackProject.js';
@@ -77,6 +78,9 @@ const TarpPage = lazy(() =>
 const HammockPage = lazy(() =>
   import('../components/hammock/HammockPage.js').then(m => ({ default: m.HammockPage }))
 );
+const QuiltPage = lazy(() =>
+  import('../components/quilt/QuiltPage.js').then(m => ({ default: m.QuiltPage }))
+);
 const FannyPackPage = lazy(() =>
   import('../components/fanny-pack/FannyPackPage.js').then(m => ({ default: m.FannyPackPage }))
 );
@@ -100,6 +104,7 @@ const HEADER_SUBTITLES: Partial<Record<View, string>> = {
   'lbv': 'Modular LBV Generator',
   'tarp': 'Tarp Generator',
   'hammock': 'Hammock Generator',
+  'quilt': 'Top Quilt Generator',
 };
 
 const VIEW_TITLES: Record<View, string> = {
@@ -121,6 +126,7 @@ const VIEW_TITLES: Record<View, string> = {
   'fanny-pack': 'StitchSmith — Fanny Pack',
   'tarp': 'StitchSmith — Tarp',
   'hammock': 'StitchSmith — Hammock',
+  'quilt': 'StitchSmith — Top Quilt',
 };
 
 type View = 'landing' | PatternEntry['route'];
@@ -162,6 +168,7 @@ export function App() {
   const fanny_packState = useFannyPackProject();
   const tarpState = useTarpProject();
   const hammockState = useHammockProject();
+  const quiltState = useQuiltProject();
 
   useEffect(() => {
     document.title = VIEW_TITLES[view] ?? 'StitchSmith';
@@ -359,6 +366,14 @@ export function App() {
             updateInputs={hammockState.updateInputs}
             resetProject={hammockState.resetProject}
             importProject={hammockState.importProject}
+          />
+        )}
+        {view === 'quilt' && (
+          <QuiltPage
+            project={quiltState.project}
+            updateInputs={quiltState.updateInputs}
+            resetProject={quiltState.resetProject}
+            importProject={quiltState.importProject}
           />
         )}
         {view === 'lbv' && (
