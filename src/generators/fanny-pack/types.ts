@@ -42,6 +42,8 @@ export interface FannyPackInputs {
   zipper_lip?: number;
   /** Paracord loops between lid and body that stop the lid at the target angle. Default false. */
   drawbridge_limiter?: boolean;
+  /** A face on the front (lid) panel: none (default), a PALS field (through the PALS primitive) or a loop Velcro field. */
+  front_face?: 'none' | 'pals' | 'loop';
   /** Bottom drainage grommets: 0, 2 or 4. Default 0. */
   bottom_grommets?: 0 | 2 | 4;
   /** Belt webbing width in inches. Default 1.5. */
@@ -67,6 +69,7 @@ export interface ResolvedInputs {
   zipper_edge_finish: ZipperEdgeFinish;
   zipper_lip: number;
   drawbridge_limiter: boolean;
+  front_face: 'none' | 'pals' | 'loop';
   bottom_grommets: 0 | 2 | 4;
   belt_webbing: BeltWebbing;
   belt_min: number;

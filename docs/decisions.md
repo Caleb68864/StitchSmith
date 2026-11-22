@@ -1503,3 +1503,17 @@ baffle-chamber primitive and a fill-weight calculation.
   halves split on the centre line with a seam allowance there and a
   flat-felled centre seam; the cross baffles stay whole. The fabric check
   uses the half's width; a quilt too wide for the fabric now suggests it.
+
+
+## 2026-11-22 — Hammock bug net and joined widths (roadmap 10b follow-ups)
+
+- Decided by agent 2026-11-22 (owner may revisit): the bug net is a mesh
+  piece the body's cut length and finished width plus a seam allowance each
+  side, sewn to one long side, zipped (two-way zipper the length) to the
+  other, its ends caught in the channels or whipping with the body, lying
+  over the structural ridgeline when hung. No new dimension.
+- Joined widths: each layer cut as two halves (half the width, one side
+  hem, the centre seam allowance), joined first with a flat-felled seam
+  stitched twice (it takes load). The seam allowance (placeholder 1/2")
+  now has a job, but only with a centre seam or the net; otherwise it stays
+  0 with its info note.

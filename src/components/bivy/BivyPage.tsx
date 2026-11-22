@@ -53,7 +53,7 @@ export function BivyPage({ project, updateInputs, resetProject, importProject }:
         <PreviewTabs
           pattern={<PatternPreview inputs={project.inputs} hasErrors={hasErrors} />}
           assembly={pattern3d && assembly ? <FoldPreview3D pattern={pattern3d} placements={assembly.placements} pins={assembly.pins} seams={assembly.seams} solids={assembly.solids} gravity={assembly.gravity} initialSimulate height={560} /> : null}
-          unavailableReason="The 3D check assembles the side-zip bivy; a J-zip top (two top pieces) is not assembled yet."
+          unavailableReason="The 3D check needs the bivy to build; fix the errors first."
         />
       }
       sidebar={

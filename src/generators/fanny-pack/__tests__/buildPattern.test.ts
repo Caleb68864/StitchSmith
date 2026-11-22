@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest';
-import { buildPattern, buildBom, validateInputs, resolveInputs, lidExtensionHeuristic, BACK_ID, FRONT_ID, ZIP_HALF_ID, GUSSET_ID } from '../index.js';
+import { buildPattern, buildBom, validateInputs, resolveInputs, lidExtensionHeuristic, BACK_ID, FRONT_ID, ZIP_HALF_ID, GUSSET_ID, PALS_ROW_ID, LOOP_FIELD_ID } from '../index.js';
 import type { FannyPackInputs } from '../types.js';
 import { renderHtml } from '../../../lib/pattern-engine/instructions/compile.js';
 import { patternToSvg } from '../../../lib/pattern-engine/exports/svg.js';
@@ -97,5 +97,28 @@ describe('buildPattern', () => {
     expect(bom.some((r) => r.id === `piece-${BACK_ID}`)).toBe(true);
     expect(bom.some((r) => r.id === 'material-webbing-38')).toBe(true);
     expect(bom.some((r) => r.id === 'hw-zipper')).toBe(true);
+  });
+});
+
+describe('front face (roadmap 6 follow-up)', () => {
+  const b = (i: FannyPackInputs) => { const v = buildPattern(i); if (!v.ok) throw new Error(JSON.stringify(v.errors)); return v.value; };
+  it('PALS on the front panel through the PALS primitive: 1" rows at a 2" pitch, 1.5" columns, rows cut 1" long', () => {
+    const v = b({ ...BASE, front_face: 'pals' });
+    const front = v.pieces.find((p) => p.id === FRONT_ID)!;
+    const rows = front.paths.filter((p) => /-pals-row-\d+$/.test(p.id));
+    expect(rows.length).toBeGreaterThan(0);
+    // Row pitch 2", width 1".
+    if (rows.length > 1) expect(rows[1].edges[0].start.y - rows[0].edges[0].start.y).toBeCloseTo(2 * IN, 6);
+    expect(rows[0].edges[1].start.y - rows[0].edges[0].start.y).toBeCloseTo(1 * IN, 6);
+    const strip = v.pieces.find((p) => p.id === PALS_ROW_ID)!;
+    expect(strip.quantity).toBe(rows.length);
+    expect(v.steps.some((s) => s.id === 'fp.front-face')).toBe(true);
+    expect(v.pieces.find((p) => p.id === BACK_ID)!.paths.some((p) => p.id.includes('-pals-'))).toBe(false);
+  });
+  it('a loop field instead: inside the hoop seam by the 1/4" margin, on the cut list; plain by default', () => {
+    const v = b({ ...BASE, front_face: 'loop' });
+    expect(v.pieces.find((p) => p.id === FRONT_ID)!.paths.some((p) => p.id.endsWith('-loop-field'))).toBe(true);
+    expect(v.pieces.some((p) => p.id === LOOP_FIELD_ID)).toBe(true);
+    expect(b(BASE).pieces.some((p) => p.id === LOOP_FIELD_ID || p.id === PALS_ROW_ID)).toBe(false);
   });
 });

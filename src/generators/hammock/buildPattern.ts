@@ -24,6 +24,8 @@ import { PLACEHOLDERS } from './defaults.js';
 export type Result<T> = { ok: true; value: T } | { ok: false; errors: BuildPatternError[] };
 export const BODY_ID = 'hammock-body';
 export const FABRIC_ID = 'hammock-nylon';
+export const NET_ID = 'hammock-bug-net';
+export const MESH_ID = 'hammock-mesh';
 
 const IN = 25.4;
 const LB = 0.45359237;
@@ -68,7 +70,8 @@ export function bodyGeometry(r: ResolvedInputs): BodyGeometry {
   return {
     side, channel,
     endX: [e, L - e],
-    sideY: [s, W - s],
+    // A joined half: one hemmed side, the centre seam on the other.
+    sideY: [s, r.join_widths ? W - r.seam_allowance : W - s],
     channelStitchX: r.end_style === 'channel' ? [e + channel.depth, L - e - channel.depth] : undefined,
     cutLength: L,
     cutWidth: W,
@@ -82,11 +85,12 @@ function buildBody(r: ResolvedInputs, g: BodyGeometry): Piece {
   const outline: Path = { id: `${BODY_ID}-outline`, closed: true, edges: c.map((p, i) => seg(eid, 'cut', p, c[(i + 1) % 4])) };
   const paths: Path[] = [outline];
   // Side hems first, the full cut length: the end channels fold over them.
+  const [y0, y1] = g.sideY;
   if (r.side_edge === 'hem') {
-    const [y0, y1] = g.sideY;
     paths.push(...hemLines({ hem: g.side, finished: [{ x: 0, y: y0 }, { x: L, y: y0 }], outward: { x: 0, y: -1 }, idPrefix: `${BODY_ID}-side-0`, eid, name: 'Side hem' }).paths);
-    paths.push(...hemLines({ hem: g.side, finished: [{ x: 0, y: y1 }, { x: L, y: y1 }], outward: { x: 0, y: 1 }, idPrefix: `${BODY_ID}-side-1`, eid, name: 'Side hem' }).paths);
+    if (!r.join_widths) paths.push(...hemLines({ hem: g.side, finished: [{ x: 0, y: y1 }, { x: L, y: y1 }], outward: { x: 0, y: 1 }, idPrefix: `${BODY_ID}-side-1`, eid, name: 'Side hem' }).paths);
   }
+  if (r.join_widths) paths.push(line(eid, `${BODY_ID}-centre-seam`, { x: 0, y: y1 }, { x: L, y: y1 }, 'stitch', `Centre seam — join the two halves, ${fmtIn(r.seam_allowance)}" in, flat-felled (it carries the load)`));
   const [xa, xb] = g.endX;
   if (r.end_style === 'channel') {
     paths.push(...hemLines({ hem: g.channel, finished: [{ x: xa, y: 0 }, { x: xa, y: W }], outward: { x: -1, y: 0 }, idPrefix: `${BODY_ID}-end-0`, eid, name: 'End channel hem' }).paths);
@@ -108,9 +112,9 @@ function buildBody(r: ResolvedInputs, g: BodyGeometry): Piece {
   paths.push(line(eid, `${BODY_ID}-centre-b`, { x: L / 2, y: Math.max(0, W - 2 * IN) }, { x: L / 2, y: W }, 'notch'));
   return {
     id: BODY_ID,
-    name: r.layers === 2 ? 'Hammock body (cut 2)' : 'Hammock body',
+    name: r.join_widths ? `Hammock body half (cut ${2 * r.layers})` : r.layers === 2 ? 'Hammock body (cut 2)' : 'Hammock body',
     mirror: false,
-    quantity: r.layers,
+    quantity: r.layers * (r.join_widths ? 2 : 1),
     materialId: FABRIC_ID,
     paths,
     seamAllowances: zeroSa(outline),
@@ -118,6 +122,23 @@ function buildBody(r: ResolvedInputs, g: BodyGeometry): Piece {
       { kind: 'grain', label: 'grain along the length', point: { x: L / 2, y: W / 2 - 60 }, angle: 0 },
       { kind: 'label', label: `Body — cut ${dim(L)} × ${dim(W)}, ${r.end_style === 'channel' ? 'channels' : 'whip tails'}${r.side_edge === 'hem' ? ' and side hems' : ''} included`, point: { x: L / 2, y: W / 2 } },
     ],
+  };
+}
+
+/** The bug net: the body's cut length (its ends go into the channels or whippings with the body) by the finished width plus a seam allowance each side. */
+function buildNet(r: ResolvedInputs, g: BodyGeometry): Piece {
+  const eid = makeEdgeIdGen(NET_ID);
+  const L = g.cutLength, W = r.net_cut_width, s = r.seam_allowance;
+  const c = [{ x: 0, y: 0 }, { x: L, y: 0 }, { x: L, y: W }, { x: 0, y: W }];
+  const outline: Path = { id: `${NET_ID}-outline`, closed: true, edges: c.map((p, i) => seg(eid, 'cut', p, c[(i + 1) % 4])) };
+  return {
+    id: NET_ID, name: 'Bug net', mirror: false, quantity: 1, materialId: MESH_ID, seamAllowances: zeroSa(outline),
+    paths: [
+      outline,
+      line(eid, `${NET_ID}-sewn-side`, { x: 0, y: s }, { x: L, y: s }, 'stitch', `Sewn side — to one long side of the body, ${fmtIn(s)}" in`),
+      line(eid, `${NET_ID}-zip-side`, { x: 0, y: W - s }, { x: L, y: W - s }, 'stitch', 'Zipped side — the zipper tape, the other half on the body'),
+    ],
+    annotations: [{ kind: 'label', label: `Bug net — no-see-um mesh, cut ${dim(L)} × ${dim(W)}; it lies over the structural ridgeline`, point: { x: L / 2, y: W / 2 } }],
   };
 }
 
@@ -130,6 +151,10 @@ function buildSteps(r: ResolvedInputs, g: BodyGeometry): Step[] {
     { id: 'hammock.cut', title: 'Cut the body', body: `${r.layers === 2 ? 'Two layers' : 'One piece'}, ${dim(g.cutLength)} × ${dim(g.cutWidth)} — the ${r.end_style === 'channel' ? 'end channels' : 'whip tails'}${r.side_edge === 'hem' ? ' and side hems are' : ' are'} included in the cut. Grain along the length: ${dim(r.fabric_length)} (${fmtFt(r.fabric_length)}) of ${fmtIn(r.fabric_width)}" fabric.${r.side_edge === 'selvedge' ? ' Cut so both long sides are the selvedge.' : ''} Mark the centre on both long sides. Sewn fabric only.`, dependsOn: [], refsPieces: [BODY_ID], group: 'Cut' },
   ];
   let prev = 'hammock.cut';
+  if (r.join_widths) {
+    steps.push({ id: 'hammock.join', title: 'Join the halves', body: `Right sides together, sew each pair of halves along the centre seam line, ${fmtIn(r.seam_allowance)}" in, then flat-fell it: trim one allowance, fold the other over it and topstitch. The seam runs the length of the hammock and takes load, so stitch it twice.`, dependsOn: [prev], refsPieces: [BODY_ID], group: 'Body' });
+    prev = 'hammock.join';
+  }
   if (r.layers === 2) {
     steps.push({ id: 'hammock.layers', title: 'Two layers', body: 'Lay the two bodies wrong sides together and treat them as one through the side hems and the ends: the hems and the channels (or whippings) catch both layers. Leave one side hem unstitched for a hand span at the middle if a pad will slide in between.', dependsOn: ['hammock.cut'], refsPieces: [BODY_ID], group: 'Layers' });
     prev = 'hammock.layers';
@@ -137,6 +162,10 @@ function buildSteps(r: ResolvedInputs, g: BodyGeometry): Step[] {
   if (r.side_edge === 'hem') {
     steps.push({ id: 'hammock.sides', title: 'Hem both long sides', body: `Along each long side, ${hemWord(g.side.depth, g.side.markFromRaw)}, then stitch the full length. Hem the sides before the ends so the ${r.end_style === 'channel' ? 'channels fold' : 'tail hems fold'} over them.`, dependsOn: [prev], refsPieces: [BODY_ID], group: 'Hems' });
     prev = 'hammock.sides';
+  }
+  if (r.bug_net) {
+    steps.push({ id: 'hammock.net', title: 'Bug net', body: `Sew the net's sewn side to one long side of the body on the side hem, ${fmtIn(r.seam_allowance)}" in, and set the zipper between the net's other side and the other long side of the body. The net's ends go into the channels (or the whipping) with the body; it lies over the structural ridgeline when hung.`, dependsOn: [prev], refsPieces: [NET_ID, BODY_ID], group: 'Net' });
+    prev = 'hammock.net';
   }
   if (r.end_style === 'channel') {
     steps.push({ id: 'hammock.channels', title: 'Sew the end channels', body: `At each end, ${hemWord(g.channel.depth, g.channel.markFromRaw)} to make a ${fmtIn(r.channel_depth)}" channel. Stitch along the drawn channel line, backstitching hard at both sides: the gathered end carries the whole load through this line. Leave the channel open at both sides for the cord.`, dependsOn: [prev], refsPieces: [BODY_ID], group: 'Ends' });
@@ -162,11 +191,12 @@ function mockDerived(inputs: HammockInputs, r: ResolvedInputs): GeneratorWarning
     if (f === 'whip_tail') return r.end_style === 'whipping';
     if (f === 'side_hem_depth') return r.side_edge === 'hem' || r.end_style === 'whipping';
     if (f === 'strap_length') return r.suspension === 'tree_straps';
+    if (f === 'seam_allowance') return r.join_widths || r.bug_net;
     return true;
   };
   const open = PLACEHOLDERS.filter((p) => applies(p.field) && (inputs[p.field] === undefined || inputs[p.field] === null));
   if (open.length === 0) return [];
-  const show = (p: (typeof PLACEHOLDERS)[number]) => (p.kind === 'percent' ? `${p.mm} %` : unit(p.mm));
+  const show = (p: (typeof PLACEHOLDERS)[number]) => (p.kind === 'percent' ? `${p.mm} %` : p.kind === 'sa' ? `${p.mm} mm` : unit(p.mm));
   return [{
     id: 'mock-derived', severity: 'info', field: open[0].field,
     message: `[mock-derived] ${open.length} placeholder${open.length === 1 ? '' : 's'} with no vault source ${open.length === 1 ? 'is' : 'are'} in use: ${open.map((p) => `${p.label} ${show(p)}`).join('; ')}. The vault's shelter and sleep notes were not available when this pattern was built, so check each one against the vault or a test hang, then enter it.`,
@@ -193,7 +223,7 @@ function buildWarnings(inputs: HammockInputs, r: ResolvedInputs): GeneratorWarni
   if (r.side_edge === 'selvedge' && r.fabric_trim > 1e-6) w.push({ id: 'selvedge-trim', severity: 'warning', field: 'side_edge', message: `The fabric is ${fmtIn(r.fabric_trim)}" wider than the hammock, so one long side would be a cut edge, not the selvedge. Hem the sides, or set the width to the fabric width.` });
   if (r.side_edge === 'hem' && r.fabric_trim > 1e-6) w.push({ id: 'fabric-trim', severity: 'info', field: 'fabric_width', message: `${fmtIn(r.fabric_trim)}" of the fabric width is left over after the ${fmtIn(r.cut_width)}" cut. Trim it from one side, or widen the hammock to use it.` });
   if (r.hem_raised) w.push({ id: 'hem-raised', severity: 'info', field: 'side_hem_depth', message: 'Production mode raised a hem to 1/2"; the cut grew to match.' });
-  if (inputs.seam_allowance !== undefined && inputs.seam_allowance !== null && inputs.seam_allowance !== 0) w.push({ id: 'seam-allowance-ignored', severity: 'info', field: 'seam_allowance', message: 'A gathered-end hammock is one piece with no joining seam, so the seam allowance is not used.' });
+  if (!r.join_widths && !r.bug_net && inputs.seam_allowance !== undefined && inputs.seam_allowance !== null && inputs.seam_allowance !== 0) w.push({ id: 'seam-allowance-ignored', severity: 'info', field: 'seam_allowance', message: 'A gathered-end hammock is one piece with no joining seam, so the seam allowance is not used.' });
   return w;
 }
 
@@ -203,12 +233,14 @@ export function buildPattern(inputs: HammockInputs): Result<HammockBuildResult> 
   const r = resolveInputs(inputs);
   const g = bodyGeometry(r);
   const pieces: Piece[] = [buildBody(r, g)];
+  if (r.bug_net) pieces.push(buildNet(r, g));
   const hardware: HardwareItem[] = [
     r.end_style === 'channel'
       ? { id: 'end-cord', name: 'End cord through each channel (continuous loop or doubled cord)', quantity: 2, notes: `one per channel; the channel is ${fmtIn(r.channel_depth)}" deep` }
       : { id: 'whipping-cord', name: 'Whipping cord', quantity: 2, notes: 'one length per end' },
     { id: 'ridgeline', name: 'Structural ridgeline', quantity: 1, notes: `${dim(r.ridgeline_length)} eye to eye (${r.ridgeline_pct.toFixed(0)} % of the length; mock-derived)` },
   ];
+  if (r.bug_net) hardware.push({ id: 'net-zipper', name: 'Two-way zipper for the bug net', quantity: 1, notes: `${dim(r.length)}, along the body's long side` });
   if (r.suspension === 'tree_straps') {
     hardware.push(
       { id: 'tree-strap', name: 'Tree strap (wide, tree-friendly webbing)', quantity: 2, notes: `${dim(r.strap_length)} each (mock-derived); rated for the load` },

@@ -183,7 +183,10 @@ cord = 2 × chord at the target angle, 0/2/4 bottom drainage grommets with
 patches set while flat, dual-mode belt with measured settings, non-locking
 slider in the BOM, 3D hoop-and-panels check. Body sizes are starting points
 (the vault has no cut list). Follow-ups: simulate the open lid (split the 3D
-band at the zipper and let the front fall), a front PALS/loop face.
+band at the zipper and let the front fall), ~~a front PALS/loop face~~ (DONE
+2026-11-22: `front_face` pals — the PALS primitive inside the hoop seam,
+rows on the cut list cut 1" long — or loop, a Velcro field 1/4" inside the
+seam; plain by default).
 
 ### 7. Clamshell pack (medpack / tool pod) — DONE 2026-09-12
 `src/generators/clamshell-pack/`: zipper frame hoop as two strips split by
@@ -426,11 +429,14 @@ report.
 
 Open for the owner: confirm the safety policy (one standing load warning,
 never blocks export; decisions.md 2026-11-16) and whether to keep the 83 %
-figure. Follow-ups: 3D (above), bug-net zip, ~~double-layer option~~ (DONE
+figure. Follow-ups: 3D (above), ~~bug-net zip~~ (DONE 2026-11-22: `bug_net`, a mesh net the body long and
+wide plus an allowance each side, sewn to one long side and zipped to the
+other, its ends into the channels with the body), ~~double-layer option~~ (DONE
 2026-11-22: `layers: 2`, the body cut twice and sewn as one through the
 hems and ends), ~~suspension hardware on the BOM~~ (DONE 2026-11-22:
 `suspension: 'tree_straps'` adds two tree straps, `strap_length`
-placeholder 10' flagged, and two load-rated carabiners), a wider body from two widths joined by a
+placeholder 10' flagged, and two load-rated carabiners), ~~a wider body~~ (DONE 2026-11-22: `join_widths`, two halves joined by a
+flat-felled centre seam; the fabric check then uses the half) from two widths joined by a
 flat-felled centre seam (would give `seam_allowance` a job).
 
 #### 10c. Top quilt — DONE 2026-11-21 (`pattern/10c-quilt`, no 3D)
@@ -527,7 +533,9 @@ as the folded ears), held flat on the ground; a sleeper block inside; the
 top placed over the rim, its long edges seamed to the side rims; the head
 and foot gussets draped in the end planes, bases seamed to the end rims and
 arches to the top's short edges. Seams close to < 1 mm, p99 stretch ~3 %.
-The side-zip bivy only (a J-zip top is two pieces; not assembled yet).
+The J-zip bivy too since 2026-11-22: the head section and the body top
+placed either side of the J line, joined across by the zipper (shown
+closed), both seamed to the rims.
 Tests: `bivy/__tests__/assembly3d.test.ts`, an assembly-sweep case, an e2e
 target.
 Follow-ups: ~~a bug-net variant~~ (DONE 2026-11-22: `top_material: 'mesh'`

@@ -18,6 +18,7 @@ const GUARD_SPEC: GuardSpec = {
   zipper_edge_finish: { kind: 'enum', allowed: ['fold', 'tape'] },
   zipper_lip: { kind: 'length' },
   drawbridge_limiter: { kind: 'bool' },
+  front_face: { kind: 'enum', allowed: ['none', 'pals', 'loop'] },
   bottom_grommets: { kind: 'count', max: MAX_GROMMETS },
   belt_webbing: { kind: 'length' },
   belt_min: { kind: 'length' },
@@ -70,7 +71,7 @@ export function resolveInputs(inputs: FannyPackInputs): ResolvedInputs {
   const grommet_positions = n === 0 ? [] : Array.from({ length: n }, (_, i) => (width * (i + 1)) / (n + 1));
   return {
     units, width, height, depth, seam_allowance: sa, lid_drop_target, lid_angle_deg, lid_extension, lid_extension_overridden: overridden,
-    zipper_edge_finish, zipper_lip, drawbridge_limiter: inputs.drawbridge_limiter ?? false, bottom_grommets, belt_webbing, belt_min, belt_max,
+    zipper_edge_finish, zipper_lip, drawbridge_limiter: inputs.drawbridge_limiter ?? false, front_face: inputs.front_face === 'pals' || inputs.front_face === 'loop' ? inputs.front_face : 'none', bottom_grommets, belt_webbing, belt_min, belt_max,
     edge_tape_color: inputs.edge_tape_color ?? 'black',
     lid_extension_heuristic: heuristic,
     zipper_panel_length,

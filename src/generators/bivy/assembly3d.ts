@@ -9,7 +9,8 @@
  * and seams each corner's two edges together, which gives the same tub. The
  * floor is held flat on the ground; everything else is free.
  *
- * Side zipper only: a J-zip top (two top pieces) is not assembled.
+ * A J-zip top is two pieces (the head section and the body below the J),
+ * joined across the top by the zipper, shown closed.
  */
 import type { Piece } from '../../lib/pattern-engine/graph/Piece.js';
 import type { Path } from '../../lib/pattern-engine/graph/Path.js';
@@ -18,7 +19,7 @@ import { makeEdgeIdGen, type Edge } from '../../lib/pattern-engine/graph/Edge.js
 import type { PiecePlacement } from '../../lib/fold-engine/index.js';
 import type { SeamSpec, PinSpec, Solid, Vec3 } from '../../lib/cloth-engine/index.js';
 import type { ResolvedInputs } from './types.js';
-import { FLOOR_ID, TOP_ID, HEAD_GUSSET_ID, FOOT_GUSSET_ID, FLOOR_FABRIC_ID } from './buildPattern.js';
+import { FLOOR_ID, TOP_ID, TOP_HEAD_ID, HEAD_GUSSET_ID, FOOT_GUSSET_ID, FLOOR_FABRIC_ID } from './buildPattern.js';
 
 export const FLOOR_3D_ID = 'bivy-floor-3d';
 
@@ -70,7 +71,10 @@ function steps(a: Point, b: Point, n: number): Point[] {
 }
 
 export function bivyAssembly(pieces: Piece[], r: ResolvedInputs): BivyAssembly | null {
-  if (r.zip_style === 'j' || !r.arch) return null;
+  if (!r.arch) return null;
+  const jz = r.zip_style === 'j';
+  const topHead = jz ? pieces.find((p) => p.id === TOP_HEAD_ID) : undefined;
+  if (jz && !topHead) return null;
   const floor = pieces.find((p) => p.id === FLOOR_ID), top = pieces.find((p) => p.id === TOP_ID);
   const head = pieces.find((p) => p.id === HEAD_GUSSET_ID), foot = pieces.find((p) => p.id === FOOT_GUSSET_ID);
   if (!floor || !top || !head || !foot) return null;
@@ -81,8 +85,11 @@ export function bivyAssembly(pieces: Piece[], r: ResolvedInputs): BivyAssembly |
     // Flat y runs across the bivy (+z), the floor on the ground (y = 0).
     [FLOOR_3D_ID]: { keep: true, rx: -90, rootPoint: { x: L / 2, y: W / 2 } },
     // The top above the rim, centred: its sew rectangle over the tub's.
-    [TOP_ID]: { keep: true, rx: -90, dx: k - s, dy: -(t + r.arch.rise * 0.6), dz: W / 2 - Wt / 2 },
+    // With a J the body top starts at the J line, the head section before it.
+    [TOP_ID]: { keep: true, rx: -90, dx: k + r.j_from_head - s, dy: -(t + r.arch.rise * 0.6), dz: W / 2 - Wt / 2 },
+    ...(topHead ? { [TOP_HEAD_ID]: { keep: true, rx: -90, dx: k - s, dy: -(t + r.arch.rise * 0.6), dz: W / 2 - Wt / 2 } } : {}),
   };
+  const Lh = r.top_head_cut_length;
   // Gussets in the end planes: flat x along the end rim (+z), flat y up.
   const a = r.arch;
   const chordOf = (g: Piece) => {
@@ -107,14 +114,20 @@ export function bivyAssembly(pieces: Piece[], r: ResolvedInputs): BivyAssembly |
   ];
   corners.forEach(([c, p, q], i) => pairLines(`ear ${i + 1}`, FLOOR_3D_ID, steps(c, p, 4), FLOOR_3D_ID, steps(c, q, 4)));
   // Top long edges to the side rims.
-  pairLines('top ↔ side rim (left)', TOP_ID, steps({ x: s, y: s }, { x: Lt - s, y: s }, SEGS), FLOOR_3D_ID, steps({ x: k, y: s }, { x: L - k, y: s }, SEGS));
-  pairLines('top ↔ side rim (right)', TOP_ID, steps({ x: s, y: Wt - s }, { x: Lt - s, y: Wt - s }, SEGS), FLOOR_3D_ID, steps({ x: k, y: W - s }, { x: L - k, y: W - s }, SEGS));
+  const jx = k + r.j_from_head; // the J line on the floor's rims (k when there is no J)
+  const nBody = jz ? Math.max(4, Math.round((SEGS * (L - 2 * k - r.j_from_head)) / (L - 2 * k))) : SEGS;
+  for (const [side, yt, yf] of [['left', s, s], ['right', Wt - s, W - s]] as const) {
+    pairLines(`top ↔ side rim (${side})`, TOP_ID, steps({ x: s, y: yt }, { x: Lt - s, y: yt }, nBody), FLOOR_3D_ID, steps({ x: jx, y: yf }, { x: L - k, y: yf }, nBody));
+    if (topHead) pairLines(`top head ↔ side rim (${side})`, TOP_HEAD_ID, steps({ x: s, y: yt }, { x: Lh - s, y: yt }, SEGS - nBody), FLOOR_3D_ID, steps({ x: k, y: yf }, { x: jx, y: yf }, SEGS - nBody));
+  }
+  // The J zipper across the top, shown closed.
+  if (topHead) pairLines('J zipper', TOP_HEAD_ID, steps({ x: Lh - s, y: s }, { x: Lh - s, y: Wt - s }, 12), TOP_ID, steps({ x: s, y: s }, { x: s, y: Wt - s }, 12));
   // Gusset bases to the end rims; arches to the top's short edges.
-  for (const [g, rimX, topX] of [[head, s, s], [foot, L - s, Lt - s]] as [Piece, number, number][]) {
+  for (const [g, rimX, topX, topId] of [[head, s, s, topHead ? TOP_HEAD_ID : TOP_ID], [foot, L - s, Lt - s, TOP_ID]] as [Piece, number, number, string][]) {
     const c = chordOf(g);
     pairLines(`${g.id} base`, g.id, steps(c.from, c.to, 12), FLOOR_3D_ID, steps({ x: rimX, y: k }, { x: rimX, y: W - k }, 12));
     const ap = arcOf(g);
-    pairLines(`${g.id} arch`, g.id, ap, TOP_ID, steps({ x: topX, y: s }, { x: topX, y: Wt - s }, ap.length - 1));
+    pairLines(`${g.id} arch`, g.id, ap, topId, steps({ x: topX, y: s }, { x: topX, y: Wt - s }, ap.length - 1));
   }
   // Hold the floor's middle on the ground; the sleeper block holds the top up.
   const pins: PinSpec[] = [{ pieceId: FLOOR_3D_ID, rect: { x0: k + 60, y0: k + 60, x1: L - k - 60, y1: W - k - 60 } }];
@@ -122,7 +135,7 @@ export function bivyAssembly(pieces: Piece[], r: ResolvedInputs): BivyAssembly |
   const solids: Solid[] = [{ kind: 'box', center: [L / 2, sleeperH / 2, W / 2], half: [r.length / 2 - 80, sleeperH / 2, r.floor_width / 2 - 60] }];
   const report = [
     `The tub stands ${fmtIn(t)}" round a ${fmtIn(r.length)}" × ${fmtIn(r.floor_width)}" floor; the ${fmtIn(r.top_width)}" top arches about ${fmtIn(a.rise)}" over it, about ${fmtIn(r.head_height)}" inside at the head.`,
-    'Shown round a sleeper block; the corner ears are drawn as seamed corners (same tub). The zipper is shown closed.',
+    `Shown round a sleeper block; the corner ears are drawn as seamed corners (same tub). The ${jz ? 'J zipper' : 'zipper'} is shown closed.`,
   ];
-  return { pieces: [cross, top, head, foot], placements, seams, pins, solids, gravity: [0, -0.01, 0], report };
+  return { pieces: topHead ? [cross, topHead, top, head, foot] : [cross, top, head, foot], placements, seams, pins, solids, gravity: [0, -0.01, 0], report };
 }
