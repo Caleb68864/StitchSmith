@@ -17,6 +17,7 @@ import { LbvPage } from '../lbv/LbvPage.js';
 import { TarpPage } from '../tarp/TarpPage.js';
 import { HammockPage } from '../hammock/HammockPage.js';
 import { QuiltPage } from '../quilt/QuiltPage.js';
+import { BivyPage } from '../bivy/BivyPage.js';
 import { MagPouchPage } from '../mag-pouch/MagPouchPage.js';
 import { MicroRigPage } from '../micro-rig/MicroRigPage.js';
 import { OrganizerPage } from '../organizer/OrganizerPage.js';
@@ -36,6 +37,7 @@ const PAGES: Record<string, ComponentType<Record<string, unknown>>> = {
   'tarp': TarpPage as never,
   'hammock': HammockPage as never,
   'quilt': QuiltPage as never,
+  'bivy': BivyPage as never,
   'mag-pouch': MagPouchPage as never,
   'micro-rig': MicroRigPage as never,
   'organizer': OrganizerPage as never,

@@ -218,7 +218,7 @@ Every number the transcripts never state is a mock-derived input. Left: the
 front column count (count bartacks on a video frame), the butt pack and
 hydration carrier interfaces as pieces, laser-cut slotted shoulder straps.
 
-### 10. Shelter, sleep, apparel — 10a and 10b DONE 2026-11-16, 10c DONE 2026-11-21, 10d–10e open
+### 10. Shelter, sleep, apparel — 10a and 10b DONE 2026-11-16, 10c DONE 2026-11-21, 10d bivy DONE 2026-11-22, 10e open
 87 notes but almost all reference material (LearnMYOG, materials), not
 reconciled builds. Circle Skirt already covers the apparel entry point. Hold
 until the tactical line is done.
@@ -470,7 +470,33 @@ mode (on the same chamber primitive), a neck drawcord/snap and pad straps,
 vertical side baffles, joining fabric widths for a wider quilt, synthetic
 batting instead of a fill weight.
 
-**Order for the rest of item 10:** 10b gathered-end hammock and 10c top quilt (done above), then 10d bivy or bug net (curved long zipper,
+#### 10d. Bathtub-floor bivy — DONE 2026-11-22 (`pattern/10-doors-bivy-apparel`, no 3D)
+Engine: `src/lib/pattern-engine/geometry/chordArc.ts` — the circular arc of
+a given length standing on a given chord (bisection on sin(θ/2)/(θ/2), up
+to a semicircle), with `chordArcPoints`. Tests: `chordArc.test.ts`.
+
+Generator: `src/generators/bivy/`, page `src/components/bivy/`, project
+schemaVersion 18, "Shelter and sleep". Four pieces: a one-piece bathtub
+floor (tub sides fold up, each corner square folds on its diagonal into an
+ear: no floor seam below the tub height), a top wider than the floor, and
+head and foot gussets cut to the arch the top makes over the floor (base =
+floor width, arc = top width); head gusset in no-see-um mesh (default) or
+the top fabric. A side zipper in the top-to-tub seam from the head, left or
+right. Convention B (cut size, explicit 0, sew lines drawn). Fabric-width
+errors on the floor and top, arch beyond a semicircle an error on
+`top_width`. Derived head height (tub + arch rise). Registered in every
+shared table.
+
+Placeholders (common starting points, `[mock-derived]`, editable, no vault
+source): floor length 84", floor width 26", tub height 5", top width 40",
+side zipper 48", usable fabric width 58", seam allowance 12.7 mm. With them:
+floor 95" × 37" cut, top 85" × 41", arch rise ≈ 12.6", head height ≈ 17.6".
+
+**No 3D tab:** the cloth engine has no lying body to hold the top up.
+Follow-ups: a bug-net variant (all-mesh top on the same floor), a J or
+curved zipper across the head, a hood/brim, stake loops at the tub corners.
+
+**Order for the rest of item 10:** 10b gathered-end hammock and 10c top quilt (done above), then 10d bivy (done above; bug net a follow-up) (curved long zipper,
 mesh cut sheet), 10e apparel beyond the skirt (gaiters first; a garment
 drafting engine before anything with sleeves). Each builds the same way as
 the tarp, with placeholders flagged `mock-derived`, sewn fabrics only, until
@@ -666,6 +692,9 @@ which (the tri-zip `seam:` path convention is the seed).
   primitive and fill weight**: chamber walls at an even pitch, volume and
   fill per chamber (baffled box or sewn-through lens), fill in grams from
   fill power and overstuff. Needed by 10c and an underquilt.
+- DONE 2026-11-22 (`src/lib/pattern-engine/geometry/chordArc.ts`) — **Arc on a
+  chord**: a panel of one width sewn to a narrower base, as an arch (bivy
+  end gussets; any gusseted arch).
 - **Layer budget per seam**: emit max stack per seam and a machine-class
   requirement; annotate "sew forward only" above ~8 layers.
   `reference/technique-sewing-through-bulk.md`, `rigs/splitfront-technique-layer-budgeting.md`.

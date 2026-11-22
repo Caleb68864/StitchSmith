@@ -27,6 +27,7 @@ import { LbvPage } from '../lbv/LbvPage.js';
 import { TarpPage } from '../tarp/TarpPage.js';
 import { HammockPage } from '../hammock/HammockPage.js';
 import { QuiltPage } from '../quilt/QuiltPage.js';
+import { BivyPage } from '../bivy/BivyPage.js';
 import { MagPouchPage } from '../mag-pouch/MagPouchPage.js';
 import { MicroRigPage } from '../micro-rig/MicroRigPage.js';
 import { OrganizerPage } from '../organizer/OrganizerPage.js';
@@ -50,6 +51,7 @@ const PAGES: Record<string, { Page: ComponentType<Record<string, unknown>>; subt
   'tarp': { Page: TarpPage as never, subtitle: /Tarp Generator/i },
   'hammock': { Page: HammockPage as never, subtitle: /Hammock Generator/i },
   'quilt': { Page: QuiltPage as never, subtitle: /Top Quilt Generator/i },
+  'bivy': { Page: BivyPage as never, subtitle: /Bivy Generator/i },
   'mag-pouch': { Page: MagPouchPage as never, subtitle: /Mag Pouch Generator/i },
   'micro-rig': { Page: MicroRigPage as never, subtitle: /Micro Rig Generator/i },
   'organizer': { Page: OrganizerPage as never, subtitle: /Tactical Organizer Generator/i },

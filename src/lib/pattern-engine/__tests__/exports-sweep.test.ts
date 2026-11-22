@@ -24,6 +24,7 @@ import { makeDefaultOrganizerProject } from '../../../state/useOrganizerProject.
 import { makeDefaultTarpProject } from '../../../state/useTarpProject.js';
 import { makeDefaultHammockProject } from '../../../state/useHammockProject.js';
 import { makeDefaultQuiltProject } from '../../../state/useQuiltProject.js';
+import { makeDefaultBivyProject } from '../../../state/useBivyProject.js';
 import { makeDefaultFannyPackProject } from '../../../state/useFannyPackProject.js';
 import { makeDefaultClamshellPackProject } from '../../../state/useClamshellPackProject.js';
 import { makeDefaultPlateCarrierProject } from '../../../state/usePlateCarrierProject.js';
@@ -42,6 +43,7 @@ import { buildPattern as buildOrg } from '../../../generators/organizer/index.js
 import { buildPattern as buildTarp } from '../../../generators/tarp/index.js';
 import { buildPattern as buildHammock } from '../../../generators/hammock/index.js';
 import { buildPattern as buildQuilt } from '../../../generators/quilt/index.js';
+import { buildPattern as buildBivy } from '../../../generators/bivy/index.js';
 import { buildPattern as buildFanny } from '../../../generators/fanny-pack/index.js';
 import { buildPattern as buildClam } from '../../../generators/clamshell-pack/index.js';
 import { buildPattern as buildPlate } from '../../../generators/plate-carrier/index.js';
@@ -104,6 +106,8 @@ const CASES: Case[] = [
   { name: 'hammock (whipped ends, selvedge, single fold, production)', convention: 'B', build: () => pieces('hammock', buildHammock({ units: 'in', end_style: 'whipping', side_edge: 'selvedge', width: 60, hem_fold: 'single', production_mode: true })) },
   { name: 'top quilt (baffled, sewn footbox)', convention: 'B', build: () => pieces('quilt', buildQuilt(makeDefaultQuiltProject().inputs)) },
   { name: 'top quilt (sewn through, zip footbox, mm)', convention: 'B', build: () => pieces('quilt', buildQuilt({ units: 'mm', construction: 'sewn_through', footbox: 'zip', length: 1900, shoulder_width: 1300, foot_width: 950, seam_allowance: 10 })) },
+  { name: 'bivy (mesh head, left zip)', convention: 'B', build: () => pieces('bivy', buildBivy(makeDefaultBivyProject().inputs)) },
+  { name: 'bivy (fabric head, right zip, mm)', convention: 'B', build: () => pieces('bivy', buildBivy({ units: 'mm', head_gusset: 'fabric', zip_side: 'right', length: 2100, floor_width: 650, tub_height: 120, top_width: 950 })) },
 ];
 
 describe('export sweep — every generator through every exporter', () => {

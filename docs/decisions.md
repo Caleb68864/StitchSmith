@@ -1275,3 +1275,24 @@ baffle-chamber primitive and a fill-weight calculation.
   panel's finished end hem and is topstitched. Zipper length = the
   ridgeline height. Doors need straight ends and eaves that reach the
   ground (errors on `doors` otherwise). The 3D check leaves them out.
+
+
+## 2026-11-22 — Bathtub-floor bivy (roadmap #10d)
+
+- Decided by agent 2026-11-22 (owner may revisit): 10d is the bivy first;
+  the bug net becomes a follow-up on the same floor.
+- Floor: one rectangle, length/width + 2 × tub height + allowance; the
+  corners are folded ears, not cut squares, so the waterproof floor has no
+  seam below the tub height (only the four ear seams, sealed).
+- Top: wider than the floor (`top_width`); its long edges sew to the tub's
+  long top edges; the difference arches over the sleeper. The head and foot
+  gussets are the circular arc of the top width standing on the floor width
+  (`geometry/chordArc.ts`), capped at a semicircle; their bases sew to the
+  tub ends. The arch is an approximation of the real shape; head height is
+  reported as the tub height plus its rise.
+- Zipper: one straight side zipper in the top-to-tub seam from the head
+  (no curved zipper yet). Head gusset mesh by default (info note: it lets
+  rain in; pitch under a tarp).
+- Placeholders, common starting points, flagged and editable, no vault
+  source: 84" × 26" floor, 5" tub, 40" top, 48" zipper, 58" fabric, 1/2" SA.
+- No 3D tab: no lying body form to hold the top up.

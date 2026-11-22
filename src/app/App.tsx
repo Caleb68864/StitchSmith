@@ -20,6 +20,7 @@ import { useLbvProject } from '../state/useLbvProject.js';
 import { useTarpProject } from '../state/useTarpProject.js';
 import { useHammockProject } from '../state/useHammockProject.js';
 import { useQuiltProject } from '../state/useQuiltProject.js';
+import { useBivyProject } from '../state/useBivyProject.js';
 import { usePlateCarrierProject } from '../state/usePlateCarrierProject.js';
 import { useClamshellPackProject } from '../state/useClamshellPackProject.js';
 import { useFannyPackProject } from '../state/useFannyPackProject.js';
@@ -81,6 +82,9 @@ const HammockPage = lazy(() =>
 const QuiltPage = lazy(() =>
   import('../components/quilt/QuiltPage.js').then(m => ({ default: m.QuiltPage }))
 );
+const BivyPage = lazy(() =>
+  import('../components/bivy/BivyPage.js').then(m => ({ default: m.BivyPage }))
+);
 const FannyPackPage = lazy(() =>
   import('../components/fanny-pack/FannyPackPage.js').then(m => ({ default: m.FannyPackPage }))
 );
@@ -105,6 +109,7 @@ const HEADER_SUBTITLES: Partial<Record<View, string>> = {
   'tarp': 'Tarp Generator',
   'hammock': 'Hammock Generator',
   'quilt': 'Top Quilt Generator',
+  'bivy': 'Bivy Generator',
 };
 
 const VIEW_TITLES: Record<View, string> = {
@@ -127,6 +132,7 @@ const VIEW_TITLES: Record<View, string> = {
   'tarp': 'StitchSmith — Tarp',
   'hammock': 'StitchSmith — Hammock',
   'quilt': 'StitchSmith — Top Quilt',
+  'bivy': 'StitchSmith — Bivy',
 };
 
 type View = 'landing' | PatternEntry['route'];
@@ -169,6 +175,7 @@ export function App() {
   const tarpState = useTarpProject();
   const hammockState = useHammockProject();
   const quiltState = useQuiltProject();
+  const bivyState = useBivyProject();
 
   useEffect(() => {
     document.title = VIEW_TITLES[view] ?? 'StitchSmith';
@@ -374,6 +381,14 @@ export function App() {
             updateInputs={quiltState.updateInputs}
             resetProject={quiltState.resetProject}
             importProject={quiltState.importProject}
+          />
+        )}
+        {view === 'bivy' && (
+          <BivyPage
+            project={bivyState.project}
+            updateInputs={bivyState.updateInputs}
+            resetProject={bivyState.resetProject}
+            importProject={bivyState.importProject}
           />
         )}
         {view === 'lbv' && (

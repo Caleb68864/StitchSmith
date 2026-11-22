@@ -38,6 +38,8 @@ import * as hammock from '../hammock/index.js';
 import { makeDefaultHammockProject } from '../../state/useHammockProject.js';
 import * as quilt from '../quilt/index.js';
 import { makeDefaultQuiltProject } from '../../state/useQuiltProject.js';
+import * as bivy from '../bivy/index.js';
+import { makeDefaultBivyProject } from '../../state/useBivyProject.js';
 import * as triZip from '../tri-zip-backpack/index.js';
 import { makeDefaultTriZipProject } from '../../state/useTriZipProject.js';
 import * as zipPouch from '../zip-pouch/index.js';
@@ -171,6 +173,13 @@ export const GENERATORS: Gen[] = [
     defaults: () => makeDefaultQuiltProject().inputs as unknown as AnyInputs,
     validate: (i) => listErrors(quilt.validateInputs(i as never)),
     build: (i) => resultPieces(quilt.buildPattern(i as never)),
+  },
+  {
+    name: 'bivy',
+    keys: ['units', 'length', 'floor_width', 'tub_height', 'top_width', 'zip_length', 'fabric_width', 'seam_allowance', 'head_gusset', 'zip_side'],
+    defaults: () => makeDefaultBivyProject().inputs as unknown as AnyInputs,
+    validate: (i) => listErrors(bivy.validateInputs(i as never)),
+    build: (i) => resultPieces(bivy.buildPattern(i as never)),
   },
   {
     name: 'tri-zip-backpack',
