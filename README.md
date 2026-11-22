@@ -8,7 +8,7 @@ Everything runs locally in your browser. No accounts, no servers, no telemetry, 
 
 ## What it makes
 
-Eighteen generators, grouped the way the app groups them.
+Twenty generators, grouped the way the app groups them.
 
 **Pouches**
 
@@ -50,12 +50,14 @@ Eighteen generators, grouped the way the app groups them.
 | --- | --- |
 | Tarp | A-frame tarp: two panels on a flat-felled ridge seam (or one panel), catenary cat cuts on the ridge and eaves, hems marked at double, box-X tie-outs with grosgrain loops, a pitch check on a ridgeline. Sewn fabrics only; every number is a placeholder until checked |
 | Hammock | Gathered-end hammock: rolled side hems (or the selvedge), channel or whipped ends from the Hem primitive, a derived structural ridgeline and a standing load warning. Sewn fabrics only; every number is a placeholder until checked; no 3D check yet |
+| Bivy | Bathtub-floor bivy: one-piece floor with folded tub corners, a wider top arching over it, head and foot gussets cut to the arch (mesh head by default) and a side zipper. Sewn fabrics only; every number is a placeholder until checked; no 3D check yet |
 | Top Quilt | Tapered top quilt: shell and liner with baffled or sewn-through chambers, a shell differential, the fill weight per chamber (loft, fill power, overstuff) and a sewn or zipped footbox. Sewn fabrics only; every number is a placeholder until checked; no 3D check yet |
 
 **Apparel**
 
 | Generator | What it produces |
 | --- | --- |
+| Gaiters | Hiking gaiters: a tapered tube developed flat from calf to boot, hook-and-loop or zipper front, elastic top channel, a bottom hem that drops over the laces, instep strap and lace hook. Every number is a starting point until measured; no 3D check yet |
 | Circle Skirt | Quarter to double circle, waistband and closure options |
 
 ---

@@ -19,7 +19,7 @@ import type { Step } from '../../lib/pattern-engine/instructions/Step.js';
 import { catenary } from '../../lib/pattern-engine/geometry/catenary.js';
 import { resolveHem, hemLines, type Hem } from '../../lib/pattern-engine/primitives/hem.js';
 import type { TarpInputs, TarpBuildResult, ResolvedInputs, GeneratorWarning, BuildPatternError, HardwareItem, TieOut } from './types.js';
-import { resolveInputs, validateInputs } from './inputs.js';
+import { resolveInputs, validateInputs, doorCut } from './inputs.js';
 import { PLACEHOLDERS } from './defaults.js';
 
 export type Result<T> = { ok: true; value: T } | { ok: false; errors: BuildPatternError[] };
@@ -255,6 +255,35 @@ function buildPanel(r: ResolvedInputs, g: PanelGeometry, ties: TieOut[]): Piece 
   };
 }
 
+export const DOOR_ID = 'tarp-door';
+
+/** One door half (cut as a mirrored pair per closed end): hemmed on all three edges, the cut outline the finished triangle offset by the hem allowance. */
+function buildDoor(r: ResolvedInputs, g: PanelGeometry): Piece {
+  const eid = makeEdgeIdGen(DOOR_ID);
+  const { finished, cut } = doorCut(r.door_base, r.door_height, r.hem_allowance);
+  const dx = -Math.min(...cut.map((p) => p.x)), dy = -Math.min(...cut.map((p) => p.y));
+  const mv = (p: Point) => ({ x: p.x + dx, y: p.y + dy });
+  const F = finished.map(mv), C = cut.map(mv);
+  const outline: Path = { id: `${DOOR_ID}-outline`, closed: true, edges: C.map((p, i) => seg(eid, 'cut', p, C[(i + 1) % 3])) };
+  const paths: Path[] = [outline];
+  // Hem each edge: the finished edge, moved outward to the raw edge (outward normal of each finished edge).
+  const names = ['Door centre hem (zipper)', 'Door ground hem', 'Door hem along the panel end'];
+  for (let i = 0; i < 3; i++) {
+    const a = F[i], b = F[(i + 1) % 3];
+    const L = Math.hypot(b.x - a.x, b.y - a.y);
+    // Finished triangle runs apex → ground-centre → ground-out, clockwise on screen, so (dy, -dx) points out.
+    const out = { x: -(b.y - a.y) / L, y: (b.x - a.x) / L };
+    paths.push(...hemLines({ hem: g.hem, finished: [a, b], outward: out, idPrefix: `${DOOR_ID}-e${i}`, eid, name: names[i] }).paths);
+  }
+  return {
+    id: DOOR_ID, name: 'Door half', mirror: true, quantity: r.door_ends, materialId: FABRIC_ID, paths, seamAllowances: zeroSa(outline),
+    annotations: [
+      { kind: 'grain', label: 'grain down the centre edge', point: { x: F[0].x + 60, y: (F[0].y + F[1].y) / 2 }, angle: 90 },
+      { kind: 'label', label: `Door half — ${fmtIn(r.door_height)}" centre, ${fmtIn(r.door_base)}" ground, ${fmtIn(r.width / 2)}" along the panel end (finished); hems included; cut ${r.door_ends === 2 ? '2 pairs' : '1 pair'}, mirrored`, point: { x: F[1].x + r.door_base / 3, y: F[1].y - r.door_height / 4 } },
+    ],
+  };
+}
+
 function strip(id: string, name: string, w: number, h: number, quantity: number, materialId: string, label: string): Piece {
   const eid = makeEdgeIdGen(id);
   const outline = rectPath(eid, `${id}-outline`, 0, 0, w, h, 'cut');
@@ -303,6 +332,9 @@ function buildSteps(r: ResolvedInputs, g: PanelGeometry): Step[] {
   }
   if (r.guylines && r.tieout_count > 0) {
     steps.push({ id: 'tarp.guylines', title: 'Guylines', body: `Cut ${r.tieout_count} guylines of ${fmtIn(r.guyline_length)}" (${dim(r.tieout_count * r.guyline_length)} of cord in all) and melt or whip the ends. Tie one to each loop with a bowline${r.line_locks ? ' and thread the free end through a line-lock, so it tensions at the stake' : '; tension each at the stake with a taut-line hitch'}. The ridge-end lines carry the pitch: guy them out along the ridgeline.`, dependsOn: ['tarp.tieouts'], refsPieces: [LOOP_ID], group: 'Tie-outs' });
+  }
+  if (r.door_ends > 0) {
+    steps.push({ id: 'tarp.doors', title: r.door_ends === 2 ? 'Doors on both ends' : 'Doors on one end', body: `Cut ${r.door_ends === 2 ? 'two mirrored pairs' : 'one mirrored pair'} of door halves (hems included) and hem all three edges of each the same way as the tarp. Each half is sized to the pitch check: ${fmtIn(r.door_height)}" down the middle (the ridgeline height), ${fmtIn(r.door_base)}" along the ground, ${fmtIn(r.width / 2)}" along the panel end. Sew a ${dim(r.door_height)} separating zipper (slider at the top) between the two centre edges, then lap each half's long edge over its panel's finished end hem and topstitch it through both hems${two ? ', the felled ridge seam meeting the top of the zipper' : ', the halves meeting at the ridge line'}. A different ridgeline height pitches the end at a different angle: the doors then hang slack or pull, so recut them for the pitch you use.`, dependsOn: [steps[steps.length - 1].id], refsPieces: [DOOR_ID, PANEL_ID], group: 'Doors' });
   }
   const last = steps[steps.length - 1].id;
   steps.push(
@@ -355,7 +387,9 @@ export function buildPattern(inputs: TarpInputs): Result<TarpBuildResult> {
   const pieces: Piece[] = [buildPanel(r, g, ties)];
   if (r.patch_size > 0 && r.tieout_count > 0) pieces.push(strip(PATCH_ID, 'Tie-out patch', r.patch_size, r.patch_size, r.tieout_count, FABRIC_ID, `Patch ${fmtIn(r.patch_size)}" square — ${r.tieout_count}, one per tie-out`));
   if (r.tieout_count > 0) pieces.push(strip(LOOP_ID, 'Grosgrain tie-out loop', r.loop_length, r.loop_width, r.tieout_count, GROSGRAIN_ID, `Loop ${fmtIn(r.loop_width)} × ${fmtIn(r.loop_length)}", folded in half`));
+  if (r.door_ends > 0) pieces.push(buildDoor(r, g));
   const hardware: HardwareItem[] = [{ id: 'seam-sealer', name: 'Seam sealer for the fabric', quantity: 1, notes: 'Silicone sealer for silnylon; ridge seam and tie-outs' }];
+  if (r.door_ends > 0) hardware.push({ id: 'door-zipper', name: 'Separating zipper for the door', quantity: r.door_ends, notes: `${dim(r.door_height)} each, the ridgeline height; slider at the top` });
   if (r.guylines && r.tieout_count > 0) {
     hardware.push({ id: 'guyline', name: 'Guyline', quantity: r.tieout_count, notes: `${fmtIn(r.guyline_length)}" of cord each (mock-derived), ${dim(r.tieout_count * r.guyline_length)} in all` });
     if (r.line_locks) hardware.push({ id: 'line-lock', name: 'Line-lock tensioner', quantity: r.tieout_count, notes: 'one per guyline, sized to the cord' });

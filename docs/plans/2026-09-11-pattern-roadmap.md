@@ -218,7 +218,7 @@ Every number the transcripts never state is a mock-derived input. Left: the
 front column count (count bartacks on a video frame), the butt pack and
 hydration carrier interfaces as pieces, laser-cut slotted shoulder straps.
 
-### 10. Shelter, sleep, apparel — 10a and 10b DONE 2026-11-16, 10c DONE 2026-11-21, 10d–10e open
+### 10. Shelter, sleep, apparel — 10a and 10b DONE 2026-11-16, 10c DONE 2026-11-21, 10d bivy DONE 2026-11-22, 10e gaiters DONE 2026-11-22 (garments with sleeves still open)
 87 notes but almost all reference material (LearnMYOG, materials), not
 reconciled builds. Circle Skirt already covers the apparel entry point. Hold
 until the tactical line is done.
@@ -350,7 +350,14 @@ tie-out on the BOM, `guylines` / `line_locks` toggles, cord per guyline a
 `pullouts` toggle, off by default; one patch-and-loop pull-out at mid-span
 in the middle of each panel, or each half of a single panel, counted as
 tie-outs so the patches, loops and guylines follow; not pinned in the 3D
-check, since a pull-out is guyed out, not fixed), a doorway or beak variant,
+check, since a pull-out is guyed out, not fixed), ~~a doorway~~ (DONE
+2026-11-22: `doors` none / one end / both ends; each end closed by a
+mirrored pair of hemmed right-triangle halves sized to the pitch check —
+the ridgeline height down the middle, half the footprint along the ground,
+the panel end as the long edge — zipped up the middle (zipper = ridgeline
+height, on the BOM) and lapped over the panel end hems; door fabric added
+to the roll; errors when the eaves cannot reach the ground or the ends are
+cat-cut; not in the 3D check), a beak variant (still open),
 and moving the organizer and pleated-card hems onto the Hem primitive.
 
 **Single-panel 3D check — DONE 2026-11-16 (`fix/tarp-followups`).** The
@@ -463,7 +470,60 @@ mode (on the same chamber primitive), a neck drawcord/snap and pad straps,
 vertical side baffles, joining fabric widths for a wider quilt, synthetic
 batting instead of a fill weight.
 
-**Order for the rest of item 10:** 10b gathered-end hammock and 10c top quilt (done above), then 10d bivy or bug net (curved long zipper,
+#### 10d. Bathtub-floor bivy — DONE 2026-11-22 (`pattern/10-doors-bivy-apparel`, no 3D)
+Engine: `src/lib/pattern-engine/geometry/chordArc.ts` — the circular arc of
+a given length standing on a given chord (bisection on sin(θ/2)/(θ/2), up
+to a semicircle), with `chordArcPoints`. Tests: `chordArc.test.ts`.
+
+Generator: `src/generators/bivy/`, page `src/components/bivy/`, project
+schemaVersion 18, "Shelter and sleep". Four pieces: a one-piece bathtub
+floor (tub sides fold up, each corner square folds on its diagonal into an
+ear: no floor seam below the tub height), a top wider than the floor, and
+head and foot gussets cut to the arch the top makes over the floor (base =
+floor width, arc = top width); head gusset in no-see-um mesh (default) or
+the top fabric. A side zipper in the top-to-tub seam from the head, left or
+right. Convention B (cut size, explicit 0, sew lines drawn). Fabric-width
+errors on the floor and top, arch beyond a semicircle an error on
+`top_width`. Derived head height (tub + arch rise). Registered in every
+shared table.
+
+Placeholders (common starting points, `[mock-derived]`, editable, no vault
+source): floor length 84", floor width 26", tub height 5", top width 40",
+side zipper 48", usable fabric width 58", seam allowance 12.7 mm. With them:
+floor 95" × 37" cut, top 85" × 41", arch rise ≈ 12.6", head height ≈ 17.6".
+
+**No 3D tab:** the cloth engine has no lying body to hold the top up.
+Follow-ups: ~~a bug-net variant~~ (DONE 2026-11-22: `top_material: 'mesh'`
+puts the top and both gussets in no-see-um mesh over the same waterproof
+tub, with an info note), a J or
+curved zipper across the head, a hood/brim, stake loops at the tub corners.
+
+#### 10e. Gaiters (apparel beyond the skirt, first item) — DONE 2026-11-22 (no 3D)
+Engine: `src/lib/pattern-engine/geometry/frustum.ts` — the flat development
+of a tapered tube (annular sector; apex flips when the bottom is narrower;
+equal ends a near-rectangle). Tests: `frustum.test.ts`.
+
+Generator: `src/generators/gaiter/`, page `src/components/gaiter/`, project
+schemaVersion 19, "Apparel" category. One piece cut as a mirrored pair: calf
+circumference at the top, boot circumference at the bottom, height at the
+back, the bottom dropping at the front over the laces (a parabola, 0 at the
+back). Hook-and-loop overlap (default; overlap + hem on the overlap edge,
+hem on the underlap, loop and hook strips drawn) or a zipper (seam
+allowance on both front edges). Top elastic channel and bottom hem from the
+Hem primitive (rolled default). Instep strap anchors half-way round each
+side, a lace hook at the front. Hardware per pair on the BOM. Registered in
+every shared table.
+
+Placeholders (common starting points for a mid-height gaiter, flagged
+`[mock-derived]`, editable; not measurements): height 12", top 15", bottom
+17", front drop 1.5", overlap 1", hem 1/2", elastic channel 3/4", elastic
+90 % of the top, instep strap 9", fabric 58", zipper seam allowance 12.7 mm.
+
+**No 3D tab:** no leg or boot form in the cloth engine. Still open in 10e: a
+wind shirt, beanie or anything with sleeves, which needs a drafting engine
+(slopers, grading, armholes).
+
+**Order for the rest of item 10:** 10b gathered-end hammock and 10c top quilt (done above), then 10d bivy (done above; bug net a follow-up) (curved long zipper,
 mesh cut sheet), 10e apparel beyond the skirt (gaiters first; a garment
 drafting engine before anything with sleeves). Each builds the same way as
 the tarp, with placeholders flagged `mock-derived`, sewn fabrics only, until
@@ -659,6 +719,12 @@ which (the tri-zip `seam:` path convention is the seed).
   primitive and fill weight**: chamber walls at an even pitch, volume and
   fill per chamber (baffled box or sewn-through lens), fill in grams from
   fill power and overstuff. Needed by 10c and an underquilt.
+- DONE 2026-11-22 (`src/lib/pattern-engine/geometry/chordArc.ts`) — **Arc on a
+  chord**: a panel of one width sewn to a narrower base, as an arch (bivy
+  end gussets; any gusseted arch).
+- DONE 2026-11-22 (`src/lib/pattern-engine/geometry/frustum.ts`) — **Tapered
+  tube development**: a cone frustum laid flat (gaiters; cuffs, tapered
+  sacks).
 - **Layer budget per seam**: emit max stack per seam and a machine-class
   requirement; annotate "sew forward only" above ~8 layers.
   `reference/technique-sewing-through-bulk.md`, `rigs/splitfront-technique-layer-budgeting.md`.

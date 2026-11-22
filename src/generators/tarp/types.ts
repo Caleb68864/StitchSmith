@@ -25,6 +25,7 @@ import type { HemFold } from '../../lib/pattern-engine/primitives/hem.js';
 
 export type TarpConstruction = 'ridge_seam' | 'single_panel';
 export type TarpCutStyle = 'flat' | 'cat_cut';
+export type TarpDoors = 'none' | 'one_end' | 'both_ends';
 
 export interface TarpInputs {
   units?: 'mm' | 'in';
@@ -66,6 +67,8 @@ export interface TarpInputs {
   cut_ends?: boolean;
   /** Cat-cut depth of each end at mid-span (ridge to eave), display units. Placeholder 1" — mock-derived. */
   end_sag?: number;
+  /** Triangular door halves closing an end of the pitched A-frame, zipped up the middle. Default none. */
+  doors?: TarpDoors;
   /** A pull-out (lifter) loop at the middle of each panel face, to guy the panel out. Default false. */
   pullouts?: boolean;
   /** A guyline on every tie-out, on the BOM. Default true. */
@@ -108,6 +111,14 @@ export interface ResolvedInputs {
   loop_width: number;
   ridge_height: number;
   pullouts: boolean;
+  doors: TarpDoors;
+  /** Ends closed by doors: 0, 1 or 2. */
+  door_ends: number;
+  /** Door half, finished: the centre edge (ridge to ground = the ridgeline height) and the ground edge (half the footprint). */
+  door_height: number;
+  door_base: number;
+  /** Fabric added to the roll length for the doors. */
+  door_fabric_length: number;
   guylines: boolean;
   guyline_length: number;
   /** End cat-cut depth, 0 when the ends are straight. */

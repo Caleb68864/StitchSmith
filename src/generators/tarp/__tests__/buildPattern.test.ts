@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest';
-import { buildPattern, buildBom, validateInputs, resolveInputs, panelGeometry, catCutStations, PANEL_ID, PATCH_ID, LOOP_ID, PLACEHOLDERS } from '../index.js';
+import { buildPattern, buildBom, validateInputs, resolveInputs, panelGeometry, catCutStations, PANEL_ID, PATCH_ID, LOOP_ID, DOOR_ID, PLACEHOLDERS } from '../index.js';
 import type { TarpInputs } from '../types.js';
 import { makeDefaultTarpProject } from '../../../state/useTarpProject.js';
 import { GENERATORS } from '../../__tests__/generators.table.js';
@@ -212,7 +212,7 @@ describe('pattern — Convention B panel (single-fold hem, hand-checked numbers)
 describe('mock-derived placeholders', () => {
   it('every number the tarp takes is a listed placeholder', () => {
     const keys = GENERATORS.find((x) => x.name === 'tarp')!.keys;
-    const choices = ['units', 'construction', 'cut_style', 'hem_fold', 'production_mode', 'ridge_tieouts', 'guylines', 'line_locks', 'cut_ends', 'pullouts'];
+    const choices = ['units', 'construction', 'cut_style', 'hem_fold', 'production_mode', 'ridge_tieouts', 'guylines', 'line_locks', 'cut_ends', 'pullouts', 'doors'];
     expect(PLACEHOLDERS.map((p) => p.field).sort()).toEqual(keys.filter((k) => !choices.includes(k)).sort());
   });
 
@@ -399,5 +399,44 @@ describe('ridge pull-outs mid-panel (roadmap 10a follow-up)', () => {
   });
   it('no room for the patch is an error on pullouts', () => {
     expect(errorFields({ ...PO, patch_size: 22 })).toContain('pullouts');
+  });
+});
+
+describe('doors (roadmap 10a follow-up: doorway)', () => {
+  const D: TarpInputs = { ...DEF, doors: 'one_end' };
+  it('off by default; on, each half is the pitched end triangle: 42" down the middle, the 48" panel end, half the footprint along the ground', () => {
+    expect(built(DEF).pieces.some((p) => p.id === DOOR_ID)).toBe(false);
+    const v = built(D);
+    const r = v.resolved;
+    expect(r.door_height).toBeCloseTo(42 * IN, 6);
+    expect(r.door_base).toBeCloseTo(Math.sqrt(48 ** 2 - 42 ** 2) * IN, 6);
+    expect(2 * r.door_base).toBeCloseTo(r.footprint_width, 6);
+    const door = v.pieces.find((p) => p.id === DOOR_ID)!;
+    expect(door.mirror).toBe(true);
+    expect(door.quantity).toBe(1);
+    // Every finished edge is hemmed: three finished creases, and the cut outline is the triangle offset by the allowance.
+    const creases = door.paths.filter((p) => p.label?.includes('finished crease'));
+    expect(creases).toHaveLength(3);
+    const hyp = creases.find((p) => p.label!.startsWith('Door hem along the panel end'))!.edges[0];
+    expect(Math.hypot(hyp.end.x - hyp.start.x, hyp.end.y - hyp.start.y)).toBeCloseTo(48 * IN, 6);
+    const cut = door.paths.find((p) => p.id === `${DOOR_ID}-outline`)!.edges.map((e) => e.start);
+    const a = r.hem_allowance;
+    const xs = cut.map((p) => p.x), ys = cut.map((p) => p.y);
+    expect(Math.max(...ys) - Math.min(...ys)).toBeGreaterThan(42 * IN + 2 * a);
+    expect(Math.max(...xs) - Math.min(...xs)).toBeGreaterThan(r.door_base + a);
+    expect(Object.values(door.seamAllowances!).every((x) => x === 0)).toBe(true);
+  });
+  it('a zipper the ridgeline height per door end; the doors add fabric to the roll', () => {
+    const one = built(D), both = built({ ...DEF, doors: 'both_ends' });
+    expect(one.hardware.find((h) => h.id === 'door-zipper')!.quantity).toBe(1);
+    expect(both.hardware.find((h) => h.id === 'door-zipper')!.quantity).toBe(2);
+    expect(both.pieces.find((p) => p.id === DOOR_ID)!.quantity).toBe(2);
+    expect(one.resolved.fabric_length).toBeGreaterThan(resolveInputs(DEF).fabric_length);
+    expect(both.resolved.door_fabric_length).toBeCloseTo(2 * one.resolved.door_fabric_length, 6);
+    expect(one.steps.find((s) => s.id === 'tarp.doors')!.body).toMatch(/separating zipper/);
+  });
+  it('errors on doors: the eaves cannot reach the ground, or the ends are cat-cut', () => {
+    expect(errorFields({ ...D, ridge_height: 50 })).toEqual(['doors']);
+    expect(errorFields({ ...D, cut_ends: true })).toEqual(['doors']);
   });
 });

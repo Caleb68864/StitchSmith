@@ -1259,3 +1259,58 @@ baffle-chamber primitive and a fill-weight calculation.
 - Patch on the inside face, loop flat on the outside, box-X through all;
   the step says it lifts the panel and holds no structure. The 3D check
   does not pin pull-outs (they are guyed out, not fixed).
+
+
+## 2026-11-22 — Tarp doors (roadmap 10a follow-up: doorway)
+
+- Decided by agent 2026-11-22 (owner may revisit): a doorway is a pair of
+  zipped triangular door halves closing an end of the pitched A-frame
+  (`doors`: none by default, one end or both). A beak (a porch extension
+  past the end) is a different shape and stays open.
+- No new number: each half is the right triangle the pitch check leaves at
+  the end (hypotenuse = the panel end, width / 2; centre edge = the
+  ridgeline height; ground edge = half the footprint). So the doors fit
+  only that pitch, and the step says to recut them for another. All three
+  edges take the tarp's hem (Hem primitive); the long edge laps over the
+  panel's finished end hem and is topstitched. Zipper length = the
+  ridgeline height. Doors need straight ends and eaves that reach the
+  ground (errors on `doors` otherwise). The 3D check leaves them out.
+
+
+## 2026-11-22 — Bathtub-floor bivy (roadmap #10d)
+
+- Decided by agent 2026-11-22 (owner may revisit): 10d is the bivy first;
+  the bug net becomes a follow-up on the same floor.
+- Floor: one rectangle, length/width + 2 × tub height + allowance; the
+  corners are folded ears, not cut squares, so the waterproof floor has no
+  seam below the tub height (only the four ear seams, sealed).
+- Top: wider than the floor (`top_width`); its long edges sew to the tub's
+  long top edges; the difference arches over the sleeper. The head and foot
+  gussets are the circular arc of the top width standing on the floor width
+  (`geometry/chordArc.ts`), capped at a semicircle; their bases sew to the
+  tub ends. The arch is an approximation of the real shape; head height is
+  reported as the tub height plus its rise.
+- Zipper: one straight side zipper in the top-to-tub seam from the head
+  (no curved zipper yet). Head gusset mesh by default (info note: it lets
+  rain in; pitch under a tarp).
+- Placeholders, common starting points, flagged and editable, no vault
+  source: 84" × 26" floor, 5" tub, 40" top, 48" zipper, 58" fabric, 1/2" SA.
+- No 3D tab: no lying body form to hold the top up.
+
+
+## 2026-11-22 — Gaiters (roadmap #10e, first apparel item)
+
+- Decided by agent 2026-11-22 (owner may revisit): a mid-height hiking
+  gaiter, hook-and-loop front by default (zipper selectable), elastic top
+  channel, instep strap and lace hook.
+- The piece is the flat development of a cone frustum (calf circumference
+  at the top, boot circumference at the bottom, slant height at the back),
+  so both ends measure true when wrapped; a trapezoid would not. The
+  bottom drops at the front by a parabola in the angle (0 at the back).
+- Hook-and-loop: the overlap edge carries the overlap plus a hem, the
+  underlap a hem; zipper: seam allowance on both edges (the only place
+  `seam_allowance` is used; an info note when set on a hook-and-loop
+  gaiter).
+- Placeholders are common starting points for a mid-height gaiter, not
+  measurements; elastic 90 % of the top circumference is one of them.
+- No 3D: no leg or boot form.

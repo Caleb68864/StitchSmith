@@ -32,6 +32,7 @@ const GUARD_SPEC: GuardSpec = {
   line_locks: { kind: 'bool' },
   cut_ends: { kind: 'bool' },
   pullouts: { kind: 'bool' },
+  doors: { kind: 'enum', allowed: ['none', 'one_end', 'both_ends'] },
   end_sag: { kind: 'length' },
 };
 
@@ -77,6 +78,7 @@ export function resolveInputs(inputs: TarpInputs): ResolvedInputs {
   const ridge_height = d(inputs.ridge_height, RIDGE_HEIGHT_MM);
   const guylines = inputs.guylines !== false;
   const pullouts = inputs.pullouts === true;
+  const doors = inputs.doors === 'one_end' || inputs.doors === 'both_ends' ? inputs.doors : 'none';
   const guyline_length = d(inputs.guyline_length, GUYLINE_LENGTH_MM);
   const line_locks = inputs.line_locks !== false;
   const end_sag = catCut && inputs.cut_ends === true ? d(inputs.end_sag, END_SAG_MM) : 0;
@@ -89,6 +91,14 @@ export function resolveInputs(inputs: TarpInputs): ResolvedInputs {
   const panel_cut_width = construction === 'ridge_seam' ? seam_allowance + panel_finished_width + allow : panel_finished_width + 2 * allow;
   const half = width / 2;
   const reaches = half > ridge_height;
+  // A door half is the right triangle the pitched end leaves: the panel end (half the width) as hypotenuse,
+  // the ridgeline height down the middle, half the footprint along the ground. Every edge hemmed.
+  const door_ends = doors === 'both_ends' ? 2 : doors === 'one_end' ? 1 : 0;
+  const door_height = Math.max(0, ridge_height);
+  const door_base = reaches ? Math.sqrt(half * half - door_height * door_height) : 0;
+  const doorCut = door_ends > 0 && reaches ? doorCutBox(door_base, door_height, allow) : { w: 0, h: 0 };
+  // Two halves side by side across the roll when they fit, else one after the other.
+  const door_fabric_length = door_ends === 0 ? 0 : (2 * doorCut.w <= fabric_width ? 1 : 2) * door_ends * doorCut.h;
   return {
     units, construction, cut_style, ridge_length, width, ridge_sag, eave_sag, fabric_width, seam_allowance,
     hem_depth: hem.depth, hem_depth_requested: hemReq, hem_raised: hem.raised, hem_fold, production_mode,
@@ -102,7 +112,8 @@ export function resolveInputs(inputs: TarpInputs): ResolvedInputs {
     panel_mid_width,
     panel_cut_length,
     panel_cut_width,
-    fabric_length: panel_count * panel_cut_length,
+    fabric_length: panel_count * panel_cut_length + door_fabric_length,
+    doors, door_ends, door_height, door_base, door_fabric_length,
     ridge_curve_length: arcLength(ridge_length, ridge_sag),
     eave_curve_length: arcLength(ridge_length, eave_sag),
     tieout_count: 4 + 2 * Math.max(0, Math.round(eave_tieouts)) + (ridge_tieouts ? 2 : 0) + (pullouts ? 2 : 0),
@@ -110,6 +121,29 @@ export function resolveInputs(inputs: TarpInputs): ResolvedInputs {
     footprint_width: reaches ? 2 * Math.sqrt(half * half - Math.max(0, ridge_height) ** 2) : 0,
     eave_clearance: reaches ? 0 : ridge_height - half,
   };
+}
+
+/**
+ * A door half's finished right triangle (apex at the ridge, the centre edge
+ * down, the ground edge out) offset by the hem allowance on every edge: its
+ * cut corners and bounding box. One place, so the fabric total, the check
+ * and the drawn piece agree.
+ */
+export function doorCut(base: number, height: number, allow: number): { finished: { x: number; y: number }[]; cut: { x: number; y: number }[] } {
+  const finished = [{ x: 0, y: 0 }, { x: 0, y: height }, { x: base, y: height }];
+  const L = Math.hypot(base, height);
+  // Offset lines: centre x = -a, ground y = h + a, hypotenuse moved out along its normal (h, -b)/L.
+  const a = allow;
+  const hx = (y: number) => (base * y) / height + (a * L) / height; // hypotenuse offset: x = b·y/h + a·L/h
+  const apex = { x: -a, y: (height * (-a - (a * L) / height)) / base };
+  const cut = [apex, { x: -a, y: height + a }, { x: hx(height + a), y: height + a }];
+  return { finished, cut };
+}
+export function doorCutBox(base: number, height: number, allow: number): { w: number; h: number } {
+  if (!(base > 0 && height > 0)) return { w: 0, h: 0 };
+  const { cut } = doorCut(base, height, allow);
+  const xs = cut.map((p) => p.x), ys = cut.map((p) => p.y);
+  return { w: Math.max(...xs) - Math.min(...xs), h: Math.max(...ys) - Math.min(...ys) };
 }
 
 const inch = (mm: number) => `${(mm / IN).toFixed(2).replace(/\.?0+$/, '')}"`;
@@ -150,6 +184,11 @@ export function validateInputs(inputs: TarpInputs): ValidationResult {
     });
   }
   if (r.end_sag > MAX_SAG_RATIO * r.end_span) errors.push({ field: 'end_sag', message: `A ${inch(r.end_sag)} end cut on a ${inch(r.end_span)} end is deeper than a quarter of the span; that is no longer a cat cut.` });
+  if (r.door_ends > 0) {
+    if (r.footprint_width <= 0) errors.push({ field: 'doors', message: `Doors close a pitched end down to the ground, and a ${inch(r.ridge_height)} ridgeline is too high for the ${inch(r.width / 2)} panels to reach it. Lower the ridgeline or widen the tarp.` });
+    else if (r.end_sag > 0) errors.push({ field: 'doors', message: 'Doors are sewn along a straight end. Turn the end cat cut off, or the doors off.' });
+    else if (doorCutBox(r.door_base, r.door_height, r.hem_allowance).w > r.fabric_width) errors.push({ field: 'doors', message: `A door half needs ${inch(doorCutBox(r.door_base, r.door_height, r.hem_allowance).w)} of fabric across and the fabric is ${inch(r.fabric_width)}.` });
+  }
   const tieGap = r.ridge_length / (r.eave_tieouts + 1);
   if (r.patch_size > 0 && r.patch_size >= tieGap - 1e-6) errors.push({ field: 'patch_size', message: `${inch(r.patch_size)} patches overlap: the eave tie-outs are only ${inch(tieGap)} apart. Use smaller patches or fewer tie-outs.` });
   // A pull-out patch sits mid-panel: on a single panel each half (eave to ridge line) must hold it with room either side.

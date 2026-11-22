@@ -20,7 +20,7 @@ const FIELD_LABELS: Record<string, string> = {
   construction: 'Construction', cut_style: 'Edges', ridge_length: 'Ridge length', width: 'Width', ridge_sag: 'Ridge cat-cut depth', eave_sag: 'Eave cat-cut depth',
   fabric_width: 'Fabric width', seam_allowance: 'Ridge seam allowance', hem_depth: 'Hem depth', hem_fold: 'Hem', eave_tieouts: 'Tie-outs per eave',
   patch_size: 'Patch size', loop_length: 'Loop length', loop_width: 'Grosgrain width', ridge_height: 'Ridgeline height',
-  guyline_length: 'Cord per guyline', end_sag: 'End cat-cut depth', pullouts: 'Pull-outs',
+  guyline_length: 'Cord per guyline', end_sag: 'End cat-cut depth', pullouts: 'Pull-outs', doors: 'Doors',
 };
 const IN = 25.4;
 const inch = (mm: number) => (mm / IN).toFixed(2).replace(/\.?0+$/, '');

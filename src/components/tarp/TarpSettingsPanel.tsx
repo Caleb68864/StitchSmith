@@ -1,5 +1,5 @@
 import { NumericField, SelectField, Toggle, UnitToggle, CollapsibleSection, VaultOpenNote } from '../shared/fields/index.js';
-import type { TarpInputs, TarpConstruction, TarpCutStyle } from '../../generators/tarp/types.js';
+import type { TarpInputs, TarpConstruction, TarpCutStyle, TarpDoors } from '../../generators/tarp/types.js';
 import type { HemFold } from '../../lib/pattern-engine/primitives/hem.js';
 import {
   RIDGE_LENGTH_MM, WIDTH_MM, RIDGE_SAG_MM, EAVE_SAG_MM, FABRIC_WIDTH_MM, SEAM_ALLOWANCE_MM, HEM_DEPTH_MM, EAVE_TIEOUTS,
@@ -89,6 +89,13 @@ export function TarpSettingsPanel({ inputs, errors, onChange }: Props) {
           </div>
         )}
         {(inputs.guylines ?? true) && <Toggle label="Line-lock on each guyline" value={inputs.line_locks ?? true} onChange={(v) => onChange({ line_locks: v })} />}
+      </CollapsibleSection>
+
+      <CollapsibleSection title="Doors" defaultOpen={false}>
+        <SelectField<TarpDoors> id="doors" label="Doors" value={inputs.doors ?? 'none'} error={errors['doors']}
+          options={[{ value: 'none', label: 'None (open ends)' }, { value: 'one_end', label: 'One end' }, { value: 'both_ends', label: 'Both ends' }]}
+          help="Two zipped triangular halves close a pitched end; they are sized to the ridgeline height in the pitch check."
+          onChange={(v) => onChange({ doors: v })} />
       </CollapsibleSection>
 
       <CollapsibleSection title="Pitch check" defaultOpen>
