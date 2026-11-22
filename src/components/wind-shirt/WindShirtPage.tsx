@@ -1,6 +1,8 @@
 import { useMemo } from 'react';
 import type { UseWindShirtProjectReturn } from '../../state/useWindShirtProject.js';
-import { validateInputs, buildPattern } from '../../generators/wind-shirt/index.js';
+import { validateInputs, buildPattern, windShirtAssembly } from '../../generators/wind-shirt/index.js';
+import { FoldPreview3D } from '../shared/FoldPreview3D.js';
+import type { Pattern } from '../../lib/pattern-engine/graph/Pattern.js';
 import { WindShirtSettingsPanel } from './WindShirtSettingsPanel.js';
 import { PatternPreview } from './PatternPreview.js';
 import { ExportPanel } from './ExportPanel.js';
@@ -26,6 +28,9 @@ export function WindShirtPage({ project, updateInputs, resetProject, importProje
   const hasErrors = !validation.ok;
   const built = useMemo(() => { if (hasErrors) return null; try { const r = buildPattern(project.inputs); return r.ok ? r.value : null; } catch { return null; } }, [project.inputs, hasErrors]);
   const steps = built?.steps ?? [];
+  // 3D: the body on a torso of the measurements, arms out, shoulder and side seams closed (sleeves not yet).
+  const assembly = useMemo(() => { if (!built) return null; try { return windShirtAssembly(built.pieces, built.resolved); } catch { return null; } }, [built]);
+  const pattern3d = useMemo<Pattern | null>(() => (assembly ? { id: 'wind-shirt', name: 'Wind Shirt', pieces: assembly.pieces } : null), [assembly]);
   const warnings = useMemo<UiWarning[]>(() => (built?.warnings ?? []).map((w) => ({ id: w.id, severity: w.severity, message: w.message, field: w.field })), [built]);
   function handleReset() { if (window.confirm('Reset will discard all changes and restore default Wind Shirt settings. Continue?')) resetProject(); }
   function handleImport(jsonText: string) { importProject(parseProjectJson<typeof project>(jsonText, 'wind-shirt')); }
@@ -45,8 +50,8 @@ export function WindShirtPage({ project, updateInputs, resetProject, importProje
       preview={
         <PreviewTabs
           pattern={<PatternPreview inputs={project.inputs} hasErrors={hasErrors} />}
-          assembly={null}
-          unavailableReason="No 3D check yet for the shirt."
+          assembly={pattern3d && assembly ? <FoldPreview3D pattern={pattern3d} placements={assembly.placements} seams={assembly.seams} solids={assembly.solids} gravity={assembly.gravity} initialSimulate height={560} /> : null}
+          unavailableReason="The 3D check needs the body pieces to build; fix the errors first."
         />
       }
       sidebar={

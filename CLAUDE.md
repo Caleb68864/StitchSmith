@@ -186,7 +186,9 @@ numbers. Rules already encoded, with the note that justifies each:
   `pattern-engine/drafting/` (measurements → bodice → sleeve); never draw a
   garment outline by hand. Measurements are inputs; the default project
   drafts from a flagged example body, never a size chart. Every seam pair is
-  tested to match (`wind-shirt/__tests__`).
+  tested to match (`wind-shirt/__tests__`). The 3D check hangs the body on a
+  torso of the measurements with `armForms` held out 45°; sleeves are not
+  assembled yet.
 - Straps that must run beside the neck on the torso form kick out from
   their panel landing to the shoulder line (`overShoulder(..., xStart)` in
   the LBV assembly); a strap drawn long in x drapes with `along: 'x'`.

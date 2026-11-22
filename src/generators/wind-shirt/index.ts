@@ -6,3 +6,5 @@ export type { ShirtDraft, Outline, Tag } from './draft.js';
 export { validateInputs, resolveInputs, toMm } from './inputs.js';
 export { buildBom } from './bom.js';
 export * from './defaults.js';
+export { windShirtAssembly, torsoFromMeasurements } from './assembly3d.js';
+export type { WindShirtAssembly } from './assembly3d.js';

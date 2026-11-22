@@ -581,8 +581,16 @@ garment depends on a later step:
    1 mm), underarm seams, neckline to binding — in three variants;
    measurements empty by default and drafted from a flagged example body), (pullover, set-in sleeve, hood
    optional later), Convention A. Tests: every seam pair matches in length.
-5. **3D**: the torso form exists; sleeves need an arm form (a capsule per
-   arm) before the shirt gets an assembly.
+5. DONE 2026-11-22 (body; sleeves open) — **3D**: `armForms` in
+   `cloth-engine/body.ts` (a capsule per arm from the shoulder, angled out);
+   `wind-shirt/assembly3d.ts` hangs the back and front on a torso built from
+   the measurements (chest girth as a 1.4:1 ellipse, nape to waist,
+   shoulder width, neck), arms held out 45° so the side seams pass under
+   them, shoulder and side seams closed. Tests: `assembly3d.test.ts`, an
+   assembly-sweep case (p99 stretch ~6 %), an e2e target. **Still open:**
+   the sleeves in 3D — a tube placement along a sloping axis (the `cone`
+   placement only hangs straight down) so a sleeve can wrap its arm and seam
+   into the armhole.
 
 **Beanie — DONE 2026-11-22 (before the engine, no 3D).** Engine:
 `src/lib/pattern-engine/geometry/gore.ts` — gores of a half-ellipsoid dome

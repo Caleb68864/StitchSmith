@@ -27,6 +27,7 @@ import { makeDefaultPlateCarrierProject } from '../../state/usePlateCarrierProje
 import { makeDefaultLbvProject } from '../../state/useLbvProject.js';
 import { makeDefaultTarpProject } from '../../state/useTarpProject.js';
 import { makeDefaultGaiterProject } from '../../state/useGaiterProject.js';
+import { makeDefaultWindShirtProject } from '../../state/useWindShirtProject.js';
 
 import { buildPattern as buildTriZip, getPreset, resolveInputs as resolveTriZip } from '../tri-zip-backpack/index.js';
 import { triZipAssembly } from '../tri-zip-backpack/assembly3d.js';
@@ -45,6 +46,7 @@ import { buildPattern as buildPlate, plateCarrierAssembly } from '../plate-carri
 import { buildPattern as buildLbv, lbvAssembly } from '../lbv/index.js';
 import { buildPattern as buildTarp, tarpAssembly } from '../tarp/index.js';
 import { buildPattern as buildGaiter, gaiterAssembly } from '../gaiter/index.js';
+import { buildPattern as buildShirt, windShirtAssembly } from '../wind-shirt/index.js';
 
 interface Asm {
   pieces: Piece[];
@@ -113,6 +115,7 @@ const CASES: Case[] = [
   // A 10' tarp: a coarse mesh keeps the case inside the suite's time budget (the viewer picks its own).
   { name: 'tarp (ridge seam, cat cut)', spacing: 60, maxStretch: 0.02, maxSeamMean: 3, build: () => { const v = ok(buildTarp(makeDefaultTarpProject().inputs)); return tarpAssembly(v.pieces, v.resolved); } },
   { name: 'gaiters (hook-and-loop, on a leg)', spacing: 10, maxStretch: 0.05, maxSeamMean: 3, build: () => { const v = ok(buildGaiter(makeDefaultGaiterProject().inputs)); return gaiterAssembly(v.pieces, v.resolved); } },
+  { name: 'wind shirt (body on a torso, arms out)', spacing: 14, maxStretch: 0.07, maxSeamMean: 3, build: () => { const v = ok(buildShirt(makeDefaultWindShirtProject().inputs)); return windShirtAssembly(v.pieces, v.resolved); } },
   { name: 'tarp (single panel over the ridgeline)', spacing: 60, maxStretch: 0.01, maxSeamMean: 3, build: () => { const v = ok(buildTarp({ ...makeDefaultTarpProject().inputs, construction: 'single_panel', width: 56, ridge_height: 24 })); return tarpAssembly(v.pieces, v.resolved); } },
 ];
 
