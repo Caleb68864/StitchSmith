@@ -20,6 +20,7 @@ export function ExportPanel({ inputs, project, hasErrors, showLabels }: Props) {
     generatorId: 'tri-zip-backpack',
     projectName: project.projectName,
     hasErrors,
+    groupByAssembly: true,
     defaultSeamAllowance: inputs.seam_allowance ?? 10,
     buildPattern: () => { const r = build(); return r ? { ...r, name: project.projectName } : null; },
     steps: () => build()?.steps ?? null,

@@ -863,7 +863,11 @@ which (the tri-zip `seam:` path convention is the seed).
   a piece may name its sub-assembly; the export panel offers "Cut sheets by
   assembly" (one printable sheet per kit, untagged pieces under Other) when
   the adapter sets `groupByAssembly`. The plate carrier tags Front, Back,
-  Shoulders and Cummerbund; other generators can opt in. The material ×
+  Shoulders and Cummerbund; since 2026-11-22 also the Tri-Zip, clamshell,
+  LBV, micro rig, quilt and wind shirt (`assignAssemblies` rules by piece id;
+  `generators/__tests__/assemblies.test.ts` checks every piece is tagged and
+  at most a quarter fall to Other). The rest are one- or two-piece patterns
+  where one sheet is the kit. The material ×
   width × length summary on SOE's drawer lengths was already in the cut
   list (2026-09-12). `reference/soe-production-principles.md`.
 - DONE 2026-11-22 (`exports/cutList.ts`, `shrinkageFor`) — **Stitch-shrinkage compensation**:

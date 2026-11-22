@@ -4,6 +4,7 @@
  * fold regions on the piece (fold-role lines, `(180°)`), so a hemmed edge
  * carries 0 allowance and the sewn edges carry `seam_allowance`.
  */
+import { assignAssemblies } from '../../lib/pattern-engine/graph/Piece.js';
 import type { Piece, PieceAnnotation } from '../../lib/pattern-engine/graph/Piece.js';
 import type { Path } from '../../lib/pattern-engine/graph/Path.js';
 import type { Edge, EdgeId } from '../../lib/pattern-engine/graph/Edge.js';
@@ -277,5 +278,6 @@ export function buildPattern(inputs: ClamshellPackInputs): Result<ClamshellPackB
   if (r.compression_straps_per_side > 0) hardware.push({ id: 'sr-buckle', name: '1" side-release buckle', quantity: 2 * r.compression_straps_per_side, notes: 'male on the bag tab' }, { id: 'triglide-25', name: '1" tri-glide', quantity: 2 * r.compression_straps_per_side });
   if (r.strap_provision !== 'none') hardware.push({ id: 'sr-buckle-50', name: '2" side-release buckle', quantity: 4, notes: 'male on the tabs' }, { id: 'triglide-50', name: '2" tri-glide', quantity: 4 }, { id: 'sternum', name: 'Sternum strap', quantity: 1, notes: `18" or 24"` });
   if (r.bottom_grommets > 0) hardware.push({ id: 'grommet', name: '#0–#2 grommet', quantity: r.bottom_grommets, notes: 'Set while flat; pre-burn the hole' });
+  assignAssemblies(pieces, [[/^clamshell-(face|back|gusset|lid-strip|bottom)$/, 'Shell and frame'], [/pals-row/, 'PALS'], [/handle|compression|strap-tab|stow/, 'Straps and handle'], [/loop-strip|grommet|port/, 'Interior and ports']]);
   return { ok: true, value: { pieces, steps: buildSteps(r), warnings: buildWarnings(r, pals), hardware, resolved: r } };
 }

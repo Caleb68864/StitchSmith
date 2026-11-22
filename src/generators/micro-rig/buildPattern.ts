@@ -7,6 +7,7 @@
  * `back` is dropped — the rig's front panel IS the card's back. Webbing,
  * Velcro and elastic are cut to net with explicit 0.
  */
+import { assignAssemblies } from '../../lib/pattern-engine/graph/Piece.js';
 import type { Piece } from '../../lib/pattern-engine/graph/Piece.js';
 import type { Path } from '../../lib/pattern-engine/graph/Path.js';
 import type { Edge, EdgeId } from '../../lib/pattern-engine/graph/Edge.js';
@@ -389,6 +390,7 @@ export function buildPattern(inputs: MicroRigInputs): Result<MicroRigBuildResult
   const r = resolveInputs(inputs);
   const face = buildFacePieces(r);
   const pieces: Piece[] = [buildPanelFront(r), buildPanelBack(r), ...face.pieces, ...buildStackedPieces(r), ...buildUtilityPocket(r), ...buildStrips(r)];
+  assignAssemblies(pieces, [[/^panel-|^face$|stack-/, 'Panel and cells'], [/^utility-|closure-|interior-loop|pull-tab/, 'Utility pocket'], [/shoulder|waist|placard/, 'Suspension'], [/pals|elastic|dangler/, 'Exterior']]);
   return {
     ok: true,
     value: { pieces, steps: buildSteps(r), warnings: buildWarnings(inputs, r, face.warnings), hardware: buildHardware(r), resolved: r },

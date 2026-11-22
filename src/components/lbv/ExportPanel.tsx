@@ -16,6 +16,7 @@ export function ExportPanel({ inputs, project, hasErrors }: Props) {
     generatorId: 'lbv',
     projectName: project.projectName,
     hasErrors,
+    groupByAssembly: true,
     defaultSeamAllowance: 0,
     buildPattern: () => { const r = build(); return r ? { id: 'lbv', name: project.projectName, pieces: r.pieces } : null; },
     steps: () => build()?.steps ?? null,
