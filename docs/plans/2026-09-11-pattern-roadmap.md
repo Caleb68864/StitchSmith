@@ -511,6 +511,14 @@ side zipper 48", usable fabric width 58", seam allowance 12.7 mm. With them:
 floor 95" × 37" cut, top 85" × 41", arch rise ≈ 12.6", head height ≈ 17.6".
 
 **No 3D tab:** the cloth engine has no lying body to hold the top up.
+**3D — assessed 2026-11-22, not built:** feasible but not done. Plan: a 3D
+copy of the floor cut as a cross (corner squares out, as the folded-T was
+notched) with each ear's two edges seamed, the tub walls hinged 90°; a
+sleeper block on the floor; the top above it, its long edges seamed to the
+wall tops; the gussets draped in the end planes (flat x along the end
+edge), their arcs seamed to the top's short edges in segments of equal
+length. Expect a large mesh (floor and top are each ~2.2 m long), so it
+runs coarsened in the viewer.
 Follow-ups: ~~a bug-net variant~~ (DONE 2026-11-22: `top_material: 'mesh'`
 puts the top and both gussets in no-see-um mesh over the same waterproof
 tub, with an info note), ~~a J zipper~~ (DONE 2026-11-22: `zip_style: 'j'`
