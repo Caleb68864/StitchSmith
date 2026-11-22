@@ -4,3 +4,5 @@ export type { Result } from './buildPattern.js';
 export { validateInputs, resolveInputs, toMm, gussetCut } from './inputs.js';
 export { buildBom } from './bom.js';
 export * from './defaults.js';
+export { bivyAssembly, FLOOR_3D_ID } from './assembly3d.js';
+export type { BivyAssembly } from './assembly3d.js';

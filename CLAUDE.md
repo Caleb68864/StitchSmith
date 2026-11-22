@@ -172,7 +172,9 @@ numbers. Rules already encoded, with the note that justifies each:
   bathtub floor is one piece with folded corner ears (never a seam below
   the tub height); the end gussets are the arch from `geometry/chordArc.ts`
   (base = floor width, arc = top width), so their seams match by
-  construction. No 3D.
+  construction. The 3D check cuts the floor's 3D copy as a cross with
+  seamed corners (a corner square cannot hinge two ways), a sleeper block
+  inside; side-zip bivy only.
 - Gaiters (roadmap 10e, `src/generators/gaiter/`): no vault numbers;
   placeholders are common starting points, flagged. The piece is the
   frustum development from `geometry/frustum.ts` (never a trapezoid: a

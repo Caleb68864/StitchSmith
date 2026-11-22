@@ -511,14 +511,15 @@ side zipper 48", usable fabric width 58", seam allowance 12.7 mm. With them:
 floor 95" × 37" cut, top 85" × 41", arch rise ≈ 12.6", head height ≈ 17.6".
 
 **No 3D tab:** the cloth engine has no lying body to hold the top up.
-**3D — assessed 2026-11-22, not built:** feasible but not done. Plan: a 3D
-copy of the floor cut as a cross (corner squares out, as the folded-T was
-notched) with each ear's two edges seamed, the tub walls hinged 90°; a
-sleeper block on the floor; the top above it, its long edges seamed to the
-wall tops; the gussets draped in the end planes (flat x along the end
-edge), their arcs seamed to the top's short edges in segments of equal
-length. Expect a large mesh (floor and top are each ~2.2 m long), so it
-runs coarsened in the viewer.
+**3D — DONE 2026-11-22** (`bivy/assembly3d.ts`): the floor's 3D copy is cut
+as a cross (corner squares out, each corner's two edges seamed: the same tub
+as the folded ears), held flat on the ground; a sleeper block inside; the
+top placed over the rim, its long edges seamed to the side rims; the head
+and foot gussets draped in the end planes, bases seamed to the end rims and
+arches to the top's short edges. Seams close to < 1 mm, p99 stretch ~3 %.
+The side-zip bivy only (a J-zip top is two pieces; not assembled yet).
+Tests: `bivy/__tests__/assembly3d.test.ts`, an assembly-sweep case, an e2e
+target.
 Follow-ups: ~~a bug-net variant~~ (DONE 2026-11-22: `top_material: 'mesh'`
 puts the top and both gussets in no-see-um mesh over the same waterproof
 tub, with an info note), ~~a J zipper~~ (DONE 2026-11-22: `zip_style: 'j'`
