@@ -1,10 +1,11 @@
 import type { QuiltInputs, ResolvedInputs, ValidationResult, BuildPatternError } from './types.js';
 import {
   DEFAULT_UNITS, LENGTH_MM, SHOULDER_WIDTH_MM, FOOT_WIDTH_MM, FOOTBOX_LENGTH_MM, FABRIC_WIDTH_MM, LOFT_MM,
-  BAFFLE_SPACING_MM, SHELL_DIFFERENTIAL_PCT, FILL_POWER, OVERSTUFF_PCT, SEAM_ALLOWANCE_MM,
+  BAFFLE_SPACING_MM, SHELL_DIFFERENTIAL_PCT, FILL_POWER, OVERSTUFF_PCT, SEAM_ALLOWANCE_MM, END_CHANNEL_MM,
 } from './defaults.js';
 import { sweepInputs, stripNulls, unitsOf, type GuardSpec } from '../../utils/inputGuards.js';
 import { layoutChambers } from '../../lib/pattern-engine/primitives/chambers.js';
+import { resolveHem } from '../../lib/pattern-engine/primitives/hem.js';
 import { panelOutline } from './geometry.js';
 
 /** Type/range guard run before the generator's own rules (hardening pass H1). */
@@ -12,6 +13,8 @@ const GUARD_SPEC: GuardSpec = {
   units: { kind: 'enum', allowed: ['mm', 'in'] },
   construction: { kind: 'enum', allowed: ['baffled', 'sewn_through'] },
   footbox: { kind: 'enum', allowed: ['sewn', 'zip'] },
+  kind: { kind: 'enum', allowed: ['top_quilt', 'underquilt'] },
+  end_channel: { kind: 'length' },
   length: { kind: 'length' },
   shoulder_width: { kind: 'length' },
   foot_width: { kind: 'length' },
@@ -41,7 +44,14 @@ export function resolveInputs(inputs: QuiltInputs): ResolvedInputs {
   const footbox = inputs.footbox === 'zip' ? 'zip' : 'sewn';
   const length = d(inputs.length, LENGTH_MM);
   const shoulder_width = d(inputs.shoulder_width, SHOULDER_WIDTH_MM);
-  const foot_width = d(inputs.foot_width, FOOT_WIDTH_MM);
+  const kind = inputs.kind === 'underquilt' ? 'underquilt' : 'top_quilt';
+  const uq = kind === 'underquilt';
+  // An underquilt is a rectangle: the foot width follows the shoulder width.
+  const foot_width = uq ? shoulder_width : d(inputs.foot_width, FOOT_WIDTH_MM);
+  // Underquilt ends: a rolled channel for the shock cord (Hem primitive at the channel depth), both layers together.
+  const chanR = uq ? resolveHem({ depth: Math.max(0, d(inputs.end_channel, END_CHANNEL_MM)), fold: 'double' }) : null;
+  const end_channel = chanR && chanR.ok ? chanR.value.depth : 0;
+  const end_allowance = chanR && chanR.ok ? chanR.value.allowance : NaN;
   const footbox_length = d(inputs.footbox_length, FOOTBOX_LENGTH_MM);
   const fabric_width = d(inputs.fabric_width, FABRIC_WIDTH_MM);
   const loft = d(inputs.loft, LOFT_MM);
@@ -51,26 +61,34 @@ export function resolveInputs(inputs: QuiltInputs): ResolvedInputs {
   const fill_power = fin(inputs.fill_power) ? inputs.fill_power : FILL_POWER;
   const overstuff = fin(inputs.overstuff) ? inputs.overstuff : OVERSTUFF_PCT;
   const seam_allowance = fin(inputs.seam_allowance) ? inputs.seam_allowance : SEAM_ALLOWANCE_MM;
-  const sane = length > 0 && shoulder_width > 0 && foot_width > 0 && seam_allowance >= 0;
+  const endA = uq ? end_allowance : seam_allowance;
+  const sane = length > 0 && shoulder_width > 0 && foot_width > 0 && seam_allowance >= 0 && Number.isFinite(endA) && 2 * end_channel < length;
+  // An underquilt's end channels close its first and last chambers: the chambers fill the length between them.
+  const c = end_channel;
   const chambersR = sane
     ? layoutChambers({
-      length, spacing: baffle_spacing, loft, style: construction,
-      // Fill the liner's width: the shell's differential bows over it, it does not add floor area.
-      widthAt: (y) => shoulder_width + ((foot_width - shoulder_width) * y) / length,
+      length: length - 2 * c, spacing: baffle_spacing, loft, style: construction,
+      // Fill the narrower layer's width: the differential bows the other over it, it does not add floor area.
+      widthAt: (y) => shoulder_width + ((foot_width - shoulder_width) * (y + c)) / length,
       fillPower: fill_power, overstuffPct: overstuff,
     })
     : null;
-  const chambers = chambersR && chambersR.ok ? chambersR.value : null;
+  const raw = chambersR && chambersR.ok ? chambersR.value : null;
+  const chambers = raw && c > 0
+    ? { ...raw, wallY: raw.wallY.map((y) => y + c), chambers: raw.chambers.map((ch) => ({ ...ch, y0: ch.y0 + c, y1: ch.y1 + c })) }
+    : raw;
   const f = 1 + shell_differential / 100;
-  const liner = sane ? panelOutline(length, shoulder_width, foot_width, seam_allowance) : null;
-  const shell = sane ? panelOutline(length, shoulder_width * f, foot_width * f, seam_allowance) : null;
-  const cut_length = length + 2 * seam_allowance;
+  const wider_layer = uq ? 'liner' : 'shell';
+  const fs = wider_layer === 'shell' ? f : 1, fl = wider_layer === 'liner' ? f : 1;
+  const liner = sane ? panelOutline(length, shoulder_width * fl, foot_width * fl, seam_allowance, endA) : null;
+  const shell = sane ? panelOutline(length, shoulder_width * fs, foot_width * fs, seam_allowance, endA) : null;
+  const cut_length = length + 2 * endA;
   return {
-    units, construction, footbox, length, shoulder_width, foot_width, footbox_length, fabric_width,
+    units, kind, construction, footbox, end_channel, end_allowance: endA, wider_layer, length, shoulder_width, foot_width, footbox_length, fabric_width,
     loft, baffle_spacing, shell_differential, fill_power, overstuff, seam_allowance,
     chambers,
     total_fill_g: chambers ? chambers.totalFillG : NaN,
-    zipper_length: footbox === 'zip' ? footbox_length + foot_width / 2 : 0,
+    zipper_length: !uq && footbox === 'zip' ? footbox_length + foot_width / 2 : 0,
     liner_cut_width: liner ? liner.cutWidth : NaN,
     shell_cut_width: shell ? shell.cutWidth : NaN,
     cut_length,
@@ -97,11 +115,13 @@ export function validateInputs(inputs: QuiltInputs): ValidationResult {
   pos('fill_power', 'Fill power');
   if (errors.length) return { ok: false, errors };
   if (!r.chambers) return { ok: false, errors: [{ field: 'baffle_spacing', message: `Chamber spacing ${inch(r.baffle_spacing)} gives too many chambers along the ${inch(r.length)} quilt.` }] };
-  if (r.footbox_length >= r.length) errors.push({ field: 'footbox_length', message: `A ${inch(r.footbox_length)} footbox is as long as the ${inch(r.length)} quilt.` });
+  if (r.kind === 'underquilt' && !(r.end_channel > 0)) return { ok: false, errors: [{ field: 'end_channel', message: 'End channel must be a positive number: the suspension cord runs through it.' }] };
+  if (r.kind === 'underquilt' && 2 * r.end_channel >= r.length) return { ok: false, errors: [{ field: 'end_channel', message: 'The two end channels take up the whole length.' }] };
+  if (r.kind === 'top_quilt' && r.footbox_length >= r.length) errors.push({ field: 'footbox_length', message: `A ${inch(r.footbox_length)} footbox is as long as the ${inch(r.length)} quilt.` });
   if (r.baffle_spacing > r.length) errors.push({ field: 'baffle_spacing', message: `Chamber spacing ${inch(r.baffle_spacing)} is longer than the ${inch(r.length)} quilt.` });
   const widest = Math.max(r.shell_cut_width, r.liner_cut_width);
   if (widest > r.fabric_width + 1e-6) {
-    const which = r.shell_cut_width >= r.liner_cut_width && r.shell_differential > 0 ? `the shell needs ${inch(r.shell_cut_width)} across (the ${r.shell_differential} % differential and the seam allowance included)` : `each panel needs ${inch(widest)} across (the seam allowance included)`;
+    const which = r.shell_differential > 0 ? `the ${r.wider_layer} needs ${inch(widest)} across (the ${r.shell_differential} % differential and the seam allowance included)` : `each panel needs ${inch(widest)} across (the seam allowance included)`;
     errors.push({ field: 'shoulder_width', message: `At the shoulders ${which} and the fabric is ${inch(r.fabric_width)}. Narrow the quilt, lower the differential or use wider fabric.` });
   }
   return errors.length ? { ok: false, errors } : { ok: true };

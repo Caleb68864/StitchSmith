@@ -19,7 +19,7 @@ import type { Step } from '../../lib/pattern-engine/instructions/Step.js';
 import { catenary } from '../../lib/pattern-engine/geometry/catenary.js';
 import { resolveHem, hemLines, type Hem } from '../../lib/pattern-engine/primitives/hem.js';
 import type { TarpInputs, TarpBuildResult, ResolvedInputs, GeneratorWarning, BuildPatternError, HardwareItem, TieOut } from './types.js';
-import { resolveInputs, validateInputs, doorCut } from './inputs.js';
+import { resolveInputs, validateInputs, doorCut, beakCut } from './inputs.js';
 import { PLACEHOLDERS } from './defaults.js';
 
 export type Result<T> = { ok: true; value: T } | { ok: false; errors: BuildPatternError[] };
@@ -92,12 +92,14 @@ export function panelGeometry(r: ResolvedInputs): PanelGeometry {
   const L = r.ridge_length;
   const H = r.panel_finished_width;
   // Finished-span coordinate, mirrored about each end crease inside the end hem.
-  const u = (x: number) => { let t = x - e; if (t < 0) t = -t; if (t > L) t = 2 * L - t; return Math.min(L, Math.max(0, t)); };
+  // End allowances: the hem's, or the seam allowance at an end with a beak sewn on.
+  const [ea, eb] = r.end_allowance;
+  const u = (x: number) => { let t = x - ea; if (t < 0) t = -t; if (t > L) t = 2 * L - t; return Math.min(L, Math.max(0, t)); };
   const d = depths(r);
   const xs: number[] = [];
-  if (e > 0) xs.push(0);
-  for (let i = 0; i <= CURVE_SEGMENTS; i++) xs.push(e + (L * i) / CURVE_SEGMENTS);
-  if (e > 0) xs.push(L + 2 * e);
+  if (ea > 0) xs.push(0);
+  for (let i = 0; i <= CURVE_SEGMENTS; i++) xs.push(ea + (L * i) / CURVE_SEGMENTS);
+  if (eb > 0) xs.push(L + ea + eb);
   const endC = catenary(r.end_span, r.end_sag);
   const endDepth = r.end_sag > 0 && endC.ok ? endC.value.depth : () => 0;
   const S = r.end_span;
@@ -113,23 +115,23 @@ export function panelGeometry(r: ResolvedInputs): PanelGeometry {
   if (r.construction === 'ridge_seam') {
     const s = r.seam_allowance;
     return {
-      hem, endX: [e, e + L], xs, endIn: spanIn(s, 1), endSpans: r.end_sag > 0 ? { y0: s, n: 1, span: S } : null,
+      hem, endX: [ea, ea + L], xs, endIn: spanIn(s, 1), endSpans: r.end_sag > 0 ? { y0: s, n: 1, span: S } : null,
       top: (x) => s + d.ridge(u(x)),
       topCut: (x) => d.ridge(u(x)),
       bottom: (x) => s + H - d.eave(u(x)),
       bottomCut: (x) => s + H - d.eave(u(x)) + e,
-      cutLength: L + 2 * e,
+      cutLength: L + ea + eb,
       cutWidth: s + H + e,
     };
   }
   return {
-    hem, endX: [e, e + L], xs, endIn: spanIn(e, 2), endSpans: r.end_sag > 0 ? { y0: e, n: 2, span: S } : null,
+    hem, endX: [ea, ea + L], xs, endIn: spanIn(e, 2), endSpans: r.end_sag > 0 ? { y0: e, n: 2, span: S } : null,
     top: (x) => e + d.eave(u(x)),
     topCut: (x) => d.eave(u(x)),
     bottom: (x) => e + H - d.eave(u(x)),
     bottomCut: (x) => e + H - d.eave(u(x)) + e,
     ridgeY: e + H / 2,
-    cutLength: L + 2 * e,
+    cutLength: L + ea + eb,
     cutWidth: H + 2 * e,
   };
 }
@@ -163,12 +165,12 @@ export function tieOuts(r: ResolvedInputs, g: PanelGeometry): TieOut[] {
     if (r.construction === 'ridge_seam') {
       // The patch straddles the felled seam: half of it on each panel.
       const y = g.top(xa);
-      out.push({ id: 'ridge-0', kind: 'ridge', at: { x: xa, y }, patch: { x0: xa, x1: xa + p, y0: y, y1: y + p / 2 } });
-      out.push({ id: 'ridge-1', kind: 'ridge', at: { x: xb, y }, patch: { x0: xb - p, x1: xb, y0: y, y1: y + p / 2 } });
+      out.push({ id: 'ridge-0', kind: 'ridge', onBeak: r.beak_ends[0] || undefined, at: { x: xa, y }, patch: { x0: xa, x1: xa + p, y0: y, y1: y + p / 2 } });
+      out.push({ id: 'ridge-1', kind: 'ridge', onBeak: r.beak_ends[1] || undefined, at: { x: xb, y }, patch: { x0: xb - p, x1: xb, y0: y, y1: y + p / 2 } });
     } else {
       const y = g.ridgeY!;
-      out.push({ id: 'ridge-0', kind: 'ridge', at: { x: xa, y }, patch: { x0: xa, x1: xa + p, y0: y - p / 2, y1: y + p / 2 } });
-      out.push({ id: 'ridge-1', kind: 'ridge', at: { x: xb, y }, patch: { x0: xb - p, x1: xb, y0: y - p / 2, y1: y + p / 2 } });
+      out.push({ id: 'ridge-0', kind: 'ridge', onBeak: r.beak_ends[0] || undefined, at: { x: xa, y }, patch: { x0: xa, x1: xa + p, y0: y - p / 2, y1: y + p / 2 } });
+      out.push({ id: 'ridge-1', kind: 'ridge', onBeak: r.beak_ends[1] || undefined, at: { x: xb, y }, patch: { x0: xb - p, x1: xb, y0: y - p / 2, y1: y + p / 2 } });
     }
   }
   return out;
@@ -222,8 +224,11 @@ function buildPanel(r: ResolvedInputs, g: PanelGeometry, ties: TieOut[]): Piece 
   // End hems: creases across the full cut width, straight or along the end cat cut.
   const [xa, xb] = g.endX;
   const endPts = ys ?? [0, g.cutWidth];
-  paths.push(...hemLines({ hem: g.hem, finished: endPts.map((y) => ({ x: xa + g.endIn(y), y })), outward: { x: -1, y: 0 }, idPrefix: `${PANEL_ID}-end-0`, eid, name: 'End hem' }).paths);
-  paths.push(...hemLines({ hem: g.hem, finished: endPts.map((y) => ({ x: xb - g.endIn(y), y })), outward: { x: 1, y: 0 }, idPrefix: `${PANEL_ID}-end-1`, eid, name: 'End hem' }).paths);
+  // An end with a beak is a seam, not a hem: draw the sew line one allowance in.
+  for (const [i, x, out] of [[0, xa, -1], [1, xb, 1]] as const) {
+    if (r.beak_ends[i]) paths.push(polyline(eid, `${PANEL_ID}-beak-seam-${i}`, [{ x, y: 0 }, { x, y: g.cutWidth }], 'stitch', `Beak seam — the beak half sews on here, ${fmtIn(r.seam_allowance)}" in`));
+    else paths.push(...hemLines({ hem: g.hem, finished: endPts.map((y) => ({ x: x - out * g.endIn(y), y })), outward: { x: out, y: 0 }, idPrefix: `${PANEL_ID}-end-${i}`, eid, name: 'End hem' }).paths);
+  }
 
   if (r.construction === 'ridge_seam') {
     paths.push(polyline(eid, `${PANEL_ID}-ridge-stitch`, xs.map((x) => ({ x, y: g.top(x) })), 'stitch',
@@ -233,7 +238,7 @@ function buildPanel(r: ResolvedInputs, g: PanelGeometry, ties: TieOut[]): Piece 
   }
   // Tie-out patches: box-X through patch, loop and panel.
   if (r.patch_size > 0) {
-    ties.forEach((t, i) => {
+    ties.filter((t) => !t.onBeak).forEach((t, i) => {
       const { x0, y0, x1, y1 } = t.patch;
       paths.push(rectPath(eid, `${PANEL_ID}-patch-${t.id}`, x0, y0, x1, y1, 'stitch', i === 0 ? `Tie-out patch ${fmtIn(r.patch_size)}" square, box-X stitched` : undefined));
       paths.push({ id: `${PANEL_ID}-patch-x-${t.id}`, closed: false, edges: [seg(eid, 'stitch', { x: x0, y: y0 }, { x: x1, y: y1 }), seg(eid, 'stitch', { x: x1, y: y0 }, { x: x0, y: y1 })] });
@@ -256,6 +261,35 @@ function buildPanel(r: ResolvedInputs, g: PanelGeometry, ties: TieOut[]): Piece 
 }
 
 export const DOOR_ID = 'tarp-door';
+export const BEAK_ID = 'tarp-beak';
+
+/** One beak half (a mirrored pair per beaked end): panel-end and ridge edges seamed, the outer edge hemmed, the ridge tie-out patch at the tip. */
+function buildBeak(r: ResolvedInputs, g: PanelGeometry): Piece {
+  const eid = makeEdgeIdGen(BEAK_ID);
+  const end = r.width / 2;
+  const { finished, cut } = beakCut(r.beak_length, end, r.seam_allowance, r.hem_allowance);
+  const dx = -Math.min(...cut.map((p) => p.x)), dy = -Math.min(...cut.map((p) => p.y));
+  const mv = (p: Point) => ({ x: p.x + dx, y: p.y + dy });
+  const [T, R, E] = finished.map(mv);
+  const C = cut.map(mv);
+  const outline: Path = { id: `${BEAK_ID}-outline`, closed: true, edges: C.map((p, i) => seg(eid, 'cut', p, C[(i + 1) % 3])) };
+  const L = Math.hypot(r.beak_length, end);
+  const paths: Path[] = [
+    outline,
+    polyline(eid, `${BEAK_ID}-ridge-seam`, [T, R], 'stitch', `Ridge seam — to the other beak half, ${fmtIn(r.seam_allowance)}" in, felled like the ridge`),
+    polyline(eid, `${BEAK_ID}-end-seam`, [R, E], 'stitch', 'Panel seam — to the panel end'),
+    ...hemLines({ hem: g.hem, finished: [T, E], outward: { x: -end / L, y: r.beak_length / L }, idPrefix: `${BEAK_ID}-outer`, eid, name: 'Beak outer hem' }).paths,
+  ];
+  if (r.ridge_tieouts && r.patch_size > 0) {
+    // The tip patch straddles the ridge seam like the ridge patches: half on each beak half.
+    const p = r.patch_size;
+    paths.push(rectPath(eid, `${BEAK_ID}-tip-patch`, T.x, T.y, T.x + p, T.y + p / 2, 'stitch', `Tip tie-out patch — the ridge-end tie-out moves here`));
+  }
+  return {
+    id: BEAK_ID, name: 'Beak half', mirror: true, quantity: (r.beak_ends[0] ? 1 : 0) + (r.beak_ends[1] ? 1 : 0), materialId: FABRIC_ID, paths, seamAllowances: zeroSa(outline),
+    annotations: [{ kind: 'label', label: `Beak half — ${fmtIn(r.beak_length)}" reach past the end, ${fmtIn(end)}" panel end; allowances and hem included; cut a mirrored pair per beaked end`, point: { x: (T.x + R.x + E.x) / 3, y: (T.y + R.y + E.y) / 3 } }],
+  };
+}
 
 /** One door half (cut as a mirrored pair per closed end): hemmed on all three edges, the cut outline the finished triangle offset by the hem allowance. */
 function buildDoor(r: ResolvedInputs, g: PanelGeometry): Piece {
@@ -324,7 +358,7 @@ function buildSteps(r: ResolvedInputs, g: PanelGeometry): Step[] {
   }
   const before = two ? 'tarp.ridge' : afterCut;
   steps.push(
-    { id: 'tarp.ends', title: 'Hem both ends', body: `On each end, ${hemWord}, then stitch. Hem the ends before the eaves so the eave hem folds over the end hem at each corner.${two ? ' Fold the felled ridge seam into the hem with it.' : ''}`, dependsOn: [before], refsPieces: [PANEL_ID], group: 'Hems' },
+    { id: 'tarp.ends', title: r.beak_ends[0] && r.beak_ends[1] ? 'Ends: left for the beaks' : r.beak_ends[0] ? 'Hem the far end' : 'Hem both ends', body: `${r.beak_ends[0] && r.beak_ends[1] ? 'Both ends take a beak, so they are not hemmed: the beak seam finishes them.' : `On ${r.beak_ends[0] ? 'the end without a beak' : 'each end'}, ${hemWord}, then stitch.`} Hem the ends before the eaves so the eave hem folds over the end hem at each corner.${two ? ' Fold the felled ridge seam into the hem with it.' : ''}`, dependsOn: [before], refsPieces: [PANEL_ID], group: 'Hems' },
     { id: 'tarp.eaves', title: two ? 'Hem the eaves' : 'Hem both eaves', body: `Along each eave, ${hemWord}, then stitch.${r.eave_sag > 0 ? ' The eave is curved: ease the hem round it rather than pulling it straight.' : ''}`, dependsOn: ['tarp.ends'], refsPieces: [PANEL_ID], group: 'Hems' },
   );
   if (r.tieout_count > 0) {
@@ -332,6 +366,10 @@ function buildSteps(r: ResolvedInputs, g: PanelGeometry): Step[] {
   }
   if (r.guylines && r.tieout_count > 0) {
     steps.push({ id: 'tarp.guylines', title: 'Guylines', body: `Cut ${r.tieout_count} guylines of ${fmtIn(r.guyline_length)}" (${dim(r.tieout_count * r.guyline_length)} of cord in all) and melt or whip the ends. Tie one to each loop with a bowline${r.line_locks ? ' and thread the free end through a line-lock, so it tensions at the stake' : '; tension each at the stake with a taut-line hitch'}. The ridge-end lines carry the pitch: guy them out along the ridgeline.`, dependsOn: ['tarp.tieouts'], refsPieces: [LOOP_ID], group: 'Tie-outs' });
+  }
+  if (r.beaks !== 'none') {
+    const n = (r.beak_ends[0] ? 1 : 0) + (r.beak_ends[1] ? 1 : 0);
+    steps.push({ id: 'tarp.beaks', title: n === 2 ? 'Beaks on both ends' : 'A beak on one end', body: `Cut ${n === 2 ? 'two mirrored pairs' : 'one mirrored pair'} of beak halves (allowances and hem included). Hem each outer edge, sew each pair together along its ridge edge (felled, like the ridge seam${two ? ', meeting the ridge seam at the end' : ''}), then sew the joined beak to the ${n === 2 ? 'panel ends' : 'panel end'} on the beak seam line, ${fmtIn(r.seam_allowance)}" in, ridge to ridge. The ridge-end tie-out goes at the beak tip: stake the tip down ${fmtIn(r.beak_length)}" past the end to close it in.`, dependsOn: [steps[steps.length - 1].id], refsPieces: [BEAK_ID, PANEL_ID], group: 'Beaks' });
   }
   if (r.door_ends > 0) {
     steps.push({ id: 'tarp.doors', title: r.door_ends === 2 ? 'Doors on both ends' : 'Doors on one end', body: `Cut ${r.door_ends === 2 ? 'two mirrored pairs' : 'one mirrored pair'} of door halves (hems included) and hem all three edges of each the same way as the tarp. Each half is sized to the pitch check: ${fmtIn(r.door_height)}" down the middle (the ridgeline height), ${fmtIn(r.door_base)}" along the ground, ${fmtIn(r.width / 2)}" along the panel end. Sew a ${dim(r.door_height)} separating zipper (slider at the top) between the two centre edges, then lap each half's long edge over its panel's finished end hem and topstitch it through both hems${two ? ', the felled ridge seam meeting the top of the zipper' : ', the halves meeting at the ridge line'}. A different ridgeline height pitches the end at a different angle: the doors then hang slack or pull, so recut them for the pitch you use.`, dependsOn: [steps[steps.length - 1].id], refsPieces: [DOOR_ID, PANEL_ID], group: 'Doors' });
@@ -355,7 +393,8 @@ function mockDerived(inputs: TarpInputs, r: ResolvedInputs): GeneratorWarning[] 
   const applies = (f: keyof TarpInputs) => {
     if (f === 'ridge_sag') return r.cut_style === 'cat_cut' && r.construction === 'ridge_seam';
     if (f === 'eave_sag') return r.cut_style === 'cat_cut';
-    if (f === 'seam_allowance') return r.construction === 'ridge_seam';
+    if (f === 'seam_allowance') return r.construction === 'ridge_seam' || r.beaks !== 'none';
+    if (f === 'beak_length') return r.beaks !== 'none';
     if (f === 'patch_size' || f === 'loop_length' || f === 'loop_width') return r.tieout_count > 0;
     if (f === 'guyline_length') return r.guylines && r.tieout_count > 0;
     if (f === 'end_sag') return r.end_sag > 0;
@@ -388,6 +427,7 @@ export function buildPattern(inputs: TarpInputs): Result<TarpBuildResult> {
   if (r.patch_size > 0 && r.tieout_count > 0) pieces.push(strip(PATCH_ID, 'Tie-out patch', r.patch_size, r.patch_size, r.tieout_count, FABRIC_ID, `Patch ${fmtIn(r.patch_size)}" square — ${r.tieout_count}, one per tie-out`));
   if (r.tieout_count > 0) pieces.push(strip(LOOP_ID, 'Grosgrain tie-out loop', r.loop_length, r.loop_width, r.tieout_count, GROSGRAIN_ID, `Loop ${fmtIn(r.loop_width)} × ${fmtIn(r.loop_length)}", folded in half`));
   if (r.door_ends > 0) pieces.push(buildDoor(r, g));
+  if (r.beaks !== 'none') pieces.push(buildBeak(r, g));
   const hardware: HardwareItem[] = [{ id: 'seam-sealer', name: 'Seam sealer for the fabric', quantity: 1, notes: 'Silicone sealer for silnylon; ridge seam and tie-outs' }];
   if (r.door_ends > 0) hardware.push({ id: 'door-zipper', name: 'Separating zipper for the door', quantity: r.door_ends, notes: `${dim(r.door_height)} each, the ridgeline height; slider at the top` });
   if (r.guylines && r.tieout_count > 0) {

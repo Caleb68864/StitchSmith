@@ -12,9 +12,9 @@ export function buildBom(inputs: BivyInputs): BomRow[] {
   for (const p of pieces) {
     const bb = bboxFromPieceWithSa(p, 0);
     rows.push({ id: `piece-${p.id}`, description: p.name, quantity: p.quantity, unit: `pc — ${Math.round(bb.width)} × ${Math.round(bb.height)} mm`, notes: `${p.materialId}; mock-derived size` });
-    // Long pieces lie along the roll; gussets lie across it.
+    // Long pieces lie along the roll; gussets and the brim strip lie across it.
     const m = p.materialId!;
-    along.set(m, (along.get(m) ?? 0) + (p.id.includes('gusset') ? bb.height : bb.width));
+    along.set(m, (along.get(m) ?? 0) + (p.id.includes('gusset') || p.id.includes('brim') ? bb.height : bb.width));
   }
   const name: Record<string, string> = { [FLOOR_FABRIC_ID]: 'floor fabric (waterproof, sewn)', [TOP_FABRIC_ID]: 'top fabric (breathable or water-resistant, sewn)', [MESH_ID]: 'no-see-um mesh' };
   for (const [m, len] of along) rows.push({ id: `material-${m}`, description: `${name[m] ?? m}, ${Math.round(r.fabric_width)} mm usable width`, quantity: Math.ceil(len / 10) * 10, unit: 'mm', notes: 'pieces end to end along the roll' });

@@ -23,9 +23,14 @@ import type { ChamberStyle, ChamberLayout } from '../../lib/pattern-engine/primi
 
 export type QuiltConstruction = ChamberStyle;
 export type QuiltFootbox = 'sewn' | 'zip';
+export type QuiltKind = 'top_quilt' | 'underquilt';
 
 export interface QuiltInputs {
   units?: 'mm' | 'in';
+  /** A top quilt (default) or an underquilt hung under a hammock. */
+  kind?: QuiltKind;
+  /** Underquilt: the channel at each end for the shock-cord suspension, display units. Placeholder 3/4" — mock-derived. */
+  end_channel?: number;
   /** Baffled chambers (default) or sewn through both layers. */
   construction?: QuiltConstruction;
   /** Footbox sewn closed (default) or closed with a zipper. */
@@ -56,8 +61,14 @@ export interface QuiltInputs {
 
 export interface ResolvedInputs {
   units: 'mm' | 'in';
+  kind: QuiltKind;
   construction: QuiltConstruction;
   footbox: QuiltFootbox;
+  /** Underquilt end channel depth (0 on a top quilt) and the fabric it takes past each finished end. */
+  end_channel: number;
+  end_allowance: number;
+  /** Which layer the differential widens: the shell on a top quilt, the liner (the inner layer, toward the hammock) on an underquilt. */
+  wider_layer: 'shell' | 'liner';
   length: number;
   shoulder_width: number;
   foot_width: number;

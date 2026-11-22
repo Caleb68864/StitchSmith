@@ -26,6 +26,7 @@ import type { HemFold } from '../../lib/pattern-engine/primitives/hem.js';
 export type TarpConstruction = 'ridge_seam' | 'single_panel';
 export type TarpCutStyle = 'flat' | 'cat_cut';
 export type TarpDoors = 'none' | 'one_end' | 'both_ends';
+export type TarpBeaks = TarpDoors;
 
 export interface TarpInputs {
   units?: 'mm' | 'in';
@@ -69,6 +70,10 @@ export interface TarpInputs {
   end_sag?: number;
   /** Triangular door halves closing an end of the pitched A-frame, zipped up the middle. Default none. */
   doors?: TarpDoors;
+  /** Beaks: triangular halves sewn to an end, continuing the ridge out past it to a staked tip. Default none. */
+  beaks?: TarpBeaks;
+  /** How far each beak's tip reaches past the end, along the ridge line, display units. Placeholder 18" — mock-derived. */
+  beak_length?: number;
   /** A pull-out (lifter) loop at the middle of each panel face, to guy the panel out. Default false. */
   pullouts?: boolean;
   /** A guyline on every tie-out, on the BOM. Default true. */
@@ -84,6 +89,8 @@ export interface TieOut {
   kind: 'corner' | 'eave' | 'ridge' | 'pullout';
   /** Finished point on the edge, in the panel's flat mm. */
   at: { x: number; y: number };
+  /** A ridge tie-out at an end with a beak: it sits at the beak's tip, not on the panel (the 3D check still holds the ridge end there). */
+  onBeak?: boolean;
   /** Patch square, in the panel's flat mm (ridge patches: the half on this panel). */
   patch: { x0: number; y0: number; x1: number; y1: number };
 }
@@ -111,6 +118,14 @@ export interface ResolvedInputs {
   loop_width: number;
   ridge_height: number;
   pullouts: boolean;
+  beaks: TarpBeaks;
+  beak_length: number;
+  /** Ends with a beak: [x = 0 end, far end]. One beak goes on the x = 0 end. */
+  beak_ends: [boolean, boolean];
+  /** Fabric beyond each finished end: the hem allowance, or the seam allowance where a beak is sewn on. */
+  end_allowance: [number, number];
+  /** Beak half, finished: the panel end (ridge to eave) and the tip reach; and the fabric added for them. */
+  beak_fabric_length: number;
   doors: TarpDoors;
   /** Ends closed by doors: 0, 1 or 2. */
   door_ends: number;

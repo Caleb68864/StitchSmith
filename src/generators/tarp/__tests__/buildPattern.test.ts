@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest';
-import { buildPattern, buildBom, validateInputs, resolveInputs, panelGeometry, catCutStations, PANEL_ID, PATCH_ID, LOOP_ID, DOOR_ID, PLACEHOLDERS } from '../index.js';
+import { buildPattern, buildBom, validateInputs, resolveInputs, panelGeometry, catCutStations, PANEL_ID, PATCH_ID, LOOP_ID, DOOR_ID, BEAK_ID, PLACEHOLDERS } from '../index.js';
 import type { TarpInputs } from '../types.js';
 import { makeDefaultTarpProject } from '../../../state/useTarpProject.js';
 import { GENERATORS } from '../../__tests__/generators.table.js';
@@ -212,7 +212,7 @@ describe('pattern — Convention B panel (single-fold hem, hand-checked numbers)
 describe('mock-derived placeholders', () => {
   it('every number the tarp takes is a listed placeholder', () => {
     const keys = GENERATORS.find((x) => x.name === 'tarp')!.keys;
-    const choices = ['units', 'construction', 'cut_style', 'hem_fold', 'production_mode', 'ridge_tieouts', 'guylines', 'line_locks', 'cut_ends', 'pullouts', 'doors'];
+    const choices = ['units', 'construction', 'cut_style', 'hem_fold', 'production_mode', 'ridge_tieouts', 'guylines', 'line_locks', 'cut_ends', 'pullouts', 'doors', 'beaks'];
     expect(PLACEHOLDERS.map((p) => p.field).sort()).toEqual(keys.filter((k) => !choices.includes(k)).sort());
   });
 
@@ -223,7 +223,7 @@ describe('mock-derived placeholders', () => {
     expect(mock[0].severity).toBe('info');
     expect(mock[0].message).toMatch(/^\[mock-derived\] 13 placeholders/);
     // The end cut is off by default, so its depth is not in use (asserted in the cat-cut ends block).
-    for (const p of PLACEHOLDERS.filter((x) => x.field !== 'end_sag')) expect(mock[0].message).toContain(p.label);
+    for (const p of PLACEHOLDERS.filter((x) => x.field !== 'end_sag' && x.field !== 'beak_length')) expect(mock[0].message).toContain(p.label);
     // Shown as the field shows it: 5/8" is 0.625", not a rounded 0.63".
     expect(mock[0].message).toContain('Grosgrain width 0.625"');
     expect(mock[0].message).toContain('Ridge length 120"');
@@ -438,5 +438,46 @@ describe('doors (roadmap 10a follow-up: doorway)', () => {
   it('errors on doors: the eaves cannot reach the ground, or the ends are cat-cut', () => {
     expect(errorFields({ ...D, ridge_height: 50 })).toEqual(['doors']);
     expect(errorFields({ ...D, cut_ends: true })).toEqual(['doors']);
+  });
+});
+
+describe('beaks (roadmap 10a follow-up)', () => {
+  const B: TarpInputs = { ...DEF, beaks: 'both_ends' };
+  it('off by default; on, the beaked ends lose their hem for the seam allowance and the panel is cut shorter', () => {
+    expect(built(DEF).pieces.some((p) => p.id === BEAK_ID)).toBe(false);
+    const r = resolveInputs(B);
+    expect(r.end_allowance).toEqual([12.7, 12.7]);
+    expect(r.panel_cut_length).toBeCloseTo(120 * IN + 2 * 12.7, 6);
+    const one = resolveInputs({ ...DEF, beaks: 'one_end' });
+    expect(one.end_allowance[0]).toBeCloseTo(12.7, 6);
+    expect(one.end_allowance[1]).toBeCloseTo(1 * IN, 6);
+    const panel = panelOf(built(B).pieces);
+    expect(panel.paths.some((p) => p.id === `${PANEL_ID}-beak-seam-0`)).toBe(true);
+    expect(panel.paths.some((p) => p.id.startsWith(`${PANEL_ID}-end-0-hem`))).toBe(false);
+    // The ridge-end patches move to the beak tips.
+    expect(panel.paths.some((p) => p.id === `${PANEL_ID}-patch-ridge-0`)).toBe(false);
+  });
+  it('a beak half is the right triangle of the reach and the panel end: both seams at the allowance, the outer edge hemmed', () => {
+    const v = built(B);
+    const beak = v.pieces.find((p) => p.id === BEAK_ID)!;
+    expect(beak.mirror).toBe(true);
+    expect(beak.quantity).toBe(2);
+    const len = (id: string) => { const e = beak.paths.find((p) => p.id === id)!.edges[0]; return Math.hypot(e.end.x - e.start.x, e.end.y - e.start.y); };
+    expect(len(`${BEAK_ID}-ridge-seam`)).toBeCloseTo(18 * IN, 6);
+    expect(len(`${BEAK_ID}-end-seam`)).toBeCloseTo(48 * IN, 6);
+    const crease = beak.paths.find((p) => p.id.startsWith(`${BEAK_ID}-outer-hem-fold`) && p.label?.includes('finished crease'))!.edges[0];
+    expect(Math.hypot(crease.end.x - crease.start.x, crease.end.y - crease.start.y)).toBeCloseTo(Math.hypot(18, 48) * IN, 6);
+    expect(beak.paths.some((p) => p.id === `${BEAK_ID}-tip-patch`)).toBe(true);
+    expect(Object.values(beak.seamAllowances!).every((x) => x === 0)).toBe(true);
+    expect(v.resolved.fabric_length).toBeGreaterThan(resolveInputs(DEF).fabric_length - 4 * IN);
+    expect(v.steps.find((s) => s.id === 'tarp.beaks')!.body).toMatch(/beak tip/);
+    expect(v.warnings.find((w) => w.id === 'mock-derived')!.message).toContain('Beak length');
+  });
+  it('a single panel with beaks takes a seam allowance for them; beaks refuse doors and cat-cut ends', () => {
+    expect(resolveInputs({ ...DEF, construction: 'single_panel', width: 56 }).seam_allowance).toBe(0);
+    expect(resolveInputs({ ...DEF, construction: 'single_panel', width: 56, beaks: 'one_end' }).seam_allowance).toBeCloseTo(12.7, 6);
+    expect(errorFields({ ...B, doors: 'one_end' })).toEqual(['beaks']);
+    expect(errorFields({ ...B, cut_ends: true })).toEqual(['beaks']);
+    expect(errorFields({ ...B, beak_length: 0 })).toEqual(['beak_length']);
   });
 });

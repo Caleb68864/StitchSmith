@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest';
-import { buildPattern, buildBom, validateInputs, resolveInputs, FLOOR_ID, TOP_ID, HEAD_GUSSET_ID, FOOT_GUSSET_ID, MESH_ID, TOP_FABRIC_ID, PLACEHOLDERS } from '../index.js';
+import { buildPattern, buildBom, validateInputs, resolveInputs, TOP_HEAD_ID, BRIM_ID, FLOOR_ID, TOP_ID, HEAD_GUSSET_ID, FOOT_GUSSET_ID, MESH_ID, TOP_FABRIC_ID, PLACEHOLDERS } from '../index.js';
 import type { BivyInputs } from '../types.js';
 import { makeDefaultBivyProject } from '../../../state/useBivyProject.js';
 import { bboxFromPiece } from '../../../lib/pattern-engine/geometry/bbox.js';
@@ -88,7 +88,9 @@ describe('validation, placeholders, BOM', () => {
     for (const p of PLACEHOLDERS) expect(DEF[p.field]).toBeUndefined();
     const w = built(DEF).warnings.filter((x) => x.id === 'mock-derived');
     expect(w).toHaveLength(1);
-    for (const p of PLACEHOLDERS) expect(w[0].message).toContain(p.label);
+    const off = ['j_from_head', 'brim_from_head', 'brim_channel'];
+    for (const p of PLACEHOLDERS.filter((x) => !off.includes(x.field))) expect(w[0].message).toContain(p.label);
+    for (const p of PLACEHOLDERS.filter((x) => off.includes(x.field))) expect(w[0].message).not.toContain(p.label);
     const all = { ...DEF, length: 84, floor_width: 26, tub_height: 5, top_width: 40, zip_length: 48, fabric_width: 58, seam_allowance: 12.7 };
     expect(built(all).warnings.some((x) => x.id === 'mock-derived')).toBe(false);
   });
@@ -117,5 +119,34 @@ describe('bug bivy (roadmap 10d follow-up: bug net)', () => {
     expect(piece(v.pieces, FLOOR_ID).materialId).toBe('bivy-floor-fabric');
     expect(v.warnings.some((w) => w.id === 'bug-bivy')).toBe(true);
     expect(buildBom({ ...DEF, top_material: 'mesh' }).some((r) => r.id === 'material-bivy-top-fabric')).toBe(false);
+  });
+});
+
+describe('J zipper and brim (roadmap 10d follow-ups)', () => {
+  const J: BivyInputs = { ...DEF, zip_style: 'j' };
+  it('a J splits the top at 30" from the head: the two sections sum to the length, the zipper runs across and down the side', () => {
+    const v = built(J);
+    const r = v.resolved;
+    expect(v.pieces.map((p) => p.id)).toEqual([FLOOR_ID, TOP_HEAD_ID, TOP_ID, HEAD_GUSSET_ID, FOOT_GUSSET_ID]);
+    expect(r.top_head_cut_length - 2 * SA + r.top_cut_length - 2 * SA).toBeCloseTo(84 * IN, 6);
+    expect(r.top_head_cut_length).toBeCloseTo(30 * IN + 2 * SA, 6);
+    expect(r.zipper_length).toBeCloseTo((48 + 40) * IN, 6);
+    expect(v.hardware.find((h) => h.id === 'zipper')!.notes).toMatch(/across the top at the J/);
+    expect(v.steps.find((s) => s.id === 'bivy.zip')!.title).toBe('J zipper');
+    expect(v.warnings.find((w) => w.id === 'mock-derived')!.message).toContain('J zipper from the head');
+    expect(errorFields({ ...J, j_from_head: 40, zip_length: 50 })).toEqual(['zip_length']);
+  });
+  it('a brim adds a channel strip the top width long and its two lines on the head of the top (or the head section)', () => {
+    const v = built({ ...DEF, brim: true });
+    const strip = v.pieces.find((p) => p.id === BRIM_ID)!;
+    const bb = bboxFromPiece(strip);
+    expect(bb.width).toBeCloseTo(40 * IN + 2 * SA, 6);
+    expect(bb.height).toBeCloseTo(1 * IN + 2 * SA, 6);
+    const top = piece(v.pieces, TOP_ID);
+    expect(top.paths.find((p) => p.id === `${TOP_ID}-brim-0`)!.edges[0].start.x).toBeCloseTo(SA + 6 * IN, 6);
+    expect(v.hardware.some((h) => h.id === 'brim-wire')).toBe(true);
+    const vj = built({ ...J, brim: true });
+    expect(piece(vj.pieces, TOP_HEAD_ID).paths.some((p) => p.id === `${TOP_HEAD_ID}-brim-0`)).toBe(true);
+    expect(errorFields({ ...J, brim: true, brim_from_head: 29.5 })).toEqual(['brim_from_head']);
   });
 });

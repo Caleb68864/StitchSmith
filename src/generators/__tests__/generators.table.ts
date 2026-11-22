@@ -157,7 +157,7 @@ export const GENERATORS: Gen[] = [
   },
   {
     name: 'tarp',
-    keys: ['units', 'construction', 'cut_style', 'ridge_length', 'width', 'ridge_sag', 'eave_sag', 'fabric_width', 'seam_allowance', 'hem_depth', 'hem_fold', 'production_mode', 'eave_tieouts', 'ridge_tieouts', 'patch_size', 'loop_length', 'loop_width', 'ridge_height', 'guylines', 'guyline_length', 'line_locks', 'cut_ends', 'end_sag', 'pullouts', 'doors'],
+    keys: ['units', 'construction', 'cut_style', 'ridge_length', 'width', 'ridge_sag', 'eave_sag', 'fabric_width', 'seam_allowance', 'hem_depth', 'hem_fold', 'production_mode', 'eave_tieouts', 'ridge_tieouts', 'patch_size', 'loop_length', 'loop_width', 'ridge_height', 'guylines', 'guyline_length', 'line_locks', 'cut_ends', 'end_sag', 'pullouts', 'doors', 'beaks', 'beak_length'],
     defaults: () => makeDefaultTarpProject().inputs as unknown as AnyInputs,
     validate: (i) => listErrors(tarp.validateInputs(i as never)),
     build: (i) => resultPieces(tarp.buildPattern(i as never)),
@@ -171,14 +171,14 @@ export const GENERATORS: Gen[] = [
   },
   {
     name: 'quilt',
-    keys: ['units', 'construction', 'footbox', 'length', 'shoulder_width', 'foot_width', 'footbox_length', 'fabric_width', 'loft', 'baffle_spacing', 'shell_differential', 'fill_power', 'overstuff', 'seam_allowance'],
+    keys: ['units', 'construction', 'footbox', 'length', 'shoulder_width', 'foot_width', 'footbox_length', 'fabric_width', 'loft', 'baffle_spacing', 'shell_differential', 'fill_power', 'overstuff', 'seam_allowance', 'kind', 'end_channel'],
     defaults: () => makeDefaultQuiltProject().inputs as unknown as AnyInputs,
     validate: (i) => listErrors(quilt.validateInputs(i as never)),
     build: (i) => resultPieces(quilt.buildPattern(i as never)),
   },
   {
     name: 'bivy',
-    keys: ['units', 'length', 'floor_width', 'tub_height', 'top_width', 'zip_length', 'fabric_width', 'seam_allowance', 'head_gusset', 'zip_side', 'top_material'],
+    keys: ['units', 'length', 'floor_width', 'tub_height', 'top_width', 'zip_length', 'fabric_width', 'seam_allowance', 'head_gusset', 'zip_side', 'top_material', 'zip_style', 'j_from_head', 'brim', 'brim_from_head', 'brim_channel'],
     defaults: () => makeDefaultBivyProject().inputs as unknown as AnyInputs,
     validate: (i) => listErrors(bivy.validateInputs(i as never)),
     build: (i) => resultPieces(bivy.buildPattern(i as never)),

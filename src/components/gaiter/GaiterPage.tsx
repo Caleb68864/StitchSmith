@@ -1,6 +1,8 @@
 import { useMemo } from 'react';
 import type { UseGaiterProjectReturn } from '../../state/useGaiterProject.js';
-import { validateInputs, buildPattern } from '../../generators/gaiter/index.js';
+import { validateInputs, buildPattern, gaiterAssembly } from '../../generators/gaiter/index.js';
+import { FoldPreview3D } from '../shared/FoldPreview3D.js';
+import type { Pattern } from '../../lib/pattern-engine/graph/Pattern.js';
 import { GaiterSettingsPanel } from './GaiterSettingsPanel.js';
 import { PatternPreview } from './PatternPreview.js';
 import { ExportPanel } from './ExportPanel.js';
@@ -30,6 +32,9 @@ export function GaiterPage({ project, updateInputs, resetProject, importProject 
   const steps = built?.steps ?? [];
   const warnings = useMemo<UiWarning[]>(() => (built?.warnings ?? []).map((w) => ({ id: w.id, severity: w.severity, message: w.message, field: w.field })), [built]);
   const r = built?.resolved;
+  // 3D: the piece wrapped back onto its cone round a leg, the front closed, the top held.
+  const assembly = useMemo(() => { if (!built) return null; try { return gaiterAssembly(built.pieces, built.resolved); } catch { return null; } }, [built]);
+  const pattern3d = useMemo<Pattern | null>(() => (assembly ? { id: 'gaiter', name: 'Gaiter', pieces: assembly.pieces } : null), [assembly]);
   function handleReset() { if (window.confirm('Reset will discard all changes and restore default Gaiters settings. Continue?')) resetProject(); }
   function handleImport(jsonText: string) { importProject(parseProjectJson<typeof project>(jsonText, 'gaiter')); }
   function handleExport() { downloadProjectJson(project); }
@@ -48,8 +53,8 @@ export function GaiterPage({ project, updateInputs, resetProject, importProject 
       preview={
         <PreviewTabs
           pattern={<PatternPreview inputs={project.inputs} hasErrors={hasErrors} />}
-          assembly={null}
-          unavailableReason="No 3D check yet: the cloth engine has a torso and a hip form but no leg or boot form to wrap the gaiter round."
+          assembly={pattern3d && assembly ? <FoldPreview3D pattern={pattern3d} placements={assembly.placements} pins={assembly.pins} seams={assembly.seams} solids={assembly.solids} gravity={assembly.gravity} initialSimulate height={560} /> : null}
+          unavailableReason="The 3D check wraps a gaiter whose bottom is wider than its top; this one is narrower at the bottom, so it would hang upside down."
         />
       }
       sidebar={

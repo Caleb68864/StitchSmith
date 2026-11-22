@@ -177,7 +177,8 @@ numbers. Rules already encoded, with the note that justifies each:
   placeholders are common starting points, flagged. The piece is the
   frustum development from `geometry/frustum.ts` (never a trapezoid: a
   tapered tube laid flat has arced ends); channel and hems from the Hem
-  primitive. No 3D (no leg form).
+  primitive. The 3D check (`assembly3d.ts`) wraps it back onto its cone
+  round a leg capsule; a narrower bottom is not wrapped.
 - Straps that must run beside the neck on the torso form kick out from
   their panel landing to the shoulder line (`overShoulder(..., xStart)` in
   the LBV assembly); a strap drawn long in x drapes with `along: 'x'`.

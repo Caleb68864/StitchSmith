@@ -16,6 +16,7 @@ import type { Edge, EdgeId } from '../../lib/pattern-engine/graph/Edge.js';
 import { makeEdgeIdGen } from '../../lib/pattern-engine/graph/Edge.js';
 import type { Step } from '../../lib/pattern-engine/instructions/Step.js';
 import type { ChamberLayout } from '../../lib/pattern-engine/primitives/chambers.js';
+import { resolveHem, hemLines } from '../../lib/pattern-engine/primitives/hem.js';
 import type { QuiltInputs, QuiltBuildResult, ResolvedInputs, GeneratorWarning, BuildPatternError, HardwareItem } from './types.js';
 import { resolveInputs, validateInputs } from './inputs.js';
 import { PLACEHOLDERS } from './defaults.js';
@@ -58,9 +59,10 @@ export interface QuiltGeometry {
 export function quiltGeometry(r: ResolvedInputs): QuiltGeometry {
   if (!r.chambers) throw new Error('quilt chambers did not resolve');
   const f = 1 + r.shell_differential / 100;
+  const fs = r.wider_layer === 'shell' ? f : 1, fl = r.wider_layer === 'liner' ? f : 1;
   return {
-    liner: panelOutline(r.length, r.shoulder_width, r.foot_width, r.seam_allowance),
-    shell: panelOutline(r.length, r.shoulder_width * f, r.foot_width * f, r.seam_allowance),
+    liner: panelOutline(r.length, r.shoulder_width * fl, r.foot_width * fl, r.seam_allowance, r.end_allowance),
+    shell: panelOutline(r.length, r.shoulder_width * fs, r.foot_width * fs, r.seam_allowance, r.end_allowance),
     chambers: r.chambers,
     footboxY: r.length - r.footbox_length,
   };
@@ -71,25 +73,40 @@ function buildPanel(r: ResolvedInputs, g: QuiltGeometry, which: 'liner' | 'shell
   const o = which === 'liner' ? g.liner : g.shell;
   const eid = makeEdgeIdGen(id);
   const outline = closed(eid, `${id}-outline`, o.cut, 'cut');
-  const paths: Path[] = [
-    outline,
-    closed(eid, `${id}-sew`, o.finished, 'stitch', `Perimeter sew line — ${fmtIn(r.seam_allowance)}" in from the cut edge`),
-  ];
+  const uq = r.kind === 'underquilt';
+  const paths: Path[] = [outline];
+  if (!uq) paths.push(closed(eid, `${id}-sew`, o.finished, 'stitch', `Perimeter sew line — ${fmtIn(r.seam_allowance)}" in from the cut edge`));
+  else {
+    // Underquilt: the sides are seamed; the ends roll, both layers together, into the suspension channel.
+    const [hl, hr, fr, fl] = o.finished;
+    paths.push(line(eid, `${id}-sew-left`, hl, fl, 'stitch', `Side sew line — ${fmtIn(r.seam_allowance)}" in`));
+    paths.push(line(eid, `${id}-sew-right`, hr, fr, 'stitch'));
+    const hem = resolveHem({ depth: r.end_channel, fold: 'double' });
+    if (hem.ok) {
+      const across = (y: number) => [{ x: 0, y }, { x: o.cutWidth, y }];
+      paths.push(...hemLines({ hem: hem.value, finished: across(o.yAt(0)), outward: { x: 0, y: -1 }, idPrefix: `${id}-head`, eid, name: 'Head end channel hem' }).paths);
+      paths.push(...hemLines({ hem: hem.value, finished: across(o.yAt(r.length)), outward: { x: 0, y: 1 }, idPrefix: `${id}-foot`, eid, name: 'Foot end channel hem' }).paths);
+      paths.push(line(eid, `${id}-channel-head`, { x: o.cx - o.halfWidthAt(r.end_channel), y: o.yAt(r.end_channel) }, { x: o.cx + o.halfWidthAt(r.end_channel), y: o.yAt(r.end_channel) }, 'stitch', `Channel stitch — ${fmtIn(r.end_channel)}" channel for the shock cord, through both layers`));
+      paths.push(line(eid, `${id}-channel-foot`, { x: o.cx - o.halfWidthAt(r.length - r.end_channel), y: o.yAt(r.length - r.end_channel) }, { x: o.cx + o.halfWidthAt(r.length - r.end_channel), y: o.yAt(r.length - r.end_channel) }, 'stitch'));
+    }
+  }
   const wallWord = r.construction === 'baffled' ? 'Baffle line' : 'Sewn-through line';
   g.chambers.wallY.forEach((y, i) => {
     const h = o.halfWidthAt(y), py = o.yAt(y);
     paths.push(line(eid, `${id}-wall-${i + 1}`, { x: o.cx - h, y: py }, { x: o.cx + h, y: py }, 'stitch', i === 0 ? `${wallWord} ${i + 1} of ${g.chambers.wallY.length} — ${fmtIn(g.chambers.pitch)}" apart` : undefined));
   });
-  // Footbox marks on both sides, across the seam allowance.
-  const fy = o.yAt(g.footboxY), fh = o.halfWidthAt(g.footboxY), sa = Math.max(r.seam_allowance, 6);
-  paths.push(line(eid, `${id}-footbox-l`, { x: o.cx - fh - sa, y: fy }, { x: o.cx - fh, y: fy }, 'notch', r.footbox === 'zip' ? 'Footbox zip end' : 'Footbox — sew the sides together from here to the foot'));
-  paths.push(line(eid, `${id}-footbox-r`, { x: o.cx + fh, y: fy }, { x: o.cx + fh + sa, y: fy }, 'notch'));
+  // Footbox marks on both sides, across the seam allowance (top quilt only).
+  if (!uq) {
+    const fy = o.yAt(g.footboxY), fh = o.halfWidthAt(g.footboxY), sa = Math.max(r.seam_allowance, 6);
+    paths.push(line(eid, `${id}-footbox-l`, { x: o.cx - fh - sa, y: fy }, { x: o.cx - fh, y: fy }, 'notch', r.footbox === 'zip' ? 'Footbox zip end' : 'Footbox — sew the sides together from here to the foot'));
+    paths.push(line(eid, `${id}-footbox-r`, { x: o.cx + fh, y: fy }, { x: o.cx + fh + sa, y: fy }, 'notch'));
+  }
   // Centre marks at the head and foot so the shell and liner line up.
   paths.push(line(eid, `${id}-centre-head`, { x: o.cx, y: 0 }, { x: o.cx, y: o.yAt(0) }, 'notch', 'Centre'));
   paths.push(line(eid, `${id}-centre-foot`, { x: o.cx, y: o.yAt(r.length) }, { x: o.cx, y: o.cutLength }, 'notch'));
   const annotations: Piece['annotations'] = [
     { kind: 'grain', label: 'grain along the length', point: { x: o.cx, y: o.yAt(g.chambers.pitch / 2) + 40 }, angle: 90 },
-    { kind: 'label', label: `${which === 'liner' ? 'Liner' : 'Shell'} — cut ${dim(o.cutWidth)} × ${dim(o.cutLength)}, ${fmtIn(r.seam_allowance)}" seam allowance included${which === 'shell' && r.shell_differential > 0 ? `; ${r.shell_differential} % wider than the liner` : ''}`, point: { x: o.cx, y: o.cutLength / 2 } },
+    { kind: 'label', label: `${which === 'liner' ? 'Liner' : 'Shell'} — cut ${dim(o.cutWidth)} × ${dim(o.cutLength)}, ${uq ? `side allowance and ${fmtIn(r.end_channel)}" end channels included` : `${fmtIn(r.seam_allowance)}" seam allowance included`}${which === r.wider_layer && r.shell_differential > 0 ? `; ${r.shell_differential} % wider than the ${which === 'shell' ? 'liner' : 'shell'}` : ''}`, point: { x: o.cx, y: o.cutLength / 2 } },
   ];
   if (which === 'liner') {
     // Fill per chamber written in each chamber, for weighing out.
@@ -131,7 +148,7 @@ function buildSteps(r: ResolvedInputs, g: QuiltGeometry): Step[] {
   const baffleIds = baffled ? ch.wallY.map((_, i) => `${BAFFLE_PREFIX}${i + 1}`) : [];
   const steps: Step[] = [
     { id: 'quilt.cut', title: 'Cut the shell and liner', body: `Liner ${dim(g.liner.cutWidth)} × ${dim(g.liner.cutLength)}, shell ${dim(g.shell.cutWidth)} × ${dim(g.shell.cutLength)}, both tapering from the head to the foot, the ${fmtIn(r.seam_allowance)}" seam allowance included. Grain along the length: ${dim(r.fabric_length)} of ${fmtIn(r.fabric_width)}" fabric for both. Sewn fabric only.${baffled ? ` Cut the ${ch.wallY.length} mesh baffles, each ${fmtIn(r.loft + 2 * r.seam_allowance)}" tall (the ${fmtIn(r.loft)}" loft and the seam allowance on both edges), numbered head to foot.` : ''}`, dependsOn: [], refsPieces: [...panels, ...baffleIds], group: 'Cut' },
-    { id: 'quilt.mark', title: `Mark the ${baffled ? 'baffle' : 'stitch'} lines`, body: `Mark the ${ch.wallY.length} lines across both panels, ${fmtIn(ch.pitch)}" apart from the head (${ch.count} chambers), the footbox marks ${fmtIn(r.footbox_length)}" up from the foot and the centre at both ends.`, dependsOn: ['quilt.cut'], refsPieces: panels, group: 'Mark' },
+    { id: 'quilt.mark', title: `Mark the ${baffled ? 'baffle' : 'stitch'} lines`, body: `Mark the ${ch.wallY.length} lines across both panels, ${fmtIn(ch.pitch)}" apart from the head (${ch.count} chambers)${r.kind === 'underquilt' ? `, the ${fmtIn(r.end_channel)}" channel lines at both ends` : `, the footbox marks ${fmtIn(r.footbox_length)}" up from the foot`} and the centre at both ends.`, dependsOn: ['quilt.cut'], refsPieces: panels, group: 'Mark' },
   ];
   if (baffled) {
     steps.push(
@@ -143,12 +160,16 @@ function buildSteps(r: ResolvedInputs, g: QuiltGeometry): Step[] {
   }
   const before = baffled ? 'quilt.baffles-shell' : 'quilt.lines';
   steps.push(
-    { id: 'quilt.perimeter', title: 'Sew the perimeter, one side open', body: baffled
+    r.kind === 'underquilt'
+      ? { id: 'quilt.perimeter', title: 'Sew one side', body: `Turn both layers' seam allowance in toward each other along one long side and topstitch it on the side line${baffled ? ', catching the baffle ends' : ''}. The ends stay open for the channels; the other side stays open to fill.`, dependsOn: [before], refsPieces: panels, group: 'Close' }
+      : { id: 'quilt.perimeter', title: 'Sew the perimeter, one side open', body: baffled
       ? `Turn both layers' seam allowance in toward each other along the head, the foot and one long side and topstitch on the perimeter line, catching the baffle ends in the side seam${r.shell_differential > 0 ? ' and easing the shell\'s extra width in along the head and the foot' : ''}. Leave the other side open to fill.`
       : 'Turn both layers\' seam allowance in toward each other along the head, the foot and one long side and topstitch on the perimeter line. Leave the other side open to fill.', dependsOn: [before], refsPieces: panels, group: 'Close' },
     { id: 'quilt.fill', title: 'Fill each chamber', body: `Weigh out the fill per chamber (head to foot) — ${fillList}; ${grams(r.total_fill_g)} (${ounces(r.total_fill_g)}) in all at ${r.fill_power} fill power and ${r.overstuff} % overstuff — and fill each through the open side. The weights are an estimate from the chamber volume (${baffled ? 'a box, width × pitch × loft' : 'a sewn-through lens, 2/3 of width × pitch × loft'}); check the loft before closing.`, dependsOn: ['quilt.perimeter'], refsPieces: panels, group: 'Fill' },
     { id: 'quilt.close', title: 'Close the open side', body: 'Turn the seam allowance in along the open side and topstitch it closed, a chamber at a time so the fill stays put.', dependsOn: ['quilt.fill'], refsPieces: panels, group: 'Close' },
-    r.footbox === 'sewn'
+    r.kind === 'underquilt'
+      ? { id: 'quilt.channels', title: 'End channels and suspension', body: `At each end, hold the two layers together and roll them as one (turn under ${fmtIn(r.end_channel)}", then again) into a ${fmtIn(r.end_channel)}" channel; stitch on the channel line through everything, leaving the channel open at both sides. Thread a shock cord through each, with a cord lock, and hang it from the hammock's suspension at both ends. The ${r.wider_layer} is the wider layer${r.shell_differential > 0 ? ` (${r.shell_differential} %)` : ''}: hang it toward the hammock.`, dependsOn: ['quilt.close'], refsPieces: panels, group: 'Ends' }
+      : r.footbox === 'sewn'
       ? { id: 'quilt.footbox', title: 'Sew the footbox', body: `Fold the quilt in half along its length, liner inside, and sew the foot end closed (${fmtIn(r.foot_width / 2)}" folded) and the two sides together from the foot up to the footbox marks, ${fmtIn(r.footbox_length)}".`, dependsOn: ['quilt.close'], refsPieces: panels, group: 'Footbox' }
       : { id: 'quilt.footbox', title: 'Zip the footbox', body: `Sew a ${dim(r.zipper_length)} separating zipper into the foot end and up one side to the footbox mark (${fmtIn(r.foot_width / 2)}" across the folded foot plus ${fmtIn(r.footbox_length)}" of side), so the foot opens flat as a blanket.`, dependsOn: ['quilt.close'], refsPieces: panels, group: 'Footbox' },
   );
@@ -158,7 +179,13 @@ function buildSteps(r: ResolvedInputs, g: QuiltGeometry): Step[] {
 /** Every placeholder the user has not entered, as ONE note (the tarp's pattern). */
 function mockDerived(inputs: QuiltInputs, r: ResolvedInputs): GeneratorWarning[] {
   const unit = r.units === 'in' ? (mm: number) => `${(mm / IN).toFixed(3).replace(/\.?0+$/, '')}"` : (mm: number) => `${Math.round(mm * 10) / 10} mm`;
-  const applies = (f: keyof QuiltInputs) => (f === 'shell_differential' ? r.construction === 'baffled' : true);
+  const uq = r.kind === 'underquilt';
+  const applies = (f: keyof QuiltInputs) => {
+    if (f === 'shell_differential') return r.construction === 'baffled';
+    if (f === 'foot_width' || f === 'footbox_length') return !uq;
+    if (f === 'end_channel') return uq;
+    return true;
+  };
   const open = PLACEHOLDERS.filter((p) => applies(p.field) && (inputs[p.field] === undefined || inputs[p.field] === null));
   if (open.length === 0) return [];
   const show = (p: (typeof PLACEHOLDERS)[number]) => (p.kind === 'percent' ? `${p.mm} %` : p.kind === 'fill_power' ? `${p.mm} in³/oz` : p.kind === 'sa' ? `${p.mm} mm` : unit(p.mm));
@@ -171,6 +198,7 @@ function mockDerived(inputs: QuiltInputs, r: ResolvedInputs): GeneratorWarning[]
 function buildWarnings(inputs: QuiltInputs, r: ResolvedInputs): GeneratorWarning[] {
   const w = mockDerived(inputs, r);
   w.push({ id: 'fill-estimate', severity: 'info', field: 'fill_power', message: `Fill is an estimate: ${grams(r.total_fill_g)} (${ounces(r.total_fill_g)}) from the chamber volume (${r.construction === 'baffled' ? 'a box of the loft height' : 'a sewn-through lens, 2/3 of the box'}), the fill power and the overstuff. Real loft depends on the fill and the fabric; weigh each chamber's share and check the loft before closing.` });
+  if (r.kind === 'underquilt' && fin(inputs.foot_width)) w.push({ id: 'foot-width-ignored', severity: 'info', field: 'foot_width', message: 'An underquilt is cut as a rectangle the shoulder width across, so the foot width is not used.' });
   if (r.foot_width > r.shoulder_width) w.push({ id: 'foot-wider', severity: 'warning', field: 'foot_width', message: `The foot (${fmtIn(r.foot_width)}") is wider than the shoulders (${fmtIn(r.shoulder_width)}"): the quilt tapers the wrong way.` });
   if (r.construction === 'sewn_through') {
     w.push({ id: 'sewn-through-cold', severity: 'info', field: 'construction', message: 'Sewn through: the loft falls to nothing at every stitch line, so each line is a cold spot. Baffles keep the full loft wall to wall.' });
@@ -191,6 +219,9 @@ export function buildPattern(inputs: QuiltInputs): Result<QuiltBuildResult> {
   const hardware: HardwareItem[] = [
     { id: 'fill', name: 'Down fill', quantity: 1, notes: `${grams(r.total_fill_g)} (${ounces(r.total_fill_g)}) at ${r.fill_power} fill power, ${r.overstuff} % overstuff; estimate, mock-derived` },
   ];
-  if (r.footbox === 'zip') hardware.push({ id: 'footbox-zip', name: 'Separating zipper for the footbox', quantity: 1, notes: `${dim(r.zipper_length)}` });
+  if (r.kind === 'underquilt') {
+    hardware.push({ id: 'shock-cord', name: 'Shock cord for the end channels', quantity: 2, notes: `one per end: the ${fmtIn(r.shoulder_width)}" width plus the reach to the hammock's suspension, cut to the hammock` });
+    hardware.push({ id: 'cord-lock', name: 'Cord lock', quantity: 2, notes: 'one per end' });
+  } else if (r.footbox === 'zip') hardware.push({ id: 'footbox-zip', name: 'Separating zipper for the footbox', quantity: 1, notes: `${dim(r.zipper_length)}` });
   return { ok: true, value: { pieces, steps: buildSteps(r, g), warnings: buildWarnings(inputs, r), hardware, resolved: r } };
 }

@@ -1,13 +1,13 @@
 import { NumericField, SelectField, Toggle, UnitToggle, CollapsibleSection, VaultOpenNote } from '../shared/fields/index.js';
-import type { TarpInputs, TarpConstruction, TarpCutStyle, TarpDoors } from '../../generators/tarp/types.js';
+import type { TarpInputs, TarpConstruction, TarpCutStyle, TarpDoors, TarpBeaks } from '../../generators/tarp/types.js';
 import type { HemFold } from '../../lib/pattern-engine/primitives/hem.js';
 import {
   RIDGE_LENGTH_MM, WIDTH_MM, RIDGE_SAG_MM, EAVE_SAG_MM, FABRIC_WIDTH_MM, SEAM_ALLOWANCE_MM, HEM_DEPTH_MM, EAVE_TIEOUTS,
-  PATCH_SIZE_MM, LOOP_LENGTH_MM, LOOP_WIDTH_MM, RIDGE_HEIGHT_MM, MAX_EAVE_TIEOUTS, GUYLINE_LENGTH_MM, END_SAG_MM,
+  PATCH_SIZE_MM, LOOP_LENGTH_MM, LOOP_WIDTH_MM, RIDGE_HEIGHT_MM, MAX_EAVE_TIEOUTS, GUYLINE_LENGTH_MM, END_SAG_MM, BEAK_LENGTH_MM,
 } from '../../generators/tarp/defaults.js';
 import { convertLengthValues, type UnitSystem } from '../../utils/units.js';
 
-const DISPLAY_UNIT_FIELDS = ['ridge_length', 'width', 'ridge_sag', 'eave_sag', 'fabric_width', 'hem_depth', 'patch_size', 'loop_length', 'loop_width', 'ridge_height', 'guyline_length', 'end_sag'] as const;
+const DISPLAY_UNIT_FIELDS = ['ridge_length', 'width', 'ridge_sag', 'eave_sag', 'fabric_width', 'hem_depth', 'patch_size', 'loop_length', 'loop_width', 'ridge_height', 'guyline_length', 'end_sag', 'beak_length'] as const;
 
 interface Props { inputs: TarpInputs; errors: Record<string, string>; onChange: (changes: Partial<TarpInputs>) => void }
 
@@ -89,6 +89,18 @@ export function TarpSettingsPanel({ inputs, errors, onChange }: Props) {
           </div>
         )}
         {(inputs.guylines ?? true) && <Toggle label="Line-lock on each guyline" value={inputs.line_locks ?? true} onChange={(v) => onChange({ line_locks: v })} />}
+      </CollapsibleSection>
+
+      <CollapsibleSection title="Beaks" defaultOpen={false}>
+        <div className="grid grid-cols-2 gap-3">
+          <SelectField<TarpBeaks> id="beaks" label="Beaks" value={inputs.beaks ?? 'none'} error={errors['beaks']}
+            options={[{ value: 'none', label: 'None' }, { value: 'one_end', label: 'One end' }, { value: 'both_ends', label: 'Both ends' }]}
+            help="Triangular halves sewn to an end that carry the ridge out to a staked tip."
+            onChange={(v) => onChange({ beaks: v })} />
+          {(inputs.beaks ?? 'none') !== 'none' && (
+            <NumericField id="beak-length" label={`Beak reach past the end (${units})`} value={inputs.beak_length} error={errors['beak_length']} step={step} placeholder={ph(BEAK_LENGTH_MM)} mockDerived onChange={(v) => onChange({ beak_length: v })} />
+          )}
+        </div>
       </CollapsibleSection>
 
       <CollapsibleSection title="Doors" defaultOpen={false}>

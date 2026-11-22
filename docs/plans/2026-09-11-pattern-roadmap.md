@@ -317,6 +317,7 @@ against the vault:**
 | Ridgeline height (pitch check only) | 42" |
 | Cord per guyline (added 2026-11-21) | 96" (8') |
 | End cat-cut depth (added 2026-11-21, ends cut only) | 1" |
+| Beak reach past the end (added 2026-11-22, beaks only) | 18" |
 
 Choices with no number are not mock-derived: two-panel ridge seam (default)
 vs single panel, cat cut (default) vs straight edges, a rolled hem (default
@@ -357,7 +358,14 @@ the ridgeline height down the middle, half the footprint along the ground,
 the panel end as the long edge — zipped up the middle (zipper = ridgeline
 height, on the BOM) and lapped over the panel end hems; door fabric added
 to the roll; errors when the eaves cannot reach the ground or the ends are
-cat-cut; not in the 3D check), a beak variant (still open),
+cat-cut; not in the 3D check), ~~a beak variant~~ (DONE 2026-11-22: `beaks`
+none / one end / both ends; a mirrored pair of right-triangle halves per
+beaked end — reach past the end × the panel end — sewn to the panel end
+and to each other along the ridge at the seam allowance, the outer edge
+hemmed; the beaked panel end loses its hem for the seam allowance; the
+ridge-end tie-out moves to the tip; `beak_length` placeholder 18",
+`[mock-derived]`; refuses doors and cat-cut ends; not drawn in the 3D
+check, which still holds the ridge end),
 and moving the organizer and pleated-card hems onto the Hem primitive.
 
 **Single-panel 3D check — DONE 2026-11-16 (`fix/tarp-followups`).** The
@@ -465,8 +473,12 @@ baffles 3" tall cut, liner ≈ 55" × 79", shell ≈ 56.7" × 79", fill ≈ 269 
 (9.5 oz).
 
 **No 3D tab (recorded):** the cloth engine has no loft or fill model (the
-chambers would lie flat) and no lying body form. Follow-ups: an underquilt
-mode (on the same chamber primitive), a neck drawcord/snap and pad straps,
+chambers would lie flat) and no lying body form. Follow-ups: ~~an underquilt
+mode~~ (DONE 2026-11-22: `kind: 'underquilt'` — a rectangle the shoulder
+width across, the differential on the liner (the layer toward the
+hammock), both ends rolled together into a shock-cord channel
+(`end_channel` placeholder 3/4", Hem primitive) with the chambers between
+the channel lines, no footbox; shock cord and cord locks on the hardware), a neck drawcord/snap and pad straps,
 vertical side baffles, joining fabric widths for a wider quilt, synthetic
 batting instead of a fill weight.
 
@@ -495,8 +507,13 @@ floor 95" × 37" cut, top 85" × 41", arch rise ≈ 12.6", head height ≈ 17.6"
 **No 3D tab:** the cloth engine has no lying body to hold the top up.
 Follow-ups: ~~a bug-net variant~~ (DONE 2026-11-22: `top_material: 'mesh'`
 puts the top and both gussets in no-see-um mesh over the same waterproof
-tub, with an info note), a J or
-curved zipper across the head, a hood/brim, stake loops at the tub corners.
+tub, with an info note), ~~a J zipper~~ (DONE 2026-11-22: `zip_style: 'j'`
+splits the top at `j_from_head` (placeholder 30") into a head section and a
+body; the zipper runs across the top there and down the zip side, length =
+top width + side run), ~~a hood/brim~~ (DONE 2026-11-22 as a brim: `brim`
+adds a channel strip across the head of the top for a wire or short pole,
+`brim_from_head` 6" and `brim_channel` 1" placeholders; a shaped hood stays
+open), stake loops at the tub corners.
 
 #### 10e. Gaiters (apparel beyond the skirt, first item) — DONE 2026-11-22 (no 3D)
 Engine: `src/lib/pattern-engine/geometry/frustum.ts` — the flat development
@@ -519,9 +536,43 @@ Placeholders (common starting points for a mid-height gaiter, flagged
 17", front drop 1.5", overlap 1", hem 1/2", elastic channel 3/4", elastic
 90 % of the top, instep strap 9", fabric 58", zipper seam allowance 12.7 mm.
 
-**No 3D tab:** no leg or boot form in the cloth engine. Still open in 10e: a
+**3D check — DONE 2026-11-22:** `src/generators/gaiter/assembly3d.ts` wraps
+the piece back onto its cone (the `cone` placement, as the circle skirt)
+round a leg capsule a little inside the top circumference, closes the front
+(hook strip over loop strip, or the zipper edges) with a seam, and holds the
+top where the elastic grips. Tests: `gaiter/__tests__/assembly3d.test.ts`,
+an assembly-sweep case, an e2e target `gaiters`. A bottom narrower than the
+top is not wrapped (the cone hangs from its apex, so it would be upside
+down); the tab says why. Still open in 10e: a
 wind shirt, beanie or anything with sleeves, which needs a drafting engine
 (slopers, grading, armholes).
+
+#### 10f. Drafting engine for sleeved garments — PLANNED 2026-11-22 (not started)
+Small, separately testable steps; each lands with its own tests and no
+garment depends on a later step:
+
+1. **Measurement set** (`pattern-engine/drafting/measurements.ts`): chest,
+   waist, hip, back length, shoulder, neck, arm length, bicep, wrist, as
+   user inputs with ease per measurement. No size table: a standard size
+   chart (ASTM D5585, ISO 8559) is not in the repo, so presets wait until
+   one is sourced. Tests: validation, unit conversion.
+2. **Bodice block** (`drafting/bodice.ts`): front and back from the
+   measurements — chest/4 + ease per quarter, shoulder slope, neckline
+   (quarter ellipse) and armhole (Bézier through the armhole depth and the
+   shoulder and side points). Tests: front + back widths = chest/2 + ease,
+   seam lengths match (shoulder to shoulder, side to side), curves smooth.
+3. **Sleeve block** (`drafting/sleeve.ts`): cap height solved so the cap
+   curve length = armhole length + cap ease (bisection, like `chordArc`),
+   bicep and wrist widths, sleeve length. Tests: the cap matches the
+   armhole within a millimetre; front and back cap halves match their
+   armholes.
+4. **First garment on it: a wind shirt** (pullover, set-in sleeve, hood
+   optional later), Convention A. Tests: every seam pair matches in length.
+5. **3D**: the torso form exists; sleeves need an arm form (a capsule per
+   arm) before the shirt gets an assembly.
+
+A beanie does not need this engine (gores of a dome; `chordArc`-style
+geometry) and could come first if wanted.
 
 **Order for the rest of item 10:** 10b gathered-end hammock and 10c top quilt (done above), then 10d bivy (done above; bug net a follow-up) (curved long zipper,
 mesh cut sheet), 10e apparel beyond the skirt (gaiters first; a garment

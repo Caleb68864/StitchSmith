@@ -158,7 +158,8 @@ describe('placeholders — every one flagged until entered', () => {
     for (const p of PLACEHOLDERS) expect(DEF[p.field]).toBeUndefined();
     const w = built(DEF).warnings.filter((x) => x.id === 'mock-derived');
     expect(w).toHaveLength(1);
-    for (const p of PLACEHOLDERS) expect(w[0].message).toContain(p.label);
+    for (const p of PLACEHOLDERS.filter((x) => x.field !== 'end_channel')) expect(w[0].message).toContain(p.label);
+    expect(w[0].message).not.toContain('End channel');
   });
   it('entering every placeholder clears the note; sewn-through does not ask for the differential', () => {
     const all: QuiltInputs = { ...DEF, length: 78, shoulder_width: 54, foot_width: 40, footbox_length: 20, fabric_width: 58, loft: 2, baffle_spacing: 6, shell_differential: 3, fill_power: 850, overstuff: 10, seam_allowance: 12.7 };
@@ -183,5 +184,55 @@ describe('BOM', () => {
     expect(rows.find((x) => x.id === `material-${MESH_ID}`)!.quantity).toBe(Math.ceil((12 * (2 * IN + 2 * 12.7)) / 10) * 10);
     expect(rows.find((x) => x.id === 'material-fill')!.quantity).toBe(Math.ceil(r.total_fill_g));
     expect(buildBom({ ...DEF, loft: 0 })).toEqual([]);
+  });
+});
+
+describe('underquilt mode (roadmap 10c follow-up)', () => {
+  const UQ: QuiltInputs = { ...DEF, kind: 'underquilt' };
+  it('a rectangle the shoulder width across; the liner (toward the hammock) takes the differential', () => {
+    const r = resolveInputs(UQ);
+    expect(validateInputs(UQ).ok).toBe(true);
+    expect(r.foot_width).toBeCloseTo(r.shoulder_width, 9);
+    expect(r.wider_layer).toBe('liner');
+    expect(r.liner_cut_width).toBeGreaterThan(r.shell_cut_width);
+    const g = quiltGeometry(r);
+    expect(g.liner.halfWidthAt(0)).toBeCloseTo(g.liner.halfWidthAt(r.length), 9);
+    expect(2 * g.shell.halfWidthAt(0)).toBeCloseTo(54 * IN, 6);
+  });
+  it('rolled end channels: each end takes 2 × 3/4", and the chambers fill the length between the channel lines', () => {
+    const r = resolveInputs(UQ);
+    expect(r.end_channel).toBeCloseTo(0.75 * IN, 9);
+    expect(r.end_allowance).toBeCloseTo(1.5 * IN, 9);
+    expect(r.cut_length).toBeCloseTo(78 * IN + 3 * IN, 6);
+    const ch = r.chambers!;
+    expect(ch.chambers[0].y0).toBeCloseTo(0.75 * IN, 6);
+    expect(ch.chambers[ch.count - 1].y1).toBeCloseTo(78 * IN - 0.75 * IN, 6);
+    // Volume is the rectangle between the channels × loft.
+    expect(ch.totalVolumeMm3).toBeCloseTo(54 * IN * (78 - 1.5) * IN * 2 * IN, -3);
+  });
+  it('pieces: side sew lines, channel hems and channel stitch lines, no footbox; shock cord and cord locks on the hardware', () => {
+    const v = built(UQ);
+    const liner = piece(v.pieces, LINER_ID);
+    const pids = liner.paths.map((p) => p.id);
+    expect(pids).toContain(`${LINER_ID}-channel-head`);
+    expect(pids).toContain(`${LINER_ID}-sew-left`);
+    expect(pids.some((x) => x.startsWith(`${LINER_ID}-footbox`))).toBe(false);
+    expect(pids).not.toContain(`${LINER_ID}-sew`);
+    expect(liner.paths.filter((p) => p.label?.includes('finished crease'))).toHaveLength(2);
+    expect(v.hardware.find((h) => h.id === 'shock-cord')!.quantity).toBe(2);
+    expect(v.hardware.some((h) => h.id === 'footbox-zip')).toBe(false);
+    expect(v.steps.some((s) => s.id === 'quilt.channels')).toBe(true);
+    expect(v.steps.some((s) => s.id === 'quilt.footbox')).toBe(false);
+    const m = v.warnings.find((w) => w.id === 'mock-derived')!.message;
+    expect(m).toContain('End channel');
+    expect(m).not.toContain('Footbox length');
+    expect(ids(UQ)).toContain('fill-estimate');
+  });
+  it('the top quilt is unchanged by the new mode', () => {
+    const r = resolveInputs(DEF);
+    expect(r.kind).toBe('top_quilt');
+    expect(r.end_allowance).toBeCloseTo(12.7, 9);
+    expect(r.cut_length).toBeCloseTo(79 * IN, 6);
+    expect(r.chambers!.chambers[0].y0).toBe(0);
   });
 });

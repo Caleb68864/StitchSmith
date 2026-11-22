@@ -38,6 +38,8 @@ export const MAX_EAVE_TIEOUTS = 6;
 export const GUYLINE_LENGTH_MM = 96 * IN;
 /** Placeholder 1" cat cut on each end (each panel's ridge-to-eave edge), when end cuts are on. */
 export const END_SAG_MM = 1 * IN;
+/** Placeholder 18" beak: how far each beak's tip reaches past the end, along the ridge line. */
+export const BEAK_LENGTH_MM = 18 * IN;
 
 /**
  * Every placeholder input, with its label and its value in millimetres
@@ -60,4 +62,5 @@ export const PLACEHOLDERS: readonly { field: keyof TarpInputs; label: string; mm
   { field: 'ridge_height', label: 'Ridgeline height (pitch check)', mm: RIDGE_HEIGHT_MM, kind: 'length' },
   { field: 'guyline_length', label: 'Cord per guyline', mm: GUYLINE_LENGTH_MM, kind: 'length' },
   { field: 'end_sag', label: 'End cat-cut depth', mm: END_SAG_MM, kind: 'length' },
+  { field: 'beak_length', label: 'Beak length', mm: BEAK_LENGTH_MM, kind: 'length' },
 ];
