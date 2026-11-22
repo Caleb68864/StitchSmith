@@ -350,7 +350,14 @@ tie-out on the BOM, `guylines` / `line_locks` toggles, cord per guyline a
 `pullouts` toggle, off by default; one patch-and-loop pull-out at mid-span
 in the middle of each panel, or each half of a single panel, counted as
 tie-outs so the patches, loops and guylines follow; not pinned in the 3D
-check, since a pull-out is guyed out, not fixed), a doorway or beak variant,
+check, since a pull-out is guyed out, not fixed), ~~a doorway~~ (DONE
+2026-11-22: `doors` none / one end / both ends; each end closed by a
+mirrored pair of hemmed right-triangle halves sized to the pitch check —
+the ridgeline height down the middle, half the footprint along the ground,
+the panel end as the long edge — zipped up the middle (zipper = ridgeline
+height, on the BOM) and lapped over the panel end hems; door fabric added
+to the roll; errors when the eaves cannot reach the ground or the ends are
+cat-cut; not in the 3D check), a beak variant (still open),
 and moving the organizer and pleated-card hems onto the Hem primitive.
 
 **Single-panel 3D check — DONE 2026-11-16 (`fix/tarp-followups`).** The

@@ -1259,3 +1259,19 @@ baffle-chamber primitive and a fill-weight calculation.
 - Patch on the inside face, loop flat on the outside, box-X through all;
   the step says it lifts the panel and holds no structure. The 3D check
   does not pin pull-outs (they are guyed out, not fixed).
+
+
+## 2026-11-22 — Tarp doors (roadmap 10a follow-up: doorway)
+
+- Decided by agent 2026-11-22 (owner may revisit): a doorway is a pair of
+  zipped triangular door halves closing an end of the pitched A-frame
+  (`doors`: none by default, one end or both). A beak (a porch extension
+  past the end) is a different shape and stays open.
+- No new number: each half is the right triangle the pitch check leaves at
+  the end (hypotenuse = the panel end, width / 2; centre edge = the
+  ridgeline height; ground edge = half the footprint). So the doors fit
+  only that pitch, and the step says to recut them for another. All three
+  edges take the tarp's hem (Hem primitive); the long edge laps over the
+  panel's finished end hem and is topstitched. Zipper length = the
+  ridgeline height. Doors need straight ends and eaves that reach the
+  ground (errors on `doors` otherwise). The 3D check leaves them out.
