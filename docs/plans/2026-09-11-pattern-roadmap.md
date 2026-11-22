@@ -565,7 +565,8 @@ garment depends on a later step:
    (quarter ellipse) and armhole (Bézier through the armhole depth and the
    shoulder and side points). Tests: front + back widths = chest/2 + ease,
    seam lengths match (shoulder to shoulder, side to side), curves smooth.
-3. **Sleeve block** (`drafting/sleeve.ts`): cap height solved so the cap
+3. DONE 2026-11-22 — **Sleeve block** (`drafting/sleeve.ts`; tests `sleeve.test.ts`;
+   S-curve cap halves solved by bisection, cap ease optional, default 0): cap height solved so the cap
    curve length = armhole length + cap ease (bisection, like `chordArc`),
    bicep and wrist widths, sleeve length. Tests: the cap matches the
    armhole within a millimetre; front and back cap halves match their

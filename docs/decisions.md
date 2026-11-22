@@ -1391,3 +1391,15 @@ baffle-chamber primitive and a fill-weight calculation.
   and side seam on both halves, so every seam pair matches by construction.
   A real block gives the front more width and a deeper front armhole; that
   refinement waits for a sourced system or fitting.
+
+
+## 2026-11-22 — Drafting engine step 3: the sleeve (roadmap 10f)
+
+- Decided by agent 2026-11-22 (owner may revisit): a one-piece set-in
+  sleeve. Each cap half is a cubic S-curve leaving the cap top level and
+  arriving at the underarm level; the cap height is solved by bisection so
+  each half measures its armhole plus half the cap ease (default 0, a
+  shirt cap; a fitted sleeve wants some). Bicep and wrist at their eased
+  girths, the arm length from the cap top to the wrist, both underseams the
+  same straight line. The cap is symmetric while the bodice halves share
+  one armhole.
