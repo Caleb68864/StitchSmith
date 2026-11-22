@@ -31,6 +31,18 @@ export interface QuiltInputs {
   kind?: QuiltKind;
   /** Underquilt: the channel at each end for the shock-cord suspension, display units. Placeholder 3/4" — mock-derived. */
   end_channel?: number;
+  /** Top quilt: a drawcord channel across the head (with a snap at the neck), or none (default). */
+  neck?: 'none' | 'drawcord';
+  /** Neck channel depth, display units. Placeholder 3/4" — mock-derived. */
+  neck_channel?: number;
+  /** Pad straps: elastic straps under the sleeping pad from loops on the quilt's edges. Default false. */
+  pad_straps?: boolean;
+  /** Sleeping pad width, display units. Placeholder 20" — mock-derived. */
+  pad_width?: number;
+  /** Cut each layer as two halves joined down the centre (for a quilt wider than the fabric). Default false. */
+  join_widths?: boolean;
+  /** Baffled only: a mesh side baffle down each long edge, so the loft runs to the edge (default false). */
+  side_baffles?: boolean;
   /** Baffled chambers (default) or sewn through both layers. */
   construction?: QuiltConstruction;
   /** Footbox sewn closed (default) or closed with a zipper. */
@@ -69,6 +81,19 @@ export interface ResolvedInputs {
   end_allowance: number;
   /** Which layer the differential widens: the shell on a top quilt, the liner (the inner layer, toward the hammock) on an underquilt. */
   wider_layer: 'shell' | 'liner';
+  neck: 'none' | 'drawcord';
+  pad_straps: boolean;
+  pad_width: number;
+  side_baffles: boolean;
+  join_widths: boolean;
+  /** The widest piece of shell or liner fabric across the roll (a half when joined). */
+  piece_cut_width: number;
+  /** Rolled channel at each end (0 for none): an underquilt's suspension, or a top quilt's neck drawcord at the head. */
+  head_channel: number;
+  foot_channel: number;
+  /** Fabric past the finished head and foot: the channel's allowance, or the seam allowance. */
+  head_allowance: number;
+  foot_allowance: number;
   length: number;
   shoulder_width: number;
   foot_width: number;

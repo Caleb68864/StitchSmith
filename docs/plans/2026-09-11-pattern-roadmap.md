@@ -484,8 +484,18 @@ mode~~ (DONE 2026-11-22: `kind: 'underquilt'` — a rectangle the shoulder
 width across, the differential on the liner (the layer toward the
 hammock), both ends rolled together into a shock-cord channel
 (`end_channel` placeholder 3/4", Hem primitive) with the chambers between
-the channel lines, no footbox; shock cord and cord locks on the hardware), a neck drawcord/snap and pad straps,
-vertical side baffles, joining fabric widths for a wider quilt, synthetic
+the channel lines, no footbox; shock cord and cord locks on the hardware), ~~a neck drawcord/snap and pad straps~~ (DONE 2026-11-22:
+`neck: 'drawcord'` rolls the head, both layers, into a channel (placeholder
+3/4", Hem primitive) with the chambers starting below it, a drawcord, cord
+lock and neck snap on the hardware; `pad_straps` marks loops a third and
+two thirds down each side seam and lists two straps about the pad width,
+`pad_width` placeholder 20"),
+~~vertical side baffles~~ (DONE 2026-11-22: `side_baffles`, baffled only — a
+mesh strip the finished side long and the loft tall down each edge, the
+cross baffles' ends caught under it, more mesh on the BOM), ~~joining fabric widths for a wider quilt~~ (DONE
+2026-11-22: `join_widths` cuts each layer as a mirrored pair of halves,
+every line clipped to the half, a flat-felled centre seam; the fabric
+check then uses the half), synthetic
 batting instead of a fill weight.
 
 #### 10d. Bathtub-floor bivy — DONE 2026-11-22 (`pattern/10-doors-bivy-apparel`, no 3D)
@@ -511,14 +521,15 @@ side zipper 48", usable fabric width 58", seam allowance 12.7 mm. With them:
 floor 95" × 37" cut, top 85" × 41", arch rise ≈ 12.6", head height ≈ 17.6".
 
 **No 3D tab:** the cloth engine has no lying body to hold the top up.
-**3D — assessed 2026-11-22, not built:** feasible but not done. Plan: a 3D
-copy of the floor cut as a cross (corner squares out, as the folded-T was
-notched) with each ear's two edges seamed, the tub walls hinged 90°; a
-sleeper block on the floor; the top above it, its long edges seamed to the
-wall tops; the gussets draped in the end planes (flat x along the end
-edge), their arcs seamed to the top's short edges in segments of equal
-length. Expect a large mesh (floor and top are each ~2.2 m long), so it
-runs coarsened in the viewer.
+**3D — DONE 2026-11-22** (`bivy/assembly3d.ts`): the floor's 3D copy is cut
+as a cross (corner squares out, each corner's two edges seamed: the same tub
+as the folded ears), held flat on the ground; a sleeper block inside; the
+top placed over the rim, its long edges seamed to the side rims; the head
+and foot gussets draped in the end planes, bases seamed to the end rims and
+arches to the top's short edges. Seams close to < 1 mm, p99 stretch ~3 %.
+The side-zip bivy only (a J-zip top is two pieces; not assembled yet).
+Tests: `bivy/__tests__/assembly3d.test.ts`, an assembly-sweep case, an e2e
+target.
 Follow-ups: ~~a bug-net variant~~ (DONE 2026-11-22: `top_material: 'mesh'`
 puts the top and both gussets in no-see-um mesh over the same waterproof
 tub, with an info note), ~~a J zipper~~ (DONE 2026-11-22: `zip_style: 'j'`

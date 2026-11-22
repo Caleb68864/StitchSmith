@@ -1,6 +1,8 @@
 import { useMemo } from 'react';
 import type { UseBivyProjectReturn } from '../../state/useBivyProject.js';
-import { validateInputs, buildPattern } from '../../generators/bivy/index.js';
+import { validateInputs, buildPattern, bivyAssembly } from '../../generators/bivy/index.js';
+import { FoldPreview3D } from '../shared/FoldPreview3D.js';
+import type { Pattern } from '../../lib/pattern-engine/graph/Pattern.js';
 import { BivySettingsPanel } from './BivySettingsPanel.js';
 import { PatternPreview } from './PatternPreview.js';
 import { ExportPanel } from './ExportPanel.js';
@@ -27,6 +29,9 @@ export function BivyPage({ project, updateInputs, resetProject, importProject }:
   const hasErrors = !validation.ok;
   const built = useMemo(() => { if (hasErrors) return null; try { const r = buildPattern(project.inputs); return r.ok ? r.value : null; } catch { return null; } }, [project.inputs, hasErrors]);
   const steps = built?.steps ?? [];
+  // 3D: the tub stood up round a sleeper block, the top and gussets seamed on.
+  const assembly = useMemo(() => { if (!built) return null; try { return bivyAssembly(built.pieces, built.resolved); } catch { return null; } }, [built]);
+  const pattern3d = useMemo<Pattern | null>(() => (assembly ? { id: 'bivy', name: 'Bivy', pieces: assembly.pieces } : null), [assembly]);
   const warnings = useMemo<UiWarning[]>(() => (built?.warnings ?? []).map((w) => ({ id: w.id, severity: w.severity, message: w.message, field: w.field })), [built]);
   const r = built?.resolved;
   function handleReset() { if (window.confirm('Reset will discard all changes and restore default Bivy settings. Continue?')) resetProject(); }
@@ -47,8 +52,8 @@ export function BivyPage({ project, updateInputs, resetProject, importProject }:
       preview={
         <PreviewTabs
           pattern={<PatternPreview inputs={project.inputs} hasErrors={hasErrors} />}
-          assembly={null}
-          unavailableReason="No 3D check yet: the cloth engine has no lying body form to hold the top up, so the arch would collapse onto the floor."
+          assembly={pattern3d && assembly ? <FoldPreview3D pattern={pattern3d} placements={assembly.placements} pins={assembly.pins} seams={assembly.seams} solids={assembly.solids} gravity={assembly.gravity} initialSimulate height={560} /> : null}
+          unavailableReason="The 3D check assembles the side-zip bivy; a J-zip top (two top pieces) is not assembled yet."
         />
       }
       sidebar={

@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest';
-import { buildPattern, buildBom, validateInputs, resolveInputs, quiltGeometry, LINER_ID, SHELL_ID, BAFFLE_PREFIX, MESH_ID, PLACEHOLDERS } from '../index.js';
+import { buildPattern, buildBom, validateInputs, resolveInputs, quiltGeometry, LINER_ID, SHELL_ID, BAFFLE_PREFIX, SIDE_BAFFLE_ID, MESH_ID, PLACEHOLDERS } from '../index.js';
 import type { QuiltInputs } from '../types.js';
 import { makeDefaultQuiltProject } from '../../../state/useQuiltProject.js';
 import { bboxFromPiece } from '../../../lib/pattern-engine/geometry/bbox.js';
@@ -158,7 +158,7 @@ describe('placeholders — every one flagged until entered', () => {
     for (const p of PLACEHOLDERS) expect(DEF[p.field]).toBeUndefined();
     const w = built(DEF).warnings.filter((x) => x.id === 'mock-derived');
     expect(w).toHaveLength(1);
-    for (const p of PLACEHOLDERS.filter((x) => x.field !== 'end_channel')) expect(w[0].message).toContain(p.label);
+    for (const p of PLACEHOLDERS.filter((x) => !['end_channel', 'neck_channel', 'pad_width'].includes(x.field))) expect(w[0].message).toContain(p.label);
     expect(w[0].message).not.toContain('End channel');
   });
   it('entering every placeholder clears the note; sewn-through does not ask for the differential', () => {
@@ -234,5 +234,75 @@ describe('underquilt mode (roadmap 10c follow-up)', () => {
     expect(r.end_allowance).toBeCloseTo(12.7, 9);
     expect(r.cut_length).toBeCloseTo(79 * IN, 6);
     expect(r.chambers!.chambers[0].y0).toBe(0);
+  });
+});
+
+describe('neck drawcord and pad straps (roadmap 10c follow-ups)', () => {
+  it('a neck drawcord rolls the head into a channel: the head takes 2 × 3/4", the chambers start below it, a cord, a lock and a snap', () => {
+    const N: QuiltInputs = { ...DEF, neck: 'drawcord' };
+    const r = resolveInputs(N);
+    expect(r.head_channel).toBeCloseTo(0.75 * IN, 9);
+    expect(r.head_allowance).toBeCloseTo(1.5 * IN, 9);
+    expect(r.foot_allowance).toBeCloseTo(12.7, 9);
+    expect(r.cut_length).toBeCloseTo(78 * IN + 1.5 * IN + 12.7, 6);
+    expect(r.chambers!.chambers[0].y0).toBeCloseTo(0.75 * IN, 6);
+    const v = built(N);
+    const shell = piece(v.pieces, SHELL_ID);
+    expect(shell.paths.some((p) => p.id === `${SHELL_ID}-channel-head`)).toBe(true);
+    expect(shell.paths.find((p) => p.id === `${SHELL_ID}-sew`)!.closed).toBe(false);
+    for (const id of ['neck-cord', 'neck-cord-lock', 'neck-snap']) expect(v.hardware.some((h) => h.id === id)).toBe(true);
+    expect(v.steps.some((s) => s.id === 'quilt.neck')).toBe(true);
+    expect(v.warnings.find((w) => w.id === 'mock-derived')!.message).toContain('Neck channel');
+    // The default is unchanged.
+    expect(resolveInputs(DEF).head_allowance).toBeCloseTo(12.7, 9);
+  });
+  it('pad straps: loop marks a third and two thirds down each side, two straps and four loops', () => {
+    const v = built({ ...DEF, pad_straps: true });
+    const liner = piece(v.pieces, LINER_ID);
+    expect(liner.paths.filter((p) => p.id.startsWith(`${LINER_ID}-pad-loop-`))).toHaveLength(4);
+    expect(v.hardware.find((h) => h.id === 'pad-strap')!.quantity).toBe(2);
+    expect(v.hardware.find((h) => h.id === 'pad-loop')!.quantity).toBe(4);
+    expect(v.warnings.find((w) => w.id === 'mock-derived')!.message).toContain('Pad width');
+    expect(errorFields({ ...DEF, pad_straps: true, pad_width: 0 })).toEqual(['pad_width']);
+  });
+});
+
+describe('side baffles (roadmap 10c follow-up: vertical baffles)', () => {
+  it('two mesh strips the finished side long and the loft tall, a step, more mesh; sewn-through has none', () => {
+    const v = built({ ...DEF, side_baffles: true });
+    const sb = piece(v.pieces, SIDE_BAFFLE_ID);
+    expect(sb.quantity).toBe(2);
+    const bb = bboxFromPiece(sb);
+    expect(bb.height).toBeCloseTo(2 * IN + 2 * 12.7, 6);
+    expect(bb.width).toBeCloseTo(Math.hypot(7 * IN, 78 * IN) + 2 * 12.7, 3);
+    expect(v.steps.some((s) => s.id === 'quilt.side-baffles')).toBe(true);
+    const mesh = (i: QuiltInputs) => buildBom(i).find((x) => x.id === `material-${MESH_ID}`)!.quantity;
+    expect(mesh({ ...DEF, side_baffles: true })).toBeGreaterThan(mesh(DEF) + 78 * IN);
+    expect(built({ ...ST, side_baffles: true }).pieces.some((p) => p.id === SIDE_BAFFLE_ID)).toBe(false);
+  });
+});
+
+describe('joined widths (roadmap 10c follow-up)', () => {
+  const WIDE: QuiltInputs = { ...DEF, shoulder_width: 64, foot_width: 48 };
+  it('a quilt wider than the fabric is an error until joined; joined, each layer is a mirrored pair of halves with a centre seam', () => {
+    expect(errorFields(WIDE)).toEqual(['shoulder_width']);
+    const J = { ...WIDE, join_widths: true };
+    expect(errorFields(J)).toEqual([]);
+    const r = resolveInputs(J);
+    const v = built(J);
+    const shell = piece(v.pieces, SHELL_ID);
+    expect(shell.mirror).toBe(true);
+    expect(shell.paths.some((p) => p.id === `${SHELL_ID}-centre-seam`)).toBe(true);
+    const bb = bboxFromPiece(shell);
+    expect(bb.width).toBeCloseTo(r.piece_cut_width, 0);
+    expect(bb.width).toBeLessThan(58 * IN);
+    // The centre seam runs the finished length.
+    const cs = shell.paths.find((p) => p.id === `${SHELL_ID}-centre-seam`)!.edges[0];
+    expect(Math.abs(cs.end.y - cs.start.y)).toBeCloseTo(78 * IN, 6);
+    // Every baffle line is clipped to the half: none reaches left of the centre seam.
+    for (const p of shell.paths.filter((x) => x.id.startsWith(`${SHELL_ID}-wall-`))) for (const e of p.edges) expect(Math.min(e.start.x, e.end.x)).toBeGreaterThanOrEqual(cs.start.x - 1e-6);
+    expect(Object.values(shell.seamAllowances!).every((x) => x === 0)).toBe(true);
+    // Two halves no longer fit side by side on 58", so each layer takes two lengths.
+    expect(r.fabric_length).toBeCloseTo(4 * r.cut_length, 6);
   });
 });

@@ -28,6 +28,7 @@ import { makeDefaultLbvProject } from '../../state/useLbvProject.js';
 import { makeDefaultTarpProject } from '../../state/useTarpProject.js';
 import { makeDefaultGaiterProject } from '../../state/useGaiterProject.js';
 import { makeDefaultWindShirtProject } from '../../state/useWindShirtProject.js';
+import { makeDefaultBivyProject } from '../../state/useBivyProject.js';
 
 import { buildPattern as buildTriZip, getPreset, resolveInputs as resolveTriZip } from '../tri-zip-backpack/index.js';
 import { triZipAssembly } from '../tri-zip-backpack/assembly3d.js';
@@ -47,6 +48,7 @@ import { buildPattern as buildLbv, lbvAssembly } from '../lbv/index.js';
 import { buildPattern as buildTarp, tarpAssembly } from '../tarp/index.js';
 import { buildPattern as buildGaiter, gaiterAssembly } from '../gaiter/index.js';
 import { buildPattern as buildShirt, windShirtAssembly } from '../wind-shirt/index.js';
+import { buildPattern as buildBivy, bivyAssembly } from '../bivy/index.js';
 
 interface Asm {
   pieces: Piece[];
@@ -118,6 +120,7 @@ const CASES: Case[] = [
   { name: 'wind shirt (body and sleeves on a torso, arms out)', spacing: 9, maxStretch: 0.11, maxSeamMean: 3, build: () => { const v = ok(buildShirt(makeDefaultWindShirtProject().inputs)); return windShirtAssembly(v.pieces, v.resolved); } },
   { name: 'tarp (doors both ends)', spacing: 40, maxStretch: 0.05, maxSeamMean: 3, build: () => { const v = ok(buildTarp({ ...makeDefaultTarpProject().inputs, doors: 'both_ends' })); return tarpAssembly(v.pieces, v.resolved); } },
   { name: 'tarp (beaks both ends)', spacing: 40, maxStretch: 0.05, maxSeamMean: 3, build: () => { const v = ok(buildTarp({ ...makeDefaultTarpProject().inputs, beaks: 'both_ends' })); return tarpAssembly(v.pieces, v.resolved); } },
+  { name: 'bivy (tub round a sleeper)', spacing: 30, maxStretch: 0.05, maxSeamMean: 3, build: () => { const v = ok(buildBivy(makeDefaultBivyProject().inputs)); return bivyAssembly(v.pieces, v.resolved); } },
   { name: 'tarp (single panel over the ridgeline)', spacing: 60, maxStretch: 0.01, maxSeamMean: 3, build: () => { const v = ok(buildTarp({ ...makeDefaultTarpProject().inputs, construction: 'single_panel', width: 56, ridge_height: 24 })); return tarpAssembly(v.pieces, v.resolved); } },
 ];
 

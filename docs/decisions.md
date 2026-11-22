@@ -1481,3 +1481,25 @@ baffle-chamber primitive and a fill-weight calculation.
   unchanged) adds two tree straps and two load-rated carabiners. The strap
   length is a flagged placeholder (10', a common length, not a vault
   number). The standing load warning is unchanged.
+
+
+## 2026-11-22 — Quilt neck drawcord and pad straps (roadmap 10c follow-ups)
+
+- Decided by agent 2026-11-22 (owner may revisit): the neck closure is a
+  rolled channel across the head (both layers together, like the
+  underquilt's end channels) with a drawcord, a cord lock and a snap at
+  the head corners; off by default. The quilt outline now takes separate
+  head and foot allowances. Pad straps: loops in the side seams a third and
+  two thirds down, two elastic straps about the pad width (20" placeholder,
+  flagged) plus buckle tails; off by default.
+
+
+## 2026-11-22 — Quilt side baffles and joined widths (roadmap 10c follow-ups)
+
+- Side baffles (off by default, baffled only): a mesh strip the finished
+  liner side long and the loft tall down each edge; the shell and liner
+  edges sew to it instead of to each other, so the loft runs to the edge.
+- Joined widths (off by default): each layer cut as a mirrored pair of
+  halves split on the centre line with a seam allowance there and a
+  flat-felled centre seam; the cross baffles stay whole. The fabric check
+  uses the half's width; a quilt too wide for the fabric now suggests it.

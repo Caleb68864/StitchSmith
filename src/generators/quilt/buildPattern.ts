@@ -17,6 +17,7 @@ import { makeEdgeIdGen } from '../../lib/pattern-engine/graph/Edge.js';
 import type { Step } from '../../lib/pattern-engine/instructions/Step.js';
 import type { ChamberLayout } from '../../lib/pattern-engine/primitives/chambers.js';
 import { resolveHem, hemLines } from '../../lib/pattern-engine/primitives/hem.js';
+import { offsetPolygonPerEdge } from '../../lib/pattern-engine/geometry/offset.js';
 import type { QuiltInputs, QuiltBuildResult, ResolvedInputs, GeneratorWarning, BuildPatternError, HardwareItem } from './types.js';
 import { resolveInputs, validateInputs } from './inputs.js';
 import { PLACEHOLDERS } from './defaults.js';
@@ -26,6 +27,7 @@ export type Result<T> = { ok: true; value: T } | { ok: false; errors: BuildPatte
 export const LINER_ID = 'quilt-liner';
 export const SHELL_ID = 'quilt-shell';
 export const BAFFLE_PREFIX = 'quilt-baffle-';
+export const SIDE_BAFFLE_ID = 'quilt-side-baffle';
 export const SHELL_FABRIC_ID = 'quilt-shell-fabric';
 export const LINER_FABRIC_ID = 'quilt-liner-fabric';
 export const MESH_ID = 'quilt-baffle-mesh';
@@ -61,8 +63,8 @@ export function quiltGeometry(r: ResolvedInputs): QuiltGeometry {
   const f = 1 + r.shell_differential / 100;
   const fs = r.wider_layer === 'shell' ? f : 1, fl = r.wider_layer === 'liner' ? f : 1;
   return {
-    liner: panelOutline(r.length, r.shoulder_width * fl, r.foot_width * fl, r.seam_allowance, r.end_allowance),
-    shell: panelOutline(r.length, r.shoulder_width * fs, r.foot_width * fs, r.seam_allowance, r.end_allowance),
+    liner: panelOutline(r.length, r.shoulder_width * fl, r.foot_width * fl, r.seam_allowance, r.head_allowance, r.foot_allowance),
+    shell: panelOutline(r.length, r.shoulder_width * fs, r.foot_width * fs, r.seam_allowance, r.head_allowance, r.foot_allowance),
     chambers: r.chambers,
     footboxY: r.length - r.footbox_length,
   };
@@ -75,8 +77,18 @@ function buildPanel(r: ResolvedInputs, g: QuiltGeometry, which: 'liner' | 'shell
   const outline = closed(eid, `${id}-outline`, o.cut, 'cut');
   const uq = r.kind === 'underquilt';
   const paths: Path[] = [outline];
-  if (!uq) paths.push(closed(eid, `${id}-sew`, o.finished, 'stitch', `Perimeter sew line — ${fmtIn(r.seam_allowance)}" in from the cut edge`));
-  else {
+  const neck = r.neck === 'drawcord';
+  if (!uq && !neck) paths.push(closed(eid, `${id}-sew`, o.finished, 'stitch', `Perimeter sew line — ${fmtIn(r.seam_allowance)}" in from the cut edge`));
+  else if (!uq) {
+    // Neck drawcord: the perimeter is sewn on the sides and foot; the head rolls into the channel.
+    const [hl, hr, fr, fl] = o.finished;
+    paths.push({ id: `${id}-sew`, closed: false, label: `Sew line — sides and foot, ${fmtIn(r.seam_allowance)}" in; the head rolls into the neck channel`, edges: [hr, fr, fl, hl].slice(1).map((p, i, arr) => ({ kind: 'straight' as const, id: eid(), role: 'stitch' as const, start: i === 0 ? hr : arr[i - 1], end: p })) });
+    const hem = resolveHem({ depth: r.head_channel, fold: 'double' });
+    if (hem.ok) {
+      paths.push(...hemLines({ hem: hem.value, finished: [{ x: 0, y: o.yAt(0) }, { x: o.cutWidth, y: o.yAt(0) }], outward: { x: 0, y: -1 }, idPrefix: `${id}-head`, eid, name: 'Neck channel hem' }).paths);
+      paths.push(line(eid, `${id}-channel-head`, { x: o.cx - o.halfWidthAt(r.head_channel), y: o.yAt(r.head_channel) }, { x: o.cx + o.halfWidthAt(r.head_channel), y: o.yAt(r.head_channel) }, 'stitch', `Neck channel stitch — ${fmtIn(r.head_channel)}" for the drawcord, through both layers`));
+    }
+  } else {
     // Underquilt: the sides are seamed; the ends roll, both layers together, into the suspension channel.
     const [hl, hr, fr, fl] = o.finished;
     paths.push(line(eid, `${id}-sew-left`, hl, fl, 'stitch', `Side sew line — ${fmtIn(r.seam_allowance)}" in`));
@@ -101,6 +113,15 @@ function buildPanel(r: ResolvedInputs, g: QuiltGeometry, which: 'liner' | 'shell
     paths.push(line(eid, `${id}-footbox-l`, { x: o.cx - fh - sa, y: fy }, { x: o.cx - fh, y: fy }, 'notch', r.footbox === 'zip' ? 'Footbox zip end' : 'Footbox — sew the sides together from here to the foot'));
     paths.push(line(eid, `${id}-footbox-r`, { x: o.cx + fh, y: fy }, { x: o.cx + fh + sa, y: fy }, 'notch'));
   }
+  // Pad strap loops: a third and two thirds of the way down each side, caught in the side seam.
+  if (r.pad_straps) {
+    const sa = Math.max(r.seam_allowance, 6);
+    [1 / 3, 2 / 3].forEach((f, i) => {
+      const y = r.length * f, py = o.yAt(y), h = o.halfWidthAt(y);
+      paths.push(line(eid, `${id}-pad-loop-l-${i}`, { x: o.cx - h - sa, y: py }, { x: o.cx - h, y: py }, 'notch', i === 0 ? 'Pad strap loop — sew into the side seam here' : undefined));
+      paths.push(line(eid, `${id}-pad-loop-r-${i}`, { x: o.cx + h, y: py }, { x: o.cx + h + sa, y: py }, 'notch'));
+    });
+  }
   // Centre marks at the head and foot so the shell and liner line up.
   paths.push(line(eid, `${id}-centre-head`, { x: o.cx, y: 0 }, { x: o.cx, y: o.yAt(0) }, 'notch', 'Centre'));
   paths.push(line(eid, `${id}-centre-foot`, { x: o.cx, y: o.yAt(r.length) }, { x: o.cx, y: o.cutLength }, 'notch'));
@@ -113,6 +134,45 @@ function buildPanel(r: ResolvedInputs, g: QuiltGeometry, which: 'liner' | 'shell
     for (const c of g.chambers.chambers) annotations.push({ kind: 'label', label: `Ch ${c.index}: ${grams(c.fillG)}`, point: { x: o.cx, y: o.yAt((c.y0 + c.y1) / 2) - 20 } });
   }
   return { id, name: which === 'liner' ? 'Liner' : 'Shell', mirror: false, quantity: 1, materialId: which === 'liner' ? LINER_FABRIC_ID : SHELL_FABRIC_ID, paths, seamAllowances: zeroSa(outline), annotations };
+}
+
+/**
+ * A panel cut as the right half of itself with a centre seam (for a quilt wider than the
+ * fabric): every path clipped to the right of the centre line, the cut outline the finished
+ * half offset by its allowances (seam allowance on the new centre edge), a centre sew line.
+ */
+function halfPanel(r: ResolvedInputs, full: Piece, o: PanelOutline, end: [number, number]): Piece {
+  const cx = o.cx, sa = r.seam_allowance;
+  const [, hr, fr] = o.finished;
+  const fin: Point[] = [{ x: cx, y: hr.y }, hr, fr, { x: cx, y: fr.y }];
+  const dist = [end[0], sa, end[1], sa];
+  const area = (p: Point[]) => p.reduce((s, q, i) => { const n = p[(i + 1) % p.length]; return s + q.x * n.y - n.x * q.y; }, 0) / 2;
+  let off = offsetPolygonPerEdge(fin, dist);
+  if (!off.ok || Math.abs(area(off.value)) < Math.abs(area(fin))) off = offsetPolygonPerEdge(fin, dist.map((d) => -d));
+  if (!off.ok) throw new Error(off.error);
+  const shiftX = -Math.min(...off.value.map((p) => p.x));
+  const mv = (p: Point): Point => ({ x: p.x + shiftX, y: p.y });
+  const eid = makeEdgeIdGen(`${full.id}-half`);
+  const outline = closed(eid, `${full.id}-outline`, off.value.map(mv), 'cut');
+  const clip = (e: Edge): Edge | null => {
+    if (e.kind !== 'straight') return e;
+    const a = e.start, b = e.end;
+    if (a.x >= cx - 1e-9 && b.x >= cx - 1e-9) return { ...e, id: eid(), start: mv(a), end: mv(b) };
+    if (a.x < cx && b.x < cx) return null;
+    const t = (cx - a.x) / (b.x - a.x), m = { x: cx, y: a.y + t * (b.y - a.y) };
+    return a.x < cx ? { ...e, id: eid(), start: mv(m), end: mv(b) } : { ...e, id: eid(), start: mv(a), end: mv(m) };
+  };
+  const paths: Path[] = [outline];
+  for (const p of full.paths) {
+    if (p.id === `${full.id}-outline` || p.id.includes('-centre-')) continue;
+    const edges = p.edges.map(clip).filter((x): x is Edge => x !== null && Math.hypot(x.end.x - x.start.x, x.end.y - x.start.y) > 1e-6);
+    if (edges.length) paths.push({ ...p, closed: false, edges });
+  }
+  paths.push(line(eid, `${full.id}-centre-seam`, mv(fin[0]), mv(fin[3]), 'stitch', `Centre seam — join the two halves, ${fmtIn(sa)}" in, flat-felled`));
+  return {
+    ...full, name: `${full.name} half (cut a mirrored pair)`, mirror: true, quantity: 1, paths, seamAllowances: zeroSa(outline),
+    annotations: (full.annotations ?? []).filter((a) => !a.point || a.point.x >= cx - 1).map((a) => (a.point ? { ...a, point: mv({ x: Math.max(a.point.x, cx + 40), y: a.point.y }) } : a)),
+  };
 }
 
 /** One baffle per chamber wall: shell edge (top) to the shell's width, liner edge (bottom) to the liner's, both ends into the side seam. */
@@ -140,6 +200,24 @@ function buildBaffles(r: ResolvedInputs, g: QuiltGeometry): Piece[] {
   });
 }
 
+/** Side baffle: the finished side length (liner, head to foot between the end lines) by the loft, both edges seam-allowanced. */
+function buildSideBaffle(r: ResolvedInputs, g: QuiltGeometry): Piece {
+  const eid = makeEdgeIdGen(SIDE_BAFFLE_ID);
+  const sa = r.seam_allowance;
+  const side = Math.hypot(g.liner.halfWidthAt(r.length) - g.liner.halfWidthAt(0), r.length);
+  const w = side + 2 * sa, h = r.loft + 2 * sa;
+  const outline = closed(eid, `${SIDE_BAFFLE_ID}-outline`, [{ x: 0, y: 0 }, { x: w, y: 0 }, { x: w, y: h }, { x: 0, y: h }], 'cut');
+  return {
+    id: SIDE_BAFFLE_ID, name: 'Side baffle (cut 2)', mirror: false, quantity: 2, materialId: MESH_ID, seamAllowances: zeroSa(outline),
+    paths: [
+      outline,
+      line(eid, `${SIDE_BAFFLE_ID}-shell-stitch`, { x: sa, y: sa }, { x: w - sa, y: sa }, 'stitch', `Shell edge — to the shell's side, ${fmtIn(sa)}" in`),
+      line(eid, `${SIDE_BAFFLE_ID}-liner-stitch`, { x: sa, y: h - sa }, { x: w - sa, y: h - sa }, 'stitch', "Liner edge — to the liner's side"),
+    ],
+    annotations: [{ kind: 'label', label: `Side baffle — ${fmtIn(side)}" long, ${fmtIn(r.loft)}" tall finished`, point: { x: w / 2, y: h / 2 } }],
+  };
+}
+
 function buildSteps(r: ResolvedInputs, g: QuiltGeometry): Step[] {
   const baffled = r.construction === 'baffled';
   const ch = g.chambers;
@@ -153,6 +231,7 @@ function buildSteps(r: ResolvedInputs, g: QuiltGeometry): Step[] {
   if (baffled) {
     steps.push(
       { id: 'quilt.baffles-liner', title: 'Baffles to the liner', body: `Sew each baffle's liner (short) edge to its line on the liner, ${fmtIn(r.seam_allowance)}" in, centre to centre, head to foot. Leave the baffle ends loose: they go into the side seam.`, dependsOn: ['quilt.mark'], refsPieces: [LINER_ID, ...baffleIds], group: 'Baffles' },
+      ...(r.side_baffles ? [{ id: 'quilt.side-baffles', title: 'Side baffles', body: `Sew a side baffle's liner edge down each long side of the liner on the side sew line, ${fmtIn(r.seam_allowance)}" in, the cross baffles' ends caught under it; its shell edge goes to the shell's side in the perimeter step, so the ${fmtIn(r.loft)}" loft runs out to the edge instead of pinching to nothing.`, dependsOn: ['quilt.baffles-liner'], refsPieces: [LINER_ID, SIDE_BAFFLE_ID], group: 'Baffles' }] : []),
       { id: 'quilt.baffles-shell', title: 'Baffles to the shell', body: `Lay the shell over the liner, centres matched, and sew each baffle's shell (long) edge to its line on the shell, working from the head.${r.shell_differential > 0 ? ` The shell is ${r.shell_differential} % wider, so it stands proud of the liner between the baffles: that is the differential.` : ''}`, dependsOn: ['quilt.baffles-liner'], refsPieces: [SHELL_ID, ...baffleIds], group: 'Baffles' },
     );
   } else {
@@ -163,10 +242,12 @@ function buildSteps(r: ResolvedInputs, g: QuiltGeometry): Step[] {
     r.kind === 'underquilt'
       ? { id: 'quilt.perimeter', title: 'Sew one side', body: `Turn both layers' seam allowance in toward each other along one long side and topstitch it on the side line${baffled ? ', catching the baffle ends' : ''}. The ends stay open for the channels; the other side stays open to fill.`, dependsOn: [before], refsPieces: panels, group: 'Close' }
       : { id: 'quilt.perimeter', title: 'Sew the perimeter, one side open', body: baffled
-      ? `Turn both layers' seam allowance in toward each other along the head, the foot and one long side and topstitch on the perimeter line, catching the baffle ends in the side seam${r.shell_differential > 0 ? ' and easing the shell\'s extra width in along the head and the foot' : ''}. Leave the other side open to fill.`
-      : 'Turn both layers\' seam allowance in toward each other along the head, the foot and one long side and topstitch on the perimeter line. Leave the other side open to fill.', dependsOn: [before], refsPieces: panels, group: 'Close' },
+      ? `Turn both layers' seam allowance in toward each other along ${r.neck === 'drawcord' ? 'the foot' : 'the head, the foot'} and one long side and topstitch on the perimeter line, catching the baffle ends in the side seam${r.shell_differential > 0 ? ' and easing the shell\'s extra width in along the head and the foot' : ''}. Leave the other side open to fill.`
+      : `Turn both layers' seam allowance in toward each other along ${r.neck === 'drawcord' ? 'the foot' : 'the head, the foot'} and one long side and topstitch on the perimeter line. Leave the other side open to fill.`, dependsOn: [before], refsPieces: panels, group: 'Close' },
     { id: 'quilt.fill', title: 'Fill each chamber', body: `Weigh out the fill per chamber (head to foot) — ${fillList}; ${grams(r.total_fill_g)} (${ounces(r.total_fill_g)}) in all at ${r.fill_power} fill power and ${r.overstuff} % overstuff — and fill each through the open side. The weights are an estimate from the chamber volume (${baffled ? 'a box, width × pitch × loft' : 'a sewn-through lens, 2/3 of width × pitch × loft'}); check the loft before closing.`, dependsOn: ['quilt.perimeter'], refsPieces: panels, group: 'Fill' },
     { id: 'quilt.close', title: 'Close the open side', body: 'Turn the seam allowance in along the open side and topstitch it closed, a chamber at a time so the fill stays put.', dependsOn: ['quilt.fill'], refsPieces: panels, group: 'Close' },
+    ...(r.neck === 'drawcord' ? [{ id: 'quilt.neck', title: 'Neck channel, drawcord and snap', body: `At the head, hold the two layers together and roll them as one (turn under ${fmtIn(r.head_channel)}", then again) into a ${fmtIn(r.head_channel)}" channel; stitch on the channel line, leaving both sides open. Thread a drawcord with a cord lock, and set a snap at the two head corners so the quilt closes round the neck.`, dependsOn: ['quilt.close'], refsPieces: panels, group: 'Neck' }] : []),
+    ...(r.pad_straps ? [{ id: 'quilt.pad', title: 'Pad strap loops', body: `Sew a webbing loop into each side seam at the marks (a third and two thirds down). Two elastic straps, each about the ${fmtIn(r.pad_width)}" pad width plus its buckle tails, clip between opposite loops under the pad.`, dependsOn: ['quilt.close'], refsPieces: panels, group: 'Pad' }] : []),
     r.kind === 'underquilt'
       ? { id: 'quilt.channels', title: 'End channels and suspension', body: `At each end, hold the two layers together and roll them as one (turn under ${fmtIn(r.end_channel)}", then again) into a ${fmtIn(r.end_channel)}" channel; stitch on the channel line through everything, leaving the channel open at both sides. Thread a shock cord through each, with a cord lock, and hang it from the hammock's suspension at both ends. The ${r.wider_layer} is the wider layer${r.shell_differential > 0 ? ` (${r.shell_differential} %)` : ''}: hang it toward the hammock.`, dependsOn: ['quilt.close'], refsPieces: panels, group: 'Ends' }
       : r.footbox === 'sewn'
@@ -184,6 +265,8 @@ function mockDerived(inputs: QuiltInputs, r: ResolvedInputs): GeneratorWarning[]
     if (f === 'shell_differential') return r.construction === 'baffled';
     if (f === 'foot_width' || f === 'footbox_length') return !uq;
     if (f === 'end_channel') return uq;
+    if (f === 'neck_channel') return r.neck === 'drawcord';
+    if (f === 'pad_width') return r.pad_straps;
     return true;
   };
   const open = PLACEHOLDERS.filter((p) => applies(p.field) && (inputs[p.field] === undefined || inputs[p.field] === null));
@@ -214,11 +297,23 @@ export function buildPattern(inputs: QuiltInputs): Result<QuiltBuildResult> {
   if (!validation.ok) return { ok: false, errors: validation.errors };
   const r = resolveInputs(inputs);
   const g = quiltGeometry(r);
-  const pieces: Piece[] = [buildPanel(r, g, 'shell'), buildPanel(r, g, 'liner')];
+  const ends: [number, number] = [r.head_allowance, r.foot_allowance];
+  const panel = (w: 'shell' | 'liner') => { const p = buildPanel(r, g, w); return r.join_widths ? halfPanel(r, p, w === 'shell' ? g.shell : g.liner, ends) : p; };
+  const pieces: Piece[] = [panel('shell'), panel('liner')];
   if (r.construction === 'baffled') pieces.push(...buildBaffles(r, g));
+  if (r.side_baffles) pieces.push(buildSideBaffle(r, g));
   const hardware: HardwareItem[] = [
     { id: 'fill', name: 'Down fill', quantity: 1, notes: `${grams(r.total_fill_g)} (${ounces(r.total_fill_g)}) at ${r.fill_power} fill power, ${r.overstuff} % overstuff; estimate, mock-derived` },
   ];
+  if (r.neck === 'drawcord') {
+    hardware.push({ id: 'neck-cord', name: 'Neck drawcord', quantity: 1, notes: `the ${fmtIn(r.shoulder_width)}" head width plus enough to tie` });
+    hardware.push({ id: 'neck-cord-lock', name: 'Cord lock', quantity: 1 });
+    hardware.push({ id: 'neck-snap', name: 'Snap set at the neck', quantity: 1 });
+  }
+  if (r.pad_straps) {
+    hardware.push({ id: 'pad-strap', name: 'Elastic pad strap with buckle', quantity: 2, notes: `about the ${fmtIn(r.pad_width)}" pad width each, plus the buckle tails (mock-derived)` });
+    hardware.push({ id: 'pad-loop', name: 'Webbing loop for a pad strap', quantity: 4, notes: 'two each side, in the side seams' });
+  }
   if (r.kind === 'underquilt') {
     hardware.push({ id: 'shock-cord', name: 'Shock cord for the end channels', quantity: 2, notes: `one per end: the ${fmtIn(r.shoulder_width)}" width plus the reach to the hammock's suspension, cut to the hammock` });
     hardware.push({ id: 'cord-lock', name: 'Cord lock', quantity: 2, notes: 'one per end' });

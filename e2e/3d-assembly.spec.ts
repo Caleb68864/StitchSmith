@@ -71,6 +71,7 @@ const TARGETS: Record<string, Target> = {
   },
   'gaiters': { open: /Open Gaiters/i, seams: true, fitReport: false },
   'wind shirt': { open: /Open Wind Shirt/i, seams: true, fitReport: false },
+  'bivy': { open: /Open Bivy/i, seams: true, fitReport: false },
   'tarp (doors both ends)': {
     open: /Open Tarp/i, seams: true, fitReport: false,
     seed: { key: 'stitchsmith.tarp.project', project: { schemaVersion: 15, generatorId: 'tarp', projectName: 'E2E', ...stamp, inputs: { units: 'in', construction: 'ridge_seam', cut_style: 'cat_cut', hem_fold: 'double', ridge_tieouts: true, doors: 'both_ends' } } },
